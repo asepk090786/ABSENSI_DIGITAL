@@ -1,0 +1,248 @@
+
+AI COPILOT SYSTEM CONTEXT
+========================
+SISTEM AGENDA, ABSENSI, NILAI, IZIN & KEAMANAN SEKOLAH
+Framework: Laravel
+Tujuan: Menjadi konteks permanen AI Copilot saat coding
+
+=====================================================
+1. ROLE & USER SISTEM
+=====================================================
+- Admin
+- Kepala Sekolah
+- Guru Kelas
+- Wali Kelas
+- Guru Mapel
+- Guru BK
+- Guru Piket
+- Siswa (KM)
+- Petugas Keamanan
+
+=====================================================
+2. MASTER TAHUN AJARAN & SEMESTER
+=====================================================
+tahun_ajaran
+- id (PK)
+- nama_tahun
+- is_active
+
+semester
+- id (PK)
+- tahun_ajaran_id (FK)
+- nama_semester (Ganjil/Genap)
+- is_active
+
+ATURAN:
+- Hanya 1 tahun ajaran aktif
+- Hanya 1 semester aktif
+- Semua data wajib terikat tahun & semester
+
+=====================================================
+3. MASTER USER & AKADEMIK
+=====================================================
+roles
+- id
+- role_name
+
+users
+- id
+- name
+- email
+- password
+- role_id
+- guru_id (nullable)
+- siswa_id (nullable)
+
+guru
+- id
+- nip
+- nama
+- jenis_guru (kelas/mapel/bk/piket/security)
+
+kelas
+- id
+- nama_kelas
+- wali_kelas_id
+
+siswa
+- id
+- nis
+- nama
+- kelas_id
+- status_aktif
+
+=====================================================
+4. JAM BELAJAR TERINTEGRASI
+=====================================================
+jam_belajar
+- id
+- hari
+- jam_mulai
+- jam_selesai
+- jenis (KBM, Istirahat, Piket)
+
+Digunakan oleh:
+- agenda_kelas
+- agenda_guru
+- agenda_piket
+- absensi_kelas
+
+=====================================================
+5. AGENDA SISTEM
+=====================================================
+agenda_kelas
+- id
+- kelas_id
+- guru_id
+- jam_belajar_id
+- tanggal
+- kegiatan
+- tahun_ajaran_id
+- semester_id
+
+agenda_guru
+- id
+- guru_id
+- jam_belajar_id
+- tanggal
+- kegiatan
+- tahun_ajaran_id
+- semester_id
+
+agenda_piket
+- id
+- guru_id
+- jam_belajar_id
+- tanggal
+- kegiatan
+- catatan
+- tahun_ajaran_id
+- semester_id
+
+=====================================================
+6. ABSENSI TERINTEGRASI
+=====================================================
+absensi_kelas
+- id
+- kelas_id
+- guru_id
+- jam_belajar_id
+- tanggal
+- status_kelas
+- tahun_ajaran_id
+- semester_id
+
+absensi_siswa
+- id
+- absensi_kelas_id
+- siswa_id
+- status (Hadir/Izin/Sakit/Alfa)
+- keterangan
+
+RULE:
+- absensi_siswa tidak boleh berdiri sendiri
+- absensi_siswa wajib berasal dari absensi_kelas
+
+=====================================================
+7. IZIN SISWA KE GURU PIKET
+=====================================================
+jenis_izin
+- id
+- nama_izin
+- butuh_bukti
+
+izin_siswa
+- id
+- siswa_id
+- kelas_id
+- jenis_izin_id
+- tanggal
+- jam_keluar
+- jam_kembali
+- alasan
+- bukti
+- status (menunggu/disetujui/ditolak)
+- guru_piket_id
+- tahun_ajaran_id
+- semester_id
+
+=====================================================
+8. LOG KEAMANAN SEKOLAH
+=====================================================
+log_keamanan
+- id
+- siswa_id
+- izin_siswa_id
+- jam_keluar_aktual
+- jam_kembali_aktual
+- petugas_keamanan_id
+- keterangan
+
+RULE:
+- siswa tidak boleh keluar tanpa izin disetujui
+- petugas keamanan wajib verifikasi sistem
+
+=====================================================
+9. NILAI HARIAN SISWA
+=====================================================
+mata_pelajaran
+- id
+- kode_mapel
+- nama_mapel
+
+komponen_nilai
+- id
+- nama_komponen
+- bobot
+
+nilai_harian
+- id
+- siswa_id
+- guru_id
+- kelas_id
+- mapel_id
+- komponen_id
+- tanggal
+- nilai
+- tahun_ajaran_id
+- semester_id
+
+=====================================================
+10. EXPORT - IMPORT DATA
+=====================================================
+- Import guru (Excel)
+- Import siswa per kelas
+- Export guru & siswa
+- Export absensi & nilai
+
+=====================================================
+11. PRINT & LAPORAN
+=====================================================
+- Print agenda kelas (PDF)
+- Print agenda guru (PDF)
+- Print agenda piket (PDF)
+- Print rekap absensi
+- Print rekap izin siswa
+- Print nilai harian
+
+=====================================================
+12. FLOW UTAMA SISTEM
+=====================================================
+1. Admin set tahun ajaran & semester aktif
+2. Admin input jam belajar
+3. Guru input agenda sesuai jam belajar
+4. Guru mengisi absensi kelas
+5. Sistem generate absensi siswa
+6. Siswa ajukan izin -> guru piket
+7. Petugas keamanan verifikasi keluar
+8. Guru input nilai harian
+9. Wali kelas & BK monitoring
+10. Kepala sekolah melihat dashboard & laporan
+
+=====================================================
+CATATAN UNTUK AI COPILOT
+=====================================================
+- Semua query WAJIB filter tahun_ajaran_id & semester_id
+- Gunakan RBAC (Policy & Middleware)
+- Jangan izinkan data di luar jam belajar
+- Semua laporan wajib bisa PDF & Excel
