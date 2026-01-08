@@ -9,17 +9,53 @@
 
         <title>{{ config('app.name', 'Absensi Digital') }}</title>
 
-        <!-- Google Icons & Materialize CSS (minimal Material look via CDN) -->
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-        <link href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" rel="stylesheet">
-
         <style>
-            /* small layout tweaks to integrate with existing views */
-            body { background: #f5f5f5; }
-            main.container { padding-top: 20px; }
-            .brand-logo { font-weight: 600; }
-            .sidenav .user-view { background: linear-gradient(135deg,#2196F3,#3F51B5); }
+            :root {
+                --bg: #f7f7f7;
+                --panel: #ffffff;
+                --border: #e2e2e2;
+                --text: #1f2933;
+                --muted: #5f6b76;
+                --primary: #2b7a78;
+                --primary-dark: #205e5d;
+            }
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background: var(--bg); color: var(--text); }
+            a { color: var(--primary); text-decoration: none; }
+            a:hover { color: var(--primary-dark); }
+            header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; }
+            .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+            .topbar .brand { font-weight: 700; color: var(--primary-dark); }
+            .layout { display:flex; min-height: calc(100vh - 56px); }
+            .sidebar { width: 220px; background: var(--panel); border-right:1px solid var(--border); padding:16px 12px; }
+            .sidebar h4 { margin:0 0 12px 8px; font-size:14px; color: var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+            .sidebar ul { list-style:none; padding:0; margin:0; }
+            .sidebar li { margin-bottom:6px; }
+            .sidebar a { display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:6px; color: var(--text); }
+            .sidebar a:hover, .sidebar .active > a { background:#e8f3f3; color: var(--primary-dark); }
+            main.container { flex:1; padding:20px; }
+            .card { background: var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+            .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+            .card-title { margin:0; font-size:16px; font-weight:600; }
+            .btn { display:inline-block; padding:8px 14px; border-radius:6px; border:1px solid transparent; font-size:14px; cursor:pointer; text-align:center; }
+            .btn-primary { background: var(--primary); color:#fff; }
+            .btn-primary:hover { background: var(--primary-dark); }
+            .btn-outline-secondary { background:#fff; color: var(--text); border:1px solid var(--border); }
+            .btn-danger { background:#c0392b; color:#fff; }
+            table { width:100%; border-collapse:collapse; }
+            th, td { padding:10px; border-bottom:1px solid var(--border); text-align:left; font-size:14px; }
+            th { background:#f0f4f5; font-weight:600; }
+            .alert { padding:10px 12px; border-radius:6px; margin-bottom:12px; }
+            .alert-success { background:#e7f6ef; border:1px solid #bfe3cf; color:#1f7a4c; }
+            .form-group, .input-field { margin-bottom:12px; display:block; }
+            label { display:block; margin-bottom:6px; color: var(--muted); font-size:13px; }
+            input, select, textarea { width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; font-size:14px; }
+            footer { padding:16px 20px; color: var(--muted); font-size:13px; text-align:center; }
+            @media (max-width: 900px) {
+                .layout { flex-direction:column; }
+                .sidebar { width:100%; border-right:none; border-bottom:1px solid var(--border); }
+                main.container { padding:16px; }
+            }
         </style>
     </head>
     <body>
@@ -27,39 +63,23 @@
             <header>
                 @include('layouts.navbars.navbar')
             </header>
-
-            <ul id="slide-out" class="sidenav sidenav-fixed">
+            <div class="layout">
                 @include('layouts.navbars.sidebar')
-            </ul>
-
-            <main class="container">
-                <div class="row">
-                    <div class="col s12">
-                        @yield('content')
-                    </div>
-                </div>
-            </main>
-
+                <main class="container">
+                    @yield('content')
+                </main>
+            </div>
             @include('layouts.footer')
-
             <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">@csrf</form>
         @else
-            @include('layouts.navbars.navbar')
+            <header>
+                @include('layouts.navbars.navbar')
+            </header>
             <main class="container">
                 @yield('content')
             </main>
             @include('layouts.footer')
         @endauth
-
-        <!-- Scripts: jQuery and Materialize JS -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                var elems = document.querySelectorAll('.sidenav');
-                M.Sidenav.init(elems);
-            });
-        </script>
 
         @stack('js')
     </body>
