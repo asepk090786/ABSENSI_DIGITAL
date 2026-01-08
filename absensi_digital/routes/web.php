@@ -5,6 +5,7 @@ use App\Http\Controllers\JamBelajarController;
 use App\Http\Controllers\AgendaKelasController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -14,12 +15,13 @@ Route::get('login',[AuthController::class,'showLogin'])->name('login');
 Route::post('login',[AuthController::class,'login'])->name('login.post');
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
-Route::get('/home', function(){ return view('home'); })->middleware('auth')->name('home');
+Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
 
 // Example resource routes (implement controllers in app/Http/Controllers)
 Route::resource('guru','App\Http\Controllers\GuruController');
 Route::resource('siswa','App\Http\Controllers\SiswaController');
 Route::resource('absensi','App\Http\Controllers\AbsensiController');
+Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
 
 // Jam Belajar routes
 Route::middleware(['auth'])->group(function(){
