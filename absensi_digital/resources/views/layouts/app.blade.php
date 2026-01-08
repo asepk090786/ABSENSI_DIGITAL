@@ -1,86 +1,221 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="ie=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-
-        <meta name="csrf-token" content="{{ csrf_token() }}">
-
-        <title>{{ config('app.name', 'Absensi Digital') }}</title>
-
-        <style>
-            :root {
-                --bg: #f7f7f7;
-                --panel: #ffffff;
-                --border: #e2e2e2;
-                --text: #1f2933;
-                --muted: #5f6b76;
-                --primary: #2b7a78;
-                --primary-dark: #205e5d;
-            }
-            * { box-sizing: border-box; }
-            body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; background: var(--bg); color: var(--text); }
-            a { color: var(--primary); text-decoration: none; }
-            a:hover { color: var(--primary-dark); }
-            header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 20px; }
-            .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-            .topbar .brand { font-weight: 700; color: var(--primary-dark); }
-            .layout { display:flex; min-height: calc(100vh - 56px); }
-            .sidebar { width: 220px; background: var(--panel); border-right:1px solid var(--border); padding:16px 12px; }
-            .sidebar h4 { margin:0 0 12px 8px; font-size:14px; color: var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
-            .sidebar ul { list-style:none; padding:0; margin:0; }
-            .sidebar li { margin-bottom:6px; }
-            .sidebar a { display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:6px; color: var(--text); }
-            .sidebar a:hover, .sidebar .active > a { background:#e8f3f3; color: var(--primary-dark); }
-            main.container { flex:1; padding:20px; }
-            .card { background: var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
-            .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-            .card-title { margin:0; font-size:16px; font-weight:600; }
-            .btn { display:inline-block; padding:8px 14px; border-radius:6px; border:1px solid transparent; font-size:14px; cursor:pointer; text-align:center; }
-            .btn-primary { background: var(--primary); color:#fff; }
-            .btn-primary:hover { background: var(--primary-dark); }
-            .btn-outline-secondary { background:#fff; color: var(--text); border:1px solid var(--border); }
-            .btn-danger { background:#c0392b; color:#fff; }
-            table { width:100%; border-collapse:collapse; }
-            th, td { padding:10px; border-bottom:1px solid var(--border); text-align:left; font-size:14px; }
-            th { background:#f0f4f5; font-weight:600; }
-            .alert { padding:10px 12px; border-radius:6px; margin-bottom:12px; }
-            .alert-success { background:#e7f6ef; border:1px solid #bfe3cf; color:#1f7a4c; }
-            .form-group, .input-field { margin-bottom:12px; display:block; }
-            label { display:block; margin-bottom:6px; color: var(--muted); font-size:13px; }
-            input, select, textarea { width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; font-size:14px; }
-            footer { padding:16px 20px; color: var(--muted); font-size:13px; text-align:center; }
-            @media (max-width: 900px) {
-                .layout { flex-direction:column; }
-                .sidebar { width:100%; border-right:none; border-bottom:1px solid var(--border); }
-                main.container { padding:16px; }
-            }
-        </style>
-    </head>
-    <body>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Absensi Digital')</title>
+    
+    <!-- Tabler CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <style>
+        .navbar-brand-image { height: 2rem; }
+        
+        /* Clean header styling */
+        .page-wrapper {
+            background: #f6f8fb;
+        }
+        .page-wrapper > header.navbar {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .page-header {
+            background: transparent;
+            border: none;
+            padding-top: 1rem;
+        }
+        .page-body {
+            padding-top: 0;
+        }
+        
+        /* Sidebar styling */
+        .navbar-vertical {
+            background: linear-gradient(180deg, #1e3a5f 0%, #2c5282 100%) !important;
+        }
+        .navbar-vertical .nav-link {
+            color: rgba(255,255,255,0.85) !important;
+        }
+        .navbar-vertical .nav-link:hover {
+            background: rgba(255,255,255,0.1) !important;
+        }
+        .navbar-vertical .nav-link.active {
+            background: rgba(255,255,255,0.15) !important;
+            color: #fff !important;
+        }
+    </style>
+    @stack('css')
+</head>
+<body class="layout-fluid">
+    <div class="page">
         @auth
-            <header>
-                @include('layouts.navbars.navbar')
-            </header>
-            <div class="layout">
-                @include('layouts.navbars.sidebar')
-                <main class="container">
-                    @yield('content')
-                </main>
+        <!-- Sidebar -->
+        <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href="{{ route('home') }}">
+                        <span class="text-white">
+                            <i class="ti ti-school me-2"></i>Absensi Digital
+                        </span>
+                    </a>
+                </h1>
+                
+                <div class="collapse navbar-collapse" id="sidebar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        <!-- Dashboard -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-home"></i>
+                                </span>
+                                <span class="nav-link-title">Dashboard</span>
+                            </a>
+                        </li>
+                        
+                        <!-- Akademik -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['jam_belajar.*', 'agenda_kelas.*', 'absensi.*']) ? 'active' : '' }}" href="#navbar-akademik" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-book"></i>
+                                </span>
+                                <span class="nav-link-title">Akademik</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item {{ request()->routeIs('jam_belajar.*') ? 'active' : '' }}" href="{{ route('jam_belajar.index') }}">
+                                    <i class="ti ti-clock me-2"></i>Jam Belajar
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
+                                    <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
+                                    <i class="ti ti-clipboard-check me-2"></i>Absensi
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-report-analytics me-2"></i>Nilai
+                                </a>
+                            </div>
+                        </li>
+                        
+                        <!-- Data Master -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-master" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-database"></i>
+                                </span>
+                                <span class="nav-link-title">Data Master</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-users me-2"></i>Guru
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-school me-2"></i>Siswa
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-building me-2"></i>Kelas
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-books me-2"></i>Mata Pelajaran
+                                </a>
+                            </div>
+                        </li>
+                        
+                        <!-- Pengaturan -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-setting" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-settings"></i>
+                                </span>
+                                <span class="nav-link-title">Pengaturan</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-calendar me-2"></i>Tahun Ajaran
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    <i class="ti ti-adjustments me-2"></i>Sistem
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            @include('layouts.footer')
-            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">@csrf</form>
+        </aside>
+        
+        <!-- Main Wrapper -->
+        <div class="page-wrapper">
+            <!-- Minimal Header - User dropdown only -->
+            <div class="container-xl pt-3 pb-2">
+                <div class="d-flex justify-content-end">
+                    <!-- User Menu -->
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'U') }}&background=1e3a5f&color=fff)"></span>
+                            <div class="d-none d-sm-block text-dark">
+                                <div class="fw-medium">{{ auth()->user()->name ?? 'User' }}</div>
+                                <div class="small text-muted">Administrator</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <a href="#" class="dropdown-item">
+                                <i class="ti ti-user me-2"></i>Profile
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="ti ti-settings me-2"></i>Pengaturan
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                <i class="ti ti-logout me-2"></i>Keluar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Page Content -->
+            <div class="page-body">
+                <div class="container-xl">
+                    @yield('content')
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center">
+                        <div class="col-12">
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item">
+                                    &copy; {{ date('Y') }} <a href="." class="link-secondary">Absensi Digital</a> - Sistem Manajemen Sekolah
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+        
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
         @else
-            <header>
-                @include('layouts.navbars.navbar')
-            </header>
-            <main class="container">
-                @yield('content')
-            </main>
-            @include('layouts.footer')
+        <!-- Guest Layout -->
+        <div class="page-wrapper">
+            <div class="page-body">
+                <div class="container-xl">
+                    @yield('content')
+                </div>
+            </div>
+        </div>
         @endauth
-
-        @stack('js')
-    </body>
+    </div>
+    
+    <!-- Tabler JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    @stack('js')
+</body>
 </html>

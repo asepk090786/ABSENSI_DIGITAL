@@ -40,3 +40,9 @@ Route::middleware(['auth'])->group(function(){
     Route::post('/setting/semester', [SettingController::class, 'storeSemester'])->name('setting.semester.store');
     Route::post('/setting/semester/{semester}/activate', [SettingController::class, 'activateSemester'])->name('setting.semester.activate');
 });
+
+// Theme demo route (preview Material Dashboard assets)
+Route::get('/theme-demo', function(){
+    return view('material_home');
+});
+
