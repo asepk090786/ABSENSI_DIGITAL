@@ -1,57 +1,47 @@
-@extends('layouts.app', ['class' => 'login-page', 'page' => _('Login Page'), 'contentClass' => 'login-page'])
+@extends('layouts.app', ['page' => _('Login')])
 
 @section('content')
-    <div class="col-md-10 text-center ml-auto mr-auto">
-        <h3 class="mb-5">Log in to see how you can speed up your web development with out of the box CRUD for #User Management and more.</h3>
-    </div>
-    <div class="col-lg-4 col-md-6 ml-auto mr-auto">
-        <form class="form" method="post" action="{{ route('login') }}">
-            @csrf
+<div class="row" style="margin-top:40px;">
+    <div class="col s12 m6 offset-m3 l4 offset-l4">
+        <div class="card z-depth-2">
+            <div class="card-content">
+                <span class="card-title" style="display:flex;align-items:center;gap:8px;">
+                    <i class="material-icons">lock</i> Masuk
+                </span>
+                <p class="grey-text text-darken-1" style="margin-bottom:16px;">Gunakan akun Anda untuk mengakses dashboard absensi.</p>
 
-            <div class="card card-login card-white">
-                <div class="card-header">
-                    <img src="{{ asset('white') }}/img/card-primary.png" alt="">
-                    <h1 class="card-title">{{ _('Log in') }}</h1>
-                </div>
-                <div class="card-body">
-                    <p class="text-dark mb-2">Sign in with <strong>admin@white.com</strong> and the password <strong>secret</strong></p>
-                    <div class="input-group{{ $errors->has('email') ? ' has-danger' : '' }}">
-                        <div class="input-group-prepend">
-                            <div class="input-group-text">
-                                <i class="tim-icons icon-email-85"></i>
-                            </div>
-                        </div>
-                        <input type="email" name="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" placeholder="{{ _('Email') }}">
-                        @include('alerts.feedback', ['field' => 'email'])
+                <form method="post" action="{{ route('login') }}">
+                    @csrf
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input id="email" type="email" name="email" value="{{ old('email') }}" class="validate @error('email') invalid @enderror" required autofocus>
+                        <label for="email">Email</label>
+                        @error('email')
+                            <span class="helper-text red-text">{{ $message }}</span>
+                        @enderror
                     </div>
-                    <div class="input-group{{ $errors->has('password') ? ' has-danger' : '' }}">
-                        <div class="input-group-prepend">
-                            <div class="input-group-text">
-                                <i class="tim-icons icon-lock-circle"></i>
-                            </div>
-                        </div>
-                        <input type="password" placeholder="{{ _('Password') }}" name="password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}">
-                        @include('alerts.feedback', ['field' => 'password'])
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">vpn_key</i>
+                        <input id="password" type="password" name="password" class="validate @error('password') invalid @enderror" required>
+                        <label for="password">Password</label>
+                        @error('password')
+                            <span class="helper-text red-text">{{ $message }}</span>
+                        @enderror
                     </div>
-                </div>
-                <div class="card-footer">
-                    <button type="submit" href="" class="btn btn-primary btn-lg btn-block mb-3">{{ _('Get Started') }}</button>
-                    <div class="pull-left">
-                        <h6>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="link footer-link">{{ _('Create Account') }}</a>
-                            @endif
-                        </h6>
-                    </div>
-                    <div class="pull-right">
-                        <h6>
-                            @if (Route::has('password.request'))
-                                <a href="{{ route('password.request') }}" class="link footer-link">{{ _('Forgot password?') }}</a>
-                            @endif
-                        </h6>
-                    </div>
+
+                    <button type="submit" class="btn waves-effect waves-light teal" style="width:100%;">Masuk</button>
+                </form>
+
+                <div class="section" style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+                    <span class="grey-text text-darken-1" style="font-size:12px;">Admin demo: admin@example.com / password</span>
+                    @if (Route::has('password.request'))
+                        <a href="{{ route('password.request') }}" class="teal-text text-darken-2" style="font-size:12px;">Lupa password?</a>
+                    @endif
                 </div>
             </div>
-        </form>
+        </div>
     </div>
+</div>
 @endsection
