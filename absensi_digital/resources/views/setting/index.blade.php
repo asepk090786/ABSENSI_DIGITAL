@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.app', ['pageSlug' => 'setting'])
 
 @section('title','Pengaturan')
 

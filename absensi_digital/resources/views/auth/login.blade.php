@@ -1,43 +1,57 @@
-@extends('layouts.app')
-
-@section('title','Login - Absensi Digital')
+@extends('layouts.app', ['class' => 'login-page', 'page' => _('Login Page'), 'contentClass' => 'login-page'])
 
 @section('content')
-    <div class="d-flex flex-row align-items-center">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-5">
-                    <div class="card mt-5 shadow-lg">
-                        <div class="card-body p-4">
-                            <h4 class="card-title mb-4">Masuk ke Absensi Digital</h4>
+    <div class="col-md-10 text-center ml-auto mr-auto">
+        <h3 class="mb-5">Log in to see how you can speed up your web development with out of the box CRUD for #User Management and more.</h3>
+    </div>
+    <div class="col-lg-4 col-md-6 ml-auto mr-auto">
+        <form class="form" method="post" action="{{ route('login') }}">
+            @csrf
 
-                            @if($errors->any())
-                                <div class="alert alert-danger">{{ $errors->first() }}</div>
-                            @endif
-
-                            <form method="POST" action="{{ route('login.post') }}">
-                                @csrf
-                                <div class="mb-3">
-                                    <label class="form-label">Email</label>
-                                    <input name="email" type="email" value="{{ old('email') }}" required class="form-control" placeholder="you@example.com" />
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Password</label>
-                                    <input name="password" type="password" required class="form-control" placeholder="••••••••" />
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                                        <label class="form-check-label" for="remember">Ingat saya</label>
-                                    </div>
-                                    <button class="btn btn-primary">Masuk</button>
-                                </div>
-                            </form>
-
+            <div class="card card-login card-white">
+                <div class="card-header">
+                    <img src="{{ asset('white') }}/img/card-primary.png" alt="">
+                    <h1 class="card-title">{{ _('Log in') }}</h1>
+                </div>
+                <div class="card-body">
+                    <p class="text-dark mb-2">Sign in with <strong>admin@white.com</strong> and the password <strong>secret</strong></p>
+                    <div class="input-group{{ $errors->has('email') ? ' has-danger' : '' }}">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">
+                                <i class="tim-icons icon-email-85"></i>
+                            </div>
                         </div>
+                        <input type="email" name="email" class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" placeholder="{{ _('Email') }}">
+                        @include('alerts.feedback', ['field' => 'email'])
+                    </div>
+                    <div class="input-group{{ $errors->has('password') ? ' has-danger' : '' }}">
+                        <div class="input-group-prepend">
+                            <div class="input-group-text">
+                                <i class="tim-icons icon-lock-circle"></i>
+                            </div>
+                        </div>
+                        <input type="password" placeholder="{{ _('Password') }}" name="password" class="form-control{{ $errors->has('password') ? ' is-invalid' : '' }}">
+                        @include('alerts.feedback', ['field' => 'password'])
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" href="" class="btn btn-primary btn-lg btn-block mb-3">{{ _('Get Started') }}</button>
+                    <div class="pull-left">
+                        <h6>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}" class="link footer-link">{{ _('Create Account') }}</a>
+                            @endif
+                        </h6>
+                    </div>
+                    <div class="pull-right">
+                        <h6>
+                            @if (Route::has('password.request'))
+                                <a href="{{ route('password.request') }}" class="link footer-link">{{ _('Forgot password?') }}</a>
+                            @endif
+                        </h6>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 @endsection

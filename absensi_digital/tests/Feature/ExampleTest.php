@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        // Root now redirects to home and requires authentication, expect a 302
+        $response->assertStatus(302);
     }
 }
