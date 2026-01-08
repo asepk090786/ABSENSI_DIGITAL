@@ -1,42 +1,49 @@
 <div class="sidebar">
     <div class="sidebar-wrapper">
         <div class="logo">
-            <a href="#" class="simple-text logo-mini">{{ _('WD') }}</a>
-            <a href="#" class="simple-text logo-normal">{{ _('White Dashboard') }}</a>
+            <a href="#" class="simple-text logo-mini">MD</a>
+            <a href="#" class="simple-text logo-normal">Material Dashboard</a>
         </div>
         <ul class="nav">
             <li @if ($pageSlug == 'dashboard') class="active " @endif>
                 <a href="{{ route('home') }}">
-                    <i class="tim-icons icon-chart-pie-36"></i>
-                    <p>{{ _('Dashboard') }}</p>
+                    <i class="material-icons">dashboard</i>
+                    <p>Dashboard</p>
                 </a>
             </li>
 
             <li @if ($pageSlug == 'jam_belajar') class="active " @endif>
                 <a href="{{ route('jam_belajar.index') }}">
-                    <i class="tim-icons icon-time-alarm"></i>
-                    <p>{{ _('Jam Belajar') }}</p>
+                    <i class="material-icons">schedule</i>
+                    <p>Jam Belajar</p>
                 </a>
             </li>
 
             <li @if ($pageSlug == 'agenda') class="active " @endif>
                 <a href="{{ route('agenda_kelas.index') }}">
-                    <i class="tim-icons icon-notes"></i>
-                    <p>{{ _('Agenda Kelas') }}</p>
+                    <i class="material-icons">event_note</i>
+                    <p>Agenda Kelas</p>
                 </a>
             </li>
 
             <li @if ($pageSlug == 'absensi') class="active " @endif>
-                <a href="#">
-                    <i class="tim-icons icon-check-2"></i>
-                    <p>{{ _('Absensi') }}</p>
+                <a href="{{ route('absensi.index') }}">
+                    <i class="material-icons">check_circle</i>
+                    <p>Absensi</p>
                 </a>
             </li>
 
             <li @if ($pageSlug == 'setting') class="active " @endif>
                 <a href="{{ route('tahun_ajaran.index') }}">
-                    <i class="tim-icons icon-settings-gear-63"></i>
-                    <p>{{ _('Pengaturan') }}</p>
+                    <i class="material-icons">settings</i>
+                    <p>Pengaturan</p>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ url('material/index.html') }}" target="_blank">
+                    <i class="material-icons">web</i>
+                    <p>Material React App</p>
                 </a>
             </li>
         </ul>

@@ -16,6 +16,9 @@ Route::post('login',[AuthController::class,'login'])->name('login.post');
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
+Route::get('/material', function(){
+    return redirect('material/index.html');
+})->name('material.react');
 
 // Example resource routes (implement controllers in app/Http/Controllers)
 Route::resource('guru','App\Http\Controllers\GuruController');
