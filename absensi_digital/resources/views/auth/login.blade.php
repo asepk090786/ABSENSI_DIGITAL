@@ -11,27 +11,107 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     
     <style>
-        .page { min-height: 100vh; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .page { 
+            min-height: 100vh; 
+            position: relative;
+        }
+        
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 135, 135, 0.3), transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(135, 206, 235, 0.3), transparent 50%);
+            pointer-events: none;
+        }
+        
         .form-footer { margin-top: 1.5rem; }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .logo-container {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .input-group-flat .input-group-text {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .footer-text {
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
-<body class="d-flex flex-column bg-white">
+<body class="d-flex flex-column">
     <div class="page page-center">
         <div class="container container-tight py-4">
             <!-- Logo -->
             <div class="text-center mb-4">
-                <a href="/" class="navbar-brand navbar-brand-autodark">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <div class="bg-primary text-white rounded-3 p-2 me-2">
-                            <i class="ti ti-school" style="font-size: 1.5rem;"></i>
+                <a href="/" class="navbar-brand navbar-brand-autodark text-decoration-none">
+                    <div class="logo-container d-inline-block">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <div class="logo-icon text-white me-2">
+                                <i class="ti ti-school" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <span class="fs-2 fw-bold text-dark">Absensi Digital</span>
                         </div>
-                        <span class="fs-2 fw-bold text-primary">Absensi Digital</span>
                     </div>
                 </a>
             </div>
             
             <!-- Login Card -->
-            <div class="card card-md shadow-sm">
+            <div class="card card-md login-card">
                 <div class="card-body">
                     <h2 class="h2 text-center mb-4">Masuk ke Akun Anda</h2>
                     
@@ -39,15 +119,15 @@
                         @csrf
                         
                         <div class="mb-3">
-                            <label class="form-label">Alamat Email</label>
+                            <label class="form-label">Email atau Username</label>
                             <div class="input-group input-group-flat">
                                 <span class="input-group-text">
                                     <i class="ti ti-mail"></i>
                                 </span>
-                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" 
-                                       placeholder="email@contoh.com" value="{{ old('email') }}" required autofocus>
+                                <input type="text" name="login" class="form-control @error('login') is-invalid @enderror" 
+                                       placeholder="email@contoh.com atau username" value="{{ old('login') }}" required autofocus>
                             </div>
-                            @error('email')
+                            @error('login')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
@@ -96,11 +176,11 @@
             </div>
             
             <!-- Demo Info -->
-            <div class="text-center text-muted mt-3">
-                <div class="card card-sm">
+            <div class="text-center mt-3">
+                <div class="card card-sm demo-card">
                     <div class="card-body py-2">
                         <div class="d-flex align-items-center justify-content-center">
-                            <i class="ti ti-info-circle me-2 text-blue"></i>
+                            <i class="ti ti-info-circle me-2" style="color: #667eea;"></i>
                             <small><strong>Demo:</strong> admin@example.com / password</small>
                         </div>
                     </div>
@@ -108,8 +188,8 @@
             </div>
             
             <!-- Footer -->
-            <div class="text-center text-muted mt-4">
-                <small>&copy; {{ date('Y') }} Absensi Digital - Sistem Manajemen Sekolah</small>
+            <div class="text-center mt-4">
+                <small class="footer-text">&copy; {{ date('Y') }} Absensi Digital - Sistem Manajemen Sekolah</small>
             </div>
         </div>
     </div>

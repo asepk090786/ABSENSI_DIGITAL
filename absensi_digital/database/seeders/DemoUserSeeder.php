@@ -17,6 +17,7 @@ class DemoUserSeeder extends Seeder
                 ['email' => 'admin@example.com'],
                 [
                     'name' => 'Administrator',
+                    'username' => 'admin',
                     'email' => 'admin@example.com',
                     'password' => Hash::make('password'),
                     'role_id' => $adminRole->id,

@@ -111,8 +111,17 @@
                                 <span class="nav-link-title">Data Master</span>
                             </a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item {{ request()->routeIs('sekolah.*') ? 'active' : '' }}" href="{{ route('sekolah.index') }}">
+                                    <i class="ti ti-building-bank me-2"></i>Data Sekolah
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('kepala_sekolah.index') }}">
+                                    <i class="ti ti-id-badge me-2"></i>Kepala Sekolah
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('guru.*') ? 'active' : '' }}" href="{{ route('guru.index') }}">
                                     <i class="ti ti-users me-2"></i>Guru
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                                    <i class="ti ti-lock me-2"></i>Akun Pengguna
                                 </a>
                                 <a class="dropdown-item" href="#">
                                     <i class="ti ti-school me-2"></i>Siswa

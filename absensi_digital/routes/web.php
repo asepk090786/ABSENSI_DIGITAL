@@ -6,6 +6,7 @@ use App\Http\Controllers\AgendaKelasController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserManagementController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -27,6 +28,18 @@ Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index'])
 Route::middleware(['auth'])->group(function(){
     Route::resource('jam_belajar', JamBelajarController::class)->except(['show']);
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
+    
+    // Data Master routes
+    Route::resource('sekolah', 'App\Http\Controllers\SekolahController');
+    Route::resource('kepala_sekolah', 'App\Http\Controllers\KepalaSekolahController');
+    
+    // User Management routes
+    Route::resource('users', UserManagementController::class)->only(['index','create','store','show','destroy']);
+    Route::patch('users/{user}/activate', [UserManagementController::class, 'activate'])->name('users.activate');
+    Route::get('users/export/excel', [UserManagementController::class, 'export'])->name('users.export');
+    Route::get('users/template/download', [UserManagementController::class, 'templateDownload'])->name('users.template');
+    Route::post('users/import/excel', [UserManagementController::class, 'import'])->name('users.import');
+    Route::delete('users/bulk/delete', [UserManagementController::class, 'bulkDelete'])->name('users.bulkDelete');
 
     // Settings routes (tahun ajaran & semester)
     Route::get('/setting', [SettingController::class, 'index'])->name('tahun_ajaran.index');

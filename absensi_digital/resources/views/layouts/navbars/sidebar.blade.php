@@ -40,6 +40,18 @@
     <h5>👥 Data Master</h5>
     <ul class="menu-list">
         <li>
+            <a href="{{ route('sekolah.index') }}" class="menu-item {{ request()->routeIs('sekolah.*') ? 'active' : '' }}">
+                <i class="material-icons">account_balance</i>
+                <span>Data Sekolah</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('kepala_sekolah.index') }}" class="menu-item {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}">
+                <i class="material-icons">person_pin</i>
+                <span>Kepala Sekolah</span>
+            </a>
+        </li>
+        <li>
             <a href="#" class="menu-item">
                 <i class="material-icons">people</i>
                 <span>Guru</span>
@@ -49,6 +61,18 @@
             <a href="#" class="menu-item">
                 <i class="material-icons">school</i>
                 <span>Siswa</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="menu-item">
+                <i class="material-icons">class</i>
+                <span>Kelas</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="menu-item">
+                <i class="material-icons">menu_book</i>
+                <span>Mata Pelajaran</span>
             </a>
         </li>
     </ul>
