@@ -20,6 +20,7 @@ class User extends Authenticatable
         'email',
         'password',
         'jenis_kelamin',
+        'foto',
         'is_active',
         'role_id',
         'guru_id',

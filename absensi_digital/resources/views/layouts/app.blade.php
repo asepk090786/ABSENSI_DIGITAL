@@ -172,10 +172,10 @@
                             </div>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end shadow-sm">
-                            <a href="#" class="dropdown-item">
+                            <a href="{{ route('profile.edit') }}" class="dropdown-item">
                                 <i class="ti ti-user me-2"></i>Profile
                             </a>
-                            <a href="#" class="dropdown-item">
+                            <a href="{{ route('tahun_ajaran.index') }}" class="dropdown-item">
                                 <i class="ti ti-settings me-2"></i>Pengaturan
                             </a>
                             <div class="dropdown-divider"></div>

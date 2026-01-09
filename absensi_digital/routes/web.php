@@ -7,6 +7,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -52,6 +53,11 @@ Route::middleware(['auth'])->group(function(){
     Route::get('/setting/semester/create', [SettingController::class, 'createSemester'])->name('setting.semester.create');
     Route::post('/setting/semester', [SettingController::class, 'storeSemester'])->name('setting.semester.store');
     Route::post('/setting/semester/{semester}/activate', [SettingController::class, 'activateSemester'])->name('setting.semester.activate');
+    
+    // Profile routes
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 });
 
 // Theme demo route (preview Material Dashboard assets)
