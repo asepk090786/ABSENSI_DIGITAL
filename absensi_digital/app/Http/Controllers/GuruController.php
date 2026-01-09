@@ -3,13 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\GuruExport;
+use App\Imports\GuruImport;
 
 class GuruController extends Controller
 {
     public function index()
     {
-        $items = Guru::orderBy('nama')->get();
+        $items = Guru::with('user')->orderBy('nama')->get();
         return view('guru.index', compact('items'));
     }
 
@@ -23,16 +29,41 @@ class GuruController extends Controller
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'nip' => 'nullable|string|max:50|unique:guru,nip',
-            'email' => 'nullable|email|max:150|unique:guru,email',
+            'email' => 'required|email|max:150|unique:guru,email',
             'telepon' => 'nullable|string|max:30',
             'alamat' => 'nullable|string',
             'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'nullable|in:L,P',
+            'jenis_kelamin' => 'required|in:L,P',
+            'username' => 'required|string|max:255|unique:users,username',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
-        Guru::create($validated);
+        // Buat data guru
+        $guru = Guru::create([
+            'nama' => $validated['nama'],
+            'nip' => $validated['nip'],
+            'email' => $validated['email'],
+            'telepon' => $validated['telepon'],
+            'alamat' => $validated['alamat'],
+            'tanggal_lahir' => $validated['tanggal_lahir'],
+            'jenis_kelamin' => $validated['jenis_kelamin'],
+        ]);
 
-        return redirect()->route('guru.index')->with('success', 'Data guru berhasil ditambahkan.');
+        // Buat akun user untuk guru
+        $roleGuru = Role::where('role_name', 'Guru')->first();
+        
+        User::create([
+            'name' => $validated['nama'],
+            'username' => $validated['username'],
+            'password' => Hash::make($validated['password']),
+            'email' => $validated['email'],
+            'jenis_kelamin' => $validated['jenis_kelamin'],
+            'role_id' => $roleGuru->id,
+            'guru_id' => $guru->id,
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('guru.index')->with('success', 'Data guru dan akun berhasil ditambahkan.');
     }
 
     public function edit(Guru $guru)
@@ -59,8 +90,47 @@ class GuruController extends Controller
 
     public function destroy(Guru $guru)
     {
+        // Hapus user terkait jika ada
+        if ($guru->user) {
+            $guru->user->delete();
+        }
+        
         $guru->delete();
 
         return redirect()->route('guru.index')->with('success', 'Data guru berhasil dihapus.');
+    }
+
+    public function export()
+    {
+        return Excel::download(new GuruExport, 'data_guru_' . date('Ymd_His') . '.xlsx');
+    }
+
+    public function templateDownload()
+    {
+        return Excel::download(new \App\Exports\GuruTemplateExport, 'template_import_guru.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:2048',
+        ]);
+
+        try {
+            $import = new GuruImport();
+            Excel::import($import, $request->file('file'));
+
+            $errors = $import->getErrors();
+            
+            if (count($errors) > 0) {
+                return redirect()->route('guru.index')
+                    ->with('warning', 'Import selesai dengan beberapa error.')
+                    ->with('import_errors', $errors);
+            }
+
+            return redirect()->route('guru.index')->with('success', 'Data guru berhasil diimport.');
+        } catch (\Exception $e) {
+            return redirect()->route('guru.index')->with('error', 'Gagal import: ' . $e->getMessage());
+        }
     }
 }

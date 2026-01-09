@@ -165,13 +165,32 @@
                     <!-- User Menu -->
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'U') }}&background=1e3a5f&color=fff)"></span>
+                            @if(auth()->user()->foto && file_exists(public_path('storage/' . auth()->user()->foto)))
+                                <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url({{ asset('storage/' . auth()->user()->foto) }})"></span>
+                            @else
+                                <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'U') }}&background=1e3a5f&color=fff)"></span>
+                            @endif
                             <div class="d-none d-sm-block text-dark">
                                 <div class="fw-medium">{{ auth()->user()->name ?? 'User' }}</div>
-                                <div class="small text-muted">Administrator</div>
+                                <div class="small text-muted">{{ auth()->user()->role->role_name ?? 'User' }}</div>
                             </div>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <div class="dropdown-item-text">
+                                <div class="d-flex align-items-center">
+                                    @if(auth()->user()->foto && file_exists(public_path('storage/' . auth()->user()->foto)))
+                                        <span class="avatar avatar-md rounded-circle me-3" style="background-image: url({{ asset('storage/' . auth()->user()->foto) }})"></span>
+                                    @else
+                                        <span class="avatar avatar-md rounded-circle me-3" style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'U') }}&background=1e3a5f&color=fff&size=128)"></span>
+                                    @endif
+                                    <div>
+                                        <div class="fw-bold">{{ auth()->user()->name }}</div>
+                                        <div class="small text-muted">{{ auth()->user()->email }}</div>
+                                        <div class="small text-muted">{{ auth()->user()->role->role_name ?? 'User' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
                             <a href="{{ route('profile.edit') }}" class="dropdown-item">
                                 <i class="ti ti-user me-2"></i>Profile
                             </a>

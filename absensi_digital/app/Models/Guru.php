@@ -25,4 +25,9 @@ class Guru extends Model
     {
         return $this->hasOne(KepalaSekolah::class);
     }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'guru_id');
+    }
 }

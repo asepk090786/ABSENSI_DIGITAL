@@ -19,14 +19,18 @@ Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
 
-// Example resource routes (implement controllers in app/Http/Controllers)
-Route::resource('guru','App\Http\Controllers\GuruController');
-Route::resource('siswa','App\Http\Controllers\SiswaController');
-Route::resource('absensi','App\Http\Controllers\AbsensiController');
-Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
-
 // Jam Belajar routes
 Route::middleware(['auth'])->group(function(){
+    // Guru routes with export/import
+    Route::resource('guru','App\Http\Controllers\GuruController');
+    Route::get('guru-export', ['App\Http\Controllers\GuruController', 'export'])->name('guru.export');
+    Route::get('guru-template', ['App\Http\Controllers\GuruController', 'templateDownload'])->name('guru.template');
+    Route::post('guru-import', ['App\Http\Controllers\GuruController', 'import'])->name('guru.import');
+    
+    Route::resource('siswa','App\Http\Controllers\SiswaController');
+    Route::resource('absensi','App\Http\Controllers\AbsensiController');
+    Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
+    
     Route::resource('jam_belajar', JamBelajarController::class)->except(['show']);
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
     
