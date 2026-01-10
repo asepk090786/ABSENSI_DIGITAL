@@ -13,7 +13,7 @@ use App\Models\User;
 use App\Exports\KelasExport;
 use App\Exports\KelasTemplateExport;
 use App\Exports\KelasSiswaExport;
-use App\Exports\KelasSiswaTemplateExport;
+use App\Exports\KelasSiswaTemplateExportNew;
 use App\Imports\KelasImport;
 use App\Imports\KelasSiswaImport;
 
@@ -28,13 +28,15 @@ class KelasController extends Controller
     public function create()
     {
         $guruList = Guru::orderBy('nama')->get();
-        return view('kelas.create', compact('guruList'));
+        $sekolah = \App\Models\Sekolah::first();
+        return view('kelas.create', compact('guruList', 'sekolah'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255|unique:kelas,nama_kelas',
+            'tingkat_kelas' => 'nullable|string|max:50',
             'wali_kelas_id' => 'nullable|exists:guru,id',
         ]);
 
@@ -47,13 +49,27 @@ class KelasController extends Controller
     {
         $kela->load(['waliKelas', 'siswa.user']);
         $guruList = Guru::orderBy('nama')->get();
-        return view('kelas.edit', ['kelas' => $kela, 'guruList' => $guruList]);
+        $sekolah = \App\Models\Sekolah::first();
+        
+        // Ambil siswa yang belum punya kelas
+        $siswaWithoutClass = Siswa::whereNull('kelas_id')
+            ->orWhere('kelas_id', 0)
+            ->orderBy('nama')
+            ->get();
+        
+        return view('kelas.edit', [
+            'kelas' => $kela, 
+            'guruList' => $guruList, 
+            'sekolah' => $sekolah,
+            'siswaWithoutClass' => $siswaWithoutClass
+        ]);
     }
 
     public function update(Request $request, Kelas $kela)
     {
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255|unique:kelas,nama_kelas,' . $kela->id,
+            'tingkat_kelas' => 'nullable|string|max:50',
             'wali_kelas_id' => 'nullable|exists:guru,id',
         ]);
 
@@ -114,7 +130,15 @@ class KelasController extends Controller
 
     public function studentTemplate(Kelas $kela)
     {
-        return Excel::download(new KelasSiswaTemplateExport($kela->id), 'template_import_siswa_kelas_' . $kela->id . '.xlsx');
+        // Force no-cache headers
+        $filename = 'TEMPLATE_BARU_' . $kela->id . '_' . time() . '.xlsx';
+        
+        return Excel::download(new KelasSiswaTemplateExportNew($kela->id), $filename)
+            ->withHeaders([
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => 'Sat, 01 Jan 2000 00:00:00 GMT',
+            ]);
     }
 
     public function studentImport(Request $request, Kelas $kela)
@@ -181,5 +205,33 @@ class KelasController extends Controller
         ]);
 
         return redirect()->route('kelas.edit', $kela->id)->with('success', 'Siswa berhasil ditambahkan ke kelas.');
+    }
+
+    public function assignExistingStudent(Request $request, Kelas $kela)
+    {
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array|min:1',
+            'siswa_ids.*' => 'required|exists:siswa,id',
+        ], [
+            'siswa_ids.required' => 'Silakan pilih minimal satu siswa.',
+            'siswa_ids.min' => 'Silakan pilih minimal satu siswa.',
+            'siswa_ids.*.exists' => 'Siswa tidak ditemukan.',
+        ]);
+
+        // Update kelas_id untuk siswa yang dipilih
+        $updated = Siswa::whereIn('id', $validated['siswa_ids'])
+            ->where(function ($query) {
+                $query->whereNull('kelas_id')->orWhere('kelas_id', 0);
+            })
+            ->update(['kelas_id' => $kela->id]);
+
+        if ($updated > 0) {
+            $message = $updated === 1 
+                ? '1 siswa berhasil ditambahkan ke kelas.' 
+                : "{$updated} siswa berhasil ditambahkan ke kelas.";
+            return redirect()->route('kelas.edit', $kela->id)->with('success', $message);
+        }
+
+        return redirect()->route('kelas.edit', $kela->id)->with('error', 'Tidak ada siswa yang dapat ditambahkan. Siswa mungkin sudah memiliki kelas.');
     }
 }

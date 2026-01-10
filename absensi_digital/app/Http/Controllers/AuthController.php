@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Sekolah;
 
 class AuthController extends Controller
 {
     public function showLogin()
     {
-        return view('auth.login');
+        $sekolah = Sekolah::first();
+        return view('auth.login', compact('sekolah'));
     }
 
     public function login(Request $request)

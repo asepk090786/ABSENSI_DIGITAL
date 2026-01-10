@@ -26,6 +26,32 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Tingkatan Kelas <span class="text-danger">*</span></label>
+                        <select name="tingkat_kelas" class="form-select @error('tingkat_kelas') is-invalid @enderror" required>
+                            <option value="">-- Pilih Tingkatan --</option>
+                            @php
+                                $tingkatanByJenjang = [
+                                    'SD' => ['I', 'II', 'III', 'IV', 'V', 'VI'],
+                                    'SMP' => ['VII', 'VIII', 'IX'],
+                                    'SMA' => ['X', 'XI', 'XII'],
+                                    'SMK' => ['X', 'XI', 'XII'],
+                                ];
+                                $jenjang = $sekolah->jenjang ?? '';
+                                $tingkatan = $tingkatanByJenjang[$jenjang] ?? [];
+                            @endphp
+                            @forelse($tingkatan as $tingkat)
+                                <option value="{{ $tingkat }}" {{ old('tingkat_kelas') == $tingkat ? 'selected' : '' }}>
+                                    Tingkat {{ $tingkat }}
+                                </option>
+                            @empty
+                                <option value="">Jenjang sekolah belum diatur</option>
+                            @endforelse
+                        </select>
+                        <small class="form-hint">Pilihan disesuaikan berdasarkan jenjang sekolah: {{ $jenjang ?? 'Belum diatur' }}</small>
+                        @error('tingkat_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Wali Kelas</label>
                         <select name="wali_kelas_id" class="form-select @error('wali_kelas_id') is-invalid @enderror">
                             <option value="">Pilih Wali Kelas</option>

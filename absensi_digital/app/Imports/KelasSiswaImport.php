@@ -19,6 +19,11 @@ class KelasSiswaImport implements ToCollection, WithHeadingRow
     {
     }
 
+    public function headingRow(): int
+    {
+        return 1; // Header sekarang di baris 1
+    }
+
     public function collection(Collection $rows): void
     {
         $roleSiswa = Role::where('role_name', 'Siswa')->first();
@@ -29,10 +34,16 @@ class KelasSiswaImport implements ToCollection, WithHeadingRow
         }
 
         foreach ($rows as $index => $row) {
+            // headingRow() di baris 1, jadi data mulai baris 2
+            // $index dimulai dari 0, jadi baris actual = index + 2
             $rowNumber = $index + 2;
 
+            // Skip baris kosong
+            if (empty($row['nis']) && empty($row['nama'])) {
+                continue;
+            }
+
             $payload = [
-                'id' => $row['id'] ?? null,
                 'nis' => trim((string) ($row['nis'] ?? '')),
                 'nisn' => trim((string) ($row['nisn'] ?? '')),
                 'nama' => trim((string) ($row['nama'] ?? '')),
@@ -43,7 +54,6 @@ class KelasSiswaImport implements ToCollection, WithHeadingRow
             ];
 
             $validator = Validator::make($payload, [
-                'id' => 'nullable|integer|exists:siswa,id',
                 'nis' => 'required|string|max:50',
                 'nisn' => 'required|string|max:50',
                 'nama' => 'required|string|max:255',
@@ -64,14 +74,10 @@ class KelasSiswaImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $siswa = null;
-            if (! empty($payload['id'])) {
-                $siswa = Siswa::find($payload['id']);
-                if (! $siswa) {
-                    $this->pushError($rowNumber, 'Siswa dengan ID ' . $payload['id'] . ' tidak ditemukan.');
-                    continue;
-                }
-            }
+            // Selalu cari siswa berdasarkan NIS dan kelas, jangan gunakan ID
+            $siswa = Siswa::where('nis', $payload['nis'])
+                ->where('kelas_id', $this->kelasId)
+                ->first();
 
             if ($this->isNisTaken($payload['nis'], $siswa)) {
                 $this->pushError($rowNumber, 'NIS ' . $payload['nis'] . ' sudah terdaftar.');

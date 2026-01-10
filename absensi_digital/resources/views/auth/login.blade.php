@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - Absensi Digital</title>
+    <title>Login - SIMADIS</title>
     
     <!-- Tabler CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
@@ -50,12 +50,34 @@
             padding: 1.5rem;
             border-radius: 1rem;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            min-width: 260px;
         }
         
         .logo-icon {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 0.75rem;
             border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-subtitle {
+            display: block;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .brand-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
         }
         
         .btn-primary {
@@ -94,26 +116,46 @@
     </style>
 </head>
 <body class="d-flex flex-column">
+    @php
+        use Illuminate\Support\Facades\Storage;
+    @endphp
     <div class="page page-center">
         <div class="container container-tight py-4">
             <!-- Logo -->
             <div class="text-center mb-4">
-                <a href="/" class="navbar-brand navbar-brand-autodark text-decoration-none">
-                    <div class="logo-container d-inline-block">
-                        <div class="d-flex align-items-center justify-content-center">
+                <div class="logo-container d-inline-block">
+                    <div class="d-flex align-items-center justify-content-center">
+                        @php
+                            $logoUrl = null;
+                            if(isset($sekolah) && $sekolah && $sekolah->logo){
+                                $logoPath = $sekolah->logo;
+                                if (Storage::disk('public')->exists($logoPath)) {
+                                    $logoUrl = Storage::url($logoPath);
+                                }
+                            }
+                        @endphp
+                        @if($logoUrl)
+                            <div class="me-3">
+                                <img src="{{ $logoUrl }}" alt="Logo Sekolah" style="height: 56px; width: 56px; object-fit: contain; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); background: #fff;">
+                            </div>
+                        @else
                             <div class="logo-icon text-white me-2">
                                 <i class="ti ti-school" style="font-size: 1.5rem;"></i>
                             </div>
-                            <span class="fs-2 fw-bold text-dark">Absensi Digital</span>
+                        @endif
+                        <div class="text-center">
+                            <span class="brand-subtitle">SIMADIS</span>
+                            <p class="brand-title mb-0">{{ $sekolah->nama_sekolah ?? 'Sistem Manajemen Absensi Digital' }}</p>
                         </div>
                     </div>
-                </a>
+                </div>
             </div>
             
             <!-- Login Card -->
             <div class="card card-md login-card">
                 <div class="card-body">
-                    <h2 class="h2 text-center mb-4">Masuk ke Akun Anda</h2>
+                    <h2 class="h2 text-center mb-1">Masuk ke Akun Anda</h2>
+                    <p class="text-center text-muted mb-4">SIMADIS - Sistem Manajemen Absensi Digital</p>
                     
                     <form method="POST" action="{{ route('login') }}" autocomplete="off">
                         @csrf
@@ -189,7 +231,7 @@
             
             <!-- Footer -->
             <div class="text-center mt-4">
-                <small class="footer-text">&copy; {{ date('Y') }} Absensi Digital - Sistem Manajemen Sekolah</small>
+                            <small class="footer-text">&copy; {{ date('Y') }} SIMADIS - Sistem Manajemen Absensi Digital</small>
             </div>
         </div>
     </div>

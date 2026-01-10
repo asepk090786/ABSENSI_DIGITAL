@@ -2,22 +2,35 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class SiswaTemplateExport implements FromCollection, WithHeadings, WithStyles, WithColumnWidths, WithEvents
+class KelasSiswaTemplateExportNew implements FromArray, WithColumnWidths, WithEvents
 {
-    public function collection()
+    public function __construct(private int $kelasId)
     {
+    }
+
+    /**
+     * Return data array dengan struktur:
+     * Baris 1-5: Petunjuk
+     * Baris 6: Kosong (pemisah)
+     * Baris 7: Header
+     * Baris 8+: Data contoh
+     */
+    public function array(): array
+    {
+        $data = [
+            // Baris 1: Header data di kolom A-H, Petunjuk judul di kolom K
+            ['no', 'nis', 'nisn', 'nama', 'jenis_kelamin', 'email', 'username', 'password', '', '', 'PETUNJUK PENGISIAN:'],
+        ];
+        
+        // Baris 2-53: Data (2 contoh + 43 baris kosong) dengan petunjuk di kolom K
         $petunjuk = [
-            'PETUNJUK PENGISIAN:',
             '1. NO: nomor urut siswa (otomatis dari template).',
             '2. NIS dan NISN: wajib diisi dan unik.',
             '3. Nama: wajib diisi (nama lengkap siswa).',
@@ -25,7 +38,6 @@ class SiswaTemplateExport implements FromCollection, WithHeadings, WithStyles, W
             '5. Email, Username, Password: wajib diisi untuk login sistem.',
         ];
         
-        $data = [];
         for ($i = 1; $i <= 45; $i++) {
             $row = [];
             
@@ -53,37 +65,8 @@ class SiswaTemplateExport implements FromCollection, WithHeadings, WithStyles, W
             
             $data[] = $row;
         }
-        return collect($data);
-    }
-
-    public function headings(): array
-    {
-        return [
-            'no',
-            'nis',
-            'nisn',
-            'nama',
-            'jenis_kelamin',
-            'email',
-            'username',
-            'password',
-        ];
-    }
-
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            1 => [
-                'font' => [
-                    'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '4472C4'],
-                ],
-            ],
-        ];
+        
+        return $data;
     }
 
     public function columnWidths(): array

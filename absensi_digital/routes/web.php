@@ -36,10 +36,25 @@ Route::middleware(['auth'])->group(function(){
     Route::get('kelas-export', ['App\Http\Controllers\KelasController', 'export'])->name('kelas.export');
     Route::get('kelas-template', ['App\Http\Controllers\KelasController', 'templateDownload'])->name('kelas.template');
     Route::post('kelas-import', ['App\Http\Controllers\KelasController', 'import'])->name('kelas.import');
-    Route::get('kelas/{kelas}/siswa-export', ['App\Http\Controllers\KelasController', 'studentExport'])->name('kelas.siswa.export');
-    Route::get('kelas/{kelas}/siswa-template', ['App\Http\Controllers\KelasController', 'studentTemplate'])->name('kelas.siswa.template');
-    Route::post('kelas/{kelas}/siswa-import', ['App\Http\Controllers\KelasController', 'studentImport'])->name('kelas.siswa.import');
-    Route::post('kelas/{kelas}/siswa-add', ['App\Http\Controllers\KelasController', 'addStudent'])->name('kelas.siswa.add');
+    Route::get('kelas/{kela}/siswa-export', ['App\Http\Controllers\KelasController', 'studentExport'])->name('kelas.siswa.export');
+    Route::get('kelas/{kela}/siswa-template', ['App\Http\Controllers\KelasController', 'studentTemplate'])->name('kelas.siswa.template');
+    
+    // Debug test route
+    Route::get('test-template-structure/{id}', function($id) {
+        $export = new \App\Exports\KelasSiswaTemplateExportNew($id);
+        $data = $export->array();
+        return response()->json([
+            'class' => get_class($export),
+            'total_rows' => count($data),
+            'row_1' => $data[0] ?? null,
+            'row_7_header' => $data[6] ?? null,
+            'column_count' => isset($data[6]) ? count($data[6]) : 0,
+        ]);
+    });
+    
+    Route::post('kelas/{kela}/siswa-import', ['App\Http\Controllers\KelasController', 'studentImport'])->name('kelas.siswa.import');
+    Route::post('kelas/{kela}/siswa-add', ['App\Http\Controllers\KelasController', 'addStudent'])->name('kelas.siswa.add');
+    Route::post('kelas/{kela}/siswa-assign', ['App\Http\Controllers\KelasController', 'assignExistingStudent'])->name('kelas.siswa.assign');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
     

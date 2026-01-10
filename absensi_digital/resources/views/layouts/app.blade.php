@@ -90,6 +90,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('jam_belajar.*') ? 'active' : '' }}" href="{{ route('jam_belajar.index') }}">
                                     <i class="ti ti-clock me-2"></i>Jam Belajar
                                 </a>
+                                <a class="dropdown-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}" href="{{ url('/jadwal-kbm') }}">
+                                    <i class="ti ti-calendar-month me-2"></i>Jadwal KBM
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
                                     <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
                                 </a>

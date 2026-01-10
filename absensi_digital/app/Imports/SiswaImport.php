@@ -32,13 +32,16 @@ class SiswaImport implements ToCollection, WithHeadingRow
         foreach ($rows as $index => $row) {
             $rowNumber = $index + 2; // header di baris 1
 
+            // Skip baris kosong
+            if (empty($row['nis']) && empty($row['nama'])) {
+                continue;
+            }
+
             $payload = [
-                'id' => trim((string) ($row['id'] ?? $row['no_id'] ?? '')),
                 'nis' => trim((string) ($row['nis'] ?? '')),
                 'nisn' => trim((string) ($row['nisn'] ?? '')),
                 'nama' => trim((string) ($row['nama'] ?? '')),
                 'jenis_kelamin' => trim((string) ($row['jenis_kelamin'] ?? '')),
-                'kelas_id' => $row['kelas_id'] ?? null,
                 'email' => trim((string) ($row['email'] ?? '')),
                 'username' => trim((string) ($row['username'] ?? '')),
                 'password' => (string) ($row['password'] ?? ''),
@@ -49,7 +52,6 @@ class SiswaImport implements ToCollection, WithHeadingRow
                 'nisn' => 'required|string|max:50',
                 'nama' => 'required|string|max:255',
                 'jenis_kelamin' => 'required|string',
-                'kelas_id' => 'required|integer',
                 'email' => 'required|email|max:255',
                 'username' => 'required|string|max:255',
                 'password' => 'required|string|min:6',
@@ -66,20 +68,11 @@ class SiswaImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            $kelas = Kelas::find($payload['kelas_id']);
-            if (! $kelas) {
-                $this->pushError($rowNumber, 'Kelas dengan ID ' . $payload['kelas_id'] . ' tidak ditemukan.');
-                continue;
-            }
+            // kelas_id tidak required, bisa NULL
+            $kelasId = null;
 
-            $siswa = null;
-            if ($payload['id'] !== '') {
-                $siswa = Siswa::find($payload['id']);
-                if (! $siswa) {
-                    $this->pushError($rowNumber, 'Siswa dengan ID ' . $payload['id'] . ' tidak ditemukan.');
-                    continue;
-                }
-            }
+            // Cari siswa berdasarkan NIS
+            $siswa = Siswa::where('nis', $payload['nis'])->first();
 
             if ($this->isNisTaken($payload['nis'], $siswa)) {
                 $this->pushError($rowNumber, 'NIS ' . $payload['nis'] . ' sudah terdaftar.');
@@ -112,7 +105,7 @@ class SiswaImport implements ToCollection, WithHeadingRow
                     'nisn' => $payload['nisn'],
                     'nama' => $payload['nama'],
                     'jenis_kelamin' => $gender,
-                    'kelas_id' => $kelas->id,
+                    'kelas_id' => $kelasId, // NULL jika tidak ada kelas
                     'email' => $payload['email'],
                     'status_aktif' => true,
                 ];

@@ -57,6 +57,32 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Tingkatan Kelas <span class="text-danger">*</span></label>
+                        <select name="tingkat_kelas" class="form-select @error('tingkat_kelas') is-invalid @enderror" required>
+                            <option value="">-- Pilih Tingkatan --</option>
+                            @php
+                                $tingkatanByJenjang = [
+                                    'SD' => ['I', 'II', 'III', 'IV', 'V', 'VI'],
+                                    'SMP' => ['VII', 'VIII', 'IX'],
+                                    'SMA' => ['X', 'XI', 'XII'],
+                                    'SMK' => ['X', 'XI', 'XII'],
+                                ];
+                                $jenjang = $sekolah->jenjang ?? '';
+                                $tingkatan = $tingkatanByJenjang[$jenjang] ?? [];
+                            @endphp
+                            @forelse($tingkatan as $tingkat)
+                                <option value="{{ $tingkat }}" {{ old('tingkat_kelas', $kelas->tingkat_kelas) == $tingkat ? 'selected' : '' }}>
+                                    Tingkat {{ $tingkat }}
+                                </option>
+                            @empty
+                                <option value="">Jenjang sekolah belum diatur</option>
+                            @endforelse
+                        </select>
+                        <small class="form-hint">Pilihan disesuaikan berdasarkan jenjang sekolah: {{ $jenjang ?? 'Belum diatur' }}</small>
+                        @error('tingkat_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Wali Kelas</label>
                         <select name="wali_kelas_id" class="form-select @error('wali_kelas_id') is-invalid @enderror">
                             <option value="">Pilih Wali Kelas</option>
@@ -160,6 +186,46 @@
                     </form>
                 </div>
 
+                {{-- Tambah Siswa dari Database --}}
+                @if($siswaWithoutClass->count() > 0)
+                <div class="border rounded p-3 mb-4 bg-light">
+                    <h6 class="mb-3">Tambah Siswa dari Database</h6>
+                    <p class="text-muted small mb-3">Pilih siswa yang sudah terdaftar di database tapi belum memiliki kelas.</p>
+                    <form method="POST" action="{{ route('kelas.siswa.assign', $kelas->id) }}" id="formAssignExisting">
+                        @csrf
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">Pilih Siswa <span class="text-danger">*</span></label>
+                                <div class="form-check">
+                                    <input type="checkbox" id="checkAll" class="form-check-input">
+                                    <label class="form-check-label" for="checkAll">Pilih Semua</label>
+                                </div>
+                            </div>
+                            <div class="form-selectgroup form-selectgroup-boxes d-flex flex-column gap-2" style="max-height: 300px; overflow-y: auto;" id="siswaList">
+                                @foreach($siswaWithoutClass as $siswa)
+                                <label class="form-selectgroup-item flex-fill">
+                                    <input type="checkbox" name="siswa_ids[]" value="{{ $siswa->id }}" class="form-selectgroup-input siswa-checkbox">
+                                    <div class="form-selectgroup-label d-flex align-items-center justify-content-between p-3">
+                                        <div class="me-3">
+                                            <div class="fw-bold">{{ $siswa->nama }}</div>
+                                            <div class="text-muted small">NIS: {{ $siswa->nis }} | NISN: {{ $siswa->nisn }}</div>
+                                        </div>
+                                        <span class="badge bg-secondary">{{ $siswa->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</span>
+                                    </div>
+                                </label>
+                                @endforeach
+                            </div>
+                            @error('siswa_ids')<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="ti ti-user-check me-2"></i>Tambahkan Siswa yang Dipilih
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                @endif
+
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
@@ -259,4 +325,30 @@
         </div>
     </div>
 </div>
+
+<script>
+// Script untuk checkbox Pilih Semua
+document.addEventListener('DOMContentLoaded', function() {
+    const checkAll = document.getElementById('checkAll');
+    const siswaCheckboxes = document.querySelectorAll('.siswa-checkbox');
+    
+    if (checkAll && siswaCheckboxes.length > 0) {
+        // Handle checkAll click
+        checkAll.addEventListener('change', function() {
+            siswaCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+        
+        // Handle individual checkbox click
+        siswaCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // Check if all checkboxes are checked
+                const allChecked = Array.from(siswaCheckboxes).every(cb => cb.checked);
+                checkAll.checked = allChecked;
+            });
+        });
+    }
+});
+</script>
 @endsection

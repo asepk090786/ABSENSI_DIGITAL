@@ -18,6 +18,12 @@
             </a>
         </li>
         <li>
+            <a href="{{ url('/jadwal-kbm') }}" class="menu-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}">
+                <i class="material-icons">calendar_month</i>
+                <span>Jadwal KBM</span>
+            </a>
+        </li>
+        <li>
             <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
                 <i class="material-icons">event_note</i>
                 <span>Agenda Kelas</span>

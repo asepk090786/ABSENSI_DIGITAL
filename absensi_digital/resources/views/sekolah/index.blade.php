@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    use Illuminate\Support\Facades\Storage;
+@endphp
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -25,7 +28,17 @@
                         <div class="row">
                             <div class="col-md-3 text-center">
                                 @if($sekolah->logo)
-                                    <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                                    @php
+                                        $logoPath = $sekolah->logo;
+                                        $logoUrl = Storage::disk('public')->exists($logoPath) ? Storage::url($logoPath) : null;
+                                    @endphp
+                                    @if($logoUrl)
+                                        <img src="{{ $logoUrl }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                                    @else
+                                        <div class="bg-light rounded p-4 mb-3">
+                                            <i class="ti ti-school" style="font-size: 100px; color: #ddd;"></i>
+                                        </div>
+                                    @endif
                                 @else
                                     <div class="bg-light rounded p-4 mb-3">
                                         <i class="ti ti-school" style="font-size: 100px; color: #ddd;"></i>
