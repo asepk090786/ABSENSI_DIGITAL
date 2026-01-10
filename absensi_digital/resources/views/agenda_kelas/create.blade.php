@@ -31,12 +31,16 @@
                     </div>
 
                     <div class="mb-3">
-                        <label>Jam Belajar</label>
-                        <select name="jam_belajar_id" class="form-select" required>
+                        <label>Jam KBM</label>
+                        <select name="jam_belajar_id" class="form-select" required id="jamSelect">
+                            <option value="">-- Pilih Jam KBM --</option>
                             @foreach($jam as $j)
-                                <option value="{{ $j->id }}">{{ $j->hari }} {{ \Carbon\Carbon::parse($j->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($j->jam_selesai)->format('H:i') }} ({{ $j->jenis }})</option>
+                                <option value="{{ $j->id }}" data-hari="{{ $j->hari }}">
+                                    {{ $j->hari }} - Jam Ke-{{ $j->urutan }} ({{ $j->jam_mulai }} - {{ $j->jam_selesai }} | {{ $j->jenis }})
+                                </option>
                             @endforeach
                         </select>
+                        @error('jam_belajar_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="mb-3">

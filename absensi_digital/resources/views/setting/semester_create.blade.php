@@ -15,8 +15,8 @@
         <div class="mb-3">
             <label>Nama Semester</label>
             <select name="nama_semester" class="form-select" required>
-                <option value="Ganjil">Ganjil</option>
-                <option value="Genap">Genap</option>
+                <option value="Semester 1 (Ganjil)">Semester 1 (Ganjil)</option>
+                <option value="Semester 2 (Genap)">Semester 2 (Genap)</option>
             </select>
         </div>
         <button class="btn btn-primary">Simpan</button>

@@ -3,29 +3,45 @@
 namespace App\Http\Controllers;
 
 use App\Models\JamBelajar;
+use App\Exports\JamBelajarExport;
+use App\Exports\JamBelajarTemplateExport;
+use App\Imports\JamBelajarImport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class JamBelajarController extends Controller
 {
     public function index()
     {
-        $items = JamBelajar::orderBy('hari')->orderBy('jam_mulai')->get();
-        return view('jam_belajar.index', compact('items'));
+        $items = JamBelajar::orderByDay()->get();
+        $groupedByDay = $items->groupBy('hari');
+        $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        return view('jam_belajar.index', compact('groupedByDay', 'days'));
     }
 
     public function create()
     {
-        return view('jam_belajar.create');
+        $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        return view('jam_belajar.create', compact('days'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'hari' => 'required|string',
+            'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'urutan' => 'required|integer|min:1',
             'jam_mulai' => 'required|date_format:H:i',
             'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
             'jenis' => 'required|string',
         ]);
+
+        // Check if session already exists for this day and order
+        $exists = JamBelajar::where('hari', $data['hari'])
+            ->where('urutan', $data['urutan'])
+            ->exists();
+        if ($exists) {
+            return back()->withErrors("Sesi ke-{$data['urutan']} sudah ada untuk hari {$data['hari']}");
+        }
 
         JamBelajar::create($data);
 
@@ -34,17 +50,28 @@ class JamBelajarController extends Controller
 
     public function edit(JamBelajar $jamBelajar)
     {
-        return view('jam_belajar.edit', ['item' => $jamBelajar]);
+        $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        return view('jam_belajar.edit', ['item' => $jamBelajar, 'days' => $days]);
     }
 
     public function update(Request $request, JamBelajar $jamBelajar)
     {
         $data = $request->validate([
-            'hari' => 'required|string',
+            'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'urutan' => 'required|integer|min:1',
             'jam_mulai' => 'required|date_format:H:i',
             'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
             'jenis' => 'required|string',
         ]);
+
+        // Check if another session with same day/order exists
+        $exists = JamBelajar::where('hari', $data['hari'])
+            ->where('urutan', $data['urutan'])
+            ->where('id', '!=', $jamBelajar->id)
+            ->exists();
+        if ($exists) {
+            return back()->withErrors("Sesi ke-{$data['urutan']} sudah ada untuk hari {$data['hari']}");
+        }
 
         $jamBelajar->update($data);
 
@@ -56,4 +83,38 @@ class JamBelajarController extends Controller
         $jamBelajar->delete();
         return redirect()->route('jam_belajar.index')->with('success','Jam belajar dihapus');
     }
+
+    public function export()
+    {
+        return Excel::download(new JamBelajarExport, 'Jam_KBM_' . date('Y-m-d') . '.xlsx');
+    }
+
+    public function templateDownload()
+    {
+        return Excel::download(new JamBelajarTemplateExport, 'Template_Jam_KBM.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:2048',
+        ]);
+
+        try {
+            $import = new JamBelajarImport();
+            Excel::import($import, $request->file('file'));
+
+            $errors = $import->getErrors();
+            $successCount = $import->getSuccessCount();
+
+            if (!empty($errors)) {
+                return back()->with('errors', $errors)->with('successCount', $successCount);
+            }
+
+            return back()->with('success', "Berhasil mengimport $successCount jam KBM");
+        } catch (\Exception $e) {
+            return back()->withErrors('Gagal mengimport file: ' . $e->getMessage());
+        }
+    }
 }
+

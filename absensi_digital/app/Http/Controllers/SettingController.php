@@ -29,6 +29,17 @@ class SettingController extends Controller
         return view('setting.tahun_ajaran_create');
     }
 
+    public function showTahunAjaran(TahunAjaran $tahunAjaran)
+    {
+        $semesters = $tahunAjaran->semesters()->get();
+        return view('setting.tahun_ajaran_show', compact('tahunAjaran','semesters'));
+    }
+
+    public function editTahunAjaran(TahunAjaran $tahunAjaran)
+    {
+        return view('setting.tahun_ajaran_edit', compact('tahunAjaran'));
+    }
+
     public function storeTahunAjaran(Request $request)
     {
         $data = $request->validate([
@@ -39,12 +50,38 @@ class SettingController extends Controller
         return redirect()->route('setting.tahun_ajaran')->with('success', 'Tahun ajaran ditambahkan');
     }
 
+    public function updateTahunAjaran(Request $request, TahunAjaran $tahunAjaran)
+    {
+        $data = $request->validate([
+            'nama_tahun' => 'required|string|unique:tahun_ajaran,nama_tahun,' . $tahunAjaran->id,
+        ]);
+
+        $tahunAjaran->update($data);
+        return redirect()->route('setting.tahun_ajaran')->with('success', 'Tahun ajaran diperbarui');
+    }
+
     public function activateTahunAjaran(TahunAjaran $tahunAjaran)
     {
         DB::table('tahun_ajaran')->update(['is_active' => 0]);
         $tahunAjaran->update(['is_active' => 1]);
 
         return back()->with('success', 'Tahun ajaran ' . $tahunAjaran->nama_tahun . ' diaktifkan');
+    }
+
+    public function deactivateTahunAjaran(TahunAjaran $tahunAjaran)
+    {
+        $tahunAjaran->update(['is_active' => 0]);
+        return back()->with('success', 'Tahun ajaran dinonaktifkan');
+    }
+
+    public function destroyTahunAjaran(TahunAjaran $tahunAjaran)
+    {
+        try {
+            $tahunAjaran->delete();
+            return redirect()->route('setting.tahun_ajaran')->with('success', 'Tahun ajaran dihapus');
+        } catch (\Throwable $e) {
+            return back()->withErrors('Tidak dapat menghapus: masih ada data terkait.');
+        }
     }
 
     public function semester()
@@ -70,8 +107,15 @@ class SettingController extends Controller
     {
         $data = $request->validate([
             'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
-            'nama_semester' => 'required|string',
+            'nama_semester' => 'required|string|in:Semester 1 (Ganjil),Semester 2 (Genap)',
         ]);
+
+        $exists = Semester::where('tahun_ajaran_id', $data['tahun_ajaran_id'])
+            ->where('nama_semester', $data['nama_semester'])
+            ->exists();
+        if ($exists) {
+            return back()->withErrors('Semester sudah ada untuk tahun ajaran ini');
+        }
 
         Semester::create($data);
         return redirect()->route('setting.semester')->with('success', 'Semester ditambahkan');
@@ -83,5 +127,50 @@ class SettingController extends Controller
         $semester->update(['is_active' => 1]);
 
         return back()->with('success', 'Semester ' . $semester->nama_semester . ' diaktifkan');
+    }
+
+    public function showSemester(Semester $semester)
+    {
+        return view('setting.semester_show', compact('semester'));
+    }
+
+    public function editSemester(Semester $semester)
+    {
+        $active_tahun = TahunAjaran::find($semester->tahun_ajaran_id);
+        return view('setting.semester_edit', compact('semester','active_tahun'));
+    }
+
+    public function updateSemester(Request $request, Semester $semester)
+    {
+        $data = $request->validate([
+            'nama_semester' => 'required|string|in:Semester 1 (Ganjil),Semester 2 (Genap)',
+        ]);
+
+        $exists = Semester::where('tahun_ajaran_id', $semester->tahun_ajaran_id)
+            ->where('nama_semester', $data['nama_semester'])
+            ->where('id', '!=', $semester->id)
+            ->exists();
+        if ($exists) {
+            return back()->withErrors('Semester sudah ada untuk tahun ajaran ini');
+        }
+
+        $semester->update($data);
+        return redirect()->route('setting.semester')->with('success','Semester diperbarui');
+    }
+
+    public function deactivateSemester(Semester $semester)
+    {
+        $semester->update(['is_active' => 0]);
+        return back()->with('success','Semester dinonaktifkan');
+    }
+
+    public function destroySemester(Semester $semester)
+    {
+        try {
+            $semester->delete();
+            return redirect()->route('setting.semester')->with('success','Semester dihapus');
+        } catch (\Throwable $e) {
+            return back()->withErrors('Tidak dapat menghapus: masih ada data terkait.');
+        }
     }
 }

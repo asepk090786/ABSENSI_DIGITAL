@@ -80,9 +80,21 @@
     <h5>⚙️ Pengaturan</h5>
     <ul class="menu-list">
         <li>
-            <a href="#" class="menu-item">
+            <a href="{{ route('tahun_ajaran.index') }}" class="menu-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}">
                 <i class="material-icons">settings</i>
-                <span>Sistem</span>
+                <span>Pengaturan Sistem</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('setting.tahun_ajaran') }}" class="menu-item {{ request()->routeIs('setting.tahun_ajaran*') ? 'active' : '' }}">
+                <i class="material-icons">date_range</i>
+                <span>Tahun Ajaran</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('setting.semester') }}" class="menu-item {{ request()->routeIs('setting.semester*') ? 'active' : '' }}">
+                <i class="material-icons">calendar_today</i>
+                <span>Semester</span>
             </a>
         </li>
     </ul>

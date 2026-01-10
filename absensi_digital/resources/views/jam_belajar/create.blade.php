@@ -1,34 +1,76 @@
-@extends('layouts.app', ['pageSlug' => 'jam_belajar'])
+@extends('layouts.app')
 
-@section('title','Tambah Jam Belajar')
+@section('title','Tambah Jam KBM')
 
 @section('content')
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="{{ route('jam_belajar.index') }}" class="btn btn-light">
+            <i class="ti ti-arrow-left me-2"></i>Kembali
+        </a>
+    </div>
+</div>
+
 <div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Tambah Jam Belajar</h4>
+    <div class="col-lg-6 mx-auto">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h4 class="card-title mb-0">
+                    <i class="ti ti-clock-plus me-2"></i>Tambah Jam KBM
+                </h4>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('jam_belajar.store') }}">
                     @csrf
                     <div class="mb-3">
-                        <label>Hari</label>
-                        <input name="hari" class="form-control" value="{{ old('hari') }}" required>
+                        <label class="form-label">Hari <span class="text-danger">*</span></label>
+                        <select name="hari" class="form-select" required>
+                            <option value="">-- Pilih Hari --</option>
+                            @foreach($days as $day)
+                                <option value="{{ $day }}" {{ old('hari') == $day ? 'selected' : '' }}>{{ $day }}</option>
+                            @endforeach
+                        </select>
+                        @error('hari')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
+
                     <div class="mb-3">
-                        <label>Jam Mulai (HH:MM)</label>
-                        <input name="jam_mulai" class="form-control" value="{{ old('jam_mulai') }}" required>
+                        <label class="form-label">Jam Ke (Nomor Urut) <span class="text-danger">*</span></label>
+                        <input type="number" name="urutan" class="form-control" value="{{ old('urutan') }}" min="1" placeholder="Contoh: 1" required>
+                        <small class="text-muted">Jam ke-1, Jam ke-2, dst</small>
+                        @error('urutan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Jam Mulai <span class="text-danger">*</span></label>
+                                <input type="time" name="jam_mulai" class="form-control" value="{{ old('jam_mulai') }}" required>
+                                <small class="text-muted">Format: HH:MM</small>
+                                @error('jam_mulai')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Jam Selesai <span class="text-danger">*</span></label>
+                                <input type="time" name="jam_selesai" class="form-control" value="{{ old('jam_selesai') }}" required>
+                                <small class="text-muted">Format: HH:MM</small>
+                                @error('jam_selesai')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
-                        <label>Jam Selesai (HH:MM)</label>
-                        <input name="jam_selesai" class="form-control" value="{{ old('jam_selesai') }}" required>
+                        <label class="form-label">Jenis <span class="text-danger">*</span></label>
+                        <input type="text" name="jenis" class="form-control" value="{{ old('jenis', 'KBM') }}" placeholder="Contoh: KBM, Istirahat" required>
+                        @error('jenis')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
-                        <label>Jenis</label>
-                        <input name="jenis" class="form-control" value="{{ old('jenis','KBM') }}" required>
+
+                    <div class="d-flex gap-2 pt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-check me-2"></i>Simpan
+                        </button>
+                        <a href="{{ route('jam_belajar.index') }}" class="btn btn-light">Batal</a>
                     </div>
-                    <button class="btn btn-primary">Simpan</button>
                 </form>
             </div>
         </div>

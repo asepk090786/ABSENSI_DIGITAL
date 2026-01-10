@@ -123,13 +123,13 @@
                                 <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                                     <i class="ti ti-lock me-2"></i>Akun Pengguna
                                 </a>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item {{ request()->routeIs('siswa.*') ? 'active' : '' }}" href="{{ route('siswa.index') }}">
                                     <i class="ti ti-school me-2"></i>Siswa
                                 </a>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}">
                                     <i class="ti ti-building me-2"></i>Kelas
                                 </a>
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item {{ request()->routeIs('mata_pelajaran.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}">
                                     <i class="ti ti-books me-2"></i>Mata Pelajaran
                                 </a>
                             </div>
@@ -137,18 +137,21 @@
                         
                         <!-- Pengaturan -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#navbar-setting" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('tahun_ajaran.index', 'setting.tahun_ajaran*', 'setting.semester*') ? 'active' : '' }}" href="#navbar-setting" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-settings"></i>
                                 </span>
                                 <span class="nav-link-title">Pengaturan</span>
                             </a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}" href="{{ route('tahun_ajaran.index') }}">
+                                    <i class="ti ti-layout-dashboard me-2"></i>Dashboard Pengaturan
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('setting.tahun_ajaran*') ? 'active' : '' }}" href="{{ route('setting.tahun_ajaran') }}">
                                     <i class="ti ti-calendar me-2"></i>Tahun Ajaran
                                 </a>
-                                <a class="dropdown-item" href="#">
-                                    <i class="ti ti-adjustments me-2"></i>Sistem
+                                <a class="dropdown-item {{ request()->routeIs('setting.semester*') ? 'active' : '' }}" href="{{ route('setting.semester') }}">
+                                    <i class="ti ti-adjustments me-2"></i>Semester
                                 </a>
                             </div>
                         </li>

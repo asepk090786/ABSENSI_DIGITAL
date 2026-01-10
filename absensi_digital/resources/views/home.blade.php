@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="#" class="text-primary small text-decoration-none">
+                <a href="{{ route('guru.index') }}" class="text-primary small text-decoration-none">
                     Lihat Detail <i class="ti ti-chevron-right"></i>
                 </a>
             </div>
@@ -79,7 +79,7 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="#" class="text-success small text-decoration-none">
+                <a href="{{ route('siswa.index') }}" class="text-success small text-decoration-none">
                     Lihat Detail <i class="ti ti-chevron-right"></i>
                 </a>
             </div>
@@ -103,7 +103,7 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent border-0 pt-0">
-                <a href="#" class="text-warning small text-decoration-none">
+                <a href="{{ route('kelas.index') }}" class="text-warning small text-decoration-none">
                     Lihat Detail <i class="ti ti-chevron-right"></i>
                 </a>
             </div>
@@ -205,7 +205,7 @@
                     </span>
                     <div>
                         <div class="fw-medium">Tahun Ajaran</div>
-                        <div class="text-muted small">{{ $tahunAjaran ?? '2024/2025' }} - Semester {{ $semester ?? 'Ganjil' }}</div>
+                        <div class="text-muted small">{{ $tahunAjaran ?? 'Belum Dipilih' }} - {{ $semestrName ?? 'Belum Dipilih' }}</div>
                     </div>
                 </div>
             </div>

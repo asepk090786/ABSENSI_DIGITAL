@@ -32,12 +32,26 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if(!$s->is_active)
-                                        <form action="{{ route('setting.semester.activate', $s->id) }}" method="POST" class="d-inline">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ route('setting.semester.show', $s->id) }}" class="btn btn-info">Detail</a>
+                                        <a href="{{ route('setting.semester.edit', $s->id) }}" class="btn btn-warning">Edit</a>
+                                        <form action="{{ route('setting.semester.destroy', $s->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus semester ini?')">
                                             @csrf
-                                            <button class="btn btn-sm btn-success">Aktifkan</button>
+                                            @method('DELETE')
+                                            <button class="btn btn-danger">Hapus</button>
                                         </form>
-                                    @endif
+                                        @if(!$s->is_active)
+                                            <form action="{{ route('setting.semester.activate', $s->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-success">Aktifkan</button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('setting.semester.deactivate', $s->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-secondary">Nonaktifkan</button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @empty

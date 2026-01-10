@@ -10,7 +10,19 @@ class AgendaKelasController extends Controller
 {
     public function index()
     {
-        $items = AgendaKelas::orderBy('tanggal','desc')->get();
+        $tahun = DB::table('tahun_ajaran')->where('is_active',1)->first();
+        $semester = DB::table('semester')->where('is_active',1)->first();
+
+        if (! $tahun || ! $semester) {
+            $items = collect();
+            return view('agenda_kelas.index', compact('items'))
+                ->withErrors('Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        $items = AgendaKelas::where('tahun_ajaran_id', $tahun->id)
+            ->where('semester_id', $semester->id)
+            ->orderBy('tanggal','desc')
+            ->get();
         return view('agenda_kelas.index', compact('items'));
     }
 

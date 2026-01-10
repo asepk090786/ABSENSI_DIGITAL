@@ -30,12 +30,26 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if(!$t->is_active)
-                                        <form action="{{ route('setting.tahun_ajaran.activate', $t->id) }}" method="POST" class="d-inline">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ route('setting.tahun_ajaran.show', $t->id) }}" class="btn btn-info">Detail</a>
+                                        <a href="{{ route('setting.tahun_ajaran.edit', $t->id) }}" class="btn btn-warning">Edit</a>
+                                        <form action="{{ route('setting.tahun_ajaran.destroy', $t->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus tahun ajaran ini?')">
                                             @csrf
-                                            <button class="btn btn-sm btn-success">Aktifkan</button>
+                                            @method('DELETE')
+                                            <button class="btn btn-danger">Hapus</button>
                                         </form>
-                                    @endif
+                                        @if(!$t->is_active)
+                                            <form action="{{ route('setting.tahun_ajaran.activate', $t->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-success">Aktifkan</button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('setting.tahun_ajaran.deactivate', $t->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-secondary">Nonaktifkan</button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
