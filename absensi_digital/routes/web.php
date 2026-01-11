@@ -55,6 +55,10 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-import', ['App\Http\Controllers\KelasController', 'studentImport'])->name('kelas.siswa.import');
     Route::post('kelas/{kela}/siswa-add', ['App\Http\Controllers\KelasController', 'addStudent'])->name('kelas.siswa.add');
     Route::post('kelas/{kela}/siswa-assign', ['App\Http\Controllers\KelasController', 'assignExistingStudent'])->name('kelas.siswa.assign');
+    Route::delete('kelas/{kela}/siswa/{siswa}', ['App\Http\Controllers\KelasController', 'deleteStudent'])->name('kelas.siswa.delete');
+    Route::post('kelas/{kela}/siswa-bulk-delete', ['App\Http\Controllers\KelasController', 'bulkDeleteStudent'])->name('kelas.siswa.bulk-delete');
+    Route::post('kelas/{kela}/siswa-bulk-deactivate', ['App\Http\Controllers\KelasController', 'bulkDeactivateStudent'])->name('kelas.siswa.bulk-deactivate');
+    Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
     

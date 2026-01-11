@@ -1,0 +1,56 @@
+<svg viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="buildingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0052CC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#003A99;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="checkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22C55E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16A34A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Logo Icon -->
+  <g>
+    <!-- Outer circle background -->
+    <circle cx="60" cy="70" r="55" fill="white" stroke="#0052CC" stroke-width="2"/>
+    
+    <!-- Building -->
+    <path d="M 35 95 L 35 50 L 85 50 L 85 95" fill="none" stroke="url(#buildingGradient)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Roof -->
+    <path d="M 60 40 L 80 50 L 40 50 Z" fill="url(#buildingGradient)"/>
+    
+    <!-- Windows - left column -->
+    <rect x="40" y="60" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    <rect x="40" y="75" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    
+    <!-- Windows - middle column -->
+    <rect x="55" y="60" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    <rect x="55" y="75" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    
+    <!-- Windows - right column -->
+    <rect x="70" y="60" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    <rect x="70" y="75" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    
+    <!-- Door -->
+    <rect x="55" y="85" width="10" height="10" fill="url(#buildingGradient)" rx="1"/>
+    
+    <!-- Green checkmark circle -->
+    <circle cx="85" cy="90" r="22" fill="url(#checkGradient)" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))"/>
+    
+    <!-- Checkmark -->
+    <path d="M 78 90 L 83 96 L 92 82" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- SIMADIS Text -->
+  <text x="145" y="78" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="700" fill="#0052CC" letter-spacing="2">
+    SIMADIS
+  </text>
+  
+  <!-- Subtitle with better visibility -->
+  <text x="145" y="105" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="600" fill="#1F2937" letter-spacing="0.3">
+    Sistem Manajemen Absensi Digital
+  </text>
+</svg>

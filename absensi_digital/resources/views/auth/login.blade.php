@@ -54,6 +54,60 @@
             min-width: 260px;
         }
         
+        .logo-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: slideDown 0.6s ease-out;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 3rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .logo-display img {
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+        }
+        
+        .school-info {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: slideDown 0.6s ease-out 0.1s backwards;
+        }
+        
+        .school-name {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 700;
+            font-size: 1.35rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .school-address {
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 400;
+            font-size: 0.95rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+            line-height: 1.5;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
         .logo-icon {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 0.75rem;
@@ -113,6 +167,73 @@
             color: rgba(255, 255, 255, 0.9);
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        
+        .logos-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .school-logo-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem;
+            border-radius: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            min-width: 100px;
+            min-height: 100px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.6s ease-out 0.1s backwards;
+        }
+        
+        .school-logo-wrapper img {
+            max-width: 90px;
+            max-height: 90px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+        
+        .simadis-logo-wrapper {
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideRight {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideLeft {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body class="d-flex flex-column">
@@ -121,35 +242,38 @@
     @endphp
     <div class="page page-center">
         <div class="container container-tight py-4">
-            <!-- Logo -->
-            <div class="text-center mb-4">
-                <div class="logo-container d-inline-block">
-                    <div class="d-flex align-items-center justify-content-center">
-                        @php
-                            $logoUrl = null;
-                            if(isset($sekolah) && $sekolah && $sekolah->logo){
-                                $logoPath = $sekolah->logo;
-                                if (Storage::disk('public')->exists($logoPath)) {
-                                    $logoUrl = Storage::url($logoPath);
-                                }
-                            }
-                        @endphp
-                        @if($logoUrl)
-                            <div class="me-3">
-                                <img src="{{ $logoUrl }}" alt="Logo Sekolah" style="height: 56px; width: 56px; object-fit: contain; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); background: #fff;">
-                            </div>
-                        @else
-                            <div class="logo-icon text-white me-2">
-                                <i class="ti ti-school" style="font-size: 1.5rem;"></i>
-                            </div>
-                        @endif
-                        <div class="text-center">
-                            <span class="brand-subtitle">SIMADIS</span>
-                            <p class="brand-title mb-0">{{ $sekolah->nama_sekolah ?? 'Sistem Manajemen Absensi Digital' }}</p>
-                        </div>
-                    </div>
+            <!-- Logo Section with School Logo and SIMADIS Logo -->
+            @php
+                $sekolah = \App\Models\Sekolah::first();
+                $logoUrl = null;
+                if($sekolah && $sekolah->logo){
+                    if (Storage::disk('public')->exists($sekolah->logo)) {
+                        $logoUrl = Storage::url($sekolah->logo);
+                    }
+                }
+            @endphp
+            
+            <div class="logos-container">
+                <div class="simadis-logo-wrapper logo-display">
+                    <img src="{{ asset('images/simadis-logo.svg') }}" alt="SIMADIS Logo" style="width: 100%; height: auto; max-width: 340px;">
                 </div>
+                
+                @if($logoUrl)
+                    <div class="school-logo-wrapper">
+                        <img src="{{ $logoUrl }}" alt="Logo Sekolah">
+                    </div>
+                @endif
             </div>
+            @if($sekolah)
+                <div class="school-info">
+                    <div class="school-name">{{ $sekolah->nama_sekolah }}</div>
+                    @if($sekolah->alamat)
+                        <div class="school-address">{{ $sekolah->alamat }}</div>
+                    @endif
+                </div>
+            @endif
+            
+            <!-- Login Form Section -->
             
             <!-- Login Card -->
             <div class="card card-md login-card">

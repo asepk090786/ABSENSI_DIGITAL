@@ -130,15 +130,16 @@ class KelasController extends Controller
 
     public function studentTemplate(Kelas $kela)
     {
-        // Force no-cache headers
         $filename = 'TEMPLATE_BARU_' . $kela->id . '_' . time() . '.xlsx';
         
-        return Excel::download(new KelasSiswaTemplateExportNew($kela->id), $filename)
-            ->withHeaders([
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-                'Pragma' => 'no-cache',
-                'Expires' => 'Sat, 01 Jan 2000 00:00:00 GMT',
-            ]);
+        $response = Excel::download(new KelasSiswaTemplateExportNew($kela->id), $filename);
+        
+        // Add no-cache headers
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+        
+        return $response;
     }
 
     public function studentImport(Request $request, Kelas $kela)
@@ -234,4 +235,79 @@ class KelasController extends Controller
 
         return redirect()->route('kelas.edit', $kela->id)->with('error', 'Tidak ada siswa yang dapat ditambahkan. Siswa mungkin sudah memiliki kelas.');
     }
+
+    public function deleteStudent(Request $request, Kelas $kela, Siswa $siswa)
+    {
+        // Check if student belongs to this class
+        if ($siswa->kelas_id != $kela->id) {
+            return redirect()->route('kelas.edit', $kela->id)->with('error', 'Siswa ini bukan bagian dari kelas ini.');
+        }
+
+        // Update kelas_id to null to remove from class
+        $siswa->update(['kelas_id' => null]);
+
+        return redirect()->route('kelas.edit', $kela->id)->with('success', 'Siswa ' . $siswa->nama . ' berhasil dihapus dari kelas.');
+    }
+
+    public function bulkDeleteStudent(Request $request, Kelas $kela)
+    {
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array|min:1',
+            'siswa_ids.*' => 'required|exists:siswa,id',
+        ]);
+
+        // Delete only students from this class
+        $deleted = Siswa::whereIn('id', $validated['siswa_ids'])
+            ->where('kelas_id', $kela->id)
+            ->update(['kelas_id' => null]);
+
+        $message = $deleted === 1 
+            ? '1 siswa berhasil dihapus dari kelas.' 
+            : "{$deleted} siswa berhasil dihapus dari kelas.";
+        
+        return redirect()->route('kelas.edit', $kela->id)->with('success', $message);
+    }
+
+    public function bulkDeactivateStudent(Request $request, Kelas $kela)
+    {
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array|min:1',
+            'siswa_ids.*' => 'required|exists:siswa,id',
+        ]);
+
+        // Deactivate only students from this class
+        $deactivated = User::whereIn('siswa_id', $validated['siswa_ids'])
+            ->whereHas('siswa', function ($query) use ($kela) {
+                $query->where('kelas_id', $kela->id);
+            })
+            ->update(['is_active' => false]);
+
+        $message = $deactivated === 1 
+            ? '1 akun siswa berhasil dinonaktifkan.' 
+            : "{$deactivated} akun siswa berhasil dinonaktifkan.";
+        
+        return redirect()->route('kelas.edit', $kela->id)->with('success', $message);
+    }
+
+    public function bulkActivateStudent(Request $request, Kelas $kela)
+    {
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array|min:1',
+            'siswa_ids.*' => 'required|exists:siswa,id',
+        ]);
+
+        // Activate only students from this class
+        $activated = User::whereIn('siswa_id', $validated['siswa_ids'])
+            ->whereHas('siswa', function ($query) use ($kela) {
+                $query->where('kelas_id', $kela->id);
+            })
+            ->update(['is_active' => true]);
+
+        $message = $activated === 1 
+            ? '1 akun siswa berhasil diaktifkan.' 
+            : "{$activated} akun siswa berhasil diaktifkan.";
+        
+        return redirect()->route('kelas.edit', $kela->id)->with('success', $message);
+    }
 }
+
