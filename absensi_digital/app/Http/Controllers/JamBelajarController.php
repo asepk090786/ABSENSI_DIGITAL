@@ -108,12 +108,12 @@ class JamBelajarController extends Controller
             $successCount = $import->getSuccessCount();
 
             if (!empty($errors)) {
-                return back()->with('errors', $errors)->with('successCount', $successCount);
+                return back()->with('import_errors', $errors)->with('successCount', $successCount)->with('warning', 'Ada kesalahan saat mengimport');
             }
 
             return back()->with('success', "Berhasil mengimport $successCount jam KBM");
         } catch (\Exception $e) {
-            return back()->withErrors('Gagal mengimport file: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Gagal mengimport file: ' . $e->getMessage()]);
         }
     }
 }

@@ -62,10 +62,23 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
     
+    // Jadwal KBM routes (using /jadwal-kbm prefix)
+    Route::get('jadwal-kbm', [JamBelajarController::class, 'index'])->name('jadwal_kbm.index');
+    Route::get('jadwal-kbm/create', [JamBelajarController::class, 'create'])->name('jadwal_kbm.create');
+    Route::post('jadwal-kbm', [JamBelajarController::class, 'store'])->name('jadwal_kbm.store');
+    Route::get('jadwal-kbm/{jam_belajar}/edit', [JamBelajarController::class, 'edit'])->name('jadwal_kbm.edit');
+    Route::put('jadwal-kbm/{jam_belajar}', [JamBelajarController::class, 'update'])->name('jadwal_kbm.update');
+    Route::delete('jadwal-kbm/{jam_belajar}', [JamBelajarController::class, 'destroy'])->name('jadwal_kbm.destroy');
+    Route::get('jadwal-kbm-export', [JamBelajarController::class, 'export'])->name('jadwal_kbm.export');
+    Route::get('jadwal-kbm-template', [JamBelajarController::class, 'templateDownload'])->name('jadwal_kbm.template');
+    Route::post('jadwal-kbm-import', [JamBelajarController::class, 'import'])->name('jadwal_kbm.import');
+    
+    // Keep old jam_belajar routes for backward compatibility
     Route::resource('jam_belajar', JamBelajarController::class)->except(['show']);
     Route::get('jam-belajar-export', [JamBelajarController::class, 'export'])->name('jam_belajar.export');
     Route::get('jam-belajar-template', [JamBelajarController::class, 'templateDownload'])->name('jam_belajar.template');
     Route::post('jam-belajar-import', [JamBelajarController::class, 'import'])->name('jam_belajar.import');
+    
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
     
     // Data Master routes

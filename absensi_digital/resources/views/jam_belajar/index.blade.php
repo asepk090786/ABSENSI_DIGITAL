@@ -35,12 +35,24 @@
     </div>
 @endif
 
-@if($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show">
-        <i class="ti ti-alert-circle me-2"></i>
+@if(session('warning') && session('import_errors'))
+    <div class="alert alert-warning alert-dismissible fade show">
+        <i class="ti ti-alert-triangle me-2"></i>
         @if(session('successCount'))
             <strong>{{ session('successCount') }} data berhasil diimport, namun ada kesalahan:</strong><br>
         @endif
+        <ul class="mb-0">
+            @foreach(session('import_errors') as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="ti ti-alert-circle me-2"></i>
         <ul class="mb-0">
             @foreach($errors->all() as $error)
                 <li>{{ $error }}</li>
