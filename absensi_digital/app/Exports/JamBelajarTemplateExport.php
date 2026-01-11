@@ -13,10 +13,11 @@ class JamBelajarTemplateExport implements FromArray, WithHeadings, WithStyles, W
     public function array(): array
     {
         return [
-            ['Senin', 1, '07:00', '07:45', 'KBM'],
-            ['Senin', 2, '07:45', '08:30', 'KBM'],
-            ['Senin', 3, '08:30', '09:15', 'KBM'],
-            ['Selasa', 1, '07:00', '07:45', 'KBM'],
+            ['Senin', 1, '07:00', '07:45', 'KBM', 'TEMPLATE IMPORT JAM KBM'],
+            ['Senin', 2, '07:45', '08:30', 'KBM', 'Petunjuk: Isi data sesuai format di bawah ini'],
+            ['Senin', 3, '08:30', '09:15', 'KBM', 'Hari: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu'],
+            ['Selasa', 1, '07:00', '07:45', 'KBM', 'Jam Ke: Nomor urut jam (1, 2, 3, dst)'],
+            ['', '', '', '', '', 'Jam Mulai/Selesai: Format HH:MM dengan tanda petik di depan (contoh: \'07:00, \'08:30, \'09:15) PENTING: Gunakan tanda petik (apostrof) sebelum waktu. Contoh: \'07:00 bukan 07:00. Tanpa tanda petik, Excel akan mengubah format waktu!'],
         ];
     }
 
@@ -28,6 +29,7 @@ class JamBelajarTemplateExport implements FromArray, WithHeadings, WithStyles, W
             'Jam Mulai',
             'Jam Selesai',
             'Jenis',
+            'Keterangan',
         ];
     }
 
@@ -52,28 +54,19 @@ class JamBelajarTemplateExport implements FromArray, WithHeadings, WithStyles, W
                 $sheet->getColumnDimension('C')->setWidth(12);
                 $sheet->getColumnDimension('D')->setWidth(12);
                 $sheet->getColumnDimension('E')->setWidth(12);
+                $sheet->getColumnDimension('F')->setWidth(60);
 
-                $sheet->getStyle('A1:E1')->getAlignment()->setWrapText(true);
+                // Wrap text hanya untuk kolom F (Keterangan)
+                $sheet->getStyle('F:F')->getAlignment()->setWrapText(true);
 
-                // Add instructions
-                $sheet->insertNewRowBefore(1, 5);
-                $sheet->mergeCells('A1:E1');
-                $sheet->setCellValue('A1', 'TEMPLATE IMPORT JAM KBM');
-                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
-                $sheet->getStyle('A1')->getAlignment()->setHorizontal('center');
+                // Style untuk header kolom F baris 1
+                $sheet->getStyle('F1')->getFont()->setBold(true)->setSize(12);
 
-                $sheet->mergeCells('A2:E2');
-                $sheet->setCellValue('A2', 'Petunjuk: Isi data sesuai format di bawah ini');
-                $sheet->getStyle('A2')->getFont()->setItalic(true)->setSize(10);
+                // Style untuk petunjuk di F2
+                $sheet->getStyle('F2')->getFont()->setItalic(true)->setSize(10);
 
-                $sheet->mergeCells('A3:E3');
-                $sheet->setCellValue('A3', 'Hari: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu');
-
-                $sheet->mergeCells('A4:E4');
-                $sheet->setCellValue('A4', 'Jam Ke: Nomor urut jam (1, 2, 3, dst)');
-
-                $sheet->mergeCells('A5:E5');
-                $sheet->setCellValue('A5', 'Jam Mulai/Selesai: Format HH:MM (07:00, 07:45, dst)');
+                // Style untuk F5 (peringatan penting) - teks merah tebal
+                $sheet->getStyle('F5')->getFont()->setBold(true)->getColor()->setRGB('C00000');
             },
         ];
     }

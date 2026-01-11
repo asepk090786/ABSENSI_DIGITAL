@@ -83,6 +83,19 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Jurusan</label>
+                        <select name="jurusan" class="form-select @error('jurusan') is-invalid @enderror">
+                            <option value="">-- Pilih Jurusan --</option>
+                            @php $jurusanList = ['IPA','IPS','MIA','IIS','UMUMJ']; @endphp
+                            @foreach($jurusanList as $jur)
+                                <option value="{{ $jur }}" {{ old('jurusan', $kelas->jurusan) == $jur ? 'selected' : '' }}>{{ $jur }}</option>
+                            @endforeach
+                        </select>
+                        <small class="form-hint">Kosongkan jika kelas tidak ber-jurusan.</small>
+                        @error('jurusan')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Wali Kelas</label>
                         <select name="wali_kelas_id" class="form-select @error('wali_kelas_id') is-invalid @enderror">
                             <option value="">Pilih Wali Kelas</option>
