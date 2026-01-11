@@ -86,7 +86,7 @@
                         <label class="form-label">Jurusan</label>
                         <select name="jurusan" class="form-select @error('jurusan') is-invalid @enderror">
                             <option value="">-- Pilih Jurusan --</option>
-                            @php $jurusanList = ['IPA','IPS','MIA','IIS','UMUMJ']; @endphp
+                            @php $jurusanList = ['IPA','IPS','MIA','IIS','UMUM']; @endphp
                             @foreach($jurusanList as $jur)
                                 <option value="{{ $jur }}" {{ old('jurusan', $kelas->jurusan) == $jur ? 'selected' : '' }}>{{ $jur }}</option>
                             @endforeach

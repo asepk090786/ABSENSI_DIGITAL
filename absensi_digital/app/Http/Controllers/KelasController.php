@@ -37,7 +37,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255|unique:kelas,nama_kelas',
             'tingkat_kelas' => 'nullable|string|max:50',
-            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUMJ',
+            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUM',
             'wali_kelas_id' => 'nullable|exists:guru,id',
         ]);
 
@@ -71,7 +71,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255|unique:kelas,nama_kelas,' . $kela->id,
             'tingkat_kelas' => 'nullable|string|max:50',
-            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUMJ',
+            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUM',
             'wali_kelas_id' => 'nullable|exists:guru,id',
         ]);
 

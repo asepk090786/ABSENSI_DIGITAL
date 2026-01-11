@@ -27,6 +27,7 @@ class MataPelajaranController extends Controller
         $validated = $request->validate([
             'nama_mapel' => 'required|string|max:255|unique:mata_pelajaran,nama_mapel',
             'kode_mapel' => 'nullable|string|max:50|unique:mata_pelajaran,kode_mapel',
+            'kategori' => 'required|string|in:Umum,Jurusan,Pilihan,Tingkat lanjut,Mulok',
         ]);
 
         MataPelajaran::create($validated);
@@ -49,6 +50,7 @@ class MataPelajaranController extends Controller
         $validated = $request->validate([
             'nama_mapel' => 'required|string|max:255|unique:mata_pelajaran,nama_mapel,' . $mata_pelajaran->id,
             'kode_mapel' => 'nullable|string|max:50|unique:mata_pelajaran,kode_mapel,' . $mata_pelajaran->id,
+            'kategori' => 'required|string|in:Umum,Jurusan,Pilihan,Tingkat lanjut,Mulok',
         ]);
 
         $mata_pelajaran->update($validated);

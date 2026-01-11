@@ -64,6 +64,7 @@
                                 <th>No</th>
                                 <th>Nama Mapel</th>
                                 <th>Kode</th>
+                                <th>Kategori</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -75,6 +76,7 @@
                                     <a href="{{ route('mata_pelajaran.show', $it->id) }}" class="text-decoration-none">{{ $it->nama_mapel }}</a>
                                 </td>
                                 <td>{{ $it->kode_mapel ?? '-' }}</td>
+                                <td>{{ $it->kategori ?? '-' }}</td>
                                 <td>
                                     <div class="btn-list">
                                         <a href="{{ route('mata_pelajaran.edit', $it->id) }}" class="btn btn-sm btn-outline-primary">
@@ -88,7 +90,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted">
+                                <td colspan="5" class="text-center text-muted">
                                     <i class="ti ti-info-circle me-2"></i>Belum ada mata pelajaran.
                                 </td>
                             </tr>

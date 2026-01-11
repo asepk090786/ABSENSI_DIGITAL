@@ -18,6 +18,9 @@
                     <dt class="col-sm-3">Kode</dt>
                     <dd class="col-sm-9">{{ $mata_pelajaran->kode_mapel ?? '-' }}</dd>
 
+                    <dt class="col-sm-3">Kategori</dt>
+                    <dd class="col-sm-9">{{ $mata_pelajaran->kategori ?? '-' }}</dd>
+
                     <dt class="col-sm-3">Dibuat</dt>
                     <dd class="col-sm-9">{{ $mata_pelajaran->created_at }}</dd>
 

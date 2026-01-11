@@ -16,14 +16,15 @@ class MataPelajaranTemplateExport implements FromCollection, WithHeadings, WithS
     public function collection()
     {
         return collect([
-            [1, 'Matematika', 'MTK'],
-            [2, 'Bahasa Indonesia', 'BINDO'],
+            [1, 'Matematika', 'MTK', 'Umum'],
+            [2, 'Bahasa Indonesia', 'BINDO', 'Umum'],
+            [3, 'Muatan Lokal', 'MULOK', 'Mulok'],
         ]);
     }
 
     public function headings(): array
     {
-        return ['No', 'Mata Pelajaran', 'Kode Pelajaran'];
+        return ['No', 'Mata Pelajaran', 'Kode Pelajaran', 'Kategori'];
     }
 
     public function styles(Worksheet $sheet)
@@ -38,7 +39,13 @@ class MataPelajaranTemplateExport implements FromCollection, WithHeadings, WithS
 
     public function columnWidths(): array
     {
-        return ['A' => 8, 'B' => 24, 'C' => 20];
+        return [
+            'A' => 8,
+            'B' => 24,
+            'C' => 20,
+            'D' => 18,
+            'E' => 55,
+        ];
     }
 
     public function registerEvents(): array
@@ -48,16 +55,18 @@ class MataPelajaranTemplateExport implements FromCollection, WithHeadings, WithS
                 $sheet = $event->sheet->getDelegate();
                 $instructions = [
                     'PETUNJUK:',
-                    '1. Kolom No hanya untuk referensi baris (opsional).',
-                    '2. Isi Mata Pelajaran (wajib) dan Kode Pelajaran (disarankan unik).',
-                    '3. Jika Kode Pelajaran sudah ada, import akan memperbarui nama mapel.',
+                    '1. Kolom No opsional (boleh dikosongkan).',
+                    '2. Isi Mata Pelajaran (wajib), Kode Pelajaran (unik disarankan), dan Kategori.',
+                    '3. Jika Kode Pelajaran sudah ada, import akan memperbarui nama/kategori mapel.',
+                    '4. Pilihan kategori: Umum, Jurusan, Pilihan, Tingkat lanjut, Mulok.',
                 ];
-                $startRow = 6;
+
+                // Taruh petunjuk di kolom E (tidak mengganggu data utama)
                 foreach ($instructions as $i => $text) {
-                    $row = $startRow + $i;
-                    $sheet->setCellValue('A'.$row, $text);
-                    $sheet->mergeCells('A'.$row.':C'.$row);
-                    $sheet->getStyle('A'.$row)->getFont()->setSize(9)->setItalic(true);
+                    $row = 1 + $i;
+                    $sheet->setCellValue('E'.$row, $text);
+                    $sheet->getStyle('E'.$row)->getFont()->setSize(9)->setItalic(true);
+                    $sheet->getStyle('E'.$row)->getAlignment()->setWrapText(true);
                 }
             },
         ];

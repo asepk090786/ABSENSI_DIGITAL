@@ -21,7 +21,7 @@ class MataPelajaranExport implements FromCollection, WithHeadings, WithMapping, 
 
     public function headings(): array
     {
-        return ['No', 'Mata Pelajaran', 'Kode Pelajaran'];
+        return ['No', 'Mata Pelajaran', 'Kode Pelajaran', 'Kategori'];
     }
 
     public function map($item): array
@@ -30,6 +30,7 @@ class MataPelajaranExport implements FromCollection, WithHeadings, WithMapping, 
             $this->no++,
             $item->nama_mapel,
             $item->kode_mapel ?? '',
+            $item->kategori ?? '',
         ];
     }
 

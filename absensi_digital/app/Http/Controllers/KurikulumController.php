@@ -12,7 +12,7 @@ use App\Imports\KurikulumImport;
 
 class KurikulumController extends Controller
 {
-    private array $jurusanList = ['IPA','IPS','MIA','IIS','UMUMJ'];
+    private array $jurusanList = ['IPA','IPS','MIA','IIS','UMUM'];
 
     public function index(Request $request)
     {
@@ -27,7 +27,7 @@ class KurikulumController extends Controller
         // Data tampilan tabel per tingkat
         $kurikulumByTingkat = DB::table('kurikulum_mapel as k')
             ->join('mata_pelajaran as m', 'm.id', '=', 'k.mata_pelajaran_id')
-            ->select('k.tingkat', 'k.jurusan', 'm.nama_mapel', 'm.kode_mapel', 'k.jp')
+            ->select('k.id', 'k.tingkat', 'k.jurusan', 'm.nama_mapel', 'm.kode_mapel', 'k.jp')
             ->orderBy('k.tingkat')->orderBy('k.jurusan')->orderBy('m.nama_mapel')
             ->get()
             ->groupBy('tingkat');
@@ -52,7 +52,7 @@ class KurikulumController extends Controller
     {
         $validated = $request->validate([
             'tingkat' => 'required|string|max:10',
-            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUMJ',
+            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUM',
             'mata_pelajaran_id' => 'array',
             'mata_pelajaran_id.*' => 'exists:mata_pelajaran,id',
             'jp' => 'array',
@@ -87,7 +87,7 @@ class KurikulumController extends Controller
     {
         $validated = $request->validate([
             'tingkat' => 'required|string|max:10',
-            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUMJ',
+            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUM',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'jp' => 'required|integer|min:0|max:50',
         ]);
@@ -140,7 +140,7 @@ class KurikulumController extends Controller
     {
         $validated = $request->validate([
             'tingkat' => 'required|string|max:10',
-            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUMJ',
+            'jurusan' => 'nullable|string|max:20|in:IPA,IPS,MIA,IIS,UMUM',
             'file' => 'required|file|mimes:xlsx,xls,csv',
         ]);
 

@@ -21,11 +21,13 @@ class MataPelajaranImport implements ToCollection, WithHeadingRow
                 'no' => $row['no'] ?? null,
                 'nama_mapel' => trim((string) ($row['mata_pelajaran'] ?? '')),
                 'kode_mapel' => trim((string) ($row['kode_pelajaran'] ?? '')),
+                'kategori' => trim((string) ($row['kategori'] ?? '')),
             ];
 
             $validator = Validator::make($payload, [
                 'nama_mapel' => 'required|string|max:255',
                 'kode_mapel' => 'nullable|string|max:50',
+                'kategori' => 'nullable|string|in:Umum,Jurusan,Pilihan,Tingkat lanjut,Mulok',
             ]);
 
             if ($validator->fails()) {
@@ -34,11 +36,16 @@ class MataPelajaranImport implements ToCollection, WithHeadingRow
             }
 
             try {
+                $kategori = $payload['kategori'] !== '' ? $payload['kategori'] : 'Umum';
+
                 if ($payload['kode_mapel'] !== '') {
                     // Update by kode_mapel if exists, else create
                     $existing = MataPelajaran::where('kode_mapel', $payload['kode_mapel'])->first();
                     if ($existing) {
-                        $existing->update(['nama_mapel' => $payload['nama_mapel']]);
+                        $existing->update([
+                            'nama_mapel' => $payload['nama_mapel'],
+                            'kategori' => $kategori,
+                        ]);
                         continue;
                     }
                 }
@@ -53,6 +60,7 @@ class MataPelajaranImport implements ToCollection, WithHeadingRow
                 MataPelajaran::create([
                     'nama_mapel' => $payload['nama_mapel'],
                     'kode_mapel' => $payload['kode_mapel'] !== '' ? $payload['kode_mapel'] : null,
+                    'kategori' => $kategori,
                 ]);
             } catch (\Exception $e) {
                 $this->pushError($rowNumber, 'Error: ' . $e->getMessage());
