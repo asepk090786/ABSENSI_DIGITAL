@@ -103,7 +103,7 @@ class JadwalKbmController extends Controller
             ->unique('id')
             ->values();
         
-        return view('jadwal_kbm.print', compact(
+        return view('jadwal_kbm.print-modern', compact(
             'kelas',
             'sekolah',
             'tahunAjaranAktif',
@@ -159,7 +159,7 @@ class JadwalKbmController extends Controller
             }
         }
         
-        $html = view('jadwal_kbm.print-pdf', compact(
+        $html = view('jadwal_kbm.print-pdf-modern', compact(
             'kelas',
             'sekolah',
             'tahunAjaranAktif',
