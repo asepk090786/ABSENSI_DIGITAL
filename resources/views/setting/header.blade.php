@@ -2,14 +2,6 @@
 
 @section('title','Edit Header')
 
-@push('styles')
-<style>
-.tox-tinymce {
-    border: 1px solid #dee2e6 !important;
-}
-</style>
-@endpush
-
 @section('content')
 <div class="row">
     <div class="col-md-12">
@@ -90,13 +82,10 @@
 
                             <!-- Header Editor Section -->
                             <div class="mb-3">
-                                <label for="header_html" class="form-label">Edit Header (WYSIWYG)</label>
-                                <textarea class="form-control @error('header_html') is-invalid @enderror" 
-                                    id="header_html" name="header_html" rows="6">{{ old('header_html', $sekolah->header_html ?? '') }}</textarea>
+                                <label for="editor" class="form-label">Edit Header (WYSIWYG)</label>
+                                <div id="editor">{!! old('header_html', $sekolah->header_html ?? '') !!}</div>
+                                <input type="hidden" id="header_html" name="header_html">
                                 <small class="text-muted d-block mt-2">Edit header secara manual seperti di Microsoft Word</small>
-                                @error('header_html')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
                             </div>
 
                             <hr class="my-4">
@@ -236,21 +225,96 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- CKEditor 5 -->
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+
 <script>
-tinymce.init({
-    selector: '#header_html',
-    height: 350,
-    plugins: 'lists link image table code help wordcount',
-    toolbar: 'formatselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | blockquote hr | removeformat | code help',
-    menubar: 'file edit view insert format table tools help',
-    language: 'id',
-    branding: false,
-    statusbar: true,
-    paste_as_text: false,
-    content_css: false,
-    relative_urls: true,
-    entity_encoding: 'raw'
-});
+    ClassicEditor
+        .create( document.querySelector( '#editor' ), {
+            language: 'id',
+            toolbar: {
+                items: [
+                    'heading',
+                    '|',
+                    'bold',
+                    'italic',
+                    'underline',
+                    'strikethrough',
+                    '|',
+                    'alignment',
+                    '|',
+                    'numberedList',
+                    'bulletedList',
+                    '|',
+                    'indent',
+                    'outdent',
+                    '|',
+                    'fontSize',
+                    'fontFamily',
+                    'fontColor',
+                    'fontBackgroundColor',
+                    '|',
+                    'link',
+                    'insertImage',
+                    'blockQuote',
+                    'insertTable',
+                    '|',
+                    'undo',
+                    'redo',
+                    'sourceEditing'
+                ],
+                shouldNotGroupWhenFull: true
+            },
+            image: {
+                toolbar: [ 'imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side' ]
+            },
+            table: {
+                contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells' ]
+            },
+            htmlSupport: {
+                allow: [
+                    {
+                        name: /.*/,
+                        attributes: true,
+                        classes: true,
+                        styles: true
+                    }
+                ]
+            }
+        } )
+        .then( editor => {
+            window.editor = editor;
+        } )
+        .catch( error => {
+            console.error( error );
+        } );
+
+    // Sync content to hidden input before form submission
+    document.querySelector('form').addEventListener('submit', function() {
+        document.querySelector('#header_html').value = window.editor.getData();
+    });
 </script>
+
+<style>
+    .ck-editor__main {
+        min-height: 400px;
+    }
+
+    .ck.ck-editor__top .ck-sticky-panel__content {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .ck.ck-editor__top .ck-toolbar {
+        background: #f8f9fa;
+        padding: 10px;
+    }
+
+    .ck.ck-content {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        padding: 15px;
+    }
+</style>
 @endpush
