@@ -86,77 +86,6 @@
                                 <div id="editor">{!! old('header_html', $sekolah->header_html ?? '') !!}</div>
                                 <input type="hidden" id="header_html" name="header_html">
                                 <small class="text-muted d-block mt-2">Edit header secara manual seperti di Microsoft Word</small>
-                                
-                                <script>
-                                    (function() {
-                                        const initEditor = () => {
-                                            const editorElement = document.querySelector('#editor');
-                                            if (!editorElement) {
-                                                console.error('Editor element not found');
-                                                return;
-                                            }
-                                            
-                                            if (typeof ClassicEditor === 'undefined') {
-                                                console.error('CKEditor not loaded');
-                                                setTimeout(initEditor, 500);
-                                                return;
-                                            }
-                                            
-                                            ClassicEditor
-                                                .create(editorElement, {
-                                                    language: 'id',
-                                                    toolbar: [
-                                                        'heading',
-                                                        '|',
-                                                        'bold',
-                                                        'italic',
-                                                        'underline',
-                                                        'strikethrough',
-                                                        '|',
-                                                        'alignment',
-                                                        '|',
-                                                        'numberedList',
-                                                        'bulletedList',
-                                                        '|',
-                                                        'fontSize',
-                                                        'fontColor',
-                                                        'fontBackgroundColor',
-                                                        '|',
-                                                        'link',
-                                                        'blockQuote',
-                                                        'insertTable',
-                                                        '|',
-                                                        'undo',
-                                                        'redo',
-                                                        'sourceEditing'
-                                                    ],
-                                                    htmlSupport: {
-                                                        allow: [{name: /^/, attributes: true, classes: true, styles: true}]
-                                                    }
-                                                })
-                                                .then(editor => {
-                                                    window.headerEditor = editor;
-                                                    console.log('✓ CKEditor initialized successfully');
-                                                    
-                                                    const form = document.querySelector('form');
-                                                    if (form) {
-                                                        form.addEventListener('submit', function(e) {
-                                                            document.querySelector('#header_html').value = window.headerEditor.getData();
-                                                        });
-                                                    }
-                                                })
-                                                .catch(error => {
-                                                    console.error('CKEditor error:', error);
-                                                });
-                                        };
-                                        
-                                        if (document.readyState === 'loading') {
-                                            document.addEventListener('DOMContentLoaded', initEditor);
-                                        } else {
-                                            initEditor();
-                                        }
-                                    })();
-                                </script>
                             </div>
 
                             <hr class="my-4">
@@ -295,7 +224,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('js')
 <!-- CKEditor 5 -->
 <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
@@ -328,4 +257,71 @@
         border-radius: 4px;
     }
 </style>
-@endsection
+
+<script>
+    // Initialize CKEditor after page fully loaded
+    setTimeout(function() {
+        const editorElement = document.querySelector('#editor');
+        
+        if (!editorElement) {
+            console.error('Editor element not found');
+            return;
+        }
+        
+        if (typeof ClassicEditor === 'undefined') {
+            console.error('CKEditor not loaded');
+            return;
+        }
+        
+        ClassicEditor
+            .create(editorElement, {
+                language: 'id',
+                toolbar: [
+                    'heading',
+                    '|',
+                    'bold',
+                    'italic',
+                    'underline',
+                    'strikethrough',
+                    '|',
+                    'alignment',
+                    '|',
+                    'numberedList',
+                    'bulletedList',
+                    '|',
+                    'fontSize',
+                    'fontColor',
+                    'fontBackgroundColor',
+                    '|',
+                    'link',
+                    'blockQuote',
+                    'insertTable',
+                    '|',
+                    'undo',
+                    'redo',
+                    'sourceEditing'
+                ],
+                htmlSupport: {
+                    allow: [{name: /^/, attributes: true, classes: true, styles: true}]
+                }
+            })
+            .then(editor => {
+                window.headerEditor = editor;
+                console.log('✓ CKEditor initialized successfully');
+            })
+            .catch(error => {
+                console.error('CKEditor error:', error);
+            });
+
+        // Sync content to hidden input before form submission
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (window.headerEditor) {
+                    document.querySelector('#header_html').value = window.headerEditor.getData();
+                }
+            });
+        }
+    }, 500);
+</script>
+@endpush
