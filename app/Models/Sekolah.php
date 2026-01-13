@@ -28,5 +28,8 @@ class Sekolah extends Model
         'status',
         'akreditasi',
         'logo',
-        'logo_kanan',        'logo_kanan',    ];
+        'logo_kanan',
+        'logo_header_kiri',
+        'header_html',
+    ];
 }

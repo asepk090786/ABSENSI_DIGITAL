@@ -2,6 +2,10 @@
 
 @section('title','Edit Header')
 
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
+@endpush
+
 @section('content')
 <div class="row">
     <div class="col-md-12">
@@ -80,7 +84,18 @@
 
                             <hr class="my-4">
 
-                            <!-- School Info Section -->
+                            <!-- Header Editor Section -->
+                            <div class="mb-3">
+                                <label for="header_html" class="form-label">Edit Header (WYSIWYG)</label>
+                                <textarea class="form-control @error('header_html') is-invalid @enderror" 
+                                    id="header_html" name="header_html" rows="6">{{ old('header_html', $sekolah->header_html ?? '') }}</textarea>
+                                <small class="text-muted d-block mt-2">Edit header secara manual seperti di Microsoft Word</small>
+                                @error('header_html')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <hr class="my-4">
                             <div class="mb-3">
                                 <label for="nama_sekolah" class="form-label">Nama Sekolah / Institusi</label>
                                 <input type="text" class="form-control @error('nama_sekolah') is-invalid @enderror" 
@@ -215,3 +230,26 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#header_html').summernote({
+        height: 300,
+        placeholder: 'Ketik atau edit header di sini',
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'underline', 'clear']],
+            ['fontname', ['fontname']],
+            ['fontsize', ['fontsize']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'video']],
+            ['view', ['fullscreen', 'codeview', 'help']]
+        ]
+    });
+});
+</script>
+@endpush

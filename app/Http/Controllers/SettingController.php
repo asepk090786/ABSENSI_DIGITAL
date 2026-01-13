@@ -188,6 +188,7 @@ class SettingController extends Controller
             'telepon' => 'nullable|string|max:20',
             'website' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
+            'header_html' => 'nullable|string',
             'logo_header_kiri' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -204,6 +205,7 @@ class SettingController extends Controller
             $sekolah->telepon = $validated['telepon'] ?? '';
             $sekolah->website = $validated['website'] ?? '';
             $sekolah->email = $validated['email'] ?? '';
+            $sekolah->header_html = $validated['header_html'] ?? '';
 
             // Handle logo_header_kiri
             if ($request->hasFile('logo_header_kiri')) {

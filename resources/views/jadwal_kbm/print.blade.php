@@ -21,7 +21,14 @@
 <div id="printContent" class="card no-card-style">
     <div class="card-body print-body">
         <!-- Header -->
-        <div class="header-section">
+        @if($sekolah && $sekolah->header_html)
+            <!-- Custom Header from Editor -->
+            <div class="header-section">
+                {!! $sekolah->header_html !!}
+            </div>
+        @else
+            <!-- Default Header -->
+            <div class="header-section">
             <div class="header-content">
                 <!-- Logo Kiri -->
                 <div class="logo-left">
@@ -57,6 +64,7 @@
             </div>
             <div class="header-divider"></div>
         </div>
+        @endif
 
         <!-- Judul -->
         <div class="title-section">
