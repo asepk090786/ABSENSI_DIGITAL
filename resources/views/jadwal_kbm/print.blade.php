@@ -3,11 +3,14 @@
 @section('title', 'Print Jadwal Kelas')
 
 @section('content')
-<div class="row mb-3">
+<div class="row mb-3 no-print">
     <div class="col-12">
         <button onclick="window.print()" class="btn btn-primary">
             <i class="ti ti-printer me-2"></i>Print Jadwal
         </button>
+        <a href="{{ route('jadwal-kbm.export-pdf', $kelas->id) }}" class="btn btn-success" target="_blank">
+            <i class="ti ti-download me-2"></i>Download PDF
+        </a>
         <a href="{{ route('jadwal-kbm.create-by-kelas', $kelas->id) }}" class="btn btn-secondary">
             <i class="ti ti-arrow-left me-2"></i>Kembali
         </a>
@@ -15,8 +18,8 @@
 </div>
 
 <!-- Print Content -->
-<div id="printContent" class="card">
-    <div class="card-body" style="background: white; padding: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+<div id="printContent" class="card no-card-style">
+    <div class="card-body print-body">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #2c5282;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
@@ -133,17 +136,99 @@
 </div>
 
 <style>
+    /* Print Styles - Hide everything except jadwal */
     @media print {
-        body { margin: 0; padding: 0; background: white; }
-        .btn, .row, .navbar-vertical, .page-header, footer { display: none !important; }
-        .card { box-shadow: none !important; border: none !important; page-break-inside: avoid; }
-        .card-body { padding: 20px !important; }
-        table { page-break-inside: avoid; }
-        #printContent { max-width: 210mm; margin: 0 auto; }
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        
+        body {
+            background: white !important;
+            color: black !important;
+            font-family: Arial, sans-serif !important;
+        }
+        
+        /* Hide all non-print elements */
+        .no-print,
+        .navbar-vertical,
+        header,
+        footer,
+        .btn,
+        .page-header,
+        .modal,
+        nav {
+            display: none !important;
+        }
+        
+        /* Print container */
+        .page-wrapper,
+        .page-body,
+        .container-xl {
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        .card,
+        .no-card-style {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: white !important;
+        }
+        
+        .card-body,
+        .print-body {
+            padding: 20px !important;
+            background: white !important;
+        }
+        
+        /* Make content fit A4 */
+        #printContent {
+            max-width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* Table styling for print */
+        table {
+            page-break-inside: avoid !important;
+            width: 100% !important;
+        }
+        
+        thead {
+            display: table-header-group !important;
+        }
+        
+        tfoot {
+            display: table-footer-group !important;
+        }
+        
+        tr {
+            page-break-inside: avoid !important;
+        }
+        
+        img {
+            max-width: 100% !important;
+        }
     }
     
     @media screen {
-        #printContent { max-width: 210mm; margin: 20px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .no-print {
+            display: block !important;
+            margin-bottom: 20px;
+        }
+        
+        #printContent {
+            max-width: 210mm;
+            margin: 20px auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
     }
 </style>
 @endsection

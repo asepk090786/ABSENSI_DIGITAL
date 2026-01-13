@@ -115,6 +115,56 @@ class JadwalKbmController extends Controller
     }
 
     /**
+     * Export jadwal per kelas as PDF
+     */
+    public function exportPdfByKelas($kelasId)
+    {
+        $kelas = Kelas::findOrFail($kelasId);
+        $sekolah = \App\Models\Sekolah::first();
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        // Get existing jadwal for this kelas
+        $query = JadwalKbm::where('kelas_id', $kelasId);
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalSorted = $query
+            ->with(['guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get();
+        
+        // Get jam belajar grouped by hari
+        $jamBelajarByHari = JamBelajar::orderByDay()->get()->groupBy('hari');
+        
+        // Get unique guru from jadwal
+        $guruList = $jadwalSorted
+            ->pluck('guru')
+            ->unique('id')
+            ->values();
+        
+        $html = view('jadwal_kbm.print-pdf', compact(
+            'kelas',
+            'sekolah',
+            'tahunAjaranAktif',
+            'semesterAktif',
+            'jadwalSorted',
+            'jamBelajarByHari',
+            'guruList'
+        ))->render();
+        
+        // Simple PDF generation using inline HTML to PDF conversion
+        return response($html)
+            ->header('Content-Type', 'text/html; charset=utf-8')
+            ->header('Content-Disposition', 'inline; filename="Jadwal_' . str_replace(' ', '_', $kelas->nama_kelas) . '.pdf"');
+    }
+
+    /**
      * Show jadwal per guru
      */
     public function showByGuru($guruId)
