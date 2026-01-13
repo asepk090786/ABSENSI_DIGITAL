@@ -94,6 +94,9 @@ class JadwalKbmController extends Controller
             ->orderBySchedule()
             ->get();
         
+        // Get jam belajar grouped by hari (untuk tampilkan UPACARA, ISTIRAHAT, PEMBIASAAN)
+        $jamBelajarByHari = JamBelajar::orderByDay()->get()->groupBy('hari');
+        
         // Get unique guru from jadwal
         $guruList = $jadwalSorted
             ->pluck('guru')
@@ -106,6 +109,7 @@ class JadwalKbmController extends Controller
             'tahunAjaranAktif',
             'semesterAktif',
             'jadwalSorted',
+            'jamBelajarByHari',
             'guruList'
         ));
     }

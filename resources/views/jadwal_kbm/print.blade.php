@@ -50,8 +50,9 @@
             @foreach($hariList as $hari)
                 @php
                     $jadwalHari = $jadwalByHari->get($hari, collect());
+                    $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
                 @endphp
-                @if($jadwalHari->count() > 0)
+                @if($jamHari->count() > 0)
                     <div style="margin-bottom: 12px;">
                         <!-- Nama Hari Header -->
                         <div style="background: linear-gradient(90deg, #2c5282, #2d3748); color: white; padding: 6px 10px; margin-bottom: 6px; font-weight: 600; font-size: 12px; border-radius: 4px;">
@@ -63,16 +64,31 @@
                             <thead>
                                 <tr style="background: #edf2f7;">
                                     <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 600; width: 15%;">Jam</th>
-                                    <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: left; font-weight: 600;">Mapel</th>
+                                    <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: left; font-weight: 600;">Mapel / Kegiatan</th>
                                     <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 600; width: 12%;">Guru</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($jadwalHari->sortBy('jam_ke') as $jadwal)
-                                    <tr style="border-bottom: 1px solid #e2e8f0;">
-                                        <td style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; background: #f7fafc;">{{ $jadwal->jam_ke }}</td>
-                                        <td style="border: 1px solid #cbd5e0; padding: 5px;">{{ $jadwal->mataPelajaran->nama_mapel ?? '-' }}</td>
-                                        <td style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 500; color: #2c5282;">{{ $jadwal->guru->nip ?? '-' }}</td>
+                                @foreach($jamHari as $jam)
+                                    @php
+                                        $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
+                                    @endphp
+                                    <tr style="border-bottom: 1px solid #e2e8f0; {{ $jam->jenis !== 'KBM' ? 'background: #f0f4f8;' : '' }}">
+                                        <td style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; background: #f7fafc; font-weight: 500;">{{ $jam->urutan }}</td>
+                                        <td style="border: 1px solid #cbd5e0; padding: 5px;">
+                                            @if($jam->jenis === 'KBM' && $jadwalJam)
+                                                <strong>{{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}</strong>
+                                            @else
+                                                <em style="color: #718096;">{{ $jam->jenis }}</em>
+                                            @endif
+                                        </td>
+                                        <td style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 500; color: #2c5282;">
+                                            @if($jadwalJam)
+                                                {{ $jadwalJam->guru->nip ?? '-' }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
