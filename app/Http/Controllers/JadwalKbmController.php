@@ -148,6 +148,17 @@ class JadwalKbmController extends Controller
             ->unique('id')
             ->values();
         
+        // Convert logo to base64 for embedded display in PDF
+        $logoBase64 = null;
+        if ($sekolah && $sekolah->logo) {
+            $logoPath = public_path('storage/' . $sekolah->logo);
+            if (file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                $logoMime = mime_content_type($logoPath);
+                $logoBase64 = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
+            }
+        }
+        
         $html = view('jadwal_kbm.print-pdf', compact(
             'kelas',
             'sekolah',
@@ -155,7 +166,8 @@ class JadwalKbmController extends Controller
             'semesterAktif',
             'jadwalSorted',
             'jamBelajarByHari',
-            'guruList'
+            'guruList',
+            'logoBase64'
         ))->render();
         
         // Simple PDF generation using inline HTML to PDF conversion

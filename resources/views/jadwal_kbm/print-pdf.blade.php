@@ -199,8 +199,8 @@
         <!-- Header -->
         <div class="header">
             <div class="header-content">
-                @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
-                    <img src="{{ public_path('storage/' . $sekolah->logo) }}" class="logo">
+                @if($logoBase64)
+                    <img src="{{ $logoBase64 }}" class="logo">
                 @endif
                 <div class="school-info">
                     <h3>{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</h3>
