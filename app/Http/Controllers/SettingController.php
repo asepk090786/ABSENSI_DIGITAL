@@ -207,30 +207,20 @@ class SettingController extends Controller
 
             // Handle logo_header_kiri
             if ($request->hasFile('logo_header_kiri')) {
-                try {
-                    if ($sekolah->logo_header_kiri && \Storage::exists('public/' . $sekolah->logo_header_kiri)) {
-                        \Storage::delete('public/' . $sekolah->logo_header_kiri);
-                    }
-                    $logoPath = $request->file('logo_header_kiri')->store('logos', 'public');
-                    $sekolah->logo_header_kiri = $logoPath;
-                } catch (\Exception $e) {
-                    \Log::error('Error uploading logo_header_kiri: ' . $e->getMessage());
-                    throw new \Exception('Gagal upload logo kiri: ' . $e->getMessage());
+                if ($sekolah->logo_header_kiri && \Storage::exists('public/' . $sekolah->logo_header_kiri)) {
+                    \Storage::delete('public/' . $sekolah->logo_header_kiri);
                 }
+                $logoPath = $request->file('logo_header_kiri')->store('logos', 'public');
+                $sekolah->logo_header_kiri = $logoPath;
             }
 
             // Handle logo (school logo)
             if ($request->hasFile('logo')) {
-                try {
-                    if ($sekolah->logo && \Storage::exists('public/' . $sekolah->logo)) {
-                        \Storage::delete('public/' . $sekolah->logo);
-                    }
-                    $logoPath = $request->file('logo')->store('logos', 'public');
-                    $sekolah->logo = $logoPath;
-                } catch (\Exception $e) {
-                    \Log::error('Error uploading logo: ' . $e->getMessage());
-                    throw new \Exception('Gagal upload logo sekolah: ' . $e->getMessage());
+                if ($sekolah->logo && \Storage::exists('public/' . $sekolah->logo)) {
+                    \Storage::delete('public/' . $sekolah->logo);
                 }
+                $logoPath = $request->file('logo')->store('logos', 'public');
+                $sekolah->logo = $logoPath;
             }
 
             $sekolah->save();
@@ -242,4 +232,4 @@ class SettingController extends Controller
             return back()
                 ->with('error', 'Gagal menyimpan pengaturan: ' . $e->getMessage());
         }
-    }
+    }}
