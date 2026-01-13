@@ -224,76 +224,9 @@
 </div>
 @endsection
 
-@push('scripts')
-<!-- CKEditor 5 -->
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-
-<script>
-    ClassicEditor
-        .create( document.querySelector( '#editor' ), {
-            language: 'id',
-            toolbar: {
-                items: [
-                    'heading',
-                    '|',
-                    'bold',
-                    'italic',
-                    'underline',
-                    'strikethrough',
-                    '|',
-                    'alignment',
-                    '|',
-                    'numberedList',
-                    'bulletedList',
-                    '|',
-                    'indent',
-                    'outdent',
-                    '|',
-                    'fontSize',
-                    'fontFamily',
-                    'fontColor',
-                    'fontBackgroundColor',
-                    '|',
-                    'link',
-                    'insertImage',
-                    'blockQuote',
-                    'insertTable',
-                    '|',
-                    'undo',
-                    'redo',
-                    'sourceEditing'
-                ],
-                shouldNotGroupWhenFull: true
-            },
-            image: {
-                toolbar: [ 'imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side' ]
-            },
-            table: {
-                contentToolbar: [ 'tableColumn', 'tableRow', 'mergeTableCells' ]
-            },
-            htmlSupport: {
-                allow: [
-                    {
-                        name: /.*/,
-                        attributes: true,
-                        classes: true,
-                        styles: true
-                    }
-                ]
-            }
-        } )
-        .then( editor => {
-            window.editor = editor;
-        } )
-        .catch( error => {
-            console.error( error );
-        } );
-
-    // Sync content to hidden input before form submission
-    document.querySelector('form').addEventListener('submit', function() {
-        document.querySelector('#header_html').value = window.editor.getData();
-    });
-</script>
+@section('scripts')
+<!-- CKEditor 5 CSS -->
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/41.4.2/ckeditor5.css">
 
 <style>
     .ck-editor__main {
@@ -315,6 +248,90 @@
         border: 1px solid #dee2e6;
         border-top: none;
         padding: 15px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 </style>
-@endpush
+
+<!-- CKEditor 5 -->
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/translations/id.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editorElement = document.querySelector('#editor');
+        
+        if (editorElement) {
+            ClassicEditor
+                .create(editorElement, {
+                    language: 'id',
+                    toolbar: {
+                        items: [
+                            'heading',
+                            '|',
+                            'bold',
+                            'italic',
+                            'underline',
+                            'strikethrough',
+                            '|',
+                            'alignment',
+                            '|',
+                            'numberedList',
+                            'bulletedList',
+                            '|',
+                            'indent',
+                            'outdent',
+                            '|',
+                            'fontSize',
+                            'fontFamily',
+                            'fontColor',
+                            'fontBackgroundColor',
+                            '|',
+                            'link',
+                            'imageUpload',
+                            'blockQuote',
+                            'insertTable',
+                            '|',
+                            'undo',
+                            'redo',
+                            'sourceEditing'
+                        ],
+                        shouldNotGroupWhenFull: true
+                    },
+                    image: {
+                        toolbar: ['imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side']
+                    },
+                    table: {
+                        contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+                    },
+                    htmlSupport: {
+                        allow: [
+                            {
+                                name: /^[a-z]/,
+                                attributes: true,
+                                classes: true,
+                                styles: true
+                            }
+                        ]
+                    }
+                })
+                .then(editor => {
+                    window.headerEditor = editor;
+                    console.log('CKEditor initialized successfully');
+                })
+                .catch(error => {
+                    console.error('CKEditor initialization error:', error);
+                });
+        }
+
+        // Sync content to hidden input before form submission
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (window.headerEditor) {
+                    document.querySelector('#header_html').value = window.headerEditor.getData();
+                }
+            });
+        }
+    });
+</script>
+@endsection
