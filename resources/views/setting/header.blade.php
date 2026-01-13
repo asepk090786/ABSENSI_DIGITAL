@@ -3,7 +3,11 @@
 @section('title','Edit Header')
 
 @push('styles')
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
+<style>
+.tox-tinymce {
+    border: 1px solid #dee2e6 !important;
+}
+</style>
 @endpush
 
 @section('content')
@@ -232,24 +236,21 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
-$(document).ready(function() {
-    $('#header_html').summernote({
-        height: 300,
-        placeholder: 'Ketik atau edit header di sini',
-        toolbar: [
-            ['style', ['style']],
-            ['font', ['bold', 'underline', 'clear']],
-            ['fontname', ['fontname']],
-            ['fontsize', ['fontsize']],
-            ['color', ['color']],
-            ['para', ['ul', 'ol', 'paragraph']],
-            ['table', ['table']],
-            ['insert', ['link', 'picture', 'video']],
-            ['view', ['fullscreen', 'codeview', 'help']]
-        ]
-    });
+tinymce.init({
+    selector: '#header_html',
+    height: 350,
+    plugins: 'lists link image table code help wordcount',
+    toolbar: 'formatselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table | blockquote hr | removeformat | code help',
+    menubar: 'file edit view insert format table tools help',
+    language: 'id',
+    branding: false,
+    statusbar: true,
+    paste_as_text: false,
+    content_css: false,
+    relative_urls: true,
+    entity_encoding: 'raw'
 });
 </script>
 @endpush
