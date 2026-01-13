@@ -146,6 +146,9 @@
 
                             <hr class="my-4">
 
+                            <!-- Hidden input to clear header_html -->
+                            <input type="hidden" name="header_html" value="">
+
                             <!-- Action Buttons -->
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">
