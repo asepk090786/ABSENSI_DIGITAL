@@ -81,6 +81,12 @@
                 <span>Mata Pelajaran</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('asc_timetable.index') }}" class="menu-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}">
+                <i class="material-icons">table_chart</i>
+                <span>ASC Time Table</span>
+            </a>
+        </li>
     </ul>
 
     <h5>⚙️ Pengaturan</h5>

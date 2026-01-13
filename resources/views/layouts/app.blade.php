@@ -135,6 +135,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('mata_pelajaran.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}">
                                     <i class="ti ti-books me-2"></i>Mata Pelajaran
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}" href="{{ route('asc_timetable.index') }}">
+                                    <i class="ti ti-table me-2"></i>ASC Time Table
+                                </a>
                             </div>
                         </li>
                         

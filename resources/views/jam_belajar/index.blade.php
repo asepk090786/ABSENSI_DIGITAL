@@ -23,6 +23,13 @@
                 <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importModal">
                     <i class="ti ti-upload me-2"></i>Import Excel
                 </button>
+                <form action="{{ route('jam_belajar.destroy_all') }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA pengaturan jam KBM? Tindakan ini tidak dapat dibatalkan.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="ti ti-trash me-2"></i>Hapus Semua
+                    </button>
+                </form>
             </div>
         </div>
     </div>

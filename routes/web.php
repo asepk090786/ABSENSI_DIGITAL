@@ -80,6 +80,7 @@ Route::middleware(['auth'])->group(function(){
         Route::get('jadwal-kbm/guru/{guru}', [JadwalKbmController::class, 'showByGuru'])->name('jadwal-kbm.show-by-guru');
         Route::put('jadwal-kbm/{id}', [JadwalKbmController::class, 'update'])->name('jadwal-kbm.update');
         Route::delete('jadwal-kbm/{id}', [JadwalKbmController::class, 'destroy'])->name('jadwal-kbm.destroy');
+        Route::delete('jadwal-kbm-destroy-all', [JadwalKbmController::class, 'destroyAll'])->name('jadwal-kbm.destroy-all');
         Route::get('jadwal-kbm/get-jadwal-by-kelas/{kelas}', [JadwalKbmController::class, 'getJadwalByKelas'])->name('jadwal-kbm.get-by-kelas');
         Route::post('jadwal-kbm/check-konflik-guru', [JadwalKbmController::class, 'checkKonflikGuru'])->name('jadwal-kbm.check-konflik-guru');
     
@@ -99,6 +100,7 @@ Route::middleware(['auth'])->group(function(){
     Route::get('jam-belajar-export', [JamBelajarController::class, 'export'])->name('jam_belajar.export');
     Route::get('jam-belajar-template', [JamBelajarController::class, 'templateDownload'])->name('jam_belajar.template');
     Route::post('jam-belajar-import', [JamBelajarController::class, 'import'])->name('jam_belajar.import');
+    Route::delete('jam-belajar-destroy-all', [JamBelajarController::class, 'destroyAll'])->name('jam_belajar.destroy_all');
     
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
     
@@ -109,6 +111,12 @@ Route::middleware(['auth'])->group(function(){
     Route::get('mata-pelajaran-export', ['App\Http\Controllers\MataPelajaranController', 'export'])->name('mata_pelajaran.export');
     Route::get('mata-pelajaran-template', ['App\Http\Controllers\MataPelajaranController', 'templateDownload'])->name('mata_pelajaran.template');
     Route::post('mata-pelajaran-import', ['App\Http\Controllers\MataPelajaranController', 'import'])->name('mata_pelajaran.import');
+    
+    // ASC Timetable routes
+    Route::get('asc-timetable', ['App\Http\Controllers\AscTimetableController', 'index'])->name('asc_timetable.index');
+    Route::post('asc-timetable/parse', ['App\Http\Controllers\AscTimetableController', 'parseXml'])->name('asc_timetable.parse');
+    Route::post('asc-timetable/confirm-import', ['App\Http\Controllers\AscTimetableController', 'confirmImport'])->name('asc_timetable.confirm_import');
+    Route::get('asc-timetable/download-template', ['App\Http\Controllers\AscTimetableController', 'downloadTemplate'])->name('asc_timetable.download_template');
     
     // User Management routes
     Route::resource('users', UserManagementController::class)->only(['index','create','store','show','destroy']);

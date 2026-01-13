@@ -11,6 +11,15 @@
                     <div class="col">
                         <h4 class="card-title mb-0">Jadwal Kegiatan Belajar Mengajar (KBM)</h4>
                     </div>
+                    <div class="col-auto">
+                        <form action="{{ route('jadwal-kbm.destroy-all') }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus semua jadwal KBM?')">
+                                <i class="ti ti-trash me-1"></i>Hapus Semua Jadwal
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
             <div class="card-body">

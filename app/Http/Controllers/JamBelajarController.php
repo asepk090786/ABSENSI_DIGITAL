@@ -7,6 +7,7 @@ use App\Exports\JamBelajarExport;
 use App\Exports\JamBelajarTemplateExport;
 use App\Imports\JamBelajarImport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class JamBelajarController extends Controller
@@ -82,6 +83,14 @@ class JamBelajarController extends Controller
     {
         $jamBelajar->delete();
         return redirect()->route('jam_belajar.index')->with('success','Jam belajar dihapus');
+    }
+
+    public function destroyAll()
+    {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        JamBelajar::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        return redirect()->route('jam_belajar.index')->with('success','Semua pengaturan jam KBM telah dihapus');
     }
 
     public function export()

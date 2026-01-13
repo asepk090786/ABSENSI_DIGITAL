@@ -38,9 +38,17 @@ class JadwalKbmController extends Controller
         $semesterAktif = Semester::where('is_active', true)->first();
         
         // Get existing jadwal for this kelas
-        $existingJadwal = JadwalKbm::where('kelas_id', $kelasId)
-            ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
-            ->where('semester_id', $semesterAktif?->id)
+        // If no active tahun ajaran/semester, get the latest ones instead
+        $query = JadwalKbm::where('kelas_id', $kelasId);
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $existingJadwal = $query
             ->with(['guru', 'mataPelajaran', 'jamBelajar'])
             ->orderBySchedule()
             ->get()
@@ -70,9 +78,16 @@ class JadwalKbmController extends Controller
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
         
-        $jadwalGuru = JadwalKbm::where('guru_id', $guruId)
-            ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
-            ->where('semester_id', $semesterAktif?->id)
+        $query = JadwalKbm::where('guru_id', $guruId);
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalGuru = $query
             ->with(['kelas', 'mataPelajaran', 'jamBelajar'])
             ->orderBySchedule()
             ->get()
@@ -198,5 +213,23 @@ class JadwalKbmController extends Controller
             'konflik' => $konflik ? true : false,
             'data' => $konflik
         ]);
+    }
+
+    /**
+     * Delete all jadwal KBM
+     */
+    public function destroyAll()
+    {
+        try {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            DB::table('jadwal_kbm')->truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+            return redirect()->route('jadwal_kbm.index')
+                ->with('success', 'Semua jadwal KBM berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->route('jadwal_kbm.index')
+                ->with('error', 'Gagal menghapus jadwal: ' . $e->getMessage());
+        }
     }
 }
