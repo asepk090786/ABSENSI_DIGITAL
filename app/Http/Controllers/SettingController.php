@@ -173,4 +173,73 @@ class SettingController extends Controller
             return back()->withErrors('Tidak dapat menghapus: masih ada data terkait.');
         }
     }
-}
+
+    public function header()
+    {
+        $sekolah = \App\Models\Sekolah::first();
+        return view('setting.header', compact('sekolah'));
+    }
+
+    public function updateHeader(Request $request)
+    {
+        $validated = $request->validate([
+            'nama_sekolah' => 'required|string|max:255',
+            'alamat_jalan' => 'nullable|string|max:255',
+            'telepon' => 'nullable|string|max:20',
+            'website' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'logo_header_kiri' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            $sekolah = \App\Models\Sekolah::first();
+            
+            if (!$sekolah) {
+                $sekolah = new \App\Models\Sekolah();
+            }
+
+            $sekolah->nama_sekolah = $validated['nama_sekolah'];
+            $sekolah->alamat_jalan = $validated['alamat_jalan'] ?? '';
+            $sekolah->telepon = $validated['telepon'] ?? '';
+            $sekolah->website = $validated['website'] ?? '';
+            $sekolah->email = $validated['email'] ?? '';
+
+            // Handle logo_header_kiri
+            if ($request->hasFile('logo_header_kiri')) {
+                try {
+                    if ($sekolah->logo_header_kiri && \Storage::exists('public/' . $sekolah->logo_header_kiri)) {
+                        \Storage::delete('public/' . $sekolah->logo_header_kiri);
+                    }
+                    $logoPath = $request->file('logo_header_kiri')->store('logos', 'public');
+                    $sekolah->logo_header_kiri = $logoPath;
+                } catch (\Exception $e) {
+                    \Log::error('Error uploading logo_header_kiri: ' . $e->getMessage());
+                    throw new \Exception('Gagal upload logo kiri: ' . $e->getMessage());
+                }
+            }
+
+            // Handle logo (school logo)
+            if ($request->hasFile('logo')) {
+                try {
+                    if ($sekolah->logo && \Storage::exists('public/' . $sekolah->logo)) {
+                        \Storage::delete('public/' . $sekolah->logo);
+                    }
+                    $logoPath = $request->file('logo')->store('logos', 'public');
+                    $sekolah->logo = $logoPath;
+                } catch (\Exception $e) {
+                    \Log::error('Error uploading logo: ' . $e->getMessage());
+                    throw new \Exception('Gagal upload logo sekolah: ' . $e->getMessage());
+                }
+            }
+
+            $sekolah->save();
+
+            return redirect()->route('setting.header')
+                ->with('success', 'Header berhasil disimpan');
+        } catch (\Exception $e) {
+            \Log::error('Error updating header: ' . $e->getMessage());
+            return back()
+                ->with('error', 'Gagal menyimpan pengaturan: ' . $e->getMessage());
+        }
+    }

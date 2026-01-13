@@ -159,6 +159,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('setting.semester*') ? 'active' : '' }}" href="{{ route('setting.semester') }}">
                                     <i class="ti ti-adjustments me-2"></i>Semester
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('setting.header*') ? 'active' : '' }}" href="{{ route('setting.header') }}">
+                                    <i class="ti ti-layout-sidebar me-2"></i>Edit Header
+                                </a>
                                 <!-- Update disabled: menu disembunyikan -->
                             </div>
                         </li>

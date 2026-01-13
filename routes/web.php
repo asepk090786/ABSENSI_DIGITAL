@@ -157,6 +157,9 @@ Route::middleware(['auth'])->group(function(){
     Route::post('/setting/semester/{semester}/activate', [SettingController::class, 'activateSemester'])->name('setting.semester.activate');
     Route::post('/setting/semester/{semester}/deactivate', [SettingController::class, 'deactivateSemester'])->name('setting.semester.deactivate');
     
+    Route::get('/setting/header', [SettingController::class, 'header'])->name('setting.header');
+    Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
+    
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
