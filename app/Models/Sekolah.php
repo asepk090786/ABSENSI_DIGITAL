@@ -15,6 +15,7 @@ class Sekolah extends Model
         'nama_sekolah',
         'npsn',
         'alamat',
+        'alamat_jalan',
         'kelurahan',
         'kecamatan',
         'kota',
@@ -27,5 +28,5 @@ class Sekolah extends Model
         'status',
         'akreditasi',
         'logo',
-    ];
+        'logo_kanan',        'logo_kanan',    ];
 }

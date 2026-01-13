@@ -86,6 +86,7 @@ Route::middleware(['auth'])->group(function(){
         Route::delete('jadwal-kbm-destroy-all', [JadwalKbmController::class, 'destroyAll'])->name('jadwal-kbm.destroy-all');
         Route::get('jadwal-kbm/get-jadwal-by-kelas/{kelas}', [JadwalKbmController::class, 'getJadwalByKelas'])->name('jadwal-kbm.get-by-kelas');
         Route::post('jadwal-kbm/check-konflik-guru', [JadwalKbmController::class, 'checkKonflikGuru'])->name('jadwal-kbm.check-konflik-guru');
+        Route::put('jadwal-kbm/update-header', [JadwalKbmController::class, 'updateHeader'])->name('jadwal-kbm.update-header');
     
         // Pengaturan Jam Belajar routes (old jadwal_kbm)
         Route::get('pengaturan-jam', [JamBelajarController::class, 'index'])->name('jadwal_kbm.index');

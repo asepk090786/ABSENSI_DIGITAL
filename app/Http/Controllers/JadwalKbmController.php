@@ -21,8 +21,9 @@ class JadwalKbmController extends Controller
     {
         $kelasList = Kelas::with('waliKelas')->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
         $guruList = Guru::orderBy('nama')->get();
+        $sekolah = \App\Models\Sekolah::first();
         
-        return view('jadwal_kbm.index', compact('kelasList', 'guruList'));
+        return view('jadwal_kbm.index', compact('kelasList', 'guruList', 'sekolah'));
     }
 
     /**
@@ -337,6 +338,75 @@ class JadwalKbmController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('jadwal_kbm.index')
                 ->with('error', 'Gagal menghapus jadwal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update header settings (sekolah info dan logo)
+     */
+    public function updateHeader(Request $request)
+    {
+        $validated = $request->validate([
+            'nama_sekolah' => 'required|string|max:255',
+            'alamat_jalan' => 'nullable|string|max:255',
+            'telepon' => 'nullable|string|max:20',
+            'website' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'logo_header_kiri' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            $sekolah = \App\Models\Sekolah::first();
+            
+            if (!$sekolah) {
+                $sekolah = new \App\Models\Sekolah();
+            }
+
+            $sekolah->nama_sekolah = $validated['nama_sekolah'];
+            $sekolah->alamat_jalan = $validated['alamat_jalan'] ?? '';
+            $sekolah->telepon = $validated['telepon'] ?? '';
+            $sekolah->website = $validated['website'] ?? '';
+            $sekolah->email = $validated['email'] ?? '';
+
+            // Handle logo_header_kiri (Logo Kiri - Tidak dari sekolah)
+            if ($request->hasFile('logo_header_kiri')) {
+                try {
+                    // Delete old logo_header_kiri if exists
+                    if ($sekolah->logo_header_kiri && \Storage::exists('public/' . $sekolah->logo_header_kiri)) {
+                        \Storage::delete('public/' . $sekolah->logo_header_kiri);
+                    }
+                    $logoPath = $request->file('logo_header_kiri')->store('logos', 'public');
+                    $sekolah->logo_header_kiri = $logoPath;
+                } catch (\Exception $e) {
+                    \Log::error('Error uploading logo_header_kiri: ' . $e->getMessage());
+                    throw new \Exception('Gagal upload logo kiri: ' . $e->getMessage());
+                }
+            }
+
+            // Handle logo (Logo Kanan - Logo Sekolah)
+            if ($request->hasFile('logo')) {
+                try {
+                    // Delete old logo if exists
+                    if ($sekolah->logo && \Storage::exists('public/' . $sekolah->logo)) {
+                        \Storage::delete('public/' . $sekolah->logo);
+                    }
+                    $logoPath = $request->file('logo')->store('logos', 'public');
+                    $sekolah->logo = $logoPath;
+                } catch (\Exception $e) {
+                    \Log::error('Error uploading logo: ' . $e->getMessage());
+                    throw new \Exception('Gagal upload logo sekolah: ' . $e->getMessage());
+                }
+            }
+
+            $sekolah->save();
+
+            return redirect()->route('jadwal-kbm.index', ['tab' => 'setting'])
+                ->with('success', 'Pengaturan header berhasil disimpan');
+        } catch (\Exception $e) {
+            \Log::error('Error updating header: ' . $e->getMessage());
+            return redirect()->route('jadwal-kbm.index', ['tab' => 'setting'])
+                ->with('error', 'Gagal menyimpan pengaturan: ' . $e->getMessage());
         }
     }
 }
