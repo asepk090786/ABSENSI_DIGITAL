@@ -22,9 +22,9 @@
     <div class="card-body print-body">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #2c5282;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 3px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 3px;">
                 @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
-                    <img src="{{ asset('storage/' . $sekolah->logo) }}" style="height: 35px;">
+                    <img src="{{ asset('storage/' . $sekolah->logo) }}" style="height: 50px; width: auto;">
                 @endif
                 <div style="text-align: left;">
                     <h3 style="margin: 0; font-weight: 700; color: #1a202c; font-size: 13px;">{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</h3>
