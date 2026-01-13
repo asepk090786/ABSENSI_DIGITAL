@@ -15,34 +15,34 @@
             font-family: Arial, sans-serif;
             color: #333;
             background: white;
-            line-height: 1.4;
+            line-height: 1.2;
         }
         
         .page {
             width: 210mm;
             height: 297mm;
             margin: 0 auto;
-            padding: 20px;
+            padding: 10px;
             background: white;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #2c5282;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #2c5282;
         }
         
         .header-content {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 3px;
         }
         
         .logo {
-            height: 50px;
+            height: 35px;
         }
         
         .school-info {
@@ -53,59 +53,59 @@
             margin: 0;
             font-weight: 700;
             color: #1a202c;
-            font-size: 16px;
+            font-size: 13px;
         }
         
         .school-info p {
-            margin: 2px 0;
-            font-size: 11px;
+            margin: 1px 0;
+            font-size: 8px;
             color: #666;
         }
         
         .title {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 6px;
         }
         
         .title h2 {
-            margin: 0 0 5px 0;
+            margin: 0 0 2px 0;
             font-weight: 700;
             color: #2c5282;
-            font-size: 18px;
+            font-size: 14px;
         }
         
         .title h3 {
-            margin: 0 0 8px 0;
+            margin: 0 0 2px 0;
             font-weight: 600;
             color: #4a5568;
-            font-size: 14px;
+            font-size: 11px;
         }
         
         .title p {
             margin: 0;
-            font-size: 11px;
+            font-size: 8px;
             color: #718096;
         }
         
         .jadwal-section {
-            margin-bottom: 12px;
+            margin-bottom: 4px;
         }
         
         .hari-header {
             background: linear-gradient(90deg, #2c5282, #2d3748);
             color: white;
-            padding: 6px 10px;
-            margin-bottom: 6px;
+            padding: 2px 6px;
+            margin-bottom: 2px;
             font-weight: 600;
-            font-size: 12px;
-            border-radius: 4px;
+            font-size: 9px;
+            border-radius: 2px;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
-            margin-bottom: 12px;
+            font-size: 8px;
+            margin-bottom: 4px;
         }
         
         thead {
@@ -114,7 +114,7 @@
         
         thead th {
             border: 1px solid #cbd5e0;
-            padding: 5px;
+            padding: 2px 2px;
             text-align: left;
             font-weight: 600;
         }
@@ -122,24 +122,26 @@
         thead th:nth-child(1),
         thead th:nth-child(3) {
             text-align: center;
-            width: 12%;
+            width: 10%;
         }
         
         tbody td {
             border: 1px solid #cbd5e0;
-            padding: 5px;
+            padding: 1px 2px;
         }
         
         tbody tr td:first-child {
             background: #f7fafc;
-            font-weight: 500;
+            font-weight: 600;
             text-align: center;
+            width: 8%;
         }
         
         tbody tr td:last-child {
             text-align: center;
-            font-weight: 500;
+            font-weight: 600;
             color: #2c5282;
+            width: 12%;
         }
         
         tbody tr.non-kbm {
@@ -147,29 +149,30 @@
         }
         
         .divider {
-            border-top: 2px solid #2c5282;
-            margin: 12px 0;
+            border-top: 1px solid #2c5282;
+            margin: 4px 0;
         }
         
         .guru-section {
-            margin-top: 12px;
+            margin-top: 4px;
         }
         
         .guru-section h4 {
-            margin: 0 0 6px 0;
+            margin: 0 0 2px 0;
             font-weight: 600;
             color: #2c5282;
-            font-size: 12px;
+            font-size: 9px;
         }
         
         .guru-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 7.5px;
+            line-height: 1.2;
         }
         
         .guru-table td {
-            padding: 4px 10px;
+            padding: 1px 4px;
             width: 33%;
             border-bottom: 1px solid #e2e8f0;
         }
@@ -179,14 +182,14 @@
         }
         
         .footer {
-            margin-top: 12px;
+            margin-top: 4px;
             text-align: right;
-            font-size: 9px;
+            font-size: 7px;
             color: #718096;
         }
         
         .footer p {
-            margin: 2px 0;
+            margin: 0px 0;
         }
     </style>
 </head>
@@ -276,16 +279,16 @@
             <table class="guru-table">
                 <tbody>
                     @php
-                        $guruChunks = $guruList->chunk(3);
+                        $guruChunks = $guruList->chunk(4);
                     @endphp
                     @foreach($guruChunks as $chunk)
                         <tr>
                             @foreach($chunk as $guru)
                                 <td>
-                                    <strong>{{ $guru->nip }}</strong> - {{ substr($guru->nama, 0, 20) }}{{ strlen($guru->nama) > 20 ? '...' : '' }}
+                                    <strong>{{ $guru->nip }}</strong> {{ substr($guru->nama, 0, 15) }}{{ strlen($guru->nama) > 15 ? '.' : '' }}
                                 </td>
                             @endforeach
-                            @for($i = $chunk->count(); $i < 3; $i++)
+                            @for($i = $chunk->count(); $i < 4; $i++)
                                 <td></td>
                             @endfor
                         </tr>
