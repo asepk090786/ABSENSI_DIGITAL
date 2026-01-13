@@ -201,11 +201,11 @@ class SettingController extends Controller
             }
 
             $sekolah->nama_sekolah = $validated['nama_sekolah'];
-            $sekolah->alamat_jalan = $validated['alamat_jalan'] ?? '';
-            $sekolah->telepon = $validated['telepon'] ?? '';
-            $sekolah->website = $validated['website'] ?? '';
-            $sekolah->email = $validated['email'] ?? '';
-            $sekolah->header_html = $validated['header_html'] ?? '';
+            $sekolah->alamat_jalan = $validated['alamat_jalan'] ?? null;
+            $sekolah->telepon = $validated['telepon'] ?? null;
+            $sekolah->website = $validated['website'] ?? null;
+            $sekolah->email = $validated['email'] ?? null;
+            $sekolah->header_html = $validated['header_html'] ?? null;
 
             // Handle logo_header_kiri
             if ($request->hasFile('logo_header_kiri')) {
