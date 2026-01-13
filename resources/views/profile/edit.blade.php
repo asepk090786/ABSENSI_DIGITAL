@@ -59,7 +59,7 @@
             <!-- Edit Profile Form -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="title">{{ _('Edit Profile') }}</h5>
+                    <h5 class="title">{{ __('Edit Profile') }}</h5>
                 </div>
                 <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" autocomplete="off">
                     <div class="card-body">
@@ -122,7 +122,7 @@
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-fill btn-primary">
-                            <i class="ti ti-device-floppy me-1"></i>{{ _('Save') }}
+                            <i class="ti ti-device-floppy me-1"></i>{{ __('Save') }}
                         </button>
                     </div>
                 </form>
@@ -131,7 +131,7 @@
             <!-- Change Password Form -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="title">{{ _('Password') }}</h5>
+                    <h5 class="title">{{ __('Password') }}</h5>
                 </div>
                 <form method="post" action="{{ route('profile.password') }}" autocomplete="off">
                     <div class="card-body">
@@ -165,7 +165,7 @@
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-fill btn-primary">
-                            <i class="ti ti-lock me-1"></i>{{ _('Change password') }}
+                            <i class="ti ti-lock me-1"></i>{{ __('Change password') }}
                         </button>
                     </div>
                 </form>

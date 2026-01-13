@@ -30,7 +30,7 @@
                                 @if($sekolah->logo)
                                     @php
                                         $logoPath = $sekolah->logo;
-                                        $logoUrl = Storage::disk('public')->exists($logoPath) ? Storage::url($logoPath) : null;
+                                        $logoUrl = Storage::disk('public')->exists($logoPath) ? asset('storage/' . $logoPath) : null;
                                     @endphp
                                     @if($logoUrl)
                                         <img src="{{ $logoUrl }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;">

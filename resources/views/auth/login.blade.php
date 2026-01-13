@@ -248,7 +248,7 @@
                 $logoUrl = null;
                 if($sekolah && $sekolah->logo){
                     if (Storage::disk('public')->exists($sekolah->logo)) {
-                        $logoUrl = Storage::url($sekolah->logo);
+                        $logoUrl = asset('storage/' . $sekolah->logo);
                     }
                 }
             @endphp
