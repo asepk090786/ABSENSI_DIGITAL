@@ -10,6 +10,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\JadwalKbmController;
+use App\Http\Controllers\UpdateController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -97,12 +98,17 @@ Route::middleware(['auth'])->group(function(){
     
     // Keep old jam_belajar routes for backward compatibility
     Route::resource('jam_belajar', JamBelajarController::class)->except(['show']);
+    Route::post('jam-belajar/insert-slot', [JamBelajarController::class, 'insertSlot'])->name('jam_belajar.insert_slot');
     Route::get('jam-belajar-export', [JamBelajarController::class, 'export'])->name('jam_belajar.export');
     Route::get('jam-belajar-template', [JamBelajarController::class, 'templateDownload'])->name('jam_belajar.template');
     Route::post('jam-belajar-import', [JamBelajarController::class, 'import'])->name('jam_belajar.import');
     Route::delete('jam-belajar-destroy-all', [JamBelajarController::class, 'destroyAll'])->name('jam_belajar.destroy_all');
     
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
+
+    // Maintenance update routes
+    Route::get('maintenance/update', [UpdateController::class, 'index'])->name('maintenance.update.index');
+    Route::post('maintenance/update/run', [UpdateController::class, 'run'])->name('maintenance.update.run');
     
     // Data Master routes
     Route::resource('sekolah', 'App\Http\Controllers\SekolahController');

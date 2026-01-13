@@ -159,6 +159,7 @@
                                 <a class="dropdown-item {{ request()->routeIs('setting.semester*') ? 'active' : '' }}" href="{{ route('setting.semester') }}">
                                     <i class="ti ti-adjustments me-2"></i>Semester
                                 </a>
+                                <!-- Update disabled: menu disembunyikan -->
                             </div>
                         </li>
                     </ul>

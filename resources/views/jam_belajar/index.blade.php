@@ -14,6 +14,9 @@
                 <a href="{{ route('jam_belajar.create') }}" class="btn btn-primary">
                     <i class="ti ti-plus me-2"></i>Tambah Jam KBM
                 </a>
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#insertModal">
+                    <i class="ti ti-plus me-2"></i>Sisipkan Waktu
+                </button>
                 <a href="{{ route('jam_belajar.export') }}" class="btn btn-success">
                     <i class="ti ti-download me-2"></i>Export Excel
                 </a>
@@ -202,5 +205,60 @@
             </form>
         </div>
     </div>
+    </div>
+
+    <!-- Insert Slot Modal -->
+    <div class="modal fade" id="insertModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ti ti-plus me-2"></i>Sisipkan Waktu/Jam Baru
+                    </h5>
+                </div>
+                <form action="{{ route('jam_belajar.insert_slot') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Hari</label>
+                            <select name="hari" class="form-select" required>
+                                <option value="">- Pilih Hari -</option>
+                                @foreach($days as $day)
+                                    <option value="{{ $day }}">{{ $day }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Sisipkan di Jam Ke</label>
+                                <input type="number" name="urutan" class="form-control" min="1" required>
+                                <small class="text-muted">Slot lama di jam ini dan setelahnya akan digeser +1.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Jenis</label>
+                                <input type="text" name="jenis" class="form-control" placeholder="Contoh: ISTIRAHAT" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Mulai</label>
+                                <input type="time" name="jam_mulai" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Selesai</label>
+                                <input type="time" name="jam_selesai" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-plus me-1"></i>Sisipkan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
 </div>
 @endsection

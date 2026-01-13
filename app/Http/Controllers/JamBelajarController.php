@@ -93,6 +93,48 @@ class JamBelajarController extends Controller
         return redirect()->route('jam_belajar.index')->with('success','Semua pengaturan jam KBM telah dihapus');
     }
 
+    public function insertSlot(Request $request)
+    {
+        $data = $request->validate([
+            'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'urutan' => 'required|integer|min:1',
+            'jam_mulai' => 'required|date_format:H:i',
+            'jam_selesai' => 'required|date_format:H:i|after:jam_mulai',
+            'jenis' => 'required|string',
+        ]);
+
+        DB::transaction(function() use ($data) {
+            // Geser urutan jam belajar yang sama atau lebih besar (desc supaya tidak bentrok)
+            $toShiftJam = JamBelajar::where('hari', $data['hari'])
+                ->where('urutan', '>=', $data['urutan'])
+                ->orderBy('urutan', 'desc')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($toShiftJam as $item) {
+                $item->update(['urutan' => $item->urutan + 1]);
+            }
+
+            // Geser jadwal KBM yang sudah ada di jam_ke yang sama/higher (desc per jam_ke untuk hindari duplikat)
+            $toShiftJadwal = DB::table('jadwal_kbm')
+                ->where('hari', $data['hari'])
+                ->where('jam_ke', '>=', $data['urutan'])
+                ->orderBy('jam_ke', 'desc')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($toShiftJadwal as $row) {
+                DB::table('jadwal_kbm')->where('id', $row->id)->update(['jam_ke' => $row->jam_ke + 1]);
+            }
+
+            // Tambah slot baru di posisi yang disisipkan
+            JamBelajar::create($data);
+        });
+
+        return redirect()->route('jam_belajar.index')
+            ->with('success', "Slot baru disisipkan di jam ke-{$data['urutan']} untuk {$data['hari']}. Jadwal KBM digeser otomatis.");
+    }
+
     public function export()
     {
         return Excel::download(new JamBelajarExport, 'Jam_KBM_' . date('Y-m-d') . '.xlsx');
