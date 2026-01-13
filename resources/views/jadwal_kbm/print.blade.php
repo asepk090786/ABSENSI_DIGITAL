@@ -16,99 +16,118 @@
 
 <!-- Print Content -->
 <div id="printContent" class="card">
-    <div class="card-body" style="background: white; padding: 40px;">
+    <div class="card-body" style="background: white; padding: 30px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
         <!-- Header -->
-        <div style="text-align: center; margin-bottom: 30px;">
-            @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
-                <img src="{{ asset('storage/' . $sekolah->logo) }}" style="height: 60px; margin-bottom: 10px;">
-            @endif
-            <h3 style="margin: 5px 0;">{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</h3>
-            <p style="margin: 2px 0; font-size: 12px;">{{ $sekolah->alamat ?? '' }}</p>
-            <hr style="margin: 15px 0;">
+        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #2c5282;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+                @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
+                    <img src="{{ asset('storage/' . $sekolah->logo) }}" style="height: 50px;">
+                @endif
+                <div style="text-align: left;">
+                    <h3 style="margin: 0; font-weight: 700; color: #1a202c; font-size: 16px;">{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</h3>
+                    <p style="margin: 2px 0; font-size: 11px; color: #666;">{{ $sekolah->alamat ?? '' }}</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Judul Jadwal -->
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h4 style="margin: 10px 0; font-weight: bold;">JADWAL PELAJARAN KELAS {{ strtoupper($kelas->nama_kelas) }}</h4>
-            <p style="margin: 5px 0; font-size: 12px;">
-                Tahun Ajaran: <strong>{{ $tahunAjaranAktif->nama_tahun ?? '-' }}</strong> | 
-                Semester: <strong>{{ $semesterAktif->nama_semester ?? '-' }}</strong> (Aktif)
+        <!-- Judul -->
+        <div style="text-align: center; margin-bottom: 15px;">
+            <h2 style="margin: 0 0 5px 0; font-weight: 700; color: #2c5282; font-size: 18px;">JADWAL PELAJARAN</h2>
+            <h3 style="margin: 0 0 8px 0; font-weight: 600; color: #4a5568; font-size: 14px;">Kelas {{ strtoupper($kelas->nama_kelas) }}</h3>
+            <p style="margin: 0; font-size: 11px; color: #718096;">
+                <strong>{{ $tahunAjaranAktif->nama_tahun ?? '-' }}</strong> | 
+                <strong>{{ $semesterAktif->nama_semester ?? '-' }} (Aktif)</strong>
             </p>
         </div>
 
-        <!-- Tabel Jadwal -->
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-            <thead>
-                <tr style="background: #f0f0f0; border-bottom: 2px solid #333;">
-                    <th style="border: 1px solid #333; padding: 8px; text-align: center;">Jam Ke</th>
-                    <th style="border: 1px solid #333; padding: 8px; text-align: center;">Hari</th>
-                    <th style="border: 1px solid #333; padding: 8px; text-align: left;">Mata Pelajaran</th>
-                    <th style="border: 1px solid #333; padding: 8px; text-align: center;">Guru</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($jadwalSorted as $jadwal)
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ $jadwal->jam_ke }}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ $jadwal->hari }}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px;">{{ $jadwal->mataPelajaran->nama_mapel ?? '-' }}</td>
-                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ $jadwal->guru->nip ?? '-' }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #999;">
-                            Belum ada jadwal untuk kelas ini
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+        <!-- Tabel Jadwal Kompak -->
+        <div style="margin-bottom: 15px;">
+            @php
+                $jadwalByHari = $jadwalSorted->groupBy('hari');
+                $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+            @endphp
 
-        <!-- Keterangan Guru -->
-        <div style="margin-top: 30px;">
-            <h5 style="margin-bottom: 12px; font-weight: bold;">DAFTAR GURU PENGAJAR</h5>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #f0f0f0; border-bottom: 2px solid #333;">
-                        <th style="border: 1px solid #333; padding: 8px; text-align: center;">No</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: center;">Kode Guru</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: left;">Nama Guru</th>
-                    </tr>
-                </thead>
+            @foreach($hariList as $hari)
+                @php
+                    $jadwalHari = $jadwalByHari->get($hari, collect());
+                @endphp
+                @if($jadwalHari->count() > 0)
+                    <div style="margin-bottom: 12px;">
+                        <!-- Nama Hari Header -->
+                        <div style="background: linear-gradient(90deg, #2c5282, #2d3748); color: white; padding: 6px 10px; margin-bottom: 6px; font-weight: 600; font-size: 12px; border-radius: 4px;">
+                            📅 {{ $hari }}
+                        </div>
+                        
+                        <!-- Tabel Jadwal per Hari -->
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                            <thead>
+                                <tr style="background: #edf2f7;">
+                                    <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 600; width: 15%;">Jam</th>
+                                    <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: left; font-weight: 600;">Mapel</th>
+                                    <th style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 600; width: 12%;">Guru</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($jadwalHari->sortBy('jam_ke') as $jadwal)
+                                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                                        <td style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; background: #f7fafc;">{{ $jadwal->jam_ke }}</td>
+                                        <td style="border: 1px solid #cbd5e0; padding: 5px;">{{ $jadwal->mataPelajaran->nama_mapel ?? '-' }}</td>
+                                        <td style="border: 1px solid #cbd5e0; padding: 5px; text-align: center; font-weight: 500; color: #2c5282;">{{ $jadwal->guru->nip ?? '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            @endforeach
+        </div>
+
+        <!-- Garis Pemisah -->
+        <div style="border-top: 2px solid #2c5282; margin: 12px 0;"></div>
+
+        <!-- Keterangan Guru Compact -->
+        <div style="margin-top: 12px;">
+            <h4 style="margin: 0 0 6px 0; font-weight: 600; color: #2c5282; font-size: 12px;">DAFTAR GURU PENGAJAR</h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
                 <tbody>
-                    @forelse($guruList as $index => $guru)
-                        <tr style="border-bottom: 1px solid #ddd;">
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ $index + 1 }}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ $guru->nip }}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">{{ $guru->nama }}</td>
-                        </tr>
-                    @empty
+                    @php
+                        $guruChunks = $guruList->chunk(3);
+                    @endphp
+                    @foreach($guruChunks as $chunk)
                         <tr>
-                            <td colspan="3" style="border: 1px solid #ddd; padding: 12px; text-align: center; color: #999;">
-                                Tidak ada guru yang mengajar
-                            </td>
+                            @foreach($chunk as $guru)
+                                <td style="padding: 4px 10px; width: 33%; border-bottom: 1px solid #e2e8f0;">
+                                    <strong>{{ $guru->nip }}</strong> - {{ substr($guru->nama, 0, 20) }}{{ strlen($guru->nama) > 20 ? '...' : '' }}
+                                </td>
+                            @endforeach
+                            @for($i = $chunk->count(); $i < 3; $i++)
+                                <td style="padding: 4px 10px; width: 33%;"></td>
+                            @endfor
                         </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
 
         <!-- Footer -->
-        <div style="margin-top: 40px;">
-            <div style="text-align: right;">
-                <p style="margin: 0;">Dicetak: {{ now()->format('d F Y H:i:s') }}</p>
-            </div>
+        <div style="margin-top: 12px; text-align: right; font-size: 9px; color: #718096;">
+            <p style="margin: 2px 0;">Dicetak: {{ now()->format('d F Y H:i') }}</p>
         </div>
     </div>
 </div>
 
 <style>
     @media print {
-        body { margin: 0; padding: 0; }
-        .btn, .row, .navbar-vertical, .page-header { display: none !important; }
-        .card { box-shadow: none !important; border: none !important; }
-        .card-body { padding: 0 !important; }
+        body { margin: 0; padding: 0; background: white; }
+        .btn, .row, .navbar-vertical, .page-header, footer { display: none !important; }
+        .card { box-shadow: none !important; border: none !important; page-break-inside: avoid; }
+        .card-body { padding: 20px !important; }
         table { page-break-inside: avoid; }
+        #printContent { max-width: 210mm; margin: 0 auto; }
+    }
+    
+    @media screen {
+        #printContent { max-width: 210mm; margin: 20px auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     }
 </style>
 @endsection
