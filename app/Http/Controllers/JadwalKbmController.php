@@ -70,6 +70,47 @@ class JadwalKbmController extends Controller
     }
 
     /**
+     * Print jadwal per kelas
+     */
+    public function printByKelas($kelasId)
+    {
+        $kelas = Kelas::findOrFail($kelasId);
+        $sekolah = \App\Models\Sekolah::first();
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        // Get existing jadwal for this kelas
+        $query = JadwalKbm::where('kelas_id', $kelasId);
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalSorted = $query
+            ->with(['guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get();
+        
+        // Get unique guru from jadwal
+        $guruList = $jadwalSorted
+            ->pluck('guru')
+            ->unique('id')
+            ->values();
+        
+        return view('jadwal_kbm.print', compact(
+            'kelas',
+            'sekolah',
+            'tahunAjaranAktif',
+            'semesterAktif',
+            'jadwalSorted',
+            'guruList'
+        ));
+    }
+
+    /**
      * Show jadwal per guru
      */
     public function showByGuru($guruId)

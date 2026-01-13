@@ -20,7 +20,10 @@
                             </small>
                         </p>
                     </div>
-                    <div class="col-auto">
+                    <div class="col-auto d-flex gap-2">
+                        <a href="{{ route('jadwal-kbm.print', $kelas->id) }}" class="btn btn-info btn-sm" target="_blank">
+                            <i class="ti ti-printer me-1"></i>Print Jadwal
+                        </a>
                         <a href="{{ route('jadwal-kbm.index') }}" class="btn btn-secondary btn-sm">
                             <i class="ti ti-arrow-left me-1"></i>Kembali
                         </a>
