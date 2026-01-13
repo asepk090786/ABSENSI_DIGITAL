@@ -23,7 +23,7 @@
         <!-- Header -->
         @if($sekolah && $sekolah->header_html)
             <!-- Custom Header from Editor -->
-            <div class="header-section">
+            <div class="header-section custom-header-wrapper">
                 {!! $sekolah->header_html !!}
             </div>
         @else
@@ -324,6 +324,13 @@
         text-align: center;
         margin-bottom: 15px;
         padding-bottom: 12px;
+    }
+
+    .custom-header-wrapper {
+        border: 2px solid #333;
+        padding: 15px;
+        background: white;
+        margin-bottom: 20px;
     }
 
     .header-content {
