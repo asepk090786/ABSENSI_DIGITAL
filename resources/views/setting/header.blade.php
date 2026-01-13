@@ -87,10 +87,45 @@
                                 <input type="hidden" id="header_html" name="header_html">
                                 <small class="text-muted d-block mt-2">Edit header secara manual seperti di Microsoft Word</small>
                                 
-                                <!-- Live Preview -->
-                                <label class="form-label mt-3 mb-2">Preview Live:</label>
-                                <div id="headerPreviewLive">
-                                    {!! old('header_html', $sekolah->header_html ?? '<p style="text-align: center; color: #999;">Preview akan tampil di sini</p>') !!}
+                                <!-- Live Preview with Default Structure -->
+                                <label class="form-label mt-3 mb-2">
+                                    <strong>Preview Live:</strong>
+                                    <span class="badge bg-info ms-2">Real-time update</span>
+                                </label>
+                                <div id="headerPreviewLive" style="border: 2px solid #333; padding: 15px; background: white; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                                    <!-- Logo Kiri -->
+                                    <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        @if($sekolah && $sekolah->logo_header_kiri && file_exists(public_path('storage/' . $sekolah->logo_header_kiri)))
+                                            <img src="{{ asset('storage/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="max-height: 60px; max-width: 60px;" id="previewLogoKiri">
+                                        @else
+                                            <div style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo L</div>
+                                        @endif
+                                    </div>
+
+                                    <!-- Center Info -->
+                                    <div style="text-align: center; flex: 1;">
+                                        <h6 style="margin: 0; font-weight: bold; font-size: 13px; line-height: 1.2;" id="previewSekolahName">
+                                            {{ $sekolah->nama_sekolah ?? 'NAMA SEKOLAH' }}
+                                        </h6>
+                                        <p style="margin: 5px 0 0 0; font-size: 9px; color: #555;" id="previewAlamat">
+                                            {{ $sekolah->alamat_jalan ?? 'Jalan Sekolah' }}
+                                        </p>
+                                        <p style="margin: 2px 0 0 0; font-size: 8px; color: #555;" id="previewWebEmail">
+                                            @if($sekolah && ($sekolah->website || $sekolah->email))
+                                                <span>Website: <span id="previewWebsite">{{ $sekolah->website ?? '-' }}</span></span><br>
+                                                <span>Email: <span id="previewEmail">{{ $sekolah->email ?? '-' }}</span></span>
+                                            @endif
+                                        </p>
+                                    </div>
+
+                                    <!-- Logo Kanan -->
+                                    <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
+                                            <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" style="max-height: 60px; max-width: 60px;" id="previewLogoSekolah">
+                                        @else
+                                            <div style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo R</div>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
 
@@ -327,11 +362,6 @@
                 
                 // Update preview live saat user mengetik
                 editor.model.document.on('change:data', function() {
-                    const preview = document.querySelector('#headerPreviewLive');
-                    if (preview) {
-                        preview.innerHTML = editor.getData();
-                    }
-                    // Juga update hidden input
                     document.querySelector('#header_html').value = editor.getData();
                 });
             })
@@ -348,6 +378,61 @@
                 }
             });
         }
+
+        // Update preview when input fields change
+        document.querySelector('#nama_sekolah').addEventListener('change', function() {
+            document.querySelector('#previewSekolahName').textContent = this.value || 'NAMA SEKOLAH';
+        });
+
+        document.querySelector('#alamat_jalan').addEventListener('change', function() {
+            document.querySelector('#previewAlamat').textContent = this.value || 'Jalan Sekolah';
+        });
+
+        document.querySelector('#website').addEventListener('change', function() {
+            document.querySelector('#previewWebsite').textContent = this.value || '-';
+        });
+
+        document.querySelector('#email').addEventListener('change', function() {
+            document.querySelector('#previewEmail').textContent = this.value || '-';
+        });
+
+        // Update preview when logo files change
+        document.querySelector('#logo_header_kiri').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                let logoImg = document.querySelector('#previewLogoKiri');
+                if (!logoImg) {
+                    const logoDiv = document.querySelector('[style*="flex-shrink"]')[0];
+                    logoImg = document.createElement('img');
+                    logoImg.id = 'previewLogoKiri';
+                    logoImg.style.maxHeight = '60px';
+                    logoImg.style.maxWidth = '60px';
+                    logoDiv.innerHTML = '';
+                    logoDiv.appendChild(logoImg);
+                }
+                logoImg.src = event.target.result;
+            };
+            reader.readAsDataURL(this.files[0]);
+        });
+
+        document.querySelector('#logo').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                let logoImg = document.querySelector('#previewLogoSekolah');
+                if (!logoImg) {
+                    const logos = document.querySelectorAll('[style*="flex-shrink"]');
+                    const logoDiv = logos[logos.length - 1];
+                    logoImg = document.createElement('img');
+                    logoImg.id = 'previewLogoSekolah';
+                    logoImg.style.maxHeight = '60px';
+                    logoImg.style.maxWidth = '60px';
+                    logoDiv.innerHTML = '';
+                    logoDiv.appendChild(logoImg);
+                }
+                logoImg.src = event.target.result;
+            };
+            reader.readAsDataURL(this.files[0]);
+        });
     }, 500);
 </script>
 @endpush
