@@ -31,8 +31,8 @@
         <div style="text-align: center; margin-bottom: 20px;">
             <h4 style="margin: 10px 0; font-weight: bold;">JADWAL PELAJARAN KELAS {{ strtoupper($kelas->nama_kelas) }}</h4>
             <p style="margin: 5px 0; font-size: 12px;">
-                Tahun Ajaran: {{ $tahunAjaran->nama_tahun ?? '-' }} | 
-                Semester: {{ $semester->nama_semester ?? '-' }}
+                Tahun Ajaran: <strong>{{ $tahunAjaranAktif->nama_tahun ?? '-' }}</strong> | 
+                Semester: <strong>{{ $semesterAktif->nama_semester ?? '-' }}</strong> (Aktif)
             </p>
         </div>
 
