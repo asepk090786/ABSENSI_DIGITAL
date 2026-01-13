@@ -86,6 +86,12 @@
                                 <div id="editor">{!! old('header_html', $sekolah->header_html ?? '') !!}</div>
                                 <input type="hidden" id="header_html" name="header_html">
                                 <small class="text-muted d-block mt-2">Edit header secara manual seperti di Microsoft Word</small>
+                                
+                                <!-- Live Preview -->
+                                <label class="form-label mt-3 mb-2">Preview Live:</label>
+                                <div id="headerPreviewLive">
+                                    {!! old('header_html', $sekolah->header_html ?? '<p style="text-align: center; color: #999;">Preview akan tampil di sini</p>') !!}
+                                </div>
                             </div>
 
                             <hr class="my-4">
@@ -230,7 +236,9 @@
 
 <style>
     .ck-editor__main {
-        min-height: 400px;
+        min-height: auto;
+        max-height: 200px;
+        overflow-y: auto;
     }
 
     .ck.ck-editor__top .ck-sticky-panel__content {
@@ -240,7 +248,7 @@
 
     .ck.ck-editor__top .ck-toolbar {
         background: #f8f9fa;
-        padding: 10px;
+        padding: 8px;
         border-radius: 4px 4px 0 0;
     }
 
@@ -248,13 +256,21 @@
         background: white;
         border: 1px solid #dee2e6;
         border-top: none;
-        padding: 15px;
+        padding: 10px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        min-height: auto;
     }
 
     .ck.ck-editor {
         border: 1px solid #dee2e6;
         border-radius: 4px;
+    }
+
+    #headerPreviewLive {
+        border: 2px solid #333;
+        padding: 15px;
+        background: white;
+        margin-top: 15px;
     }
 </style>
 
@@ -308,6 +324,16 @@
             .then(editor => {
                 window.headerEditor = editor;
                 console.log('✓ CKEditor initialized successfully');
+                
+                // Update preview live saat user mengetik
+                editor.model.document.on('change:data', function() {
+                    const preview = document.querySelector('#headerPreviewLive');
+                    if (preview) {
+                        preview.innerHTML = editor.getData();
+                    }
+                    // Juga update hidden input
+                    document.querySelector('#header_html').value = editor.getData();
+                });
             })
             .catch(error => {
                 console.error('CKEditor error:', error);
