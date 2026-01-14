@@ -62,12 +62,34 @@
                     </div>
                 @endif
 
+                <!-- Search Input -->
+                <div class="mb-3">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Cari berdasarkan nama, kode guru, NIP, email, atau telepon...">
+                </div>
+
+                <!-- Bulk Action Controls -->
+                <div class="mb-3">
+                    <div class="d-flex gap-2 align-items-center">
+                        <select id="bulkActionSelect" class="form-select" style="width: 200px;">
+                            <option value="">-- Pilih Aksi --</option>
+                            <option value="select-all">Pilih Semua</option>
+                            <option value="select-none">Batal Pilih Semua</option>
+                            <option value="delete">Hapus Terpilih</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="deleteSelectedBtn" style="display: none;">
+                            <i class="ti ti-trash me-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
+                                <th style="width: 40px;"><input type="checkbox" id="selectAllCheckbox" class="form-check-input"></th>
                                 <th>No</th>
                                 <th>Nama</th>
+                                <th>Kode Guru</th>
                                 <th>NIP</th>
                                 <th>Email</th>
                                 <th>Telepon</th>
@@ -80,8 +102,10 @@
                         <tbody>
                         @forelse($items as $index => $it)
                             <tr>
+                                <td><input type="checkbox" class="form-check-input guru-checkbox" data-guru-id="{{ $it->id }}"></td>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $it->nama }}</td>
+                                <td><code>{{ $it->kode_guru ?? '-' }}</code></td>
                                 <td>{{ $it->nip ?? '-' }}</td>
                                 <td>{{ $it->email ?? '-' }}</td>
                                 <td>{{ $it->telepon ?? '-' }}</td>
@@ -123,7 +147,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted">
+                                <td colspan="11" class="text-center text-muted">
                                     <i class="ti ti-info-circle me-2"></i>Belum ada data guru.
                                 </td>
                             </tr>
@@ -199,5 +223,132 @@ function confirmDelete(id) {
         form.submit();
     }
 }
+
+// Bulk selection functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const guruCheckboxes = document.querySelectorAll('.guru-checkbox');
+    const bulkActionSelect = document.getElementById('bulkActionSelect');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const selectedCount = document.getElementById('selectedCount');
+    const searchInput = document.getElementById('searchInput');
+
+    // Search functionality
+    searchInput.addEventListener('keyup', function() {
+        const searchTerm = this.value.toLowerCase();
+        const tableRows = document.querySelectorAll('tbody tr');
+        
+        tableRows.forEach(row => {
+            // Skip empty message row
+            if (row.cells.length === 1) {
+                return;
+            }
+            
+            const text = row.textContent.toLowerCase();
+            const matches = searchTerm === '' || text.includes(searchTerm);
+            row.style.display = matches ? '' : 'none';
+        });
+
+        // Uncheck all when search is active
+        if (searchTerm !== '') {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        }
+    });
+
+    // Update selected count
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.guru-checkbox:checked').length;
+        selectedCount.textContent = count;
+        deleteSelectedBtn.style.display = count > 0 ? 'block' : 'none';
+    }
+
+    // Select all functionality
+    selectAllCheckbox.addEventListener('change', function() {
+        guruCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelectedCount();
+    });
+
+    // Update select all checkbox when individual checkboxes change
+    guruCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(guruCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(guruCheckboxes).some(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            updateSelectedCount();
+        });
+    });
+
+    // Bulk action select
+    bulkActionSelect.addEventListener('change', function() {
+        const action = this.value;
+        
+        if (action === 'select-all') {
+            selectAllCheckbox.checked = true;
+            guruCheckboxes.forEach(checkbox => checkbox.checked = true);
+            updateSelectedCount();
+        } else if (action === 'select-none') {
+            selectAllCheckbox.checked = false;
+            guruCheckboxes.forEach(checkbox => checkbox.checked = false);
+            updateSelectedCount();
+        } else if (action === 'delete') {
+            deleteSelectedGurus();
+        }
+        
+        // Reset select
+        this.value = '';
+    });
+
+    // Delete selected gurus
+    function deleteSelectedGurus() {
+        const selectedIds = Array.from(document.querySelectorAll('.guru-checkbox:checked'))
+            .map(checkbox => checkbox.getAttribute('data-guru-id'));
+        
+        if (selectedIds.length === 0) {
+            alert('Pilih minimal satu guru untuk dihapus!');
+            return;
+        }
+
+        if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} data guru ini? Akun terkait juga akan dihapus.`)) {
+            return;
+        }
+
+        // Delete one by one
+        let deleted = 0;
+        selectedIds.forEach((id, index) => {
+            setTimeout(() => {
+                const form = document.getElementById('deleteForm');
+                form.action = `/guru/${id}`;
+                
+                // Create a hidden form for each deletion
+                const tempForm = document.createElement('form');
+                tempForm.method = 'POST';
+                tempForm.action = `/guru/${id}`;
+                tempForm.style.display = 'none';
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'DELETE';
+                
+                tempForm.appendChild(csrfInput);
+                tempForm.appendChild(methodInput);
+                document.body.appendChild(tempForm);
+                tempForm.submit();
+            }, index * 500); // Delay to avoid race conditions
+        });
+    }
+
+    // Delete selected button
+    deleteSelectedBtn.addEventListener('click', deleteSelectedGurus);
+});
 </script>
 @endpush

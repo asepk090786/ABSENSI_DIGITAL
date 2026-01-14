@@ -212,6 +212,85 @@ class JadwalKbmController extends Controller
     }
 
     /**
+     * Export jadwal per guru as PDF
+     */
+    public function exportPdfByGuru($guruId)
+    {
+        $paperSize = request()->get('paper_size', 'a4');
+        
+        $guru = Guru::findOrFail($guruId);
+        $sekolah = \App\Models\Sekolah::first();
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        $query = JadwalKbm::where('guru_id', $guruId);
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalGuru = $query
+            ->with(['kelas', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get()
+            ->groupBy('hari');
+        
+        // Convert logo to base64 for embedded display in PDF
+        $logoBase64 = null;
+        $logoHeaderKiriBase64 = null;
+        
+        if ($sekolah && $sekolah->logo) {
+            $logoPath = public_path('storage/' . $sekolah->logo);
+            if (file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                $logoMime = mime_content_type($logoPath);
+                $logoBase64 = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
+            }
+        }
+        
+        if ($sekolah && $sekolah->logo_header_kiri) {
+            $logoPath = public_path('storage/' . $sekolah->logo_header_kiri);
+            if (file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                $logoMime = mime_content_type($logoPath);
+                $logoHeaderKiriBase64 = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
+            }
+        }
+        
+        // Determine paper size dimensions
+        $paperSizes = [
+            'a4' => [210, 297],
+            'f4' => [210, 330],
+            'folio' => [210, 330],
+            'legal' => [216, 356],
+        ];
+        
+        $dimensions = $paperSizes[$paperSize] ?? $paperSizes['a4'];
+        $paperSizeArray = [0, 0, $dimensions[0] * 2.83465, $dimensions[1] * 2.83465];
+        
+        // Generate PDF using dompdf
+        $pdf = \PDF::loadView('jadwal_kbm.print-pdf-guru', compact(
+            'guru',
+            'sekolah',
+            'tahunAjaranAktif',
+            'semesterAktif',
+            'jadwalGuru',
+            'logoBase64',
+            'logoHeaderKiriBase64',
+            'paperSize'
+        ));
+        
+        $pdf->setPaper($paperSizeArray);
+        
+        $filename = 'Jadwal_' . str_replace(' ', '_', $guru->nama) . '_' . strtoupper($paperSize) . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+
+    /**
      * Show jadwal per guru
      */
     public function showByGuru($guruId)
@@ -236,6 +315,39 @@ class JadwalKbmController extends Controller
             ->groupBy('hari');
         
         return view('jadwal_kbm.show_by_guru', compact('guru', 'jadwalGuru', 'tahunAjaranAktif', 'semesterAktif'));
+    }
+
+    /**
+     * Show overall schedule (Jadwal Keseluruhan)
+     */
+    public function showKeseluruhan(Request $request)
+    {
+        $viewType = $request->get('view', 'full'); // 'full' atau 'compact'
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        $query = JadwalKbm::query();
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalKeseluruhan = $query
+            ->with(['kelas', 'guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get()
+            ->groupBy('hari');
+        
+        // Get all jam belajar (termasuk UPACARA, ISTIRAHAT, PEMBIASAAN)
+        $jamBelajarByHari = JamBelajar::orderByDay()->get()->groupBy('hari');
+        
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        $sekolah = \App\Models\Sekolah::first();
+        
+        return view('jadwal_kbm.keseluruhan', compact('jadwalKeseluruhan', 'jamBelajarByHari', 'hariList', 'tahunAjaranAktif', 'semesterAktif', 'sekolah', 'viewType'));
     }
 
     /**
@@ -319,17 +431,40 @@ class JadwalKbmController extends Controller
      */
     public function getJadwalByKelas($kelasId)
     {
-        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
-        $semesterAktif = Semester::where('is_active', true)->first();
-        
-        $jadwal = JadwalKbm::where('kelas_id', $kelasId)
-            ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
-            ->where('semester_id', $semesterAktif?->id)
-            ->with(['guru', 'mataPelajaran', 'jamBelajar'])
-            ->orderBySchedule()
-            ->get();
+        try {
+            $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+            $semesterAktif = Semester::where('is_active', true)->first();
+            
+            $jadwal = JadwalKbm::where('kelas_id', $kelasId)
+                ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
+                ->where('semester_id', $semesterAktif?->id)
+                ->with(['guru', 'mataPelajaran', 'jamBelajar'])
+                ->orderBySchedule()
+                ->get();
 
-        return response()->json($jadwal);
+            // Format response untuk JavaScript
+            $data = $jadwal->map(function($j) {
+                return [
+                    'id' => $j->id,
+                    'hari' => $j->hari,
+                    'jam_ke' => $j->jam_ke,
+                    'jam_belajar' => [
+                        'jam_mulai' => $j->jamBelajar->jam_mulai ?? '-',
+                        'jam_selesai' => $j->jamBelajar->jam_selesai ?? '-'
+                    ],
+                    'mata_pelajaran' => [
+                        'nama_mapel' => $j->mataPelajaran->nama_mapel ?? '-'
+                    ],
+                    'guru' => [
+                        'nama' => $j->guru->nama ?? '-'
+                    ]
+                ];
+            });
+
+            return response()->json($data, 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

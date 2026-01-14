@@ -15,8 +15,9 @@
             font-family: 'DejaVu Sans', Arial, sans-serif;
             color: #333;
             background: white;
-            line-height: 1.2;
-            padding: 10px;
+            line-height: 1.1;
+            padding: 5px;
+            font-size: 7px;
         }
         
         .page {
@@ -28,24 +29,24 @@
         /* Header Section */
         .header-section {
             text-align: center;
-            margin-bottom: 15px;
-            border-bottom: 3px double #000;
-            padding-bottom: 10px;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 4px;
         }
         
         .header-content {
             width: 100%;
             text-align: center;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         
         .logo {
-            height: 60px;
+            height: 35px;
             width: auto;
-            max-width: 60px;
+            max-width: 40px;
             display: inline-block;
             vertical-align: middle;
-            margin: 0 10px;
+            margin: 0 5px;
         }
         
         .header-text {
@@ -53,37 +54,38 @@
             text-align: center;
             vertical-align: middle;
             max-width: 70%;
+            font-size: 7px;
         }
         
         .header-text p {
-            margin: 2px 0;
-            line-height: 1.3;
+            margin: 1px 0;
+            line-height: 1.1;
         }
         
         /* Title Section */
         .title-section {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 6px;
         }
         
         .title-section h1 {
-            margin: 0 0 5px 0;
-            font-weight: 800;
+            margin: 0 0 2px 0;
+            font-weight: bold;
             color: #1d4ed8;
-            font-size: 20px;
+            font-size: 11px;
             text-transform: uppercase;
         }
         
         .title-section h2 {
-            margin: 0 0 3px 0;
-            font-weight: 600;
+            margin: 0 0 2px 0;
+            font-weight: bold;
             color: #333;
-            font-size: 16px;
+            font-size: 9px;
         }
         
         .title-section p {
-            margin: 2px 0;
-            font-size: 10px;
+            margin: 1px 0;
+            font-size: 7px;
             color: #666;
         }
         
@@ -94,7 +96,7 @@
         
         .schedule-row {
             width: 100%;
-            margin-bottom: 12px;
+            margin-bottom: 4px;
             page-break-inside: avoid;
         }
         
@@ -118,7 +120,7 @@
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 7px;
             table-layout: fixed;
             border: 1px solid #e0e0e0;
         }
@@ -126,7 +128,7 @@
         .schedule-table th,
         .schedule-table td {
             border: 1px solid #e0e0e0;
-            padding: 4px 3px;
+            padding: 2px 1px;
             text-align: center;
             vertical-align: middle;
         }
@@ -135,126 +137,105 @@
             background-color: #2563eb;
             color: #fff;
             font-weight: bold;
-            font-size: 11px;
-            padding: 7px;
+            font-size: 9px;
+            padding: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
         
         .column-header th {
             background-color: #1d4ed8;
             color: #fff;
             font-weight: bold;
-            font-size: 8px;
-            padding: 6px 3px;
+            font-size: 7px;
+            padding: 3px 1px;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
         }
         
         /* Fixed Column Widths */
         .col-waktu {
             width: 22%;
-            font-size: 9px !important;
+            font-size: 7px;
             white-space: nowrap;
-            padding: 5px 3px !important;
-            box-sizing: border-box;
         }
         
         .col-jam {
             width: 8%;
-            font-weight: 600;
-            font-size: 10px;
-            padding: 5px 3px !important;
-            box-sizing: border-box;
+            font-weight: bold;
+            font-size: 7.5px;
         }
         
         .col-kode {
             width: 8%;
-            font-weight: 600;
-            font-size: 9px;
-            word-wrap: break-word;
-            padding: 5px 3px !important;
-            box-sizing: border-box;
+            font-weight: bold;
+            font-size: 7px;
         }
         
         .col-mapel {
             width: 62%;
-            text-align: left !important;
-            padding: 5px 6px !important;
-            font-size: 9px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-            line-height: 1.4;
-            box-sizing: border-box;
+            text-align: left;
+            font-size: 7.5px;
+            line-height: 1.3;
         }
         
         /* Table Body Styles */
         .schedule-table tbody tr {
-            height: 24px;
-            border-bottom: 1px solid #e8e8e8;
-        }
-        
-        .schedule-table tbody tr:last-child {
-            border-bottom: none;
+            height: 16px;
         }
         
         .schedule-table tbody tr td {
             vertical-align: middle;
-            padding: 4px 3px !important;
-            box-sizing: border-box;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            height: 24px;
+            padding: 2px 1px;
+            height: 16px;
             background: #fff;
         }
         
         .schedule-table tbody tr:nth-child(odd) {
-            background: #f9fafb;
+            background-color: #f9fafb;
         }
         
         .schedule-table tbody tr:nth-child(even) {
-            background: #fff;
+            background-color: #fff;
         }
         
         .non-kbm-row {
-            background: #fffbeb !important;
+            background-color: #fffbeb;
         }
         
         .non-kbm-text {
             color: #d97706;
             font-style: italic;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 500;
         }
         
         .empty-schedule {
-            padding: 15px;
+            padding: 8px;
             text-align: center;
             color: #999;
             font-style: italic;
             border: 1px dashed #ccc;
-            background: #fafafa;
-            border-radius: 4px;
-            font-size: 9px;
+            background-color: #fafafa;
+            font-size: 7px;
         }
         
         /* Divider */
         .divider {
             border-top: 2px solid #000;
-            margin: 12px 0;
+            margin: 5px 0;
         }
         
         /* Guru Section */
         .guru-section {
-            margin-top: 12px;
+            margin-top: 5px;
             page-break-inside: avoid;
         }
         
         .guru-title {
-            margin: 0 0 8px 0;
-            font-weight: 700;
-            font-size: 11px;
+            margin: 0 0 3px 0;
+            font-weight: bold;
+            font-size: 7px;
             color: #1d4ed8;
             text-transform: uppercase;
         }
@@ -262,26 +243,26 @@
         .guru-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 7px;
         }
         
         .guru-table th,
         .guru-table td {
             border: 1px solid #ddd;
-            padding: 5px 8px;
+            padding: 2px 3px;
             text-align: left;
         }
         
         .guru-table th {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background-color: #2563eb;
             color: white;
-            font-weight: 700;
+            font-weight: bold;
             text-transform: uppercase;
-            font-size: 8px;
+            font-size: 7px;
         }
         
         .guru-table tbody tr:nth-child(even) {
-            background: #f9fafb;
+            background-color: #f9fafb;
         }
     </style>
 </head>
@@ -294,23 +275,22 @@
                     <img src="{{ $logoHeaderKiriBase64 }}" alt="Logo Kiri" class="logo">
                 @endif
                 
-                <div class="header-text">
-                    @if($sekolah && $sekolah->header_line1)
-                        {!! $sekolah->header_line1 !!}
-                    @endif
-                    @if($sekolah && $sekolah->header_line2)
-                        {!! $sekolah->header_line2 !!}
-                    @endif
-                    @if($sekolah && $sekolah->header_line3)
-                        {!! $sekolah->header_line3 !!}
-                    @endif
-                    @if($sekolah && $sekolah->header_line4)
-                        {!! $sekolah->header_line4 !!}
-                    @endif
-                </div>
-                
                 @if($logoBase64)
                     <img src="{{ $logoBase64 }}" alt="Logo Sekolah" class="logo">
+                @endif
+            </div>
+            <div class="header-text">
+                @if($sekolah && $sekolah->header_line1)
+                    {!! $sekolah->header_line1 !!}
+                @endif
+                @if($sekolah && $sekolah->header_line2)
+                    {!! $sekolah->header_line2 !!}
+                @endif
+                @if($sekolah && $sekolah->header_line3)
+                    {!! $sekolah->header_line3 !!}
+                @endif
+                @if($sekolah && $sekolah->header_line4)
+                    {!! $sekolah->header_line4 !!}
                 @endif
             </div>
         </div>
@@ -331,194 +311,196 @@
             @endphp
             
             <!-- Baris 1: Senin dan Selasa -->
-            <div class="schedule-row">
-                @foreach(['Senin', 'Selasa'] as $hari)
-                    @php
-                        $jadwalHari = $jadwalByHari->get($hari, collect());
-                        $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
-                    @endphp
-                    <div class="schedule-column">
-                        @if($jamHari->count() > 0)
-                            <table class="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th colspan="4" class="day-header">{{ strtoupper($hari) }}</th>
-                                    </tr>
-                                    <tr class="column-header">
-                                        <th class="col-waktu">Waktu</th>
-                                        <th class="col-jam">Jam</th>
-                                        <th class="col-kode">Kode</th>
-                                        <th class="col-mapel">Mata Pelajaran</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($jamHari as $jam)
-                                        @php
-                                            $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
-                                            $isKbm = $jam->jenis === 'KBM';
-                                            $rowClass = $isKbm ? '' : 'non-kbm-row';
-                                        @endphp
-                                        <tr class="{{ $rowClass }}">
-                                            <td class="col-waktu">
-                                                {{ \Carbon\Carbon::parse($jam->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jam->jam_selesai)->format('H:i') }}
-                                            </td>
-                                            <td class="col-jam">
-                                                @if($isKbm)
-                                                    {{ $jam->urutan }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="col-kode">
-                                                @if($isKbm && $jadwalJam)
-                                                    {{ $jadwalJam->guru->nip ?? '-' }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="col-mapel">
-                                                @if($isKbm && $jadwalJam)
-                                                    {{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}
-                                                @else
-                                                    <em class="non-kbm-text">{{ $jam->jenis }}</em>
-                                                @endif
-                                            </td>
+            <table style="width: 100%; margin-bottom: 4px; border: 0;">
+                <tr>
+                    @foreach(['Senin', 'Selasa'] as $hari)
+                        @php
+                            $jadwalHari = $jadwalByHari->get($hari, collect());
+                            $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
+                        @endphp
+                        <td class="schedule-column" style="vertical-align: top;">
+                            @if($jamHari->count() > 0)
+                                <table class="schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="4" class="day-header">{{ strtoupper($hari) }}</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        @else
-                            <div class="empty-schedule">Tidak ada jadwal</div>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
+                                        <tr class="column-header">
+                                            <th class="col-waktu">Waktu</th>
+                                            <th class="col-jam">Jam</th>
+                                            <th class="col-kode">Kode</th>
+                                            <th class="col-mapel">Mata Pelajaran</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($jamHari as $jam)
+                                            @php
+                                                $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
+                                                $isKbm = $jam->jenis === 'KBM';
+                                                $rowClass = $isKbm ? '' : 'non-kbm-row';
+                                            @endphp
+                                            <tr class="{{ $rowClass }}">
+                                                <td class="col-waktu">
+                                                    {{ \Carbon\Carbon::parse($jam->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jam->jam_selesai)->format('H:i') }}
+                                                </td>
+                                                <td class="col-jam">
+                                                    @if($isKbm)
+                                                        {{ $jam->urutan }}
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+                                                <td class="col-kode">
+                                                    @if($isKbm && $jadwalJam)
+                                                        {{ $jadwalJam->guru->nip ?? '-' }}
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+                                                <td class="col-mapel">
+                                                    @if($isKbm && $jadwalJam)
+                                                        {{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}
+                                                    @else
+                                                        <em class="non-kbm-text">{{ $jam->jenis }}</em>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <div class="empty-schedule">Tidak ada jadwal</div>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+            </table>
 
             <!-- Baris 2: Rabu dan Kamis -->
-            <div class="schedule-row">
-                @foreach(['Rabu', 'Kamis'] as $hari)
-                    @php
-                        $jadwalHari = $jadwalByHari->get($hari, collect());
-                        $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
-                    @endphp
-                    <div class="schedule-column">
-                        @if($jamHari->count() > 0)
-                            <table class="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th colspan="4" class="day-header">{{ strtoupper($hari) }}</th>
-                                    </tr>
-                                    <tr class="column-header">
-                                        <th class="col-waktu">Waktu</th>
-                                        <th class="col-jam">Jam</th>
-                                        <th class="col-kode">Kode</th>
-                                        <th class="col-mapel">Mata Pelajaran</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($jamHari as $jam)
-                                        @php
-                                            $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
-                                            $isKbm = $jam->jenis === 'KBM';
-                                            $rowClass = $isKbm ? '' : 'non-kbm-row';
-                                        @endphp
-                                        <tr class="{{ $rowClass }}">
-                                            <td class="col-waktu">
-                                                {{ \Carbon\Carbon::parse($jam->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jam->jam_selesai)->format('H:i') }}
-                                            </td>
-                                            <td class="col-jam">
-                                                @if($isKbm)
-                                                    {{ $jam->urutan }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="col-kode">
-                                                @if($isKbm && $jadwalJam)
-                                                    {{ $jadwalJam->guru->nip ?? '-' }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="col-mapel">
-                                                @if($isKbm && $jadwalJam)
-                                                    {{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}
-                                                @else
-                                                    <em class="non-kbm-text">{{ $jam->jenis }}</em>
-                                                @endif
-                                            </td>
+            <table style="width: 100%; margin-bottom: 4px; border: 0;">
+                <tr>
+                    @foreach(['Rabu', 'Kamis'] as $hari)
+                        @php
+                            $jadwalHari = $jadwalByHari->get($hari, collect());
+                            $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
+                        @endphp
+                        <td class="schedule-column" style="vertical-align: top;">
+                            @if($jamHari->count() > 0)
+                                <table class="schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="4" class="day-header">{{ strtoupper($hari) }}</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        @else
-                            <div class="empty-schedule">Tidak ada jadwal</div>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
+                                        <tr class="column-header">
+                                            <th class="col-waktu">Waktu</th>
+                                            <th class="col-jam">Jam</th>
+                                            <th class="col-kode">Kode</th>
+                                            <th class="col-mapel">Mata Pelajaran</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($jamHari as $jam)
+                                            @php
+                                                $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
+                                                $isKbm = $jam->jenis === 'KBM';
+                                                $rowClass = $isKbm ? '' : 'non-kbm-row';
+                                            @endphp
+                                            <tr class="{{ $rowClass }}">
+                                                <td class="col-waktu">
+                                                    {{ \Carbon\Carbon::parse($jam->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jam->jam_selesai)->format('H:i') }}
+                                                </td>
+                                                <td class="col-jam">
+                                                    @if($isKbm)
+                                                        {{ $jam->urutan }}
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+                                                <td class="col-kode">
+                                                    @if($isKbm && $jadwalJam)
+                                                        {{ $jadwalJam->guru->nip ?? '-' }}
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+                                                <td class="col-mapel">
+                                                    @if($isKbm && $jadwalJam)
+                                                        {{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}
+                                                    @else
+                                                        <em class="non-kbm-text">{{ $jam->jenis }}</em>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <div class="empty-schedule">Tidak ada jadwal</div>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+            </table>
 
             <!-- Baris 3: Jumat -->
-            <div class="schedule-row">
-                @php
-                    $hari = 'Jumat';
-                    $jadwalHari = $jadwalByHari->get($hari, collect());
-                    $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
-                @endphp
-                <div class="schedule-column">
-                    @if($jamHari->count() > 0)
-                        <table class="schedule-table">
-                            <thead>
-                                <tr>
-                                    <th colspan="4" class="day-header">{{ strtoupper($hari) }}</th>
+            @php
+                $hari = 'Jumat';
+                $jadwalHari = $jadwalByHari->get($hari, collect());
+                $jamHari = $jamBelajarByHari->get($hari, collect())->sortBy('urutan');
+            @endphp
+            <div class="schedule-column-full">
+                @if($jamHari->count() > 0)
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th colspan="4" class="day-header">{{ strtoupper($hari) }}</th>
+                            </tr>
+                            <tr class="column-header">
+                                <th class="col-waktu">Waktu</th>
+                                <th class="col-jam">Jam</th>
+                                <th class="col-kode">Kode</th>
+                                <th class="col-mapel">Mata Pelajaran</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($jamHari as $jam)
+                                @php
+                                    $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
+                                    $isKbm = $jam->jenis === 'KBM';
+                                    $rowClass = $isKbm ? '' : 'non-kbm-row';
+                                @endphp
+                                <tr class="{{ $rowClass }}">
+                                    <td class="col-waktu">
+                                        {{ \Carbon\Carbon::parse($jam->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jam->jam_selesai)->format('H:i') }}
+                                    </td>
+                                    <td class="col-jam">
+                                        @if($isKbm)
+                                            {{ $jam->urutan }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="col-kode">
+                                        @if($isKbm && $jadwalJam)
+                                            {{ $jadwalJam->guru->nip ?? '-' }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="col-mapel">
+                                        @if($isKbm && $jadwalJam)
+                                            {{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}
+                                        @else
+                                            <em class="non-kbm-text">{{ $jam->jenis }}</em>
+                                        @endif
+                                    </td>
                                 </tr>
-                                <tr class="column-header">
-                                    <th class="col-waktu">Waktu</th>
-                                    <th class="col-jam">Jam</th>
-                                    <th class="col-kode">Kode</th>
-                                    <th class="col-mapel">Mata Pelajaran</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($jamHari as $jam)
-                                    @php
-                                        $jadwalJam = $jadwalHari->where('jam_ke', $jam->urutan)->first();
-                                        $isKbm = $jam->jenis === 'KBM';
-                                        $rowClass = $isKbm ? '' : 'non-kbm-row';
-                                    @endphp
-                                    <tr class="{{ $rowClass }}">
-                                        <td class="col-waktu">
-                                            {{ \Carbon\Carbon::parse($jam->jam_mulai)->format('H:i') }} - {{ \Carbon\Carbon::parse($jam->jam_selesai)->format('H:i') }}
-                                        </td>
-                                        <td class="col-jam">
-                                            @if($isKbm)
-                                                {{ $jam->urutan }}
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td class="col-kode">
-                                            @if($isKbm && $jadwalJam)
-                                                {{ $jadwalJam->guru->nip ?? '-' }}
-                                            @else
-                                                -
-                                            @endif
-                                        </td>
-                                        <td class="col-mapel">
-                                            @if($isKbm && $jadwalJam)
-                                                {{ $jadwalJam->mataPelajaran->nama_mapel ?? '-' }}
-                                            @else
-                                                <em class="non-kbm-text">{{ $jam->jenis }}</em>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    @else
-                        <div class="empty-schedule">Tidak ada jadwal</div>
-                    @endif
-                </div>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @else
+                    <div class="empty-schedule">Tidak ada jadwal</div>
+                @endif
             </div>
         </div>
         
@@ -543,7 +525,7 @@
                             <tr>
                                 <td style="text-align: center;">{{ $index + 1 }}</td>
                                 <td>{{ $guru->nip ?? '-' }}</td>
-                                <td>{{ $guru->nama_guru ?? '-' }}</td>
+                                <td>{{ $guru->nama ?? '-' }}</td>
                                 <td>
                                     @php
                                         $mapelGuru = $jadwalSorted->where('guru_id', $guru->id)->pluck('mataPelajaran.nama_mapel')->unique()->implode(', ');

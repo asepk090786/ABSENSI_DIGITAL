@@ -40,6 +40,11 @@
                             <i class="ti ti-user me-2"></i>Jadwal Per Guru
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" href="{{ route('jadwal-kbm.keseluruhan') }}">
+                            <i class="ti ti-layout-grid me-2"></i>Jadwal Keseluruhan
+                        </a>
+                    </li>
                 </ul>
 
                 <!-- Tab Content -->
@@ -129,7 +134,7 @@
 </div>
 @endsection
 
-@push('scripts')
+@push('js')
 <script>
 function viewJadwal(kelasId, namaKelas) {
     $('#namaKelas').text(namaKelas);
@@ -160,8 +165,9 @@ function viewJadwal(kelasId, namaKelas) {
                 $('#jadwalContent').html(html);
             }
         },
-        error: function() {
-            $('#jadwalContent').html('<div class="alert alert-danger">Gagal memuat jadwal.</div>');
+        error: function(xhr) {
+            console.error('Error:', xhr);
+            $('#jadwalContent').html('<div class="alert alert-danger">Gagal memuat jadwal. Error: ' + xhr.statusText + '</div>');
         }
     });
     

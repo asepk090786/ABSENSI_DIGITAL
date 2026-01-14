@@ -54,10 +54,20 @@ class GuruImport implements ToCollection, WithHeadingRow
                     }
                 }
 
+                // Validasi Kode Guru jika ada
+                if (!empty($row['kode_guru'])) {
+                    $existingGuru = Guru::where('kode_guru', $row['kode_guru'])->first();
+                    if ($existingGuru) {
+                        $this->pushError($rowNumber, 'Kode Guru ' . $row['kode_guru'] . ' sudah terdaftar.');
+                        continue;
+                    }
+                }
+
                 // Buat data guru
                 $guru = Guru::create([
                     'nama' => $row['nama'],
                     'nip' => $row['nip'] ?? null,
+                    'kode_guru' => $row['kode_guru'] ?? null,
                     'email' => $row['email'],
                     'telepon' => $row['telepon'] ?? null,
                     'alamat' => $row['alamat'] ?? null,

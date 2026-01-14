@@ -81,20 +81,42 @@ class AscTimetableController extends Controller
             // Parse Teachers (Guru)
             if (isset($xml->teachers->teacher)) {
                 foreach ($xml->teachers->teacher as $teacher) {
-                    $nip = (string)$teacher['short'];
+                    $kodeGuru = (string)$teacher['short'];
                     $nama = (string)$teacher['name'];
                     
-                    $exists = DB::table('guru')
-                        ->where('nip', $nip)
-                        ->exists();
+                    // Check if exists by kode_guru or nama
+                    $existingByKode = DB::table('guru')
+                        ->where('kode_guru', $kodeGuru)
+                        ->first();
+                    
+                    $existingByNama = DB::table('guru')
+                        ->where('nama', $nama)
+                        ->first();
+
+                    $status = 'new';
+                    $duplicate_type = null;
+                    $existing_id = null;
+                    
+                    if ($existingByKode) {
+                        $status = 'exists_kode';
+                        $duplicate_type = 'kode_guru';
+                        $existing_id = $existingByKode->id;
+                    } elseif ($existingByNama) {
+                        $status = 'exists_nama';
+                        $duplicate_type = 'nama';
+                        $existing_id = $existingByNama->id;
+                    }
 
                     $preview['teachers'][] = [
-                        'nip' => $nip,
+                        'kode_guru' => $kodeGuru,
                         'nama' => $nama,
                         'email' => null,
                         'no_hp' => null,
                         'jenis_kelamin' => (string)$teacher['gender'] === 'M' ? 'L' : 'P',
-                        'status' => $exists ? 'exists' : 'new'
+                        'status' => $status,
+                        'duplicate_type' => $duplicate_type,
+                        'existing_id' => $existing_id,
+                        'existing_data' => $existingByKode ?: $existingByNama
                     ];
                 }
             }
@@ -372,19 +394,49 @@ class AscTimetableController extends Controller
 
             // Import Teachers (Guru)
             if (in_array('teachers', $importTypes) && isset($xml->teachers->teacher)) {
-                foreach ($xml->teachers->teacher as $teacher) {
+                // Get teacher actions from request
+                $teacherActions = $request->input('teacher_action', []);
+                $teacherKodes = $request->input('teacher_kode', []);
+                $teacherNamas = $request->input('teacher_nama', []);
+                $teacherGenders = $request->input('teacher_gender', []);
+                $teacherExistingIds = $request->input('teacher_existing_id', []);
+
+                foreach ($xml->teachers->teacher as $index => $teacher) {
+                    $kodeGuru = (string)$teacher['short'];
+                    $namaGuru = (string)$teacher['name'];
+                    
                     $teacherData = [
-                        'nip' => (string)$teacher['short'],
-                        'nama' => (string)$teacher['name'],
+                        'kode_guru' => $kodeGuru,
+                        'nama' => $namaGuru,
                         'jenis_guru' => 'Pengajar',
                     ];
 
-                    $exists = DB::table('guru')
-                        ->where('nip', $teacherData['nip'])
-                        ->exists();
+                    // Check if this teacher has an action specified
+                    $action = $teacherActions[$index] ?? null;
+                    $existingId = $teacherExistingIds[$index] ?? null;
 
-                    if (!$exists) {
-                        DB::table('guru')->insert($teacherData);
+                    // Check for duplicates
+                    $existsByKode = DB::table('guru')->where('kode_guru', $kodeGuru)->first();
+                    $existsByNama = DB::table('guru')->where('nama', $namaGuru)->first();
+
+                    if ($existsByKode || $existsByNama) {
+                        // Handle duplicate based on action
+                        if ($action === 'replace' && $existingId) {
+                            // Replace existing data
+                            DB::table('guru')
+                                ->where('id', $existingId)
+                                ->update(array_merge($teacherData, ['updated_at' => now()]));
+                            $stats['teachers']++;
+                        } elseif ($action === 'add_new') {
+                            // Add as new (only for kode duplicate, generate new kode)
+                            $teacherData['kode_guru'] = $kodeGuru . '_' . time();
+                            DB::table('guru')->insert(array_merge($teacherData, ['created_at' => now(), 'updated_at' => now()]));
+                            $stats['teachers']++;
+                        }
+                        // If action is 'skip' or null, do nothing
+                    } else {
+                        // No duplicate, insert new
+                        DB::table('guru')->insert(array_merge($teacherData, ['created_at' => now(), 'updated_at' => now()]));
                         $stats['teachers']++;
                     }
                 }
@@ -545,7 +597,7 @@ class AscTimetableController extends Controller
                                 
                                 // Get IDs from database
                                 $kelasId = DB::table('kelas')->where('nama_kelas', $kelasInfo['nama'])->value('id');
-                                $guruId = DB::table('guru')->where('nip', $guruInfo['kode'])->value('id');
+                                $guruId = DB::table('guru')->where('kode_guru', $guruInfo['kode'])->value('id');
                                 $mapelId = DB::table('mata_pelajaran')->where('kode_mapel', $mapelInfo['kode'])->value('id');
                                 
                                 if (!$kelasId || !$guruId || !$mapelId) {

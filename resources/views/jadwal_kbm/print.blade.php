@@ -346,26 +346,26 @@
     /* Header Section */
     .header-section {
         text-align: center;
-        margin-bottom: 15px;
-        padding-bottom: 12px;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
     }
 
     .custom-header-wrapper {
         border: 2px solid #333;
-        padding: 15px;
+        padding: 8px;
         background: white;
-        margin-bottom: 20px;
+        margin-bottom: 6px;
     }
 
     .header-content {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 15px;
+        gap: 8px;
     }
 
     .logo-left {
-        width: 80px;
+        width: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -373,7 +373,7 @@
     }
 
     .logo-right {
-        width: 80px;
+        width: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -381,43 +381,43 @@
     }
 
     .school-logo {
-        height: 70px;
+        height: 40px;
         width: auto;
-        max-width: 70px;
+        max-width: 40px;
     }
 
     .school-logo-right {
-        height: 70px;
+        height: 40px;
         width: auto;
-        max-width: 70px;
+        max-width: 40px;
     }
 
     .school-info {
         text-align: center;
         flex: 1;
-        padding: 0 10px;
+        padding: 0 5px;
     }
 
     .school-name {
-        margin: 0 0 3px 0;
+        margin: 0 0 2px 0;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 11px;
         color: #000;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
     }
 
     .school-address {
-        margin: 0 0 3px 0;
-        font-size: 10px;
+        margin: 0 0 2px 0;
+        font-size: 8px;
         color: #333;
         font-weight: 500;
     }
 
     .school-contact {
         margin: 0;
-        font-size: 9px;
+        font-size: 7px;
         color: #555;
-        line-height: 1.3;
+        line-height: 1.2;
     }
 
     .header-divider {
@@ -428,27 +428,27 @@
     /* Title Section */
     .title-section {
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: 6px;
     }
 
     .main-title {
-        margin: 0 0 3px 0;
+        margin: 0 0 2px 0;
         font-weight: 700;
-        font-size: 16px;
+        font-size: 11px;
         color: #000;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
 
     .sub-title {
-        margin: 0 0 3px 0;
+        margin: 0 0 2px 0;
         font-weight: 600;
-        font-size: 14px;
+        font-size: 10px;
         color: #000;
     }
 
     .period-info {
         margin: 0;
-        font-size: 10px;
+        font-size: 8px;
         color: #555;
     }
 
@@ -459,8 +459,8 @@
 
     .schedule-row {
         display: flex;
-        gap: 12px;
-        margin-bottom: 12px;
+        gap: 8px;
+        margin-bottom: 4px;
     }
 
     .schedule-column {
@@ -474,7 +474,7 @@
     .schedule-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11px;
+        font-size: 7px;
         table-layout: fixed;
         border: none;
         display: flex;
@@ -518,10 +518,10 @@
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: #fff;
         font-weight: 700;
-        font-size: 12px;
-        padding: 8px !important;
+        font-size: 9px;
+        padding: 4px !important;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
         border: none !important;
         border-bottom: 2px solid #1d4ed8 !important;
     }
@@ -530,55 +530,55 @@
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: #fff;
         font-weight: 700;
-        font-size: 9px;
-        padding: 7px 4px !important;
+        font-size: 7px;
+        padding: 3px 2px !important;
         border: none !important;
         text-transform: uppercase;
         box-sizing: border-box;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.2px;
     }
 
     /* Fixed Column Widths */
     .col-waktu {
         width: 22%;
-        font-size: 10px !important;
+        font-size: 7px !important;
         white-space: nowrap;
-        padding: 6px 4px !important;
+        padding: 2px 2px !important;
         box-sizing: border-box;
     }
 
     .col-jam {
         width: 8%;
         font-weight: 600;
-        font-size: 11px;
-        padding: 6px 4px !important;
+        font-size: 7.5px;
+        padding: 2px 2px !important;
         box-sizing: border-box;
     }
 
     .col-kode {
         width: 8%;
         font-weight: 600;
-        font-size: 10px;
+        font-size: 7px;
         word-wrap: break-word;
-        padding: 6px 4px !important;
+        padding: 2px 2px !important;
         box-sizing: border-box;
     }
 
     .col-mapel {
         width: 62%;
         text-align: left !important;
-        padding: 6px 8px !important;
-        font-size: 10px;
+        padding: 2px 4px !important;
+        font-size: 7.5px;
         word-wrap: break-word;
         overflow-wrap: break-word;
         white-space: normal;
-        line-height: 1.4;
+        line-height: 1.3;
         box-sizing: border-box;
     }
 
     /* Table Body Styles */
     .schedule-table tbody tr {
-        height: 26px;
+        height: 16px;
         display: table-row;
         border-bottom: 1px solid #e8e8e8;
         transition: all 0.2s ease;
@@ -590,12 +590,12 @@
 
     .schedule-table tbody tr td {
         vertical-align: middle;
-        padding: 5px 4px !important;
+        padding: 2px 2px !important;
         box-sizing: border-box;
         overflow: hidden;
         text-overflow: ellipsis;
         display: table-cell;
-        height: 26px;
+        height: 16px;
         background: #fff;
     }
 
@@ -622,46 +622,47 @@
     .non-kbm-text {
         color: #d97706;
         font-style: italic;
-        font-size: 9px;
+        font-size: 7px;
         font-weight: 500;
     }
 
     .empty-schedule {
-        padding: 20px;
+        padding: 8px;
         text-align: center;
         color: #999;
         font-style: italic;
         border: 1px dashed #ccc;
         background: #fafafa;
         border-radius: 4px;
+        font-size: 7px;
     }
 
     /* Divider */
     .divider {
         border-top: 2px solid #000;
-        margin: 15px 0;
+        margin: 5px 0;
     }
 
     /* Guru Section */
     .guru-section {
-        margin-top: 10px;
+        margin-top: 5px;
     }
 
     .guru-title {
-        margin: 0 0 8px 0;
+        margin: 0 0 3px 0;
         font-weight: 700;
-        font-size: 11px;
+        font-size: 8px;
         color: #000;
     }
 
     .guru-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 9px;
+        font-size: 7px;
     }
 
     .guru-item {
-        padding: 4px 8px;
+        padding: 2px 4px;
         width: 33.33%;
         border-bottom: 1px solid #ddd;
         text-align: left;

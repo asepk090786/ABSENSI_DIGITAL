@@ -24,6 +24,30 @@
     <form action="{{ route('asc_timetable.confirm_import') }}" method="POST" id="importForm">
         @csrf
         
+        <!-- Duplicate Warning -->
+        @if(collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() > 0)
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <div class="d-flex">
+                <div>
+                    <i class="ti ti-alert-triangle icon alert-icon"></i>
+                </div>
+                <div>
+                    <h4 class="alert-title">Peringatan: Data Guru Duplikat Ditemukan!</h4>
+                    <div class="text-secondary">
+                        Ditemukan <strong>{{ collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() }}</strong> guru dengan data yang sama.
+                        <br>Silakan pilih aksi untuk setiap guru duplikat di tab "Guru" di bawah:
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Lewati</strong> - Abaikan data baru, tetap gunakan data lama</li>
+                            <li><strong>Replace Data Lama</strong> - Timpa data lama dengan data baru</li>
+                            <li><strong>Tambah Sebagai Baru</strong> - Tambahkan dengan kode guru yang berbeda (hanya untuk duplikat kode)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+        
         <!-- Selection Checkboxes -->
         <div class="card mb-3">
             <div class="card-header">
@@ -69,6 +93,9 @@
                                 <i class="ti ti-user text-info me-1"></i>
                                 Guru 
                                 <span class="badge bg-success">{{ collect($preview['teachers'])->where('status', 'new')->count() }}</span>
+                                @if(collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() > 0)
+                                    <span class="badge bg-warning">{{ collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() }} duplikat</span>
+                                @endif
                             </label>
                         </div>
                     </div>
@@ -119,7 +146,9 @@
                 <div class="card-body p-3 text-center">
                     <div class="text-muted mb-1">Guru</div>
                     <div class="h2 mb-0 text-success">{{ collect($preview['teachers'])->where('status', 'new')->count() }}</div>
-                    <small class="text-muted">{{ collect($preview['teachers'])->where('status', 'exists')->count() }} sudah ada</small>
+                    <small class="text-muted">
+                        {{ collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() }} duplikat
+                    </small>
                 </div>
             </div>
         </div>
@@ -248,33 +277,55 @@
                         <table class="table table-vcenter table-hover">
                             <thead>
                                 <tr>
-                                    <th>NIP</th>
+                                    <th>Kode Guru</th>
                                     <th>Nama Guru</th>
                                     <th>Jenis Kelamin</th>
-                                    <th>Email</th>
-                                    <th>No. HP</th>
                                     <th>Status</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($preview['teachers'] as $teacher)
+                                @forelse($preview['teachers'] as $index => $teacher)
                                 <tr>
-                                    <td><strong>{{ $teacher['nip'] }}</strong></td>
+                                    <td><strong>{{ $teacher['kode_guru'] }}</strong></td>
                                     <td>{{ $teacher['nama'] }}</td>
                                     <td>{{ $teacher['jenis_kelamin'] }}</td>
-                                    <td>{{ $teacher['email'] ?: '-' }}</td>
-                                    <td>{{ $teacher['no_hp'] ?: '-' }}</td>
                                     <td>
                                         @if($teacher['status'] === 'new')
-                                        <span class="badge bg-success">Baru</span>
+                                            <span class="badge bg-success">Baru</span>
+                                        @elseif($teacher['status'] === 'exists_kode')
+                                            <span class="badge bg-warning">Kode Guru Sama</span>
+                                            @if($teacher['existing_data'])
+                                                <br><small class="text-muted">Data lama: {{ $teacher['existing_data']->nama }}</small>
+                                            @endif
+                                        @elseif($teacher['status'] === 'exists_nama')
+                                            <span class="badge bg-danger">Nama Guru Sama</span>
+                                            @if($teacher['existing_data'])
+                                                <br><small class="text-muted">Kode lama: {{ $teacher['existing_data']->kode_guru ?? '-' }}</small>
+                                            @endif
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($teacher['status'] !== 'new')
+                                            <select name="teacher_action[{{ $index }}]" class="form-select form-select-sm">
+                                                <option value="skip">Lewati</option>
+                                                <option value="replace">Replace Data Lama</option>
+                                                @if($teacher['status'] === 'exists_kode')
+                                                <option value="add_new">Tambah Sebagai Baru</option>
+                                                @endif
+                                            </select>
+                                            <input type="hidden" name="teacher_kode[{{ $index }}]" value="{{ $teacher['kode_guru'] }}">
+                                            <input type="hidden" name="teacher_nama[{{ $index }}]" value="{{ $teacher['nama'] }}">
+                                            <input type="hidden" name="teacher_gender[{{ $index }}]" value="{{ $teacher['jenis_kelamin'] }}">
+                                            <input type="hidden" name="teacher_existing_id[{{ $index }}]" value="{{ $teacher['existing_id'] }}">
                                         @else
-                                        <span class="badge bg-secondary">Sudah Ada</span>
+                                            <span class="text-success">Akan ditambahkan</span>
                                         @endif
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">Tidak ada data</td>
+                                    <td colspan="5" class="text-center text-muted">Tidak ada data</td>
                                 </tr>
                                 @endforelse
                             </tbody>
