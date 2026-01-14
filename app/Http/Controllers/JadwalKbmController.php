@@ -120,6 +120,8 @@ class JadwalKbmController extends Controller
      */
     public function exportPdfByKelas($kelasId)
     {
+        $paperSize = request()->get('paper_size', 'a4'); // Default A4
+        
         $kelas = Kelas::findOrFail($kelasId);
         $sekolah = \App\Models\Sekolah::first();
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -140,6 +142,11 @@ class JadwalKbmController extends Controller
             ->orderBySchedule()
             ->get();
         
+        // Group jadwal by hari
+        $jadwalByHari = $jadwalSorted->groupBy(function($item) {
+            return $item->jamBelajar->hari ?? 'Tidak Diketahui';
+        });
+        
         // Get jam belajar grouped by hari
         $jamBelajarByHari = JamBelajar::orderByDay()->get()->groupBy('hari');
         
@@ -151,6 +158,8 @@ class JadwalKbmController extends Controller
         
         // Convert logo to base64 for embedded display in PDF
         $logoBase64 = null;
+        $logoHeaderKiriBase64 = null;
+        
         if ($sekolah && $sekolah->logo) {
             $logoPath = public_path('storage/' . $sekolah->logo);
             if (file_exists($logoPath)) {
@@ -160,21 +169,46 @@ class JadwalKbmController extends Controller
             }
         }
         
-        $html = view('jadwal_kbm.print-pdf-modern', compact(
+        if ($sekolah && $sekolah->logo_header_kiri) {
+            $logoPath = public_path('storage/' . $sekolah->logo_header_kiri);
+            if (file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                $logoMime = mime_content_type($logoPath);
+                $logoHeaderKiriBase64 = 'data:' . $logoMime . ';base64,' . base64_encode($logoData);
+            }
+        }
+        
+        // Determine paper size dimensions
+        $paperSizes = [
+            'a4' => [210, 297], // mm
+            'f4' => [210, 330], // mm (Folio)
+            'folio' => [210, 330], // mm
+            'legal' => [216, 356], // mm
+        ];
+        
+        $dimensions = $paperSizes[$paperSize] ?? $paperSizes['a4'];
+        $paperSizeArray = [0, 0, $dimensions[0] * 2.83465, $dimensions[1] * 2.83465]; // Convert mm to points
+        
+        // Generate PDF using dompdf
+        $pdf = \PDF::loadView('jadwal_kbm.print-pdf', compact(
             'kelas',
             'sekolah',
             'tahunAjaranAktif',
             'semesterAktif',
             'jadwalSorted',
+            'jadwalByHari',
             'jamBelajarByHari',
             'guruList',
-            'logoBase64'
-        ))->render();
+            'logoBase64',
+            'logoHeaderKiriBase64',
+            'paperSize'
+        ));
         
-        // Simple PDF generation using inline HTML to PDF conversion
-        return response($html)
-            ->header('Content-Type', 'text/html; charset=utf-8')
-            ->header('Content-Disposition', 'inline; filename="Jadwal_' . str_replace(' ', '_', $kelas->nama_kelas) . '.pdf"');
+        $pdf->setPaper($paperSizeArray);
+        
+        $filename = 'Jadwal_' . str_replace(' ', '_', $kelas->nama_kelas) . '_' . strtoupper($paperSize) . '.pdf';
+        
+        return $pdf->download($filename);
     }
 
     /**

@@ -8,9 +8,24 @@
         <button onclick="window.print()" class="btn btn-primary">
             <i class="ti ti-printer me-2"></i>Print Jadwal
         </button>
-        <a href="{{ route('jadwal-kbm.export-pdf', $kelas->id) }}" class="btn btn-success" target="_blank">
-            <i class="ti ti-download me-2"></i>Download PDF
-        </a>
+        
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="ti ti-download me-2"></i>Download PDF
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ route('jadwal-kbm.export-pdf', ['kelas' => $kelas->id, 'paper_size' => 'a4']) }}" target="_blank">
+                    <i class="ti ti-file-text me-2"></i>A4 (210 x 297 mm)
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('jadwal-kbm.export-pdf', ['kelas' => $kelas->id, 'paper_size' => 'f4']) }}" target="_blank">
+                    <i class="ti ti-file-text me-2"></i>F4/Folio (210 x 330 mm)
+                </a></li>
+                <li><a class="dropdown-item" href="{{ route('jadwal-kbm.export-pdf', ['kelas' => $kelas->id, 'paper_size' => 'legal']) }}" target="_blank">
+                    <i class="ti ti-file-text me-2"></i>Legal (216 x 356 mm)
+                </a></li>
+            </ul>
+        </div>
+        
         <a href="{{ route('jadwal-kbm.create-by-kelas', $kelas->id) }}" class="btn btn-secondary">
             <i class="ti ti-arrow-left me-2"></i>Kembali
         </a>
@@ -27,7 +42,7 @@
                 {!! $sekolah->header_html !!}
             </div>
         @else
-            <!-- Default Header -->
+            <!-- Default Header with New Format -->
             <div class="header-section">
             <div class="header-content">
                 <!-- Logo Kiri -->
@@ -37,22 +52,31 @@
                     @endif
                 </div>
 
-                <!-- Nama Sekolah di Tengah -->
+                <!-- Informasi Sekolah di Tengah (3 Baris) -->
                 <div class="school-info">
-                    <h3 class="school-name">{{ strtoupper($sekolah->nama_sekolah ?? 'Sekolah') }}</h3>
-                    <p class="school-address">
-                        @if($sekolah && $sekolah->alamat_jalan)
-                            {{ $sekolah->alamat_jalan }}
-                        @endif
-                    </p>
-                    <p class="school-contact">
-                        @if($sekolah && $sekolah->website)
-                            Website : {{ $sekolah->website }}<br>
-                        @endif
-                        @if($sekolah && $sekolah->email)
-                            E-Mail : {{ $sekolah->email }}
-                        @endif
-                    </p>
+                    @if($sekolah && $sekolah->header_line1)
+                        <div class="header-line-1" style="margin: 0; padding: 0; line-height: {{ $sekolah->header_line1_spacing ?? 1.0 }};">{!! $sekolah->header_line1 !!}</div>
+                    @endif
+                    
+                    @if($sekolah && $sekolah->header_line2)
+                        <h3 class="school-name" style="margin: 5px 0 0 0; padding: 0; line-height: {{ $sekolah->header_line2_spacing ?? 1.0 }};">{!! $sekolah->header_line2 !!}</h3>
+                    @else
+                        <h3 class="school-name">{{ strtoupper($sekolah->nama_sekolah ?? 'Sekolah') }}</h3>
+                    @endif
+                    
+                    @if($sekolah && $sekolah->header_line3)
+                        <p class="school-address" style="margin: 5px 0 0 0; padding: 0; line-height: {{ $sekolah->header_line3_spacing ?? 1.0 }};">{!! $sekolah->header_line3 !!}</p>
+                    @else
+                        <p class="school-address">
+                            @if($sekolah && $sekolah->alamat_jalan)
+                                {{ $sekolah->alamat_jalan }}
+                            @endif
+                        </p>
+                    @endif
+                    
+                    @if($sekolah && $sekolah->header_line4)
+                        <p class="school-contact" style="margin: 5px 0 0 0; padding: 0; line-height: {{ $sekolah->header_line4_spacing ?? 1.0 }}; font-size: 10px;">{!! $sekolah->header_line4 !!}</p>
+                    @endif
                 </div>
 
                 <!-- Logo Kanan (Logo Sekolah) -->
@@ -435,13 +459,15 @@
 
     .schedule-row {
         display: flex;
-        gap: 10px;
-        margin-bottom: 10px;
+        gap: 12px;
+        margin-bottom: 12px;
     }
 
     .schedule-column {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
     }
 
     /* Schedule Table */
@@ -450,37 +476,66 @@
         border-collapse: collapse;
         font-size: 11px;
         table-layout: fixed;
-        border: 2px solid #333;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border-radius: 4px;
+    }
+
+    .schedule-table thead {
+        flex-shrink: 0;
+    }
+
+    .schedule-table tbody {
+        flex-grow: 1;
+        overflow: hidden;
+        display: block;
     }
 
     .schedule-table th,
     .schedule-table td {
-        border: 1px solid #555;
-        padding: 5px 6px;
+        border-right: 1px solid #e0e0e0;
+        padding: 0;
         text-align: center;
         vertical-align: middle;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
+    .schedule-table th:last-child,
+    .schedule-table td:last-child {
+        border-right: none;
+    }
+
+    .schedule-table thead tr {
+        border-bottom: 2px solid #e0e0e0;
+    }
+
     .day-header {
-        background: linear-gradient(180deg, #4a90d9 0%, #357abd 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: #fff;
         font-weight: 700;
         font-size: 12px;
-        padding: 7px !important;
+        padding: 8px !important;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         border: none !important;
+        border-bottom: 2px solid #1d4ed8 !important;
     }
 
     .column-header th {
-        background: #e9ecef;
-        font-weight: 600;
-        font-size: 10px;
-        color: #333;
-        padding: 5px 4px !important;
-        border: 1px solid #555 !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        font-weight: 700;
+        font-size: 9px;
+        padding: 7px 4px !important;
+        border: none !important;
+        text-transform: uppercase;
+        box-sizing: border-box;
+        letter-spacing: 0.3px;
     }
 
     /* Fixed Column Widths */
@@ -488,13 +543,16 @@
         width: 22%;
         font-size: 10px !important;
         white-space: nowrap;
-        padding: 5px 4px !important;
+        padding: 6px 4px !important;
+        box-sizing: border-box;
     }
 
     .col-jam {
         width: 8%;
         font-weight: 600;
         font-size: 11px;
+        padding: 6px 4px !important;
+        box-sizing: border-box;
     }
 
     .col-kode {
@@ -502,40 +560,70 @@
         font-weight: 600;
         font-size: 10px;
         word-wrap: break-word;
+        padding: 6px 4px !important;
+        box-sizing: border-box;
     }
 
     .col-mapel {
         width: 62%;
         text-align: left !important;
-        padding: 5px 8px !important;
-        font-size: 11px;
+        padding: 6px 8px !important;
+        font-size: 10px;
         word-wrap: break-word;
         overflow-wrap: break-word;
         white-space: normal;
-        line-height: 1.3;
+        line-height: 1.4;
+        box-sizing: border-box;
     }
 
     /* Table Body Styles */
+    .schedule-table tbody tr {
+        height: 26px;
+        display: table-row;
+        border-bottom: 1px solid #e8e8e8;
+        transition: all 0.2s ease;
+    }
+
+    .schedule-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .schedule-table tbody tr td {
+        vertical-align: middle;
+        padding: 5px 4px !important;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: table-cell;
+        height: 26px;
+        background: #fff;
+    }
+
+    .schedule-table tbody tr:nth-child(odd) {
+        background: #f9fafb;
+    }
+
     .schedule-table tbody tr:nth-child(even) {
-        background: #f8f9fa;
+        background: #fff;
     }
 
     .schedule-table tbody tr:hover {
-        background: #e3f2fd;
+        background: #eff6ff !important;
     }
 
     .non-kbm-row {
-        background: #fffde7 !important;
+        background: #fffbeb !important;
     }
 
     .non-kbm-row:hover {
-        background: #fff9c4 !important;
+        background: #fef3c7 !important;
     }
 
     .non-kbm-text {
-        color: #f57c00;
+        color: #d97706;
         font-style: italic;
-        font-size: 10px;
+        font-size: 9px;
+        font-weight: 500;
     }
 
     .empty-schedule {
@@ -545,6 +633,7 @@
         font-style: italic;
         border: 1px dashed #ccc;
         background: #fafafa;
+        border-radius: 4px;
     }
 
     /* Divider */

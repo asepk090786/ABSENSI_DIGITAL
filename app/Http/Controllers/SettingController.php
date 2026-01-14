@@ -183,14 +183,18 @@ class SettingController extends Controller
     public function updateHeader(Request $request)
     {
         $validated = $request->validate([
-            'nama_sekolah' => 'required|string|max:255',
-            'alamat_jalan' => 'nullable|string|max:255',
-            'telepon' => 'nullable|string|max:20',
-            'website' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
             'header_html' => 'nullable|string',
             'logo_header_kiri' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            // Header text lines (HTML from Summernote)
+            'header_line1' => 'nullable|string',
+            'header_line1_spacing' => 'nullable|numeric|min:0.1|max:5',
+            'header_line2' => 'nullable|string',
+            'header_line2_spacing' => 'nullable|numeric|min:0.1|max:5',
+            'header_line3' => 'nullable|string',
+            'header_line3_spacing' => 'nullable|numeric|min:0.1|max:5',
+            'header_line4' => 'nullable|string',
+            'header_line4_spacing' => 'nullable|numeric|min:0.1|max:5',
         ]);
 
         try {
@@ -200,12 +204,17 @@ class SettingController extends Controller
                 $sekolah = new \App\Models\Sekolah();
             }
 
-            $sekolah->nama_sekolah = $validated['nama_sekolah'];
-            $sekolah->alamat_jalan = $validated['alamat_jalan'] ?? null;
-            $sekolah->telepon = $validated['telepon'] ?? null;
-            $sekolah->website = $validated['website'] ?? null;
-            $sekolah->email = $validated['email'] ?? null;
             $sekolah->header_html = $validated['header_html'] ?? null;
+
+            // Save header text lines as HTML from Summernote
+            $sekolah->header_line1 = $validated['header_line1'] ?? null;
+            $sekolah->header_line1_spacing = $validated['header_line1_spacing'] ?? 1.0;
+            $sekolah->header_line2 = $validated['header_line2'] ?? null;
+            $sekolah->header_line2_spacing = $validated['header_line2_spacing'] ?? 1.0;
+            $sekolah->header_line3 = $validated['header_line3'] ?? null;
+            $sekolah->header_line3_spacing = $validated['header_line3_spacing'] ?? 1.0;
+            $sekolah->header_line4 = $validated['header_line4'] ?? null;
+            $sekolah->header_line4_spacing = $validated['header_line4_spacing'] ?? 1.0;
 
             // Handle logo_header_kiri
             if ($request->hasFile('logo_header_kiri')) {
