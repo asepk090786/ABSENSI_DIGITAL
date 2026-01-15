@@ -372,31 +372,20 @@
                 <!-- Lessons Tab -->
                 <div class="tab-pane" id="lessons">
                     @php
-                        // Create a mapping of dayDefId to day names for better grouping
-                        $lessonsByDayAndClass = [];
-                        foreach($preview['lessons'] as $lesson) {
-                            $dayKey = $lesson['dayDefId'] ?? 'unknown';
-                            $dayName = $lesson['hari'] ?? 'Unknown';
-                            $kelasKode = $lesson['kelas_kode'];
-                            $jamKe = $lesson['jam_ke'];
-                            
-                            if (!isset($lessonsByDayAndClass[$dayKey])) {
-                                $lessonsByDayAndClass[$dayKey] = [
-                                    'dayName' => $dayName,
-                                    'lessons' => []
-                                ];
-                            }
-                            
-                            $key = $jamKe . '-' . $kelasKode;
-                            $lessonsByDayAndClass[$dayKey]['lessons'][$key] = $lesson;
-                        }
-                        
+                        $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
                         $allClasses = collect($preview['lessons'])->pluck('kelas_kode')->unique()->sort()->values();
                         $maxJam = collect($preview['lessons'])->max('jam_ke') ?? 10;
+                        // Build lessonsByDayClassJam[hari][kelas][jam_ke]
+                        $lessonsByDayClassJam = [];
+                        foreach($preview['lessons'] as $lesson) {
+                            $hari = $lesson['hari'] ?? 'Unknown';
+                            $kelas = $lesson['kelas_kode'];
+                            $jamKe = $lesson['jam_ke'];
+                            $lessonsByDayClassJam[$hari][$kelas][$jamKe] = $lesson;
+                        }
                     @endphp
-                    
-                    @forelse($lessonsByDayAndClass as $dayKey => $dayData)
-                        <h4 class="mt-4 mb-3">{{ $dayData['dayName'] }}</h4>
+                    @foreach($dayNames as $dayName)
+                        <h4 class="mt-4 mb-3">{{ $dayName }}</h4>
                         <div class="table-responsive">
                             <table class="table table-bordered table-sm" style="font-size: 11px;">
                                 <thead>
@@ -413,8 +402,7 @@
                                             <td class="text-center bg-light"><strong>{{ $jam }}</strong></td>
                                             @foreach($allClasses as $kelas)
                                                 @php
-                                                    $key = $jam . '-' . $kelas;
-                                                    $lesson = $dayData['lessons'][$key] ?? null;
+                                                    $lesson = $lessonsByDayClassJam[$dayName][$kelas][$jam] ?? null;
                                                 @endphp
                                                 <td class="text-center" style="padding: 6px; vertical-align: middle;">
                                                     @if($lesson)
@@ -432,9 +420,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    @empty
-                        <div class="alert alert-info">Tidak ada data jadwal</div>
-                    @endforelse
+                    @endforeach
                 </div>
             </div>
         </div>
