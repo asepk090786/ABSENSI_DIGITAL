@@ -146,9 +146,12 @@
                                                         // Non-KBM: tampilkan kode kegiatan saja (ambil dari master kegiatan jika ada, jika tidak pakai jenis)
                                                         $kodeKegiatan = null;
                                                         if (isset($kegiatanList)) {
-                                                            $kegiatan = collect($kegiatanList)->firstWhere('nama', strtoupper($jamBelajarEntry->jenis));
-                                                            if ($kegiatan && isset($kegiatan['kode'])) {
-                                                                $kodeKegiatan = $kegiatan['kode'];
+                                                            $jenisTrim = strtolower(trim($jamBelajarEntry->jenis));
+                                                            $kegiatan = collect($kegiatanList)->first(function($item) use ($jenisTrim) {
+                                                                return strtolower(trim($item->nama_kegiatan)) === $jenisTrim;
+                                                            });
+                                                            if ($kegiatan && isset($kegiatan->kode_kegiatan)) {
+                                                                $kodeKegiatan = $kegiatan->kode_kegiatan;
                                                             }
                                                         }
                                                         echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . ($kodeKegiatan ? $kodeKegiatan : strtoupper($jamBelajarEntry->jenis)) . '</div>';
@@ -326,8 +329,8 @@
                                                         $kodeKegiatan = null;
                                                         if (isset($kegiatanList)) {
                                                             foreach ($kegiatanList as $kegiatan) {
-                                                                if (strtoupper(trim($kegiatan['nama'])) === strtoupper(trim($jamBelajarEntry->jenis))) {
-                                                                    $kodeKegiatan = $kegiatan['kode'];
+                                                                if (strtoupper(trim($kegiatan->nama_kegiatan)) === strtoupper(trim($jamBelajarEntry->jenis))) {
+                                                                    $kodeKegiatan = $kegiatan->kode_kegiatan;
                                                                     break;
                                                                 }
                                                             }

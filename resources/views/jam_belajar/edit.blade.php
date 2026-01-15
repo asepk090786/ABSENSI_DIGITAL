@@ -61,8 +61,17 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Jenis <span class="text-danger">*</span></label>
-                        <input type="text" name="jenis" class="form-control" value="{{ old('jenis', $item->jenis) }}" placeholder="Contoh: KBM, Istirahat" required>
+                        <label class="form-label">Jenis Kegiatan <span class="text-danger">*</span></label>
+                        <select name="jenis" class="form-select" required>
+                            <option value="">-- Pilih Jenis Kegiatan --</option>
+                            @if(isset($kegiatanList))
+                                @foreach($kegiatanList as $keg)
+                                    <option value="{{ $keg->nama_kegiatan }}" {{ old('jenis', $item->jenis) == $keg->nama_kegiatan ? 'selected' : '' }}>
+                                        {{ $keg->nama_kegiatan }} ({{ $keg->kode_kegiatan }})
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
                         @error('jenis')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
 

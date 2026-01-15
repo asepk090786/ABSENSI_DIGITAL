@@ -17,13 +17,15 @@ class JamBelajarController extends Controller
         $items = JamBelajar::orderByDay()->get();
         $groupedByDay = $items->groupBy('hari');
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        return view('jam_belajar.index', compact('groupedByDay', 'days'));
+        $kegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
+        return view('jam_belajar.index', compact('groupedByDay', 'days', 'kegiatanList'));
     }
 
     public function create()
     {
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        return view('jam_belajar.create', compact('days'));
+        $kegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
+        return view('jam_belajar.create', compact('days', 'kegiatanList'));
     }
 
     public function store(Request $request)
@@ -52,7 +54,8 @@ class JamBelajarController extends Controller
     public function edit(JamBelajar $jamBelajar)
     {
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        return view('jam_belajar.edit', ['item' => $jamBelajar, 'days' => $days]);
+        $kegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
+        return view('jam_belajar.edit', ['item' => $jamBelajar, 'days' => $days, 'kegiatanList' => $kegiatanList]);
     }
 
     public function update(Request $request, JamBelajar $jamBelajar)

@@ -19,7 +19,7 @@ class MataPelajaranController extends Controller
 
     public function create()
     {
-        $jenisKegiatanList = \App\Models\JenisKegiatan::orderBy('nama')->get();
+        $jenisKegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
         return view('mata_pelajaran.create', compact('jenisKegiatanList'));
     }
 
@@ -29,7 +29,7 @@ class MataPelajaranController extends Controller
             'nama_mapel' => 'required|string|max:255|unique:mata_pelajaran,nama_mapel',
             'kode_mapel' => 'nullable|string|max:50|unique:mata_pelajaran,kode_mapel',
             'kategori' => 'required|string|in:Umum,Jurusan,Pilihan,Tingkat lanjut,Mulok',
-            'jenis_kegiatan_id' => 'nullable|exists:jenis_kegiatan,id',
+            'jenis_kegiatan_id' => 'nullable|exists:kegiatan,id',
         ]);
 
         MataPelajaran::create($validated);
@@ -44,7 +44,7 @@ class MataPelajaranController extends Controller
 
     public function edit(MataPelajaran $mata_pelajaran)
     {
-        $jenisKegiatanList = \App\Models\JenisKegiatan::orderBy('nama')->get();
+        $jenisKegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
         return view('mata_pelajaran.edit', compact('mata_pelajaran', 'jenisKegiatanList'));
     }
 
@@ -54,7 +54,7 @@ class MataPelajaranController extends Controller
             'nama_mapel' => 'required|string|max:255|unique:mata_pelajaran,nama_mapel,' . $mata_pelajaran->id,
             'kode_mapel' => 'nullable|string|max:50|unique:mata_pelajaran,kode_mapel,' . $mata_pelajaran->id,
             'kategori' => 'required|string|in:Umum,Jurusan,Pilihan,Tingkat lanjut,Mulok',
-            'jenis_kegiatan_id' => 'nullable|exists:jenis_kegiatan,id',
+            'jenis_kegiatan_id' => 'nullable|exists:kegiatan,id',
         ]);
 
         $mata_pelajaran->update($validated);

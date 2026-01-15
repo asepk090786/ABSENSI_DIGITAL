@@ -41,7 +41,7 @@
                             <option value="">-- Pilih Jenis Kegiatan --</option>
                             @if(isset($jenisKegiatanList))
                                 @foreach($jenisKegiatanList as $jk)
-                                    <option value="{{ $jk->id }}" {{ old('jenis_kegiatan_id', $mata_pelajaran->jenis_kegiatan_id) == $jk->id ? 'selected' : '' }}>{{ $jk->nama }}</option>
+                                    <option value="{{ $jk->id }}" {{ old('jenis_kegiatan_id', $mata_pelajaran->jenis_kegiatan_id) == $jk->id ? 'selected' : '' }}>{{ $jk->nama_kegiatan }}</option>
                                 @endforeach
                             @endif
                         </select>

@@ -346,8 +346,11 @@ class JadwalKbmController extends Controller
         
         $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         $sekolah = \App\Models\Sekolah::first();
+
+        // Ambil master kegiatan untuk kode kegiatan non-KBM
+        $kegiatanList = \App\Models\Kegiatan::select('kode_kegiatan', 'nama_kegiatan')->get();
         
-        return view('jadwal_kbm.keseluruhan', compact('jadwalKeseluruhan', 'jamBelajarByHari', 'hariList', 'tahunAjaranAktif', 'semesterAktif', 'sekolah', 'viewType'));
+        return view('jadwal_kbm.keseluruhan', compact('jadwalKeseluruhan', 'jamBelajarByHari', 'hariList', 'tahunAjaranAktif', 'semesterAktif', 'sekolah', 'viewType', 'kegiatanList'));
     }
 
     /**
