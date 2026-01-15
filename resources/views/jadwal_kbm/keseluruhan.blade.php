@@ -42,6 +42,15 @@
                             <option value="f4">F4</option>
                             <option value="folio">Folio</option>
                         </select>
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'a4']) }}" class="btn btn-danger btn-sm me-2">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF (A4)
+                        </a>
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'f4']) }}" class="btn btn-danger btn-sm me-2">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF (F4)
+                        </a>
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'folio']) }}" class="btn btn-danger btn-sm">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF (Folio)
+                        </a>
                         @endif
                         <button onclick="window.print()" class="btn btn-info btn-sm">
                             <i class="ti ti-printer me-1"></i>Cetak
@@ -309,8 +318,15 @@
                                                     } else {
                                                         // KBM: check specific kelas schedule - display kode guru
                                                         $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
-                                                        if ($jadwalJam && $jadwalJam->guru) {
-                                                            echo $jadwalJam->guru->kode_guru ?? '-';
+                                                        if ($jadwalJam && $jadwalJam->guru_id) {
+                                                            $guru = $jadwalJam->guru;
+                                                            if ($guru && $guru->kode_guru) {
+                                                                echo $guru->kode_guru;
+                                                            } elseif ($guru) {
+                                                                echo substr($guru->nama, 0, 3);
+                                                            } else {
+                                                                echo '-';
+                                                            }
                                                         } else {
                                                             echo '-';
                                                         }

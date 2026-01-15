@@ -181,11 +181,11 @@
                                     <!-- Logo Row -->
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 10px;">
                                         <!-- Logo Kiri -->
-                                        <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                            @if($sekolah && $sekolah->logo_header_kiri && file_exists(public_path('storage/' . $sekolah->logo_header_kiri)))
-                                                <img src="{{ asset('storage/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="max-height: 60px; max-width: 60px;">
+                                        <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;" id="preview-logo-kiri-container">
+                                            @if($sekolah && $sekolah->logo_header_kiri)
+                                                <img id="preview-logo-kiri" src="{{ asset('uploads/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="max-height: 60px; max-width: 60px; object-fit: contain;">
                                             @else
-                                                <div style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo L</div>
+                                                <div id="preview-logo-kiri-placeholder" style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo L</div>
                                             @endif
                                         </div>
 
@@ -210,11 +210,11 @@
                                         </div>
 
                                         <!-- Logo Kanan -->
-                                        <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                                            @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
-                                                <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" style="max-height: 60px; max-width: 60px;">
+                                        <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;" id="preview-logo-kanan-container">
+                                            @if($sekolah && $sekolah->logo)
+                                                <img id="preview-logo-kanan" src="{{ asset('uploads/' . $sekolah->logo) }}" alt="Logo Sekolah" style="max-height: 60px; max-width: 60px; object-fit: contain;">
                                             @else
-                                                <div style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo R</div>
+                                                <div id="preview-logo-kanan-placeholder" style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo R</div>
                                             @endif
                                         </div>
                                     </div>
@@ -349,6 +349,44 @@ $(document).ready(function() {
     
     // Initial preview update
     updatePreview();
+    
+    // Preview logo kiri ketika file dipilih
+    document.getElementById('logo_header_kiri').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imgElement = document.getElementById('preview-logo-kiri');
+                const placeholderElement = document.getElementById('preview-logo-kiri-placeholder');
+                
+                imgElement.src = event.target.result;
+                imgElement.style.display = 'block';
+                if (placeholderElement) {
+                    placeholderElement.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Preview logo kanan (sekolah) ketika file dipilih
+    document.getElementById('logo').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imgElement = document.getElementById('preview-logo-kanan');
+                const placeholderElement = document.getElementById('preview-logo-kanan-placeholder');
+                
+                imgElement.src = event.target.result;
+                imgElement.style.display = 'block';
+                if (placeholderElement) {
+                    placeholderElement.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 });
 </script>
 @endpush

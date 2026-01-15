@@ -27,6 +27,7 @@ Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->
 Route::middleware(['auth'])->group(function(){
     // Guru routes with export/import
     Route::resource('guru','App\Http\Controllers\GuruController');
+    Route::post('guru/bulk-delete', ['App\Http\Controllers\GuruController', 'bulkDelete'])->name('guru.bulk-delete');
     Route::get('guru-export', ['App\Http\Controllers\GuruController', 'export'])->name('guru.export');
     Route::get('guru-template', ['App\Http\Controllers\GuruController', 'templateDownload'])->name('guru.template');
     Route::post('guru-import', ['App\Http\Controllers\GuruController', 'import'])->name('guru.import');
@@ -81,6 +82,7 @@ Route::middleware(['auth'])->group(function(){
         Route::get('jadwal-kbm/print/{kelas}', [JadwalKbmController::class, 'printByKelas'])->name('jadwal-kbm.print');
         Route::get('jadwal-kbm/export-pdf/{kelas}', [JadwalKbmController::class, 'exportPdfByKelas'])->name('jadwal-kbm.export-pdf');
         Route::get('jadwal-kbm/export-pdf-guru/{guru}', [JadwalKbmController::class, 'exportPdfByGuru'])->name('jadwal-kbm.export-pdf-guru');
+        Route::get('jadwal-kbm/export-pdf-keseluruhan', [JadwalKbmController::class, 'exportPdfKeseluruhan'])->name('jadwal-kbm.export-pdf-keseluruhan');
         Route::post('jadwal-kbm/store', [JadwalKbmController::class, 'store'])->name('jadwal-kbm.store');
         Route::get('jadwal-kbm/guru/{guru}', [JadwalKbmController::class, 'showByGuru'])->name('jadwal-kbm.show-by-guru');
         Route::get('jadwal-kbm/keseluruhan', [JadwalKbmController::class, 'showKeseluruhan'])->name('jadwal-kbm.keseluruhan');
@@ -170,6 +172,9 @@ Route::middleware(['auth'])->group(function(){
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 });
+
+// File serving route - serve storage files via controller instead of direct symlink
+Route::get('/storage/{path}', [App\Http\Controllers\FileServeController::class, 'serve'])->where('path', '.*');
 
 // Theme demo route (preview Material Dashboard assets)
 Route::get('/theme-demo', function(){
