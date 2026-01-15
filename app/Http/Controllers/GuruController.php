@@ -100,6 +100,49 @@ class GuruController extends Controller
         return redirect()->route('guru.index')->with('success', 'Data guru berhasil dihapus.');
     }
 
+    /**
+     * Delete multiple gurus at once
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'guru_ids' => 'required|array',
+            'guru_ids.*' => 'required|integer|exists:guru,id'
+        ]);
+
+        try {
+            $count = 0;
+            foreach ($validated['guru_ids'] as $guruId) {
+                $guru = Guru::find($guruId);
+                if ($guru) {
+                    if ($guru->user) {
+                        $guru->user->delete();
+                    }
+                    $guru->delete();
+                    $count++;
+                }
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$count} data guru.",
+                    'count' => $count
+                ]);
+            }
+
+            return redirect()->route('guru.index')->with('success', "Berhasil menghapus {$count} data guru.");
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus data guru: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->route('guru.index')->with('error', 'Gagal menghapus data guru: ' . $e->getMessage());
+        }
+    }
+
     public function export()
     {
         return Excel::download(new GuruExport, 'data_guru_' . date('Ymd_His') . '.xlsx');

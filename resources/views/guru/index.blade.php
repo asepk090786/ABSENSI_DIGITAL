@@ -316,34 +316,31 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Delete one by one
-        let deleted = 0;
-        selectedIds.forEach((id, index) => {
-            setTimeout(() => {
-                const form = document.getElementById('deleteForm');
-                form.action = `/guru/${id}`;
-                
-                // Create a hidden form for each deletion
-                const tempForm = document.createElement('form');
-                tempForm.method = 'POST';
-                tempForm.action = `/guru/${id}`;
-                tempForm.style.display = 'none';
-                
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                
-                const methodInput = document.createElement('input');
-                methodInput.type = 'hidden';
-                methodInput.name = '_method';
-                methodInput.value = 'DELETE';
-                
-                tempForm.appendChild(csrfInput);
-                tempForm.appendChild(methodInput);
-                document.body.appendChild(tempForm);
-                tempForm.submit();
-            }, index * 500); // Delay to avoid race conditions
+        // Send bulk delete request
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        fetch('/guru/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                guru_ids: selectedIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus data guru.');
         });
     }
 

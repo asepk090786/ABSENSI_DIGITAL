@@ -272,7 +272,7 @@ class JadwalKbmController extends Controller
         $paperSizeArray = [0, 0, $dimensions[0] * 2.83465, $dimensions[1] * 2.83465];
         
         // Generate PDF using dompdf
-        $pdf = \PDF::loadView('jadwal_kbm.print-pdf-guru', compact(
+        $pdf = \Pdf::loadView('jadwal_kbm.print-pdf-guru', compact(
             'guru',
             'sekolah',
             'tahunAjaranAktif',
@@ -351,8 +351,63 @@ class JadwalKbmController extends Controller
     }
 
     /**
-     * Store jadwal KBM
+     * Export jadwal keseluruhan as PDF
      */
+    public function exportPdfKeseluruhan(Request $request)
+    {
+        $paperSize = $request->get('paper_size', 'a4');
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        $query = JadwalKbm::query();
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalKeseluruhan = $query
+            ->with(['kelas', 'guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get()
+            ->groupBy('hari');
+        
+        // Get all jam belajar
+        $jamBelajarByHari = JamBelajar::orderByDay()->get()->groupBy('hari');
+        
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        $sekolah = \App\Models\Sekolah::first();
+        
+        // Set paper size dimensions (in mm)
+        $paperSizes = [
+            'a4' => [210, 297],
+            'f4' => [210, 330],
+            'folio' => [210, 330],
+        ];
+        
+        $dimensions = $paperSizes[$paperSize] ?? $paperSizes['a4'];
+        
+        $pdf = \Pdf::loadView('jadwal_kbm.pdf-keseluruhan', compact(
+            'jadwalKeseluruhan',
+            'jamBelajarByHari',
+            'hariList',
+            'tahunAjaranAktif',
+            'semesterAktif',
+            'sekolah',
+            'paperSize'
+        ));
+        
+        // Set paper size
+        $pdf->setPaper($dimensions[0], $dimensions[1], 'mm');
+        $pdf->setOption('margin-top', 5);
+        $pdf->setOption('margin-right', 5);
+        $pdf->setOption('margin-bottom', 5);
+        $pdf->setOption('margin-left', 5);
+        
+        return $pdf->download('Jadwal_Keseluruhan_KBM_' . date('Y-m-d') . '.pdf');
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([
