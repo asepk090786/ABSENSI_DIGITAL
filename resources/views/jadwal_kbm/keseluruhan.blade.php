@@ -36,20 +36,33 @@
                                 <i class="ti ti-id me-1"></i>Jadwal Kode
                             </a>
                         </div>
-                        @if($viewType === 'kode')
+                        @if(in_array($viewType, ['compact', 'kode']))
                         <select id="paperSize" class="form-select form-select-sm d-inline-block w-auto me-2" style="width: 100px !important;">
                             <option value="a4">A4</option>
                             <option value="f4">F4</option>
                             <option value="folio">Folio</option>
                         </select>
+                        @endif
+                        @if($viewType === 'compact')
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan-mapel', ['paper_size' => 'a4']) }}" class="btn btn-danger btn-sm me-2">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel (A4)
+                        </a>
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan-mapel', ['paper_size' => 'f4']) }}" class="btn btn-danger btn-sm me-2">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel (F4)
+                        </a>
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan-mapel', ['paper_size' => 'folio']) }}" class="btn btn-danger btn-sm me-2">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel (Folio)
+                        </a>
+                        @endif
+                        @if($viewType === 'kode')
                         <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'a4']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF (A4)
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (A4)
                         </a>
                         <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'f4']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF (F4)
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (F4)
                         </a>
-                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'folio']) }}" class="btn btn-danger btn-sm">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF (Folio)
+                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'folio']) }}" class="btn btn-danger btn-sm me-2">
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (Folio)
                         </a>
                         @endif
                         <button onclick="window.print()" class="btn btn-info btn-sm">
@@ -161,6 +174,7 @@
                     @endforeach
                     @elseif($viewType === 'compact')
                         <!-- TAMPILAN KOMPAK (HANYA KODE MAPEL) -->
+                        <div class="compact-grid">
                         @foreach($hariList as $hari)
                         @php
                             $jadwalHari = $jadwalKeseluruhan->get($hari, collect());
@@ -182,7 +196,7 @@
                         @endphp
                         
                         @if($jadwalHari->isNotEmpty() || $jamBelajarHari->isNotEmpty())
-                        <div class="mb-5">
+                        <div class="mb-5 compact-card">
                             <h5 class="border-bottom pb-2 mb-3">
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
@@ -247,6 +261,7 @@
                         </div>
                         @endif
                         @endforeach
+                        </div>
                     @elseif($viewType === 'kode')
                         <!-- TAMPILAN JADWAL KODE GURU -->
                         @foreach($hariList as $hari)
@@ -541,6 +556,37 @@
             padding: 1px 1px !important;
             font-size: 6px !important;
             line-height: 1;
+        }
+
+        /* Compact mapel print: force grid into two columns to fit one page */
+        .compact-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+        }
+        .compact-card {
+            page-break-inside: avoid;
+            border: 0.5px solid #ccc;
+            padding: 2px;
+            border-radius: 2px;
+            background: #fff;
+        }
+        .compact-card h5 {
+            margin: 0 0 2px 0 !important;
+        }
+        body.paper-a4 .compact-card .table,
+        body.paper-f4 .compact-card .table,
+        body.paper-folio .compact-card .table {
+            font-size: 5px !important;
+        }
+        body.paper-a4 .compact-card .table td,
+        body.paper-a4 .compact-card .table th,
+        body.paper-f4 .compact-card .table td,
+        body.paper-f4 .compact-card .table th,
+        body.paper-folio .compact-card .table td,
+        body.paper-folio .compact-card .table th {
+            padding: 0.5px 0.8px !important;
+            font-size: 4.8px !important;
         }
         
         /* Paper size specific adjustments for compact view */

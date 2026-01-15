@@ -323,13 +323,21 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({
                 guru_ids: selectedIds
             })
         })
-        .then(response => response.json())
+        .then(async response => {
+            const isJson = response.headers.get('content-type')?.includes('application/json');
+            const data = isJson ? await response.json() : null;
+            if (!response.ok) {
+                throw new Error(data?.message || 'Gagal memproses permintaan');
+            }
+            return data;
+        })
         .then(data => {
             if (data.success) {
                 alert(data.message);

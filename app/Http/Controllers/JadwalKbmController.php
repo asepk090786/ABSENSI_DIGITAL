@@ -408,6 +408,64 @@ class JadwalKbmController extends Controller
         
         return $pdf->download('Jadwal_Keseluruhan_KBM_' . date('Y-m-d') . '.pdf');
     }
+
+    /**
+     * Export jadwal keseluruhan with kode mapel (compact) as PDF
+     * Disiapkan landscape dengan font kecil agar muat 1 halaman seperti jadwal kode
+     */
+    public function exportPdfKeseluruhanMapel(Request $request)
+    {
+        $paperSize = $request->get('paper_size', 'a4');
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        $query = JadwalKbm::query();
+        
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+        
+        $jadwalKeseluruhan = $query
+            ->with(['kelas', 'guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get()
+            ->groupBy('hari');
+        
+        // Get all jam belajar
+        $jamBelajarByHari = JamBelajar::orderByDay()->get()->groupBy('hari');
+        
+        $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        $sekolah = \App\Models\Sekolah::first();
+        
+        $paperSizes = [
+            'a4' => 'a4',
+            'f4' => [0, 0, 595.28, 935.43],
+            'folio' => [0, 0, 595.28, 935.43],
+        ];
+        
+        $paperSizeOption = $paperSizes[$paperSize] ?? 'a4';
+        
+        $pdf = \Pdf::loadView('jadwal_kbm.pdf-keseluruhan-mapel', compact(
+            'jadwalKeseluruhan',
+            'jamBelajarByHari',
+            'hariList',
+            'tahunAjaranAktif',
+            'semesterAktif',
+            'sekolah',
+            'paperSize'
+        ));
+        
+        $pdf->setPaper($paperSizeOption, 'landscape');
+        $pdf->setOption('margin-top', 5);
+        $pdf->setOption('margin-right', 5);
+        $pdf->setOption('margin-bottom', 5);
+        $pdf->setOption('margin-left', 5);
+        
+        return $pdf->download('Jadwal_KBM_Mapel_' . strtoupper($paperSize) . '_' . date('Y-m-d') . '.pdf');
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([

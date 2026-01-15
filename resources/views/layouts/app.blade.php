@@ -51,6 +51,10 @@
 <body class="layout-fluid">
     <div class="page">
         @auth
+        @php
+            // Gunakan ikon default agar konsisten di navbar
+            $defaultLogo = asset('images/simadis-icon.svg');
+        @endphp
         <!-- Sidebar -->
         <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
             <div class="container-fluid">
@@ -58,12 +62,11 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 
-                <h1 class="navbar-brand navbar-brand-autodark">
-                    <a href="{{ route('home') }}">
-                        <span class="text-white">
-                            <i class="ti ti-school me-2"></i>Absensi Digital
-                        </span>
-                    </a>
+                <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center" style="gap: 10px;">
+                     <a href="{{ route('home') }}" class="d-flex align-items-center text-decoration-none" style="gap: 10px;">
+                        <img src="{{ $defaultLogo }}" alt="Logo Aplikasi" style="height: 48px; width: 48px; object-fit: contain;" loading="lazy">
+                        <span class="text-white fw-bold" style="font-size: 19px; letter-spacing: 0.8px; text-transform: uppercase;">SIMADIS</span>
+                     </a>
                 </h1>
                 
                 <div class="collapse navbar-collapse" id="sidebar-menu">
