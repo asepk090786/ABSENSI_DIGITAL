@@ -76,6 +76,12 @@
             </a>
         </li>
         <li>
+            <a href="{{ route('jenis_kegiatan.index') }}" class="menu-item {{ request()->routeIs('jenis_kegiatan.*') ? 'active' : '' }}">
+                <i class="material-icons">category</i>
+                <span>Jenis Kegiatan</span>
+            </a>
+        </li>
+        <li>
             <a href="#" class="menu-item">
                 <i class="material-icons">menu_book</i>
                 <span>Mata Pelajaran</span>

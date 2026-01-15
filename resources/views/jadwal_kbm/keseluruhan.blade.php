@@ -107,7 +107,7 @@
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm">
+                                <table class="table table-bordered table-sm time-hide">
                                     <thead class="table-primary">
                                         <tr>
                                             <th class="text-center">Jam Ke</th>
@@ -121,18 +121,13 @@
                                         @for($jam = 1; $jam <= $maxJam; $jam++)
                                         <tr>
                                             <td class="text-center fw-bold">{{ $jam }}</td>
-                                            <td class="text-center">
+                                            <td class="text-center time-cell">
                                                 @php
                                                     // Cari jam belajar entry untuk urutan ini
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry) {
-                                                        // Jika ada entry di jam_belajar, tampilkan info nya
-                                                        if ($jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                            // UPACARA, ISTIRAHAT, PEMBIASAAN, etc.
-                                                            echo '<span class="badge bg-warning text-dark">' . strtoupper($jamBelajarEntry->jenis) . '</span>';
-                                                        } else {
+                                                            // Tampilkan hanya waktu; nama kegiatan tidak ditampilkan di kolom waktu
                                                             echo $jamBelajarEntry->jam_mulai . ' - ' . $jamBelajarEntry->jam_selesai;
-                                                        }
                                                     } else {
                                                         // Fallback ke jadwal KBM
                                                         $jadwalFirst = $jadwalHari->where('jam_ke', $jam)->first();
@@ -148,15 +143,20 @@
                                                     // Check if this is a non-KBM jam (UPACARA, ISTIRAHAT, PEMBIASAAN)
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry && $jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                        // Non-KBM: apply to all kelas
-                                                        echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . strtoupper($jamBelajarEntry->jenis) . '</div>';
+                                                        // Non-KBM: tampilkan kode kegiatan saja (ambil dari master kegiatan jika ada, jika tidak pakai jenis)
+                                                        $kodeKegiatan = null;
+                                                        if (isset($kegiatanList)) {
+                                                            $kegiatan = collect($kegiatanList)->firstWhere('nama', strtoupper($jamBelajarEntry->jenis));
+                                                            if ($kegiatan && isset($kegiatan['kode'])) {
+                                                                $kodeKegiatan = $kegiatan['kode'];
+                                                            }
+                                                        }
+                                                        echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . ($kodeKegiatan ? $kodeKegiatan : strtoupper($jamBelajarEntry->jenis)) . '</div>';
                                                     } else {
-                                                        // KBM: check specific kelas schedule
+                                                        // KBM: check specific kelas schedule - hanya tampilkan kode guru
                                                         $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
-                                                        if ($jadwalJam) {
-                                                            echo '<div class="badge bg-info mb-1">' . $jadwalJam->mataPelajaran->kode_mapel . '</div>';
-                                                            echo '<div class="small"><strong>' . $jadwalJam->mataPelajaran->nama_mapel . '</strong></div>';
-                                                            echo '<div class="small text-muted">' . $jadwalJam->guru->nama . '</div>';
+                                                        if ($jadwalJam && $jadwalJam->guru) {
+                                                            echo $jadwalJam->guru->kode_guru;
                                                         } else {
                                                             echo '-';
                                                         }
@@ -201,7 +201,7 @@
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm compact-view">
+                                <table class="table table-bordered table-sm compact-view time-hide">
                                     <thead class="table-primary">
                                         <tr>
                                             <th class="text-center" style="width: 5%;">Jam</th>
@@ -220,11 +220,8 @@
                                                     // Cari jam belajar entry untuk urutan ini
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry) {
-                                                        if ($jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                            echo '<span class="badge badge-sm bg-warning text-dark" style="font-size: 8px;">' . strtoupper($jamBelajarEntry->jenis) . '</span>';
-                                                        } else {
-                                                            echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
-                                                        }
+                                                        // Hanya tampilkan waktu, tidak badge kegiatan
+                                                        echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
                                                     } else {
                                                         $jadwalFirst = $jadwalHari->where('jam_ke', $jam)->first();
                                                         if ($jadwalFirst) {
@@ -290,7 +287,7 @@
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm compact-view">
+                                <table class="table table-bordered table-sm compact-view time-hide">
                                     <thead class="table-primary">
                                         <tr>
                                             <th class="text-center" style="width: 5%;">Jam</th>
@@ -309,11 +306,8 @@
                                                     // Cari jam belajar entry untuk urutan ini
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry) {
-                                                        if ($jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                            echo '<span class="badge badge-sm bg-warning text-dark" style="font-size: 8px;">' . strtoupper($jamBelajarEntry->jenis) . '</span>';
-                                                        } else {
-                                                            echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
-                                                        }
+                                                        // Hanya tampilkan waktu, tidak badge kegiatan
+                                                        echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
                                                     } else {
                                                         $jadwalFirst = $jadwalHari->where('jam_ke', $jam)->first();
                                                         if ($jadwalFirst) {
@@ -328,20 +322,22 @@
                                                     // Check if this is a non-KBM jam (UPACARA, ISTIRAHAT, PEMBIASAAN)
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry && $jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                        // Non-KBM: apply to all kelas
-                                                        echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . strtoupper($jamBelajarEntry->jenis) . '</div>';
-                                                    } else {
-                                                        // KBM: check specific kelas schedule - display kode guru
-                                                        $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
-                                                        if ($jadwalJam && $jadwalJam->guru_id) {
-                                                            $guru = $jadwalJam->guru;
-                                                            if ($guru && $guru->kode_guru) {
-                                                                echo $guru->kode_guru;
-                                                            } elseif ($guru) {
-                                                                echo substr($guru->nama, 0, 3);
-                                                            } else {
-                                                                echo '-';
+                                                        // Non-KBM: tampilkan kode kegiatan dari master (case-insensitive)
+                                                        $kodeKegiatan = null;
+                                                        if (isset($kegiatanList)) {
+                                                            foreach ($kegiatanList as $kegiatan) {
+                                                                if (strtoupper(trim($kegiatan['nama'])) === strtoupper(trim($jamBelajarEntry->jenis))) {
+                                                                    $kodeKegiatan = $kegiatan['kode'];
+                                                                    break;
+                                                                }
                                                             }
+                                                        }
+                                                        echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . ($kodeKegiatan ? $kodeKegiatan : strtoupper($jamBelajarEntry->jenis)) . '</div>';
+                                                    } else {
+                                                        // KBM: check specific kelas schedule - hanya tampilkan kode guru
+                                                        $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
+                                                        if ($jadwalJam && $jadwalJam->guru) {
+                                                            echo $jadwalJam->guru->kode_guru;
                                                         } else {
                                                             echo '-';
                                                         }
@@ -396,6 +392,39 @@
         
         body.paper-f4 .table {
             font-size: 5.5px !important;
+        }
+
+        /* Hide activity badges inside the 'Waktu' (second) column for jadwal keseluruhan tables */
+        .time-hide tbody td:nth-child(2) .badge,
+        .time-hide tbody td:nth-child(2) .badge-sm {
+            display: none !important;
+        }
+
+        /* Make sure the Waktu column keeps readable spacing */
+        .time-hide tbody td:nth-child(2) {
+            white-space: nowrap;
+            line-height: 1.1;
+            vertical-align: middle;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+
+        /* Ensure badges in kelas columns remain visible and nicely spaced */
+        .time-hide tbody td:not(:nth-child(2)) .badge,
+        .time-hide tbody td:not(:nth-child(2)) .badge-sm {
+            display: inline-block !important;
+            margin-top: 4px;
+            font-size: 10px;
+            padding: .25rem .4rem;
+        }
+
+        /* Compact view adjustments */
+        .compact-view.time-hide td {
+            padding: 4px 2px !important;
+        }
+        .compact-view.time-hide td .badge {
+            font-size: 9px !important;
+            margin-top: 3px;
         }
         
         body.paper-f4 h5 {

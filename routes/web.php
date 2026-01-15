@@ -12,6 +12,7 @@ use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\JadwalKbmController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\KegiatanController;
+use App\Http\Controllers\JenisKegiatanController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -114,6 +115,7 @@ Route::middleware(['auth'])->group(function(){
     Route::delete('jam-belajar-destroy-all', [JamBelajarController::class, 'destroyAll'])->name('jam_belajar.destroy_all');
     
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
+    Route::resource('jenis_kegiatan', JenisKegiatanController::class)->middleware('auth');
 
     // Maintenance update routes
     Route::get('maintenance/update', [UpdateController::class, 'index'])->name('maintenance.update.index');

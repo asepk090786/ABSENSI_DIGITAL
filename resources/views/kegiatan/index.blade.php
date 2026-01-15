@@ -13,6 +13,9 @@
                     </div>
                     <div class="col-auto">
                         <div class="btn-list">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm me-2">
+                                <i class="ti ti-arrow-left me-1"></i>Back
+                            </a>
                             <a href="{{ route('kegiatan.create') }}" class="btn btn-primary btn-sm">
                                 <i class="ti ti-plus me-1"></i>Tambah Kegiatan
                             </a>

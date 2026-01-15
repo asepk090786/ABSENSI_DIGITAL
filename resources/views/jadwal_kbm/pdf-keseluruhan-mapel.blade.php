@@ -210,11 +210,8 @@
                                             @php
                                                 $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                 if ($jamBelajarEntry) {
-                                                    if ($jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                        echo '<span class="badge-non-kbm">' . strtoupper($jamBelajarEntry->jenis) . '</span>';
-                                                    } else {
-                                                        echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
-                                                    }
+                                                    // Tampilkan hanya waktu pada kolom Waktu di PDF
+                                                    echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
                                                 } else {
                                                     $jadwalFirst = $jadwalHari->where('jam_ke', $jam)->first();
                                                     if ($jadwalFirst) {
