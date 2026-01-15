@@ -51,6 +51,10 @@
 <body class="layout-fluid">
     <div class="page">
         @auth
+        @php
+            // Gunakan ikon default agar konsisten di navbar
+            $defaultLogo = asset('images/simadis-icon.svg');
+        @endphp
         <!-- Sidebar -->
         <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
             <div class="container-fluid">
@@ -58,12 +62,11 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 
-                <h1 class="navbar-brand navbar-brand-autodark">
-                    <a href="{{ route('home') }}">
-                        <span class="text-white">
-                            <i class="ti ti-school me-2"></i>Absensi Digital
-                        </span>
-                    </a>
+                <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center" style="gap: 10px;">
+                     <a href="{{ route('home') }}" class="d-flex align-items-center text-decoration-none" style="gap: 10px;">
+                        <img src="{{ $defaultLogo }}" alt="Logo Aplikasi" style="height: 48px; width: 48px; object-fit: contain;" loading="lazy">
+                        <span class="text-white fw-bold" style="font-size: 19px; letter-spacing: 0.8px; text-transform: uppercase;">SIMADIS</span>
+                     </a>
                 </h1>
                 
                 <div class="collapse navbar-collapse" id="sidebar-menu">
@@ -135,6 +138,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('mata_pelajaran.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}">
                                     <i class="ti ti-books me-2"></i>Mata Pelajaran
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}" href="{{ route('kegiatan.index') }}">
+                                    <i class="ti ti-activity me-2"></i>Kegiatan
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}" href="{{ route('asc_timetable.index') }}">
                                     <i class="ti ti-table me-2"></i>ASC Time Table
                                 </a>
@@ -158,6 +164,9 @@
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('setting.semester*') ? 'active' : '' }}" href="{{ route('setting.semester') }}">
                                     <i class="ti ti-adjustments me-2"></i>Semester
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('setting.header*') ? 'active' : '' }}" href="{{ route('setting.header') }}">
+                                    <i class="ti ti-layout-sidebar me-2"></i>Edit Header
                                 </a>
                                 <!-- Update disabled: menu disembunyikan -->
                             </div>
@@ -252,6 +261,8 @@
         @endauth
     </div>
     
+    <!-- jQuery (required for Summernote) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Tabler JS -->
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
     @stack('js')

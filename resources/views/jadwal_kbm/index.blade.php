@@ -23,20 +23,6 @@
                 </div>
             </div>
             <div class="card-body">
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
-                @if(session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
-
                 <!-- Tab Navigation -->
                 <ul class="nav nav-tabs mb-4" id="jadwalTab" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -53,6 +39,11 @@
                         <button class="nav-link" id="perguru-tab" data-bs-toggle="tab" data-bs-target="#perguru" type="button" role="tab">
                             <i class="ti ti-user me-2"></i>Jadwal Per Guru
                         </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" href="{{ route('jadwal-kbm.keseluruhan') }}">
+                            <i class="ti ti-layout-grid me-2"></i>Jadwal Keseluruhan
+                        </a>
                     </li>
                 </ul>
 
@@ -141,10 +132,9 @@
         </div>
     </div>
 </div>
-
 @endsection
 
-@push('scripts')
+@push('js')
 <script>
 function viewJadwal(kelasId, namaKelas) {
     $('#namaKelas').text(namaKelas);
@@ -175,8 +165,9 @@ function viewJadwal(kelasId, namaKelas) {
                 $('#jadwalContent').html(html);
             }
         },
-        error: function() {
-            $('#jadwalContent').html('<div class="alert alert-danger">Gagal memuat jadwal.</div>');
+        error: function(xhr) {
+            console.error('Error:', xhr);
+            $('#jadwalContent').html('<div class="alert alert-danger">Gagal memuat jadwal. Error: ' + xhr.statusText + '</div>');
         }
     });
     

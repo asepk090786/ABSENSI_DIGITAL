@@ -173,4 +173,102 @@ class SettingController extends Controller
             return back()->withErrors('Tidak dapat menghapus: masih ada data terkait.');
         }
     }
-}
+
+    public function header()
+    {
+        $sekolah = \App\Models\Sekolah::first();
+        return view('setting.header', compact('sekolah'));
+    }
+
+    public function updateHeader(Request $request)
+    {
+        \Log::info('updateHeader called');
+        \Log::info('Request data:', $request->all());
+        \Log::info('Has logo_header_kiri file:', ['has' => $request->hasFile('logo_header_kiri')]);
+        \Log::info('Has logo file:', ['has' => $request->hasFile('logo')]);
+        
+        $validated = $request->validate([
+            'header_html' => 'nullable|string',
+            'logo_header_kiri' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            // Header text lines (HTML from Summernote)
+            'header_line1' => 'nullable|string',
+            'header_line1_spacing' => 'nullable|numeric|min:0.1|max:5',
+            'header_line2' => 'nullable|string',
+            'header_line2_spacing' => 'nullable|numeric|min:0.1|max:5',
+            'header_line3' => 'nullable|string',
+            'header_line3_spacing' => 'nullable|numeric|min:0.1|max:5',
+            'header_line4' => 'nullable|string',
+            'header_line4_spacing' => 'nullable|numeric|min:0.1|max:5',
+        ]);
+
+        try {
+            \Log::info('Validation passed');
+            $sekolah = \App\Models\Sekolah::first();
+            
+            if (!$sekolah) {
+                $sekolah = new \App\Models\Sekolah();
+            }
+
+            $sekolah->header_html = $validated['header_html'] ?? null;
+
+            // Save header text lines as HTML from Summernote
+            $sekolah->header_line1 = $validated['header_line1'] ?? null;
+            $sekolah->header_line1_spacing = $validated['header_line1_spacing'] ?? 1.0;
+            $sekolah->header_line2 = $validated['header_line2'] ?? null;
+            $sekolah->header_line2_spacing = $validated['header_line2_spacing'] ?? 1.0;
+            $sekolah->header_line3 = $validated['header_line3'] ?? null;
+            $sekolah->header_line3_spacing = $validated['header_line3_spacing'] ?? 1.0;
+            $sekolah->header_line4 = $validated['header_line4'] ?? null;
+            $sekolah->header_line4_spacing = $validated['header_line4_spacing'] ?? 1.0;
+
+            // Handle logo_header_kiri
+            if ($request->hasFile('logo_header_kiri')) {
+                \Log::info('Processing logo_header_kiri upload');
+                if ($sekolah->logo_header_kiri && file_exists(public_path('images/' . $sekolah->logo_header_kiri))) {
+                    \Log::info('Deleting old logo_header_kiri: ' . $sekolah->logo_header_kiri);
+                    @unlink(public_path('images/' . $sekolah->logo_header_kiri));
+                }
+                try {
+                    $file = $request->file('logo_header_kiri');
+                    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+                    $file->move(public_path('images'), $filename);
+                    \Log::info('Logo kiri stored at: ' . $filename);
+                    $sekolah->logo_header_kiri = $filename;
+                } catch (\Exception $ex) {
+                    \Log::error('Error storing logo_header_kiri: ' . $ex->getMessage());
+                    throw $ex;
+                }
+            }
+
+            // Handle logo (school logo)
+            if ($request->hasFile('logo')) {
+                \Log::info('Processing logo upload');
+                if ($sekolah->logo && file_exists(public_path('images/' . $sekolah->logo))) {
+                    \Log::info('Deleting old logo: ' . $sekolah->logo);
+                    @unlink(public_path('images/' . $sekolah->logo));
+                }
+                try {
+                    $file = $request->file('logo');
+                    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+                    $file->move(public_path('images'), $filename);
+                    \Log::info('Logo stored at: ' . $filename);
+                    $sekolah->logo = $filename;
+                } catch (\Exception $ex) {
+                    \Log::error('Error storing logo: ' . $ex->getMessage());
+                    throw $ex;
+                }
+            }
+
+            \Log::info('Saving sekolah record', ['logo' => $sekolah->logo, 'logo_header_kiri' => $sekolah->logo_header_kiri]);
+            $sekolah->save();
+            \Log::info('Sekolah saved successfully');
+
+            return redirect()->route('setting.header')
+                ->with('success', 'Header berhasil disimpan');
+        } catch (\Exception $e) {
+            \Log::error('Error updating header: ' . $e->getMessage());
+            return back()
+                ->with('error', 'Gagal menyimpan pengaturan: ' . $e->getMessage());
+        }
+    }}

@@ -34,6 +34,18 @@
                         </select>
                         @error('kategori')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Jenis Kegiatan <span class="text-muted">(Opsional)</span></label>
+                        <select name="jenis_kegiatan_id" class="form-select @error('jenis_kegiatan_id') is-invalid @enderror">
+                            <option value="">-- Pilih Jenis Kegiatan --</option>
+                            @if(isset($jenisKegiatanList))
+                                @foreach($jenisKegiatanList as $jk)
+                                    <option value="{{ $jk->id }}" {{ old('jenis_kegiatan_id') == $jk->id ? 'selected' : '' }}>{{ $jk->nama }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                        @error('jenis_kegiatan_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
                     <div class="mt-4">
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-device-floppy me-2"></i>Simpan

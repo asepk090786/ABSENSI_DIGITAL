@@ -12,9 +12,6 @@
             </div>
             <div class="col-auto ms-auto">
                 <div class="btn-list">
-                    <a href="{{ route('asc_timetable.download_template') }}" class="btn btn-outline-primary">
-                        <i class="ti ti-download me-2"></i>Download Template XML
-                    </a>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
                         <i class="ti ti-upload me-2"></i>Import XML
                     </button>
@@ -105,7 +102,12 @@
                                     <div>
                                         <h4 class="alert-title">Catatan Penting</h4>
                                         <div class="text-secondary">
-                                            Data yang sudah ada tidak akan ditimpa. Sistem hanya menambahkan data baru yang belum ada dalam database.
+                                            <ul class="mb-0">
+                                                <li>Sistem akan mendeteksi data duplikat berdasarkan <strong>Kode Guru</strong> dan <strong>Nama Guru</strong></li>
+                                                <li>Anda dapat memilih untuk: <strong>Lewati</strong>, <strong>Replace Data Lama</strong>, atau <strong>Tambah Sebagai Baru</strong></li>
+                                                <li>Nama guru yang sama tidak boleh memiliki kode guru yang berbeda (akan ditandai sebagai duplikat)</li>
+                                                <li>Data mata pelajaran, kelas, dan jam belajar yang sudah ada tidak akan ditimpa</li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>

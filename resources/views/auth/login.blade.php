@@ -59,19 +59,18 @@
             align-items: center;
             justify-content: center;
             animation: slideDown 0.6s ease-out;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-radius: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 3rem;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
+            padding: 0;
+            margin-bottom: 0;
+            min-width: auto;
+            height: auto;
         }
         
         .logo-display img {
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            width: auto;
+            height: 100px;
+            max-width: 300px;
+            object-fit: contain;
         }
         
         .school-info {
@@ -170,24 +169,30 @@
         
         .logos-container {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 1.5rem;
+            gap: 2rem;
             margin-bottom: 1.5rem;
+            flex-wrap: nowrap;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .school-logo-wrapper {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1rem;
-            border-radius: 1rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            min-width: 100px;
-            min-height: 100px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            width: auto;
+            height: auto;
             animation: slideDown 0.6s ease-out 0.1s backwards;
         }
         
@@ -255,7 +260,7 @@
             
             <div class="logos-container">
                 <div class="simadis-logo-wrapper logo-display">
-                    <img src="{{ asset('images/simadis-logo.svg') }}" alt="SIMADIS Logo" style="width: 100%; height: auto; max-width: 340px;">
+                    <img src="{{ asset('images/simadis-logo.svg') }}" alt="SIMADIS Logo">
                 </div>
                 
                 @if($logoUrl)

@@ -24,6 +24,30 @@
     <form action="{{ route('asc_timetable.confirm_import') }}" method="POST" id="importForm">
         @csrf
         
+        <!-- Duplicate Warning -->
+        @if(collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() > 0)
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <div class="d-flex">
+                <div>
+                    <i class="ti ti-alert-triangle icon alert-icon"></i>
+                </div>
+                <div>
+                    <h4 class="alert-title">Peringatan: Data Guru Duplikat Ditemukan!</h4>
+                    <div class="text-secondary">
+                        Ditemukan <strong>{{ collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() }}</strong> guru dengan data yang sama.
+                        <br>Silakan pilih aksi untuk setiap guru duplikat di tab "Guru" di bawah:
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Lewati</strong> - Abaikan data baru, tetap gunakan data lama</li>
+                            <li><strong>Replace Data Lama</strong> - Timpa data lama dengan data baru</li>
+                            <li><strong>Tambah Sebagai Baru</strong> - Tambahkan dengan kode guru yang berbeda (hanya untuk duplikat kode)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+        
         <!-- Selection Checkboxes -->
         <div class="card mb-3">
             <div class="card-header">
@@ -69,6 +93,9 @@
                                 <i class="ti ti-user text-info me-1"></i>
                                 Guru 
                                 <span class="badge bg-success">{{ collect($preview['teachers'])->where('status', 'new')->count() }}</span>
+                                @if(collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() > 0)
+                                    <span class="badge bg-warning">{{ collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() }} duplikat</span>
+                                @endif
                             </label>
                         </div>
                     </div>
@@ -119,7 +146,9 @@
                 <div class="card-body p-3 text-center">
                     <div class="text-muted mb-1">Guru</div>
                     <div class="h2 mb-0 text-success">{{ collect($preview['teachers'])->where('status', 'new')->count() }}</div>
-                    <small class="text-muted">{{ collect($preview['teachers'])->where('status', 'exists')->count() }} sudah ada</small>
+                    <small class="text-muted">
+                        {{ collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() }} duplikat
+                    </small>
                 </div>
             </div>
         </div>
@@ -248,33 +277,55 @@
                         <table class="table table-vcenter table-hover">
                             <thead>
                                 <tr>
-                                    <th>NIP</th>
+                                    <th>Kode Guru</th>
                                     <th>Nama Guru</th>
                                     <th>Jenis Kelamin</th>
-                                    <th>Email</th>
-                                    <th>No. HP</th>
                                     <th>Status</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($preview['teachers'] as $teacher)
+                                @forelse($preview['teachers'] as $index => $teacher)
                                 <tr>
-                                    <td><strong>{{ $teacher['nip'] }}</strong></td>
+                                    <td><strong>{{ $teacher['kode_guru'] }}</strong></td>
                                     <td>{{ $teacher['nama'] }}</td>
                                     <td>{{ $teacher['jenis_kelamin'] }}</td>
-                                    <td>{{ $teacher['email'] ?: '-' }}</td>
-                                    <td>{{ $teacher['no_hp'] ?: '-' }}</td>
                                     <td>
                                         @if($teacher['status'] === 'new')
-                                        <span class="badge bg-success">Baru</span>
+                                            <span class="badge bg-success">Baru</span>
+                                        @elseif($teacher['status'] === 'exists_kode')
+                                            <span class="badge bg-warning">Kode Guru Sama</span>
+                                            @if($teacher['existing_data'])
+                                                <br><small class="text-muted">Data lama: {{ $teacher['existing_data']->nama }}</small>
+                                            @endif
+                                        @elseif($teacher['status'] === 'exists_nama')
+                                            <span class="badge bg-danger">Nama Guru Sama</span>
+                                            @if($teacher['existing_data'])
+                                                <br><small class="text-muted">Kode lama: {{ $teacher['existing_data']->kode_guru ?? '-' }}</small>
+                                            @endif
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($teacher['status'] !== 'new')
+                                            <select name="teacher_action[{{ $index }}]" class="form-select form-select-sm">
+                                                <option value="skip">Lewati</option>
+                                                <option value="replace">Replace Data Lama</option>
+                                                @if($teacher['status'] === 'exists_kode')
+                                                <option value="add_new">Tambah Sebagai Baru</option>
+                                                @endif
+                                            </select>
+                                            <input type="hidden" name="teacher_kode[{{ $index }}]" value="{{ $teacher['kode_guru'] }}">
+                                            <input type="hidden" name="teacher_nama[{{ $index }}]" value="{{ $teacher['nama'] }}">
+                                            <input type="hidden" name="teacher_gender[{{ $index }}]" value="{{ $teacher['jenis_kelamin'] }}">
+                                            <input type="hidden" name="teacher_existing_id[{{ $index }}]" value="{{ $teacher['existing_id'] }}">
                                         @else
-                                        <span class="badge bg-secondary">Sudah Ada</span>
+                                            <span class="text-success">Akan ditambahkan</span>
                                         @endif
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted">Tidak ada data</td>
+                                    <td colspan="5" class="text-center text-muted">Tidak ada data</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -321,31 +372,20 @@
                 <!-- Lessons Tab -->
                 <div class="tab-pane" id="lessons">
                     @php
-                        // Create a mapping of dayDefId to day names for better grouping
-                        $lessonsByDayAndClass = [];
-                        foreach($preview['lessons'] as $lesson) {
-                            $dayKey = $lesson['dayDefId'] ?? 'unknown';
-                            $dayName = $lesson['hari'] ?? 'Unknown';
-                            $kelasKode = $lesson['kelas_kode'];
-                            $jamKe = $lesson['jam_ke'];
-                            
-                            if (!isset($lessonsByDayAndClass[$dayKey])) {
-                                $lessonsByDayAndClass[$dayKey] = [
-                                    'dayName' => $dayName,
-                                    'lessons' => []
-                                ];
-                            }
-                            
-                            $key = $jamKe . '-' . $kelasKode;
-                            $lessonsByDayAndClass[$dayKey]['lessons'][$key] = $lesson;
-                        }
-                        
+                        $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
                         $allClasses = collect($preview['lessons'])->pluck('kelas_kode')->unique()->sort()->values();
                         $maxJam = collect($preview['lessons'])->max('jam_ke') ?? 10;
+                        // Build lessonsByDayClassJam[hari][kelas][jam_ke]
+                        $lessonsByDayClassJam = [];
+                        foreach($preview['lessons'] as $lesson) {
+                            $hari = $lesson['hari'] ?? 'Unknown';
+                            $kelas = $lesson['kelas_kode'];
+                            $jamKe = $lesson['jam_ke'];
+                            $lessonsByDayClassJam[$hari][$kelas][$jamKe] = $lesson;
+                        }
                     @endphp
-                    
-                    @forelse($lessonsByDayAndClass as $dayKey => $dayData)
-                        <h4 class="mt-4 mb-3">{{ $dayData['dayName'] }}</h4>
+                    @foreach($dayNames as $dayName)
+                        <h4 class="mt-4 mb-3">{{ $dayName }}</h4>
                         <div class="table-responsive">
                             <table class="table table-bordered table-sm" style="font-size: 11px;">
                                 <thead>
@@ -362,8 +402,7 @@
                                             <td class="text-center bg-light"><strong>{{ $jam }}</strong></td>
                                             @foreach($allClasses as $kelas)
                                                 @php
-                                                    $key = $jam . '-' . $kelas;
-                                                    $lesson = $dayData['lessons'][$key] ?? null;
+                                                    $lesson = $lessonsByDayClassJam[$dayName][$kelas][$jam] ?? null;
                                                 @endphp
                                                 <td class="text-center" style="padding: 6px; vertical-align: middle;">
                                                     @if($lesson)
@@ -381,9 +420,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    @empty
-                        <div class="alert alert-info">Tidak ada data jadwal</div>
-                    @endforelse
+                    @endforeach
                 </div>
             </div>
         </div>

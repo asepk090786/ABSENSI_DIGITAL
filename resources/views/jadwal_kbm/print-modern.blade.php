@@ -287,8 +287,25 @@
                         <img src="{{ asset('storage/' . $sekolah->logo) }}" class="jadwal-header-logo">
                     @endif
                     <div class="jadwal-header-info">
-                        <h3>{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</h3>
-                        <p>{{ $sekolah->alamat ?? '' }}</p>
+                        @if($sekolah && $sekolah->header_line1)
+                            <div style="margin: 0; padding: 0; line-height: {{ $sekolah->header_line1_spacing ?? 1.0 }}; font-size: 11px;">{!! $sekolah->header_line1 !!}</div>
+                        @endif
+                        
+                        @if($sekolah && $sekolah->header_line2)
+                            <h3 style="margin: 2px 0 0 0; padding: 0; line-height: {{ $sekolah->header_line2_spacing ?? 1.0 }}; font-size: 16px; font-weight: 700; color: #1a202c;">{!! $sekolah->header_line2 !!}</h3>
+                        @else
+                            <h3>{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</h3>
+                        @endif
+                        
+                        @if($sekolah && $sekolah->header_line3)
+                            <p style="margin: 2px 0 0 0; padding: 0; line-height: {{ $sekolah->header_line3_spacing ?? 1.0 }}; font-size: 11px; color: #666;">{!! $sekolah->header_line3 !!}</p>
+                        @else
+                            <p>{{ $sekolah->alamat ?? '' }}</p>
+                        @endif
+                        
+                        @if($sekolah && $sekolah->header_line4)
+                            <p style="margin: 2px 0 0 0; padding: 0; line-height: {{ $sekolah->header_line4_spacing ?? 1.0 }}; font-size: 10px; color: #777;">{!! $sekolah->header_line4 !!}</p>
+                        @endif
                     </div>
                 </div>
             </div>

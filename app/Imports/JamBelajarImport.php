@@ -12,6 +12,12 @@ class JamBelajarImport implements ToModel, WithHeadingRow, SkipsEmptyRows
     private $errors = [];
     private $successCount = 0;
     private $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    private $updateMode = false;
+
+    public function __construct($updateMode = false)
+    {
+        $this->updateMode = $updateMode;
+    }
 
     public function model(array $row)
     {
@@ -53,14 +59,37 @@ class JamBelajarImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             return null;
         }
 
+        // Validasi kode kegiatan (untuk jenis selain KBM)
+        $kodeKegiatan = $row['jenis'];
+        if (strtoupper($kodeKegiatan) !== 'KBM') {
+            $kegiatan = \App\Models\Kegiatan::where('kode_kegiatan', $kodeKegiatan)->first();
+            if (!$kegiatan) {
+                $this->errors[] = "Baris $rowNum: Kode Kegiatan '{$kodeKegiatan}' tidak ditemukan di master kegiatan.";
+                return null;
+            }
+            $jenis = $kegiatan->nama_kegiatan;
+        } else {
+            $jenis = 'KBM';
+        }
+
         // Check if already exists
-        $exists = JamBelajar::where('hari', $row['hari'])
+        $existing = JamBelajar::where('hari', $row['hari'])
             ->where('urutan', $urutan)
-            ->exists();
-        
-        if ($exists) {
-            $this->errors[] = "Baris $rowNum: Sesi Jam Ke-{$urutan} untuk hari {$row['hari']} sudah ada";
-            return null;
+            ->first();
+
+        if ($existing) {
+            if ($this->updateMode) {
+                // Update data lama dengan yang baru
+                $existing->jam_mulai = $row['jam_mulai'];
+                $existing->jam_selesai = $row['jam_selesai'];
+                $existing->jenis = $jenis;
+                $existing->save();
+                $this->successCount++;
+                return null; // Tidak insert baru
+            } else {
+                $this->errors[] = "Baris $rowNum: Sesi Jam Ke-{$urutan} untuk hari {$row['hari']} sudah ada";
+                return null;
+            }
         }
 
         $this->successCount++;
@@ -70,7 +99,7 @@ class JamBelajarImport implements ToModel, WithHeadingRow, SkipsEmptyRows
             'urutan' => $urutan,
             'jam_mulai' => $row['jam_mulai'],
             'jam_selesai' => $row['jam_selesai'],
-            'jenis' => $row['jenis'],
+            'jenis' => $jenis, // Simpan nama kegiatan, bukan kode
         ]);
     }
 

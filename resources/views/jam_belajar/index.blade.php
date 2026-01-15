@@ -103,7 +103,13 @@
                                             <td>{{ $schedule->jam_mulai }}</td>
                                             <td>{{ $schedule->jam_selesai }}</td>
                                             <td>
+                                                @php
+                                                    $kegiatan = \App\Models\Kegiatan::where('nama_kegiatan', $schedule->jenis)->first();
+                                                @endphp
                                                 <span class="badge bg-info">{{ $schedule->jenis }}</span>
+                                                @if($kegiatan)
+                                                    <span class="badge bg-secondary">{{ $kegiatan->kode_kegiatan }}</span>
+                                                @endif
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
@@ -184,6 +190,14 @@
                             <i class="ti ti-alert-triangle"></i> Pastikan struktur file sesuai dengan template yang disediakan
                         </small>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opsi Import</label>
+                        <select name="replace" class="form-select">
+                            <option value="0">Tambahkan ke data lama</option>
+                            <option value="1">Update data lama dengan yang terbaru</option>
+                        </select>
+                        <small class="text-muted">Pilih <b>Replace</b> jika ingin menghapus semua data jam KBM sebelum import.</small>
+                    </div>
                     <div class="alert alert-info mb-0">
                         <small>
                             <strong>Cara menggunakan:</strong>
@@ -236,8 +250,17 @@
                                 <small class="text-muted">Slot lama di jam ini dan setelahnya akan digeser +1.</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Jenis</label>
-                                <input type="text" name="jenis" class="form-control" placeholder="Contoh: ISTIRAHAT" required>
+                                <label class="form-label">Jenis Kegiatan</label>
+                                <select name="jenis" class="form-select" required>
+                                    <option value="">-- Pilih Jenis Kegiatan --</option>
+                                    @if(isset($kegiatanList))
+                                        @foreach($kegiatanList as $keg)
+                                            <option value="{{ $keg->nama_kegiatan }}">
+                                                {{ $keg->nama_kegiatan }} ({{ $keg->kode_kegiatan }})
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
                             </div>
                         </div>
                         <div class="row g-3 mt-1">

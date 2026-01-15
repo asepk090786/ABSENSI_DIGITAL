@@ -15,6 +15,7 @@ class Sekolah extends Model
         'nama_sekolah',
         'npsn',
         'alamat',
+        'alamat_jalan',
         'kelurahan',
         'kecamatan',
         'kota',
@@ -27,5 +28,17 @@ class Sekolah extends Model
         'status',
         'akreditasi',
         'logo',
+        'logo_kanan',
+        'logo_header_kiri',
+        'header_html',
+        // Header text lines (HTML from Summernote)
+        'header_line1',
+        'header_line1_spacing',
+        'header_line2',
+        'header_line2_spacing',
+        'header_line3',
+        'header_line3_spacing',
+        'header_line4',
+        'header_line4_spacing',
     ];
 }

@@ -19,6 +19,9 @@
                             <a href="{{ route('mata_pelajaran.export') }}" class="btn btn-info btn-sm">
                                 <i class="ti ti-download me-1"></i>Export Excel
                             </a>
+                            <a href="{{ route('kegiatan.index') }}" class="btn btn-warning btn-sm">
+                                <i class="ti ti-activity me-1"></i>Kegiatan
+                            </a>
                             <a href="{{ route('mata_pelajaran.create') }}" class="btn btn-primary btn-sm">
                                 <i class="ti ti-plus me-1"></i>Tambah Mapel
                             </a>

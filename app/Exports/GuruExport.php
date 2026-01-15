@@ -21,6 +21,7 @@ class GuruExport implements FromCollection, WithHeadings, WithMapping, WithStyle
         return [
             'No',
             'Nama',
+            'Kode Guru',
             'NIP',
             'Email',
             'Telepon',
@@ -40,6 +41,7 @@ class GuruExport implements FromCollection, WithHeadings, WithMapping, WithStyle
         return [
             $no,
             $guru->nama,
+            $guru->kode_guru ?? '-',
             $guru->nip ?? '-',
             $guru->email ?? '-',
             $guru->telepon ?? '-',

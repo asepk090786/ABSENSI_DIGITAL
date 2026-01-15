@@ -11,6 +11,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\JadwalKbmController;
 use App\Http\Controllers\UpdateController;
+use App\Http\Controllers\KegiatanController;
+use App\Http\Controllers\JenisKegiatanController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -26,6 +28,7 @@ Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->
 Route::middleware(['auth'])->group(function(){
     // Guru routes with export/import
     Route::resource('guru','App\Http\Controllers\GuruController');
+    Route::post('guru/bulk-delete', ['App\Http\Controllers\GuruController', 'bulkDelete'])->name('guru.bulk-delete');
     Route::get('guru-export', ['App\Http\Controllers\GuruController', 'export'])->name('guru.export');
     Route::get('guru-template', ['App\Http\Controllers\GuruController', 'templateDownload'])->name('guru.template');
     Route::post('guru-import', ['App\Http\Controllers\GuruController', 'import'])->name('guru.import');
@@ -79,13 +82,18 @@ Route::middleware(['auth'])->group(function(){
         Route::get('jadwal-kbm/create-by-kelas/{kelas}', [JadwalKbmController::class, 'createByKelas'])->name('jadwal-kbm.create-by-kelas');
         Route::get('jadwal-kbm/print/{kelas}', [JadwalKbmController::class, 'printByKelas'])->name('jadwal-kbm.print');
         Route::get('jadwal-kbm/export-pdf/{kelas}', [JadwalKbmController::class, 'exportPdfByKelas'])->name('jadwal-kbm.export-pdf');
+        Route::get('jadwal-kbm/export-pdf-guru/{guru}', [JadwalKbmController::class, 'exportPdfByGuru'])->name('jadwal-kbm.export-pdf-guru');
+        Route::get('jadwal-kbm/export-pdf-keseluruhan', [JadwalKbmController::class, 'exportPdfKeseluruhan'])->name('jadwal-kbm.export-pdf-keseluruhan');
+        Route::get('jadwal-kbm/export-pdf-keseluruhan-mapel', [JadwalKbmController::class, 'exportPdfKeseluruhanMapel'])->name('jadwal-kbm.export-pdf-keseluruhan-mapel');
         Route::post('jadwal-kbm/store', [JadwalKbmController::class, 'store'])->name('jadwal-kbm.store');
         Route::get('jadwal-kbm/guru/{guru}', [JadwalKbmController::class, 'showByGuru'])->name('jadwal-kbm.show-by-guru');
+        Route::get('jadwal-kbm/keseluruhan', [JadwalKbmController::class, 'showKeseluruhan'])->name('jadwal-kbm.keseluruhan');
         Route::put('jadwal-kbm/{id}', [JadwalKbmController::class, 'update'])->name('jadwal-kbm.update');
         Route::delete('jadwal-kbm/{id}', [JadwalKbmController::class, 'destroy'])->name('jadwal-kbm.destroy');
         Route::delete('jadwal-kbm-destroy-all', [JadwalKbmController::class, 'destroyAll'])->name('jadwal-kbm.destroy-all');
         Route::get('jadwal-kbm/get-jadwal-by-kelas/{kelas}', [JadwalKbmController::class, 'getJadwalByKelas'])->name('jadwal-kbm.get-by-kelas');
         Route::post('jadwal-kbm/check-konflik-guru', [JadwalKbmController::class, 'checkKonflikGuru'])->name('jadwal-kbm.check-konflik-guru');
+        Route::put('jadwal-kbm/update-header', [JadwalKbmController::class, 'updateHeader'])->name('jadwal-kbm.update-header');
     
         // Pengaturan Jam Belajar routes (old jadwal_kbm)
         Route::get('pengaturan-jam', [JamBelajarController::class, 'index'])->name('jadwal_kbm.index');
@@ -107,6 +115,7 @@ Route::middleware(['auth'])->group(function(){
     Route::delete('jam-belajar-destroy-all', [JamBelajarController::class, 'destroyAll'])->name('jam_belajar.destroy_all');
     
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store']);
+    Route::resource('jenis_kegiatan', JenisKegiatanController::class)->middleware('auth');
 
     // Maintenance update routes
     Route::get('maintenance/update', [UpdateController::class, 'index'])->name('maintenance.update.index');
@@ -119,6 +128,8 @@ Route::middleware(['auth'])->group(function(){
     Route::get('mata-pelajaran-export', ['App\Http\Controllers\MataPelajaranController', 'export'])->name('mata_pelajaran.export');
     Route::get('mata-pelajaran-template', ['App\Http\Controllers\MataPelajaranController', 'templateDownload'])->name('mata_pelajaran.template');
     Route::post('mata-pelajaran-import', ['App\Http\Controllers\MataPelajaranController', 'import'])->name('mata_pelajaran.import');
+    
+    Route::resource('kegiatan', 'App\Http\Controllers\KegiatanController');
     
     // ASC Timetable routes
     Route::get('asc-timetable', ['App\Http\Controllers\AscTimetableController', 'index'])->name('asc_timetable.index');
@@ -156,11 +167,17 @@ Route::middleware(['auth'])->group(function(){
     Route::post('/setting/semester/{semester}/activate', [SettingController::class, 'activateSemester'])->name('setting.semester.activate');
     Route::post('/setting/semester/{semester}/deactivate', [SettingController::class, 'deactivateSemester'])->name('setting.semester.deactivate');
     
+    Route::get('/setting/header', [SettingController::class, 'header'])->name('setting.header');
+    Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
+    
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 });
+
+// File serving route - serve storage files via controller instead of direct symlink
+Route::get('/storage/{path}', [App\Http\Controllers\FileServeController::class, 'serve'])->where('path', '.*');
 
 // Theme demo route (preview Material Dashboard assets)
 Route::get('/theme-demo', function(){

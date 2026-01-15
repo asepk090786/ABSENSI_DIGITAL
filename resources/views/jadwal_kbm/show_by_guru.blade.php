@@ -26,6 +26,22 @@
                         <button onclick="window.print()" class="btn btn-info btn-sm">
                             <i class="ti ti-printer me-1"></i>Cetak
                         </button>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="ti ti-download me-1"></i>Download PDF
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ route('jadwal-kbm.export-pdf-guru', ['guru' => $guru->id, 'paper_size' => 'a4']) }}" target="_blank">
+                                    <i class="ti ti-file-text me-2"></i>A4 (210 x 297 mm)
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('jadwal-kbm.export-pdf-guru', ['guru' => $guru->id, 'paper_size' => 'f4']) }}" target="_blank">
+                                    <i class="ti ti-file-text me-2"></i>F4/Folio (210 x 330 mm)
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('jadwal-kbm.export-pdf-guru', ['guru' => $guru->id, 'paper_size' => 'legal']) }}" target="_blank">
+                                    <i class="ti ti-file-text me-2"></i>Legal (216 x 356 mm)
+                                </a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,22 +189,207 @@
 
 @push('styles')
 <style>
-@media print {
-    .card-header .btn,
-    .btn-list,
-    nav,
-    .sidebar {
-        display: none !important;
+    /* Print optimization */
+    @media print {
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .card-header .btn,
+        .btn-list,
+        nav,
+        .sidebar,
+        .alert {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+            margin-bottom: 0 !important;
+            padding: 0 !important;
+            page-break-inside: avoid;
+        }
+        
+        .card-header {
+            display: none !important;
+        }
+        
+        .card-body {
+            padding: 2px !important;
+        }
+        
+        .row {
+            margin: 0 !important;
+        }
+        
+        .col-md-12 {
+            padding: 0 !important;
+        }
+        
+        body {
+            background: white;
+            margin: 0;
+            padding: 2px;
+            font-size: 6px;
+            line-height: 1;
+        }
+        
+        h4 {
+            font-size: 8px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-weight: bold;
+        }
+        
+        h5 {
+            font-size: 7px !important;
+            margin: 2px 0 1px 0 !important;
+            padding: 0 !important;
+            font-weight: bold;
+            color: #1d4ed8;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 1px !important;
+        }
+        
+        .mb-4 {
+            margin-bottom: 2px !important;
+            page-break-inside: avoid;
+        }
+        
+        .mb-3 {
+            margin-bottom: 1px !important;
+        }
+        
+        .mt-4 {
+            margin-top: 2px !important;
+        }
+        
+        .table {
+            font-size: 6px !important;
+            margin-bottom: 2px !important;
+            border-collapse: collapse;
+        }
+        
+        .table thead {
+            background-color: #2563eb !important;
+            color: white !important;
+        }
+        
+        .table th {
+            padding: 1px 2px !important;
+            font-weight: bold;
+            border: 0.5px solid #999 !important;
+            text-align: center;
+            line-height: 1;
+        }
+        
+        .table td {
+            padding: 1px 2px !important;
+            border: 0.5px solid #999 !important;
+            vertical-align: top;
+            line-height: 1.1;
+        }
+        
+        .table tbody tr {
+            height: 12px;
+        }
+        
+        .table tbody tr:nth-child(odd) {
+            background-color: #f9fafb !important;
+        }
+        
+        .table tbody tr:nth-child(even) {
+            background-color: #fff !important;
+        }
+        
+        .table-light {
+            background-color: #e8ecf1 !important;
+        }
+        
+        .table-light th {
+            background-color: #1d4ed8 !important;
+            color: white !important;
+        }
+        
+        .table-primary {
+            background-color: #2563eb !important;
+        }
+        
+        .table-primary th {
+            background-color: #2563eb !important;
+            color: white !important;
+            padding: 1px 2px !important;
+        }
+        
+        .table-primary td {
+            background-color: #f0f4f8 !important;
+        }
+        
+        .table-responsive {
+            margin-bottom: 2px !important;
+        }
+        
+        .small {
+            font-size: 5px !important;
+        }
+        
+        .text-muted {
+            color: #666 !important;
+        }
+        
+        .text-center {
+            text-align: center !important;
+        }
+        
+        .badge {
+            font-size: 5px !important;
+            padding: 0.5px 2px !important;
+            display: inline-block;
+        }
+        
+        .bg-primary {
+            background-color: #2563eb !important;
+            color: white !important;
+        }
+        
+        .alert {
+            font-size: 6px !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            display: none !important;
+        }
+        
+        .border-bottom {
+            border-bottom: 1px solid #ddd !important;
+            padding-bottom: 0.5px !important;
+        }
+        
+        .pb-2 {
+            padding-bottom: 0.5px !important;
+        }
+        
+        .ms-2 {
+            margin-left: 2px !important;
+        }
+        
+        .me-1 {
+            margin-right: 1px !important;
+        }
+        
+        .me-2 {
+            margin-right: 2px !important;
+        }
+        
+        .ti {
+            display: none !important;
+        }
+        
+        /* Hide the summary table on second page */
+        .row:last-of-type {
+            display: none !important;
+        }
     }
-    
-    .card {
-        border: none;
-        box-shadow: none;
-    }
-    
-    body {
-        background: white;
-    }
-}
 </style>
 @endpush

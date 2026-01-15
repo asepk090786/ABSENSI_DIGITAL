@@ -15,5 +15,6 @@ class MataPelajaran extends Model
         'kode_mapel',
         'nama_mapel',
         'kategori',
+        'jenis_kegiatan_id',
     ];
 }

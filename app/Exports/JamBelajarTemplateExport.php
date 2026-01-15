@@ -12,12 +12,19 @@ class JamBelajarTemplateExport implements FromArray, WithHeadings, WithStyles, W
 {
     public function array(): array
     {
+        // Ambil data kode kegiatan dari database
+        $kegiatanList = \App\Models\Kegiatan::select('kode_kegiatan', 'nama_kegiatan')->get();
+        $keteranganKode = 'Kode Kegiatan (Kolom Jenis): ';
+        foreach ($kegiatanList as $kegiatan) {
+            $keteranganKode .= $kegiatan->kode_kegiatan . ' = ' . $kegiatan->nama_kegiatan . '; ';
+        }
+
         return [
-            ['Senin', 1, '07:00', '07:45', 'KBM', 'TEMPLATE IMPORT JAM KBM'],
-            ['Senin', 2, '07:45', '08:30', 'KBM', 'Petunjuk: Isi data sesuai format di bawah ini'],
-            ['Senin', 3, '08:30', '09:15', 'KBM', 'Hari: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu'],
-            ['Selasa', 1, '07:00', '07:45', 'KBM', 'Jam Ke: Nomor urut jam (1, 2, 3, dst)'],
-            ['', '', '', '', '', 'Jam Mulai/Selesai: Format HH:MM dengan tanda petik di depan (contoh: \'07:00, \'08:30, \'09:15) PENTING: Gunakan tanda petik (apostrof) sebelum waktu. Contoh: \'07:00 bukan 07:00. Tanpa tanda petik, Excel akan mengubah format waktu!'],
+            ['Senin', 1, "'07:00", "'07:45", 'KBM', 'TEMPLATE IMPORT JAM KBM', '', '', $keteranganKode],
+            ['Senin', 2, "'07:45", "'08:30", 'KBM', 'Petunjuk: Isi data sesuai format di bawah ini', '', '', ''],
+            ['Senin', 3, "'08:30", "'09:15", 'KBM', 'Hari: Senin, Selasa, Rabu, Kamis, Jumat, Sabtu, Minggu', '', '', ''],
+            ['Selasa', 1, "'07:00", "'07:45", 'KBM', 'Jam Ke: Nomor urut jam (1, 2, 3, dst)', '', '', ''],
+            ['', '', '', '', '', 'Jam Mulai/Selesai: Format HH:MM dengan tanda petik di depan (contoh: \'07:00, \'08:30, \'09:15) PENTING: Gunakan tanda petik (apostrof) sebelum waktu. Contoh: \'07:00 bukan 07:00. Tanpa tanda petik, Excel akan mengubah format waktu!', '', '', ''],
         ];
     }
 
@@ -30,6 +37,7 @@ class JamBelajarTemplateExport implements FromArray, WithHeadings, WithStyles, W
             'Jam Selesai',
             'Jenis',
             'Keterangan',
+            '', '', 'Keterangan Kode Kegiatan (Kolom I)'
         ];
     }
 

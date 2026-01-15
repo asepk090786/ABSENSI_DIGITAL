@@ -81,20 +81,42 @@ class AscTimetableController extends Controller
             // Parse Teachers (Guru)
             if (isset($xml->teachers->teacher)) {
                 foreach ($xml->teachers->teacher as $teacher) {
-                    $nip = (string)$teacher['short'];
+                    $kodeGuru = (string)$teacher['short'];
                     $nama = (string)$teacher['name'];
                     
-                    $exists = DB::table('guru')
-                        ->where('nip', $nip)
-                        ->exists();
+                    // Check if exists by kode_guru or nama
+                    $existingByKode = DB::table('guru')
+                        ->where('kode_guru', $kodeGuru)
+                        ->first();
+                    
+                    $existingByNama = DB::table('guru')
+                        ->where('nama', $nama)
+                        ->first();
+
+                    $status = 'new';
+                    $duplicate_type = null;
+                    $existing_id = null;
+                    
+                    if ($existingByKode) {
+                        $status = 'exists_kode';
+                        $duplicate_type = 'kode_guru';
+                        $existing_id = $existingByKode->id;
+                    } elseif ($existingByNama) {
+                        $status = 'exists_nama';
+                        $duplicate_type = 'nama';
+                        $existing_id = $existingByNama->id;
+                    }
 
                     $preview['teachers'][] = [
-                        'nip' => $nip,
+                        'kode_guru' => $kodeGuru,
                         'nama' => $nama,
                         'email' => null,
                         'no_hp' => null,
                         'jenis_kelamin' => (string)$teacher['gender'] === 'M' ? 'L' : 'P',
-                        'status' => $exists ? 'exists' : 'new'
+                        'status' => $status,
+                        'duplicate_type' => $duplicate_type,
+                        'existing_id' => $existing_id,
+                        'existing_data' => $existingByKode ?: $existingByNama
                     ];
                 }
             }
@@ -170,35 +192,45 @@ class AscTimetableController extends Controller
                 }
             }
 
-            // Parse cards (actual schedule) for preview
+            // Build all possible grid slot for preview: hari, kelas, jam_ke
+            // 1. Ambil semua hari dari dayNames
+            $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+            // 2. Ambil semua kelas dari <classes> di XML, pastikan seluruh kelas diambil
+            $allKelas = [];
+            if (isset($xml->classes->class)) {
+                foreach ($xml->classes->class as $class) {
+                    $kode = (string)$class['short'];
+                    if (!in_array($kode, $allKelas)) {
+                        $allKelas[] = $kode;
+                    }
+                }
+            }
+            // 3. Ambil semua urutan period dari <periods>
+            $allPeriods = [];
+            if (isset($xml->periods->period)) {
+                foreach ($xml->periods->period as $period) {
+                    $allPeriods[] = (int)$period['period'];
+                }
+            }
+            sort($allPeriods);
+
+            // 4. Index semua pelajaran dari <cards> ke [hari][kelas][jam_ke]
+            $lessonGrid = [];
             if (isset($xml->cards->card)) {
                 foreach ($xml->cards->card as $card) {
                     $lessonId = (string)$card['lessonid'];
                     $periodNumber = (int)($card['period'] ?? 1);
-                    $days = (string)($card['days'] ?? '00000'); // 5-bit bitmap: Senin-Jumat
-                    
-                    if (!isset($lessonMap[$lessonId])) {
-                        continue;
-                    }
-                    
+                    $days = (string)($card['days'] ?? '00000');
+                    if (!isset($lessonMap[$lessonId])) continue;
                     $lesson = $lessonMap[$lessonId];
-                    
-                    // Convert IDs to codes/names
                     $kelasInfo = $classIdMap[$lesson['classids']] ?? null;
                     $guruInfo = $teacherIdMap[$lesson['teacherids']] ?? null;
                     $mapelInfo = $subjectIdMap[$lesson['subjectid']] ?? null;
-                    
-                    if (!$kelasInfo || !$guruInfo || !$mapelInfo) {
-                        continue;
-                    }
-                    
-                    // Decode days bitmap: "10000"=Senin, "01000"=Selasa, etc.
-                    $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+                    if (!$kelasInfo || !$guruInfo || !$mapelInfo) continue;
                     for ($i = 0; $i < 5; $i++) {
                         if (isset($days[$i]) && $days[$i] === '1') {
                             $dayName = $dayNames[$i];
-                            
-                            $preview['lessons'][] = [
+                            $lessonGrid[$dayName][$kelasInfo['kode']][$periodNumber] = [
                                 'kelas_kode' => $kelasInfo['kode'],
                                 'kelas_nama' => $kelasInfo['nama'],
                                 'guru_nip' => $guruInfo['kode'],
@@ -211,6 +243,33 @@ class AscTimetableController extends Controller
                                 'classIdAttr' => $lesson['classids'],
                                 'teacherIdAttr' => $lesson['teacherids'],
                                 'subjectIdAttr' => $lesson['subjectid']
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // 5. Bangun preview['lessons'] untuk seluruh slot grid (hari, kelas, jam_ke)
+            // Selalu tampilkan grid lengkap Senin-Jumat, semua kelas, semua jam ke
+            foreach ($dayNames as $dayName) {
+                foreach ($allKelas as $kelasKode) {
+                    foreach ($allPeriods as $jamKe) {
+                        if (isset($lessonGrid[$dayName][$kelasKode][$jamKe])) {
+                            $preview['lessons'][] = $lessonGrid[$dayName][$kelasKode][$jamKe];
+                        } else {
+                            $preview['lessons'][] = [
+                                'kelas_kode' => $kelasKode,
+                                'kelas_nama' => '',
+                                'guru_nip' => '',
+                                'guru_nama' => '',
+                                'mapel_kode' => '',
+                                'mapel_nama' => '',
+                                'hari' => $dayName,
+                                'jam_ke' => $jamKe,
+                                'jp' => '',
+                                'classIdAttr' => '',
+                                'teacherIdAttr' => '',
+                                'subjectIdAttr' => ''
                             ];
                         }
                     }
@@ -372,19 +431,49 @@ class AscTimetableController extends Controller
 
             // Import Teachers (Guru)
             if (in_array('teachers', $importTypes) && isset($xml->teachers->teacher)) {
-                foreach ($xml->teachers->teacher as $teacher) {
+                // Get teacher actions from request
+                $teacherActions = $request->input('teacher_action', []);
+                $teacherKodes = $request->input('teacher_kode', []);
+                $teacherNamas = $request->input('teacher_nama', []);
+                $teacherGenders = $request->input('teacher_gender', []);
+                $teacherExistingIds = $request->input('teacher_existing_id', []);
+
+                foreach ($xml->teachers->teacher as $index => $teacher) {
+                    $kodeGuru = (string)$teacher['short'];
+                    $namaGuru = (string)$teacher['name'];
+                    
                     $teacherData = [
-                        'nip' => (string)$teacher['short'],
-                        'nama' => (string)$teacher['name'],
+                        'kode_guru' => $kodeGuru,
+                        'nama' => $namaGuru,
                         'jenis_guru' => 'Pengajar',
                     ];
 
-                    $exists = DB::table('guru')
-                        ->where('nip', $teacherData['nip'])
-                        ->exists();
+                    // Check if this teacher has an action specified
+                    $action = $teacherActions[$index] ?? null;
+                    $existingId = $teacherExistingIds[$index] ?? null;
 
-                    if (!$exists) {
-                        DB::table('guru')->insert($teacherData);
+                    // Check for duplicates
+                    $existsByKode = DB::table('guru')->where('kode_guru', $kodeGuru)->first();
+                    $existsByNama = DB::table('guru')->where('nama', $namaGuru)->first();
+
+                    if ($existsByKode || $existsByNama) {
+                        // Handle duplicate based on action
+                        if ($action === 'replace' && $existingId) {
+                            // Replace existing data
+                            DB::table('guru')
+                                ->where('id', $existingId)
+                                ->update(array_merge($teacherData, ['updated_at' => now()]));
+                            $stats['teachers']++;
+                        } elseif ($action === 'add_new') {
+                            // Add as new (only for kode duplicate, generate new kode)
+                            $teacherData['kode_guru'] = $kodeGuru . '_' . time();
+                            DB::table('guru')->insert(array_merge($teacherData, ['created_at' => now(), 'updated_at' => now()]));
+                            $stats['teachers']++;
+                        }
+                        // If action is 'skip' or null, do nothing
+                    } else {
+                        // No duplicate, insert new
+                        DB::table('guru')->insert(array_merge($teacherData, ['created_at' => now(), 'updated_at' => now()]));
                         $stats['teachers']++;
                     }
                 }
@@ -472,12 +561,12 @@ class AscTimetableController extends Controller
                 $xmlImportData = session('xml_import_data');
                 if ($xmlImportData) {
                     $xml = simplexml_load_string($xmlImportData);
-                    
+
                     // Build ID to code/name mapping again (same as in parseXml)
                     $classIdMap = [];
                     $teacherIdMap = [];
                     $subjectIdMap = [];
-                    
+
                     if (isset($xml->classes->class)) {
                         foreach ($xml->classes->class as $class) {
                             $classIdMap[(string)$class['id']] = [
@@ -486,7 +575,7 @@ class AscTimetableController extends Controller
                             ];
                         }
                     }
-                    
+
                     if (isset($xml->teachers->teacher)) {
                         foreach ($xml->teachers->teacher as $teacher) {
                             $teacherIdMap[(string)$teacher['id']] = [
@@ -495,7 +584,7 @@ class AscTimetableController extends Controller
                             ];
                         }
                     }
-                    
+
                     if (isset($xml->subjects->subject)) {
                         foreach ($xml->subjects->subject as $subject) {
                             $subjectIdMap[(string)$subject['id']] = [
@@ -504,7 +593,7 @@ class AscTimetableController extends Controller
                             ];
                         }
                     }
-                    
+
                     // Build lesson ID mapping
                     $lessonMap = [];
                     if (isset($xml->lessons->lesson)) {
@@ -521,54 +610,68 @@ class AscTimetableController extends Controller
                     // Import from cards (actual schedule with period numbers)
                     if (isset($xml->cards->card)) {
                         $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
-                        
+
                         foreach ($xml->cards->card as $card) {
                             try {
                                 $lessonId = (string)$card['lessonid'];
                                 $periodNumber = (int)($card['period'] ?? 1);
                                 $days = (string)($card['days'] ?? '00000');
-                                
+
                                 if (!isset($lessonMap[$lessonId])) {
                                     continue;
                                 }
-                                
+
                                 $lesson = $lessonMap[$lessonId];
-                                
+
                                 // Get info from mapping
                                 $kelasInfo = $classIdMap[$lesson['classids']] ?? null;
                                 $guruInfo = $teacherIdMap[$lesson['teacherids']] ?? null;
                                 $mapelInfo = $subjectIdMap[$lesson['subjectid']] ?? null;
-                                
+
                                 if (!$kelasInfo || !$guruInfo || !$mapelInfo) {
                                     continue;
                                 }
-                                
+
                                 // Get IDs from database
-                                $kelasId = DB::table('kelas')->where('nama_kelas', $kelasInfo['nama'])->value('id');
-                                $guruId = DB::table('guru')->where('nip', $guruInfo['kode'])->value('id');
-                                $mapelId = DB::table('mata_pelajaran')->where('kode_mapel', $mapelInfo['kode'])->value('id');
-                                
+                                $kelasId = DB::table('kelas')
+                                    ->whereRaw('LOWER(TRIM(nama_kelas)) = ?', [strtolower(trim($kelasInfo['nama']))])
+                                    ->value('id');
+                                $guruId = DB::table('guru')
+                                    ->whereRaw('LOWER(TRIM(kode_guru)) = ?', [strtolower(trim($guruInfo['kode']))])
+                                    ->value('id');
+                                $mapelId = DB::table('mata_pelajaran')
+                                    ->whereRaw('LOWER(TRIM(kode_mapel)) = ?', [strtolower(trim($mapelInfo['kode']))])
+                                    ->value('id');
+
                                 if (!$kelasId || !$guruId || !$mapelId) {
+                                    $notFound = [];
+                                    if (!$kelasId) $notFound[] = 'Kelas: ' . $kelasInfo['nama'];
+                                    if (!$guruId) $notFound[] = 'Guru: ' . $guruInfo['kode'];
+                                    if (!$mapelId) $notFound[] = 'Mapel: ' . $mapelInfo['kode'];
+                                    Log::warning('Import KBM: Data tidak ditemukan: ' . implode(', ', $notFound));
                                     continue;
                                 }
-                                
+
                                 // Decode days bitmap: "10000"=Senin, "01000"=Selasa, etc.
                                 for ($i = 0; $i < 5; $i++) {
                                     if (isset($days[$i]) && $days[$i] === '1') {
                                         $hari = $dayNames[$i];
-                                        
-                                        // Get jam_belajar_id
-                                        $jamBelajarId = DB::table('jam_belajar')
+
+                                        // Ambil jam_belajar KBM dari database sesuai hari dan urutan
+
+                                        $jamBelajar = DB::table('jam_belajar')
                                             ->where('hari', $hari)
                                             ->where('urutan', $periodNumber)
-                                            ->value('id');
-                                        
-                                        if (!$jamBelajarId) {
+                                            ->first();
+
+                                        // Abaikan jika slot bukan KBM (misal ISTIRAHAT, UPACARA, dll)
+                                        if (!$jamBelajar || strtoupper(trim($jamBelajar->jenis)) !== 'KBM') {
                                             continue;
                                         }
-                                        
-                                        // Check if exists
+
+                                        // Check if jadwal_kbm sudah ada di slot ini
                                         $exists = DB::table('jadwal_kbm')
+                                            ->where('kelas_id', $kelasId)
                                             ->where('guru_id', $guruId)
                                             ->where('mata_pelajaran_id', $mapelId)
                                             ->where('hari', $hari)
@@ -576,13 +679,13 @@ class AscTimetableController extends Controller
                                             ->where('tahun_ajaran_id', $tahunAjaranId)
                                             ->where('semester_id', $semesterId)
                                             ->exists();
-                                        
+
                                         if (!$exists) {
                                             DB::table('jadwal_kbm')->insert([
                                                 'kelas_id' => $kelasId,
                                                 'guru_id' => $guruId,
                                                 'mata_pelajaran_id' => $mapelId,
-                                                'jam_belajar_id' => $jamBelajarId,
+                                                'jam_belajar_id' => $jamBelajar->id,
                                                 'hari' => $hari,
                                                 'jam_ke' => $periodNumber,
                                                 'tahun_ajaran_id' => $tahunAjaranId,
