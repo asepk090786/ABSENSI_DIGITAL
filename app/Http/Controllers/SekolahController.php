@@ -40,7 +40,10 @@ class SekolahController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+            $file = $request->file('logo');
+            $filename = uniqid().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('images'), $filename);
+            $validated['logo'] = $filename;
         }
 
         Sekolah::create($validated);
@@ -74,10 +77,13 @@ class SekolahController extends Controller
         ]);
 
         if ($request->hasFile('logo')) {
-            if ($sekolah->logo) {
-                Storage::disk('public')->delete($sekolah->logo);
+            if ($sekolah->logo && file_exists(public_path('images/' . $sekolah->logo))) {
+                @unlink(public_path('images/' . $sekolah->logo));
             }
-            $validated['logo'] = $request->file('logo')->store('logos', 'public');
+            $file = $request->file('logo');
+            $filename = uniqid().'.'.$file->getClientOriginalExtension();
+            $file->move(public_path('images'), $filename);
+            $validated['logo'] = $filename;
         }
 
         $sekolah->update($validated);

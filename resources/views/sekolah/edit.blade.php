@@ -79,13 +79,36 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Logo Sekolah</label>
-                                    <input type="file" name="logo" class="form-control @error('logo') is-invalid @enderror" accept="image/*">
+                                    <input type="file" name="logo" id="logoInput" class="form-control @error('logo') is-invalid @enderror" accept="image/*" onchange="previewLogo(event)">
                                     @error('logo')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    @if(isset($sekolah) && $sekolah->logo)
-                                        <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo" class="mt-2" style="max-height: 100px;">
-                                    @endif
+                                    <div id="logoPreviewContainer">
+                                        @if(isset($sekolah) && $sekolah->logo)
+                                            <img id="logoPreview" src="{{ asset('images/' . $sekolah->logo) }}" alt="Logo" class="mt-2" style="max-height: 100px;">
+                                        @else
+                                            <img id="logoPreview" src="#" alt="Logo" class="mt-2 d-none" style="max-height: 100px;">
+                                        @endif
+                                    </div>
+                                @push('scripts')
+                                <script>
+                                function previewLogo(event) {
+                                    const input = event.target;
+                                    const preview = document.getElementById('logoPreview');
+                                    if (input.files && input.files[0]) {
+                                        const reader = new FileReader();
+                                        reader.onload = function(e) {
+                                            preview.src = e.target.result;
+                                            preview.classList.remove('d-none');
+                                        }
+                                        reader.readAsDataURL(input.files[0]);
+                                    } else {
+                                        preview.src = '#';
+                                        preview.classList.add('d-none');
+                                    }
+                                }
+                                </script>
+                                @endpush
                                 </div>
                             </div>
 

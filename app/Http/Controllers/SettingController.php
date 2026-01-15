@@ -225,14 +225,16 @@ class SettingController extends Controller
             // Handle logo_header_kiri
             if ($request->hasFile('logo_header_kiri')) {
                 \Log::info('Processing logo_header_kiri upload');
-                if ($sekolah->logo_header_kiri && \Storage::disk('public_direct')->exists($sekolah->logo_header_kiri)) {
+                if ($sekolah->logo_header_kiri && file_exists(public_path('images/' . $sekolah->logo_header_kiri))) {
                     \Log::info('Deleting old logo_header_kiri: ' . $sekolah->logo_header_kiri);
-                    \Storage::disk('public_direct')->delete($sekolah->logo_header_kiri);
+                    @unlink(public_path('images/' . $sekolah->logo_header_kiri));
                 }
                 try {
-                    $logoPath = $request->file('logo_header_kiri')->store('logos', 'public_direct');
-                    \Log::info('Logo kiri stored at: ' . $logoPath);
-                    $sekolah->logo_header_kiri = $logoPath;
+                    $file = $request->file('logo_header_kiri');
+                    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+                    $file->move(public_path('images'), $filename);
+                    \Log::info('Logo kiri stored at: ' . $filename);
+                    $sekolah->logo_header_kiri = $filename;
                 } catch (\Exception $ex) {
                     \Log::error('Error storing logo_header_kiri: ' . $ex->getMessage());
                     throw $ex;
@@ -242,14 +244,16 @@ class SettingController extends Controller
             // Handle logo (school logo)
             if ($request->hasFile('logo')) {
                 \Log::info('Processing logo upload');
-                if ($sekolah->logo && \Storage::disk('public_direct')->exists($sekolah->logo)) {
+                if ($sekolah->logo && file_exists(public_path('images/' . $sekolah->logo))) {
                     \Log::info('Deleting old logo: ' . $sekolah->logo);
-                    \Storage::disk('public_direct')->delete($sekolah->logo);
+                    @unlink(public_path('images/' . $sekolah->logo));
                 }
                 try {
-                    $logoPath = $request->file('logo')->store('logos', 'public_direct');
-                    \Log::info('Logo stored at: ' . $logoPath);
-                    $sekolah->logo = $logoPath;
+                    $file = $request->file('logo');
+                    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+                    $file->move(public_path('images'), $filename);
+                    \Log::info('Logo stored at: ' . $filename);
+                    $sekolah->logo = $filename;
                 } catch (\Exception $ex) {
                     \Log::error('Error storing logo: ' . $ex->getMessage());
                     throw $ex;

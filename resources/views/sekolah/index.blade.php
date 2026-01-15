@@ -28,17 +28,8 @@
                         <div class="row">
                             <div class="col-md-3 text-center">
                                 @if($sekolah->logo)
-                                    @php
-                                        $logoPath = $sekolah->logo;
-                                        $logoUrl = Storage::disk('public')->exists($logoPath) ? asset('storage/' . $logoPath) : null;
-                                    @endphp
-                                    @if($logoUrl)
-                                        <img src="{{ $logoUrl }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;">
-                                    @else
-                                        <div class="bg-light rounded p-4 mb-3">
-                                            <i class="ti ti-school" style="font-size: 100px; color: #ddd;"></i>
-                                        </div>
-                                    @endif
+                                    <img src="{{ asset('images/' . $sekolah->logo) }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;"
+                                         onerror="this.onerror=null;this.src='/images/default-school.png';">
                                 @else
                                     <div class="bg-light rounded p-4 mb-3">
                                         <i class="ti ti-school" style="font-size: 100px; color: #ddd;"></i>

@@ -47,9 +47,9 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="logo_header_kiri" class="form-label">Logo Kiri</label>
-                                        @if($sekolah && $sekolah->logo_header_kiri && file_exists(public_path('storage/' . $sekolah->logo_header_kiri)))
+                                        @if($sekolah && $sekolah->logo_header_kiri && file_exists(public_path('images/' . $sekolah->logo_header_kiri)))
                                             <div class="mb-2">
-                                                <img src="{{ asset('storage/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="height: 80px; width: auto;">
+                                                <img src="{{ asset('images/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="height: 80px; width: auto;">
                                             </div>
                                         @endif
                                         <input type="file" class="form-control @error('logo_header_kiri') is-invalid @enderror" 
@@ -63,9 +63,9 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="logo" class="form-label">Logo Sekolah</label>
-                                        @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
+                                        @if($sekolah && $sekolah->logo && file_exists(public_path('images/' . $sekolah->logo)))
                                             <div class="mb-2">
-                                                <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" style="height: 80px; width: auto;">
+                                                <img src="{{ asset('images/' . $sekolah->logo) }}" alt="Logo Sekolah" style="height: 80px; width: auto;">
                                             </div>
                                         @endif
                                         <input type="file" class="form-control @error('logo') is-invalid @enderror" 
@@ -183,7 +183,7 @@
                                         <!-- Logo Kiri -->
                                         <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;" id="preview-logo-kiri-container">
                                             @if($sekolah && $sekolah->logo_header_kiri)
-                                                <img id="preview-logo-kiri" src="{{ asset('uploads/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="max-height: 60px; max-width: 60px; object-fit: contain;">
+                                                <img id="preview-logo-kiri" src="{{ asset('images/' . $sekolah->logo_header_kiri) }}" alt="Logo Kiri" style="max-height: 60px; max-width: 60px; object-fit: contain;">
                                             @else
                                                 <div id="preview-logo-kiri-placeholder" style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo L</div>
                                             @endif
@@ -212,7 +212,7 @@
                                         <!-- Logo Kanan -->
                                         <div style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; overflow: hidden;" id="preview-logo-kanan-container">
                                             @if($sekolah && $sekolah->logo)
-                                                <img id="preview-logo-kanan" src="{{ asset('uploads/' . $sekolah->logo) }}" alt="Logo Sekolah" style="max-height: 60px; max-width: 60px; object-fit: contain;">
+                                                <img id="preview-logo-kanan" src="{{ asset('images/' . $sekolah->logo) }}" alt="Logo Sekolah" style="max-height: 60px; max-width: 60px; object-fit: contain;">
                                             @else
                                                 <div id="preview-logo-kanan-placeholder" style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">Logo R</div>
                                             @endif
