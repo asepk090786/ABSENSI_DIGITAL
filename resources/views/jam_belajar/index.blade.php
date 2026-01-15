@@ -190,6 +190,14 @@
                             <i class="ti ti-alert-triangle"></i> Pastikan struktur file sesuai dengan template yang disediakan
                         </small>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opsi Import</label>
+                        <select name="replace" class="form-select">
+                            <option value="0">Tambahkan ke data lama</option>
+                            <option value="1">Update data lama dengan yang terbaru</option>
+                        </select>
+                        <small class="text-muted">Pilih <b>Replace</b> jika ingin menghapus semua data jam KBM sebelum import.</small>
+                    </div>
                     <div class="alert alert-info mb-0">
                         <small>
                             <strong>Cara menggunakan:</strong>

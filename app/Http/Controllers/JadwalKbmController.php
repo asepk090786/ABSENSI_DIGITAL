@@ -392,6 +392,9 @@ class JadwalKbmController extends Controller
         
         $dimensions = $paperSizes[$paperSize] ?? $paperSizes['a4'];
         
+        // Ambil master kegiatan untuk kode kegiatan non-KBM
+        $kegiatanList = \App\Models\Kegiatan::select('kode_kegiatan', 'nama_kegiatan')->get();
+
         $pdf = \Pdf::loadView('jadwal_kbm.pdf-keseluruhan', compact(
             'jadwalKeseluruhan',
             'jamBelajarByHari',
@@ -399,7 +402,8 @@ class JadwalKbmController extends Controller
             'tahunAjaranAktif',
             'semesterAktif',
             'sekolah',
-            'paperSize'
+            'paperSize',
+            'kegiatanList'
         ));
         
         // Set paper size

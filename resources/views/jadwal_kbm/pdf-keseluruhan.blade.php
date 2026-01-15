@@ -157,10 +157,11 @@
         <!-- Header -->
         <div class="header">
             @if($sekolah)
-                <h2>{{ $sekolah->nama_sekolah }}</h2>
+                <h2>Jadwal KBM - {{ $sekolah->nama_sekolah }}</h2>
                 <p>{{ $sekolah->alamat }}</p>
+            @else
+                <h2>Jadwal KBM</h2>
             @endif
-            <h3 style="font-size: 10px; margin-top: 3px;">Jadwal Keseluruhan Kegiatan Belajar Mengajar (KBM)</h3>
             @if($tahunAjaranAktif && $semesterAktif)
                 <p>{{ $tahunAjaranAktif->nama }} - {{ $semesterAktif->nama }}</p>
             @endif
@@ -231,7 +232,18 @@
                                     @php
                                         $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                         if ($jamBelajarEntry && $jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                            echo '<span class="badge">' . strtoupper($jamBelajarEntry->jenis) . '</span>';
+                                            // Tampilkan kode kegiatan (bukan nama kegiatan)
+                                            $kodeKegiatan = null;
+                                            if (isset($kegiatanList)) {
+                                                $jenisTrim = strtolower(trim($jamBelajarEntry->jenis));
+                                                $kegiatan = collect($kegiatanList)->first(function($item) use ($jenisTrim) {
+                                                    return strtolower(trim($item->nama_kegiatan)) === $jenisTrim;
+                                                });
+                                                if ($kegiatan && isset($kegiatan->kode_kegiatan)) {
+                                                    $kodeKegiatan = $kegiatan->kode_kegiatan;
+                                                }
+                                            }
+                                            echo '<span class="badge">' . ($kodeKegiatan ? $kodeKegiatan : strtoupper($jamBelajarEntry->jenis)) . '</span>';
                                         } else {
                                             $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
                                             if ($jadwalJam) {

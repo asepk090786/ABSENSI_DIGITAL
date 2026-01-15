@@ -155,7 +155,8 @@ class JamBelajarController extends Controller
         ]);
 
         try {
-            $import = new JamBelajarImport();
+            $updateMode = $request->input('replace') == '1';
+            $import = new \App\Imports\JamBelajarImport($updateMode);
             Excel::import($import, $request->file('file'));
 
             $errors = $import->getErrors();

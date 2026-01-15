@@ -613,6 +613,7 @@ class AscTimetableController extends Controller
                                         $jamBelajarId = DB::table('jam_belajar')
                                             ->where('hari', $hari)
                                             ->where('urutan', $periodNumber)
+                                            ->where('jenis', 'KBM')
                                             ->value('id');
                                         
                                         if (!$jamBelajarId) {

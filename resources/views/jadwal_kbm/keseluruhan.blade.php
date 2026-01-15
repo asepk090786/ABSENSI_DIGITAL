@@ -125,14 +125,16 @@
                                                 @php
                                                     // Cari jam belajar entry untuk urutan ini
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
-                                                    if ($jamBelajarEntry) {
-                                                            // Tampilkan hanya waktu; nama kegiatan tidak ditampilkan di kolom waktu
-                                                            echo $jamBelajarEntry->jam_mulai . ' - ' . $jamBelajarEntry->jam_selesai;
+                                                    if ($jamBelajarEntry && isset($jamBelajarEntry->jam_mulai) && isset($jamBelajarEntry->jam_selesai)) {
+                                                        // Tampilkan hanya waktu; nama kegiatan tidak ditampilkan di kolom waktu
+                                                        echo $jamBelajarEntry->jam_mulai . ' - ' . $jamBelajarEntry->jam_selesai;
                                                     } else {
                                                         // Fallback ke jadwal KBM
                                                         $jadwalFirst = $jadwalHari->where('jam_ke', $jam)->first();
-                                                        if ($jadwalFirst) {
+                                                        if ($jadwalFirst && $jadwalFirst->jamBelajar && isset($jadwalFirst->jamBelajar->jam_mulai) && isset($jadwalFirst->jamBelajar->jam_selesai)) {
                                                             echo $jadwalFirst->jamBelajar->jam_mulai . ' - ' . $jadwalFirst->jamBelajar->jam_selesai;
+                                                        } else {
+                                                            echo '-';
                                                         }
                                                     }
                                                 @endphp
@@ -143,23 +145,15 @@
                                                     // Check if this is a non-KBM jam (UPACARA, ISTIRAHAT, PEMBIASAAN)
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry && $jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {
-                                                        // Non-KBM: tampilkan kode kegiatan saja (ambil dari master kegiatan jika ada, jika tidak pakai jenis)
-                                                        $kodeKegiatan = null;
-                                                        if (isset($kegiatanList)) {
-                                                            $jenisTrim = strtolower(trim($jamBelajarEntry->jenis));
-                                                            $kegiatan = collect($kegiatanList)->first(function($item) use ($jenisTrim) {
-                                                                return strtolower(trim($item->nama_kegiatan)) === $jenisTrim;
-                                                            });
-                                                            if ($kegiatan && isset($kegiatan->kode_kegiatan)) {
-                                                                $kodeKegiatan = $kegiatan->kode_kegiatan;
-                                                            }
-                                                        }
-                                                        echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . ($kodeKegiatan ? $kodeKegiatan : strtoupper($jamBelajarEntry->jenis)) . '</div>';
+                                                        // Non-KBM: tampilkan nama kegiatan saja
+                                                        echo '<div class="badge bg-warning text-dark" style="font-size: 10px;">' . strtoupper($jamBelajarEntry->jenis) . '</div>';
                                                     } else {
-                                                        // KBM: check specific kelas schedule - hanya tampilkan kode guru
+                                                        // KBM: tampilkan nama mapel, nama guru, dan kode guru
                                                         $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
-                                                        if ($jadwalJam && $jadwalJam->guru) {
-                                                            echo $jadwalJam->guru->kode_guru;
+                                                        if ($jadwalJam && $jadwalJam->guru && $jadwalJam->mataPelajaran) {
+                                                            echo '<div style="font-size:10px;font-weight:bold;">' . $jadwalJam->mataPelajaran->nama_mapel . '</div>';
+                                                            echo '<div style="font-size:9px;">' . $jadwalJam->guru->nama . '</div>';
+                                                            echo '<div style="font-size:9px;color:#888;">[' . $jadwalJam->guru->kode_guru . ']</div>';
                                                         } else {
                                                             echo '-';
                                                         }
@@ -222,13 +216,15 @@
                                                 @php
                                                     // Cari jam belajar entry untuk urutan ini
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
-                                                    if ($jamBelajarEntry) {
+                                                    if ($jamBelajarEntry && isset($jamBelajarEntry->jam_mulai) && isset($jamBelajarEntry->jam_selesai)) {
                                                         // Hanya tampilkan waktu, tidak badge kegiatan
                                                         echo $jamBelajarEntry->jam_mulai . '-' . substr($jamBelajarEntry->jam_selesai, 0, 5);
                                                     } else {
                                                         $jadwalFirst = $jadwalHari->where('jam_ke', $jam)->first();
-                                                        if ($jadwalFirst) {
+                                                        if ($jadwalFirst && $jadwalFirst->jamBelajar && isset($jadwalFirst->jamBelajar->jam_mulai) && isset($jadwalFirst->jamBelajar->jam_selesai)) {
                                                             echo $jadwalFirst->jamBelajar->jam_mulai . '-' . substr($jadwalFirst->jamBelajar->jam_selesai, 0, 5);
+                                                        } else {
+                                                            echo '-';
                                                         }
                                                     }
                                                 @endphp
