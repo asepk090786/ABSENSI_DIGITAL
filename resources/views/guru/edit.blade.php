@@ -14,10 +14,32 @@
                 <form method="POST" action="{{ route('guru.update', $guru->id) }}">
                     @csrf
                     @method('PUT')
+                                        <div class="mb-3">
+                                            <label class="form-label">Status Akun</label><br>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $guru->is_active) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="is_active">Aktifkan akun guru ini</label>
+                                            </div>
+                                        </div>
                     <div class="mb-3">
                         <label class="form-label">Nama <span class="text-danger">*</span></label>
                         <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama', $guru->nama) }}" required>
                         @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $guru->username) }}">
+                        @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password Baru</label>
+                        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" autocomplete="new-password">
+                        @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="form-text text-muted">Kosongkan jika tidak ingin mengubah password.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Konfirmasi Password</label>
+                        <input type="password" name="password_confirmation" class="form-control" autocomplete="new-password">
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">

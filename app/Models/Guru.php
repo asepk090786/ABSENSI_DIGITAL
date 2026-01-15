@@ -2,24 +2,32 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Auth\Authenticatable;
 
-class Guru extends Model
+
+class Guru extends Model implements AuthenticatableContract
 {
-    use HasFactory;
+    use HasFactory, Authenticatable;
 
     protected $table = 'guru';
+
 
     protected $fillable = [
         'nama',
         'nip',
         'kode_guru',
-        'email',
+        'username',
+        'password',
         'telepon',
         'alamat',
         'tanggal_lahir',
         'jenis_kelamin',
+        'is_active',
+        'email',
     ];
 
     public function kepalaSekolah()
