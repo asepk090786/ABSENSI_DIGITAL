@@ -1,66 +1,163 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Absensi Digital Sekolah
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi manajemen absensi digital untuk sekolah yang dibangun dengan Laravel. Sistem ini mengelola data siswa, guru, kelas, jadwal, absensi, dan nilai.
 
-## About Laravel
+## Fitur Utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- 👥 Manajemen Pengguna (Admin, Kepala Sekolah, Guru, Siswa)
+- 📚 Manajemen Kelas dan Siswa
+- 👨‍🏫 Manajemen Guru dan Mata Pelajaran
+- 📅 Jadwal KBM (Kegiatan Belajar Mengajar)
+- ✅ Sistem Absensi
+- 📝 Manajemen Agenda & Kegiatan
+- 📊 Manajemen Nilai
+- 🏫 Pengaturan Data Sekolah
+- 📥 Import/Export Excel untuk data bulk
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP >= 8.1
+- Composer
+- MySQL >= 5.7 atau MariaDB >= 10.3
+- Node.js & NPM (untuk asset compilation)
+- Extensions PHP yang diperlukan:
+  - BCMath
+  - Ctype
+  - Fileinfo
+  - JSON
+  - Mbstring
+  - OpenSSL
+  - PDO
+  - Tokenizer
+  - XML
+  - GD
+  - ZIP
 
-## Learning Laravel
+## Instalasi
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1. Clone Repository
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```bash
+git clone <repository-url>
+cd absensi_digital
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 2. Install Dependencies
 
-## Laravel Sponsors
+```bash
+composer install
+npm install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+### 3. Konfigurasi Environment
 
-### Premium Partners
+```bash
+cp .env.example .env
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+Edit file `.env` dan sesuaikan konfigurasi database:
 
-## Contributing
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=absensi_digital
+DB_USERNAME=root
+DB_PASSWORD=your_password
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 4. Generate Application Key
 
-## Code of Conduct
+```bash
+php artisan key:generate
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 5. Jalankan Migration
 
-## Security Vulnerabilities
+```bash
+php artisan migrate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+atau jika ingin reset database:
+
+```bash
+php artisan migrate:fresh
+```
+
+### 6. Jalankan Seeder (Opsional)
+
+```bash
+php artisan db:seed
+```
+
+### 7. Storage Link
+
+```bash
+php artisan storage:link
+```
+
+### 8. Compile Assets
+
+```bash
+npm run dev
+```
+
+atau untuk production:
+
+```bash
+npm run build
+```
+
+### 9. Jalankan Server
+
+```bash
+php artisan serve
+```
+
+Aplikasi akan berjalan di `http://localhost:8000`
+
+## Troubleshooting
+
+### Error: "Specified key was too long"
+
+Jika Anda mengalami error `SQLSTATE[42000]: Syntax error or access violation: 1071 Specified key was too long`, ini sudah diperbaiki di `AppServiceProvider.php` dengan setting `Schema::defaultStringLength(191)`.
+
+Pastikan file `app/Providers/AppServiceProvider.php` sudah mengandung kode berikut:
+
+```php
+use Illuminate\Support\Facades\Schema;
+
+public function boot(): void
+{
+    Schema::defaultStringLength(191);
+}
+```
+
+### Database Character Set
+
+Pastikan database MySQL Anda menggunakan charset `utf8mb4` dan collation `utf8mb4_unicode_ci` untuk support karakter Unicode penuh.
+
+## Struktur Database
+
+Aplikasi ini memiliki 56+ tabel yang mengelola:
+- Users & Roles
+- Data Guru & Siswa
+- Kelas & Kurikulum
+- Mata Pelajaran & Jam Belajar
+- Jadwal KBM
+- Absensi & Izin
+- Agenda & Kegiatan
+- Nilai
+- Data Sekolah
+
+## Teknologi
+
+- **Framework**: Laravel 10.x
+- **Database**: MySQL
+- **Frontend**: Blade Templates + Bootstrap
+- **Excel**: Maatwebsite/Laravel-Excel
+- **PDF**: DomPDF
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Aplikasi ini adalah open-source software licensed under the [MIT license](https://opensource.org/licenses/MIT).
