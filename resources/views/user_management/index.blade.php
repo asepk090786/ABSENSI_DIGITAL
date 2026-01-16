@@ -8,6 +8,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0">Daftar Akun Pengguna</h4>
+                @if(!in_array(strtolower(auth()->user()->role->role_name ?? ''), ['guru mapel','guru kelas','wali kelas','guru bk','guru piket']))
                 <div class="btn-group" role="group">
                     <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
                         <i class="ti ti-plus"></i> Tambah Akun
@@ -22,6 +23,7 @@
                         <i class="ti ti-trash"></i> Hapus Dipilih
                     </button>
                 </div>
+                @endif
             </div>
             <div class="card-body">
                 <form method="GET" action="" class="mb-3">

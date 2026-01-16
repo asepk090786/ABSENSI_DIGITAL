@@ -108,7 +108,11 @@
                             </div>
                         </li>
                         
-                        <!-- Data Master -->
+                        <!-- Data Master (Only for Admin and Kepala Sekolah) -->
+                        @php
+                            $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
+                        @endphp
+                        @if($roleName === 'admin' || $roleName === 'kepala_sekolah')
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#navbar-master" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -146,6 +150,7 @@
                                 </a>
                             </div>
                         </li>
+                        @endif
                         
                         <!-- Pengaturan -->
                         <li class="nav-item dropdown">

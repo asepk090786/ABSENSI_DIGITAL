@@ -42,7 +42,7 @@ class DashboardController extends Controller
         } elseif ($role === 'kepala_sekolah') {
             return view('dashboard.kepala', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
         } else {
-            return view('home', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
+            return view('dashboard.user');
         }
     }
 }

@@ -1,4 +1,8 @@
 <aside class="sidebar">
+    @php
+        $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
+    @endphp
+    <div style="color:red; font-weight:bold;">Role Debug: {{ $roleName }}</div>
     <h5>📋 Menu Utama</h5>
     <ul class="menu-list">
         <li>
@@ -43,60 +47,64 @@
         </li>
     </ul>
 
-    <h5>👥 Data Master</h5>
-    <ul class="menu-list">
-        <li>
-            <a href="{{ route('sekolah.index') }}" class="menu-item {{ request()->routeIs('sekolah.*') ? 'active' : '' }}">
-                <i class="material-icons">account_balance</i>
-                <span>Data Sekolah</span>
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('kepala_sekolah.index') }}" class="menu-item {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}">
-                <i class="material-icons">person_pin</i>
-                <span>Kepala Sekolah</span>
-            </a>
-        </li>
-        <li>
-            <a href="#" class="menu-item">
-                <i class="material-icons">people</i>
-                <span>Guru</span>
-            </a>
-        </li>
-        <li>
-            <a href="#" class="menu-item">
-                <i class="material-icons">school</i>
-                <span>Siswa</span>
-            </a>
-        </li>
-        <li>
-            <a href="#" class="menu-item">
-                <i class="material-icons">class</i>
-                <span>Kelas</span>
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('jenis_kegiatan.index') }}" class="menu-item {{ request()->routeIs('jenis_kegiatan.*') ? 'active' : '' }}">
-                <i class="material-icons">category</i>
-                <span>Jenis Kegiatan</span>
-            </a>
-        </li>
-        <li>
-            <a href="#" class="menu-item">
-                <i class="material-icons">menu_book</i>
-                <span>Mata Pelajaran</span>
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('asc_timetable.index') }}" class="menu-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}">
-                <i class="material-icons">table_chart</i>
-                <span>ASC Time Table</span>
-            </a>
-        </li>
-    </ul>
+    {{-- ...existing code... --}}
+    @if($roleName === 'admin' || $roleName === 'kepala_sekolah')
+        <h5>👥 Data Master</h5>
+        <ul class="menu-list">
+            <li>
+                <a href="{{ route('sekolah.index') }}" class="menu-item {{ request()->routeIs('sekolah.*') ? 'active' : '' }}">
+                    <i class="material-icons">account_balance</i>
+                    <span>Data Sekolah</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('kepala_sekolah.index') }}" class="menu-item {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}">
+                    <i class="material-icons">person_pin</i>
+                    <span>Kepala Sekolah</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item">
+                    <i class="material-icons">people</i>
+                    <span>Guru</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item">
+                    <i class="material-icons">school</i>
+                    <span>Siswa</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item">
+                    <i class="material-icons">class</i>
+                    <span>Kelas</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('jenis_kegiatan.index') }}" class="menu-item {{ request()->routeIs('jenis_kegiatan.*') ? 'active' : '' }}">
+                    <i class="material-icons">category</i>
+                    <span>Jenis Kegiatan</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-item">
+                    <i class="material-icons">menu_book</i>
+                    <span>Mata Pelajaran</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('asc_timetable.index') }}" class="menu-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}">
+                    <i class="material-icons">table_chart</i>
+                    <span>ASC Time Table</span>
+                </a>
+            </li>
+        </ul>
+    @endif
 
     <h5>⚙️ Pengaturan</h5>
     <ul class="menu-list">
+        @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))
         <li>
             <a href="{{ route('tahun_ajaran.index') }}" class="menu-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}">
                 <i class="material-icons">settings</i>
@@ -115,7 +123,14 @@
                 <span>Semester</span>
             </a>
         </li>
-        <!-- Update disabled: menu disembunyikan -->
+        @else
+        <li>
+            <a href="{{ route('profile.edit') }}" class="menu-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                <i class="material-icons">person</i>
+                <span>Edit Profile</span>
+            </a>
+        </li>
+        @endif
     </ul>
 </aside>
 

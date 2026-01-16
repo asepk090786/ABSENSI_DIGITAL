@@ -11,6 +11,7 @@
                     <div class="col">
                         <h4 class="card-title mb-0">Jadwal Kegiatan Belajar Mengajar (KBM)</h4>
                     </div>
+                    @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))
                     <div class="col-auto">
                         <form action="{{ route('jadwal-kbm.destroy-all') }}" method="POST" class="d-inline">
                             @csrf
@@ -20,6 +21,7 @@
                             </button>
                         </form>
                     </div>
+                    @endif
                 </div>
             </div>
             <div class="card-body">
@@ -73,9 +75,11 @@
                                             </small>
                                         </p>
                                         <div class="btn-list">
+                                            @if(!in_array(strtolower(auth()->user()->role->role_name ?? ''), ['guru mapel','guru kelas','wali kelas','guru bk','guru piket']))
                                             <a href="{{ route('jadwal-kbm.create-by-kelas', $kelas->id) }}" class="btn btn-primary btn-sm">
                                                 <i class="ti ti-calendar-event me-1"></i>Atur Jadwal
                                             </a>
+                                            @endif
                                             <button type="button" class="btn btn-info btn-sm" onclick="viewJadwal({{ $kelas->id }}, '{{ $kelas->nama_kelas }}')">
                                                 <i class="ti ti-eye me-1"></i>Lihat
                                             </button>
