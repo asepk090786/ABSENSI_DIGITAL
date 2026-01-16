@@ -154,13 +154,17 @@
                         
                         <!-- Pengaturan -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs('tahun_ajaran.index', 'setting.tahun_ajaran*', 'setting.semester*') ? 'active' : '' }}" href="#navbar-setting" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('tahun_ajaran.index', 'setting.tahun_ajaran*', 'setting.semester*', 'profile.edit') ? 'active' : '' }}" href="#navbar-setting" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-settings"></i>
                                 </span>
                                 <span class="nav-link-title">Pengaturan</span>
                             </a>
                             <div class="dropdown-menu">
+                                <a class="dropdown-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
+                                    <i class="ti ti-user me-2"></i>Profile
+                                </a>
+                                <div class="dropdown-divider"></div>
                                 <a class="dropdown-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}" href="{{ route('tahun_ajaran.index') }}">
                                     <i class="ti ti-layout-dashboard me-2"></i>Dashboard Pengaturan
                                 </a>
