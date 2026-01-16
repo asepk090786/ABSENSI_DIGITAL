@@ -24,6 +24,15 @@
                 </div>
             </div>
             <div class="card-body">
+                <form method="GET" action="" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Cari nama, username, email, atau peran..." value="{{ request('search') }}">
+                        <button class="btn btn-primary" type="submit">Cari</button>
+                        @if(request('search'))
+                            <a href="{{ route('users.index') }}" class="btn btn-secondary">Reset</a>
+                        @endif
+                    </div>
+                </form>
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ session('success') }}
@@ -86,7 +95,7 @@
                                     <td class="text-end">
                                         <div class="btn-group" role="group">
                                             <a href="{{ route('users.show', $user->id) }}" class="btn btn-sm btn-info">Detail</a>
-                                            <a href="{{ route('users.edit', $user->id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                            <a href="{{ route('users.edit', $user->id) }}" class="btn btn-sm btn-warning" style="background-color: #ffc107; color: #212529; border-color: #ffc107;">Edit</a>
                                             <form action="{{ route('users.activate', $user->id) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('PATCH')

@@ -49,10 +49,22 @@ class UserManagementController extends Controller
 
         return redirect()->route('users.index')->with('success', 'Akun berhasil diperbarui.');
     }
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['role', 'guru', 'kepalaSekolah', 'siswa'])->orderBy('name')->paginate(10);
-        return view('user_management.index', compact('users'));
+        $query = User::with(['role', 'guru', 'kepalaSekolah', 'siswa']);
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('username', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%")
+                  ->orWhereHas('role', function($qr) use ($search) {
+                      $qr->where('role_name', 'like', "%$search%") ;
+                  });
+            });
+        }
+        $users = $query->orderBy('name')->paginate(20)->appends(['search' => $search]);
+        return view('user_management.index', compact('users', 'search'));
     }
 
     public function create()

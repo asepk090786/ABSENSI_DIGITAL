@@ -28,8 +28,36 @@ class GuruImport implements ToCollection, WithHeadingRow
             $rowNumber = $index + 2; // +2 karena header di row 1 dan index mulai dari 0
 
             try {
-                // Validasi wajib
-                $validator = Validator::make($row->toArray(), [
+                // Normalisasi jenis kelamin
+                $jenisKelamin = strtoupper(substr($row['jenis_kelamin'] ?? '', 0, 1));
+
+                // Siapkan kode guru
+                $kodeGuru = $row['kode_guru'] ?? null;
+
+                // Email default jika kosong
+                $email = $row['email'] ?? null;
+                if (empty($email) && !empty($kodeGuru)) {
+                    $email = 'guru' . $kodeGuru . '@simadis.sch';
+                }
+
+                // Username dan password default jika kosong
+                $username = $row['username'] ?? null;
+                if (empty($username) && !empty($kodeGuru)) {
+                    $username = 'guru' . $kodeGuru;
+                }
+                $password = $row['password'] ?? null;
+                if (empty($password) && !empty($kodeGuru)) {
+                    $password = 'guru' . $kodeGuru;
+                }
+
+                // Validasi wajib (email, username, password bisa default)
+                $validator = Validator::make([
+                    'nama' => $row['nama'] ?? null,
+                    'jenis_kelamin' => $jenisKelamin,
+                    'username' => $username,
+                    'password' => $password,
+                    'email' => $email,
+                ], [
                     'nama' => 'required|string|max:255',
                     'jenis_kelamin' => 'required|in:L,P,Laki-laki,Perempuan',
                     'username' => 'required|string|max:255|unique:users,username',
@@ -42,9 +70,6 @@ class GuruImport implements ToCollection, WithHeadingRow
                     continue;
                 }
 
-                // Normalisasi jenis kelamin
-                $jenisKelamin = strtoupper(substr($row['jenis_kelamin'], 0, 1));
-                
                 // Validasi NIP jika ada
                 if (!empty($row['nip'])) {
                     $existingGuru = Guru::where('nip', $row['nip'])->first();
@@ -55,10 +80,10 @@ class GuruImport implements ToCollection, WithHeadingRow
                 }
 
                 // Validasi Kode Guru jika ada
-                if (!empty($row['kode_guru'])) {
-                    $existingGuru = Guru::where('kode_guru', $row['kode_guru'])->first();
+                if (!empty($kodeGuru)) {
+                    $existingGuru = Guru::where('kode_guru', $kodeGuru)->first();
                     if ($existingGuru) {
-                        $this->pushError($rowNumber, 'Kode Guru ' . $row['kode_guru'] . ' sudah terdaftar.');
+                        $this->pushError($rowNumber, 'Kode Guru ' . $kodeGuru . ' sudah terdaftar.');
                         continue;
                     }
                 }
@@ -67,8 +92,8 @@ class GuruImport implements ToCollection, WithHeadingRow
                 $guru = Guru::create([
                     'nama' => $row['nama'],
                     'nip' => $row['nip'] ?? null,
-                    'kode_guru' => $row['kode_guru'] ?? null,
-                    'email' => $row['email'],
+                    'kode_guru' => $kodeGuru,
+                    'email' => $email,
                     'telepon' => $row['telepon'] ?? null,
                     'alamat' => $row['alamat'] ?? null,
                     'tanggal_lahir' => $this->parseDate($row['tanggal_lahir'] ?? null),
@@ -78,9 +103,9 @@ class GuruImport implements ToCollection, WithHeadingRow
                 // Buat akun user
                 User::create([
                     'name' => $row['nama'],
-                    'username' => $row['username'],
-                    'password' => Hash::make($row['password']),
-                    'email' => $row['email'],
+                    'username' => $username,
+                    'password' => Hash::make($password),
+                    'email' => $email,
                     'jenis_kelamin' => $jenisKelamin,
                     'role_id' => $roleGuru->id,
                     'guru_id' => $guru->id,

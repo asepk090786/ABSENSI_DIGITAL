@@ -1,6 +1,7 @@
 <?php
-
 namespace App\Http\Controllers;
+
+require_once app_path('Helpers/GuruUserHelper.php');
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -441,41 +442,36 @@ class AscTimetableController extends Controller
                 foreach ($xml->teachers->teacher as $index => $teacher) {
                     $kodeGuru = (string)$teacher['short'];
                     $namaGuru = (string)$teacher['name'];
-                    
-                    $teacherData = [
-                        'kode_guru' => $kodeGuru,
-                        'nama' => $namaGuru,
-                        'jenis_guru' => 'Pengajar',
-                    ];
-
-                    // Check if this teacher has an action specified
+                    $jenisKelamin = ((string)$teacher['gender'] === 'M') ? 'L' : 'P';
                     $action = $teacherActions[$index] ?? null;
                     $existingId = $teacherExistingIds[$index] ?? null;
-
-                    // Check for duplicates
                     $existsByKode = DB::table('guru')->where('kode_guru', $kodeGuru)->first();
                     $existsByNama = DB::table('guru')->where('nama', $namaGuru)->first();
 
                     if ($existsByKode || $existsByNama) {
-                        // Handle duplicate based on action
                         if ($action === 'replace' && $existingId) {
-                            // Replace existing data
                             DB::table('guru')
                                 ->where('id', $existingId)
-                                ->update(array_merge($teacherData, ['updated_at' => now()]));
+                                ->update([
+                                    'kode_guru' => $kodeGuru,
+                                    'nama' => $namaGuru,
+                                    'jenis_guru' => 'Pengajar',
+                                    'jenis_kelamin' => $jenisKelamin,
+                                    'updated_at' => now()
+                                ]);
                             $stats['teachers']++;
                         } elseif ($action === 'add_new') {
-                            // Add as new (only for kode duplicate, generate new kode)
-                            $teacherData['kode_guru'] = $kodeGuru . '_' . time();
-                            DB::table('guru')->insert(array_merge($teacherData, ['created_at' => now(), 'updated_at' => now()]));
+                            $kodeGuruBaru = $kodeGuru . '_' . time();
+                            createGuruAndUser($kodeGuruBaru, $namaGuru, $jenisKelamin);
                             $stats['teachers']++;
                         }
-                        // If action is 'skip' or null, do nothing
+                        // skip jika null
                     } else {
-                        // No duplicate, insert new
-                        DB::table('guru')->insert(array_merge($teacherData, ['created_at' => now(), 'updated_at' => now()]));
+                        createGuruAndUser($kodeGuru, $namaGuru, $jenisKelamin);
                         $stats['teachers']++;
                     }
+
+
                 }
             }
 
