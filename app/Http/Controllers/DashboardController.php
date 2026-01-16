@@ -36,7 +36,85 @@ class DashboardController extends Controller
         if ($role === 'admin') {
             return view('dashboard.admin', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
         } elseif (in_array($role, ['guru_mapel','guru_kelas','wali_kelas','guru_bk','guru_piket'])) {
-            return view('dashboard.guru', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
+            // Data khusus untuk dashboard guru
+            $guruData = null;
+            if ($user->guru_id) {
+                $guruData = DB::table('guru')->where('id', $user->guru_id)->first();
+            }
+            
+            // Statistik Jadwal Mengajar
+            $totalJadwal = 0;
+            $jadwalHariIni = 0;
+            if ($guruData && \Illuminate\Support\Facades\Schema::hasTable('jadwal_kbm')) {
+                $totalJadwal = DB::table('jadwal_kbm')
+                    ->where('guru_id', $guruData->id)
+                    ->count();
+                
+                $hariIni = date('l');
+                $hariIndonesia = [
+                    'Monday' => 'Senin',
+                    'Tuesday' => 'Selasa',
+                    'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis',
+                    'Friday' => 'Jumat',
+                    'Saturday' => 'Sabtu',
+                    'Sunday' => 'Minggu'
+                ];
+                $jadwalHariIni = DB::table('jadwal_kbm')
+                    ->where('guru_id', $guruData->id)
+                    ->where('hari', $hariIndonesia[$hariIni] ?? $hariIni)
+                    ->count();
+            }
+            
+            // Statistik Absensi
+            $totalAbsensiGuru = 0;
+            $absensiHariIni = 0;
+            if ($guruData && \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas')) {
+                $totalAbsensiGuru = DB::table('absensi_kelas')
+                    ->where('guru_id', $guruData->id)
+                    ->count();
+                    
+                $absensiHariIni = DB::table('absensi_kelas')
+                    ->where('guru_id', $guruData->id)
+                    ->whereDate('tanggal', date('Y-m-d'))
+                    ->count();
+            }
+            
+            // Statistik Agenda Pembelajaran
+            $totalAgenda = 0;
+            $agendaMingguIni = 0;
+            if ($guruData && \Illuminate\Support\Facades\Schema::hasTable('agenda')) {
+                $totalAgenda = DB::table('agenda')
+                    ->where('guru_id', $guruData->id)
+                    ->count();
+                    
+                $startOfWeek = date('Y-m-d', strtotime('monday this week'));
+                $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
+                $agendaMingguIni = DB::table('agenda')
+                    ->where('guru_id', $guruData->id)
+                    ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
+                    ->count();
+            }
+            
+            // Statistik Nilai
+            $totalNilai = 0;
+            $kelasYangDiajar = 0;
+            if ($guruData && \Illuminate\Support\Facades\Schema::hasTable('nilai_harian')) {
+                $totalNilai = DB::table('nilai_harian')
+                    ->where('guru_id', $guruData->id)
+                    ->count();
+                    
+                $kelasYangDiajar = DB::table('jadwal_kbm')
+                    ->where('guru_id', $guruData->id)
+                    ->distinct('kelas_id')
+                    ->count('kelas_id');
+            }
+            
+            return view('dashboard.guru', compact(
+                'guru','siswa','kelas','absensi','tahunAjaran','semestrName',
+                'totalJadwal','jadwalHariIni','totalAbsensiGuru','absensiHariIni',
+                'totalAgenda','agendaMingguIni','totalNilai','kelasYangDiajar'
+            ));
         } elseif ($role === 'siswa') {
             return view('dashboard.siswa', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
         } elseif ($role === 'kepala_sekolah') {
