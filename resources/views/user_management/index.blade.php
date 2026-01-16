@@ -86,6 +86,7 @@
                                     <td class="text-end">
                                         <div class="btn-group" role="group">
                                             <a href="{{ route('users.show', $user->id) }}" class="btn btn-sm btn-info">Detail</a>
+                                            <a href="{{ route('users.edit', $user->id) }}" class="btn btn-sm btn-warning">Edit</a>
                                             <form action="{{ route('users.activate', $user->id) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('PATCH')

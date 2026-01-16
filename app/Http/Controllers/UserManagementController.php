@@ -16,6 +16,39 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class UserManagementController extends Controller
 {
+    public function edit(User $user)
+    {
+        $roles = Role::orderBy('role_name')->get();
+        return view('user_management.edit', compact('user', 'roles'));
+    }
+
+    public function update(Request $request, User $user)
+    {
+        $data = $request->all();
+        $validator = Validator::make($data, [
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:50', 'unique:users,username,' . $user->id],
+            'email' => ['nullable', 'email', 'max:150', 'unique:users,email,' . $user->id],
+            'role_id' => ['required', 'exists:roles,id'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $user->name = $data['name'];
+        $user->username = $data['username'];
+        $user->email = $data['email'] ?? null;
+        $user->role_id = $data['role_id'];
+        $user->is_active = $data['is_active'];
+        if (!empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+        $user->save();
+
+        return redirect()->route('users.index')->with('success', 'Akun berhasil diperbarui.');
+    }
     public function index()
     {
         $users = User::with(['role', 'guru', 'kepalaSekolah', 'siswa'])->orderBy('name')->paginate(10);

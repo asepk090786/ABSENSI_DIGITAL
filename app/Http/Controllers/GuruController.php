@@ -83,6 +83,7 @@ class GuruController extends Controller
             'alamat' => 'nullable|string',
             'tanggal_lahir' => 'nullable|date',
             'jenis_kelamin' => 'nullable|in:L,P',
+            'email' => 'required|email|max:150|unique:guru,email,' . $guru->id,
         ]);
 
         // Status aktif/nonaktif akun
@@ -91,19 +92,18 @@ class GuruController extends Controller
         // Simpan data guru (kecuali username/password)
         $guruData = $validated;
         unset($guruData['username'], $guruData['password']);
-        // Pastikan email tetap ada di $guruData jika ada di request
-        if (isset($validated['email'])) {
-            $guruData['email'] = $validated['email'];
-        }
+        // Email selalu disimpan (karena sudah divalidasi required)
+        $guruData['email'] = $validated['email'];
         $guru->update($guruData);
 
         // Logika update/insert user jika username/password diisi
         $username = $validated['username'] ?? null;
         $password = $validated['password'] ?? null;
-        $is_active = $validated['is_active'];
+        // Status aktif: hanya jika username dan password diisi
+        $is_active = ($username && $password) ? 1 : 0;
         $email = $validated['email'] ?? null;
 
-        if ($username) {
+        if ($username && $password) {
             // Pastikan email tidak null
             if (empty($email)) {
                 return redirect()->back()->withInput()->withErrors(['email' => 'Email wajib diisi untuk membuat akun pengguna.']);
@@ -112,10 +112,8 @@ class GuruController extends Controller
             if ($user) {
                 // Update user
                 $user->username = $username;
-                if ($password) {
-                    $user->password = bcrypt($password);
-                }
-                $user->is_active = $is_active;
+                $user->password = bcrypt($password);
+                $user->is_active = 1;
                 $user->name = $guru->nama;
                 $user->email = $email;
                 $user->jenis_kelamin = $guru->jenis_kelamin;
@@ -126,17 +124,18 @@ class GuruController extends Controller
                 \App\Models\User::create([
                     'name' => $guru->nama,
                     'username' => $username,
-                    'password' => $password ? bcrypt($password) : bcrypt('password'),
+                    'password' => bcrypt($password),
                     'email' => $email,
                     'jenis_kelamin' => $guru->jenis_kelamin,
                     'role_id' => $roleGuru ? $roleGuru->id : null,
                     'guru_id' => $guru->id,
-                    'is_active' => $is_active,
+                    'is_active' => 1,
                 ]);
             }
         } else if ($guru->user) {
-            // Jika username dikosongkan, hapus user
-            $guru->user->delete();
+            // Jika username atau password dikosongkan, set user nonaktif
+            $guru->user->is_active = 0;
+            $guru->user->save();
         }
 
         return redirect()->route('guru.index')->with('success', 'Data guru berhasil diperbarui.');
