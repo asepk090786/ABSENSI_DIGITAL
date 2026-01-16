@@ -164,6 +164,7 @@
                                 <a class="dropdown-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
                                     <i class="ti ti-user me-2"></i>Profile
                                 </a>
+                                @if(auth()->user()->role && in_array(auth()->user()->role->role_name, ['Admin', 'Kepala Sekolah']))
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}" href="{{ route('tahun_ajaran.index') }}">
                                     <i class="ti ti-layout-dashboard me-2"></i>Dashboard Pengaturan
@@ -177,6 +178,7 @@
                                 <a class="dropdown-item {{ request()->routeIs('setting.header*') ? 'active' : '' }}" href="{{ route('setting.header') }}">
                                     <i class="ti ti-layout-sidebar me-2"></i>Edit Header
                                 </a>
+                                @endif
                                 <!-- Update disabled: menu disembunyikan -->
                             </div>
                         </li>
