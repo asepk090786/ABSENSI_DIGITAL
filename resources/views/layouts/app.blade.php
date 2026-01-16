@@ -224,9 +224,11 @@
                             <a href="{{ route('profile.edit') }}" class="dropdown-item">
                                 <i class="ti ti-user me-2"></i>Profile
                             </a>
+                            @if(auth()->user()->role && in_array(auth()->user()->role->role_name, ['Admin', 'Kepala Sekolah']))
                             <a href="{{ route('tahun_ajaran.index') }}" class="dropdown-item">
                                 <i class="ti ti-settings me-2"></i>Pengaturan
                             </a>
+                            @endif
                             <div class="dropdown-divider"></div>
                             <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                 <i class="ti ti-logout me-2"></i>Keluar
