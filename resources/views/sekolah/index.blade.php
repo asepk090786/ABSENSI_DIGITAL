@@ -28,8 +28,7 @@
                         <div class="row">
                             <div class="col-md-3 text-center">
                                 @if($sekolah->logo)
-                                    <img src="{{ asset('images/' . $sekolah->logo) }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;"
-                                         onerror="this.onerror=null;this.src='/images/default-school.png';">
+                                    <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;">
                                 @else
                                     <div class="bg-light rounded p-4 mb-3">
                                         <i class="ti ti-school" style="font-size: 100px; color: #ddd;"></i>
