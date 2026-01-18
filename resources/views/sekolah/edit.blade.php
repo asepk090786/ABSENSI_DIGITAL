@@ -85,7 +85,7 @@
                                     @enderror
                                     <div id="logoPreviewContainer">
                                         @if(isset($sekolah) && $sekolah->logo)
-                                            <img id="logoPreview" src="{{ asset('images/' . $sekolah->logo) }}" alt="Logo" class="mt-2" style="max-height: 100px;">
+                                            <img id="logoPreview" src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo" class="mt-2" style="max-height: 100px;">
                                         @else
                                             <img id="logoPreview" src="#" alt="Logo" class="mt-2 d-none" style="max-height: 100px;">
                                         @endif
