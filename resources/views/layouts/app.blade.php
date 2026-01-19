@@ -221,24 +221,44 @@
                     <!-- User Menu -->
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            @if(auth()->user()->foto && file_exists(public_path('storage/' . auth()->user()->foto)))
-                                <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url({{ asset('storage/' . auth()->user()->foto) }})"></span>
-                            @else
-                                <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'U') }}&background=1e3a5f&color=fff)"></span>
-                            @endif
+                            @php
+                                $userName = auth()->user()->name ?? 'User';
+                                $userPhoto = null;
+                                
+                                // Check user's foto field first (from profile update)
+                                if(auth()->user()->foto) {
+                                    $photoPath = storage_path('app/public/' . auth()->user()->foto);
+                                    if(file_exists($photoPath)) {
+                                        $userPhoto = asset('storage/' . auth()->user()->foto);
+                                    }
+                                }
+                                
+                                // Fallback: check guru foto if user is a guru
+                                if(!$userPhoto && auth()->user()->guru_id) {
+                                    $guru = \App\Models\Guru::find(auth()->user()->guru_id);
+                                    if($guru && $guru->foto) {
+                                        $guruPhotoPath = public_path('uploads/foto_guru/' . $guru->foto);
+                                        if(file_exists($guruPhotoPath)) {
+                                            $userPhoto = asset('uploads/foto_guru/' . $guru->foto);
+                                        }
+                                    }
+                                }
+                                
+                                // Final fallback: generate avatar from initials
+                                if(!$userPhoto) {
+                                    $userPhoto = 'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&background=1e3a5f&color=fff&size=128';
+                                }
+                            @endphp
+                            <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url({{ $userPhoto }})"></span>
                             <div class="d-none d-sm-block text-dark">
-                                <div class="fw-medium">{{ auth()->user()->name ?? 'User' }}</div>
+                                <div class="fw-medium">{{ $userName }}</div>
                                 <div class="small text-muted">{{ auth()->user()->role->role_name ?? 'User' }}</div>
                             </div>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end shadow-sm">
                             <div class="dropdown-item-text">
                                 <div class="d-flex align-items-center">
-                                    @if(auth()->user()->foto && file_exists(public_path('storage/' . auth()->user()->foto)))
-                                        <span class="avatar avatar-md rounded-circle me-3" style="background-image: url({{ asset('storage/' . auth()->user()->foto) }})"></span>
-                                    @else
-                                        <span class="avatar avatar-md rounded-circle me-3" style="background-image: url(https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name ?? 'U') }}&background=1e3a5f&color=fff&size=128)"></span>
-                                    @endif
+                                    <span class="avatar avatar-md rounded-circle me-3" style="background-image: url({{ $userPhoto }})"></span>
                                     <div>
                                         <div class="fw-bold">{{ auth()->user()->name }}</div>
                                         <div class="small text-muted">{{ auth()->user()->email }}</div>
