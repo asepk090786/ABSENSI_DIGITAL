@@ -3,29 +3,17 @@
 @section('title','Detail Agenda Kelas')
 
 @section('content')
-<!-- Summernote CSS -->
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css" rel="stylesheet">
-<!-- Summernote JS -->
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/lang/summernote-id-ID.js"></script>
-
+<script src="https://cdn.tiny.cloud/1/4ctq7tixbpx5atyue5htuo32gh3znc6tn98y7jfmhdzrp5q9/tinymce/6/tinymce.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        $('#tujuanEditor, #strategiEditor, #mediaEditor, #sumberEditor, #penilaianEditor, #catatanEditor').summernote({
-            placeholder: 'Masukkan konten...',
-            height: 250,
-            lang: 'id-ID',
-            toolbar: [
-                ['style', ['style']],
-                ['font', ['bold', 'italic', 'underline', 'clear']],
-                ['fontname', ['fontname']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['table', ['table']],
-                ['insert', ['link']],
-                ['view', ['fullscreen', 'codeview', 'help']]
-            ]
-        });
+    tinymce.init({
+        selector: 'textarea.tiny-editor',
+        plugins: 'lists link image table code help wordcount',
+        toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
+        language: 'id',
+        height: 250,
+        menubar: false,
+        statusbar: true,
+        license_key: 'gpl'
     });
 </script>
 
@@ -96,32 +84,32 @@
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">A. Tujuan Pembelajaran</label>
-                                <textarea id="tujuanEditor" class="form-control" name="tujuan_pembelajaran">{{ old('tujuan_pembelajaran', $agenda->tujuan_pembelajaran ?? '') }}</textarea>
+                                <textarea class="form-control tiny-editor" name="tujuan_pembelajaran">{{ old('tujuan_pembelajaran', $agenda->tujuan_pembelajaran ?? '') }}</textarea>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">B. Strategi/Metode Pembelajaran</label>
-                                <textarea id="strategiEditor" class="form-control" name="strategi_pembelajaran">{{ old('strategi_pembelajaran', $agenda->strategi_pembelajaran ?? '') }}</textarea>
+                                <textarea class="form-control tiny-editor" name="strategi_pembelajaran">{{ old('strategi_pembelajaran', $agenda->strategi_pembelajaran ?? '') }}</textarea>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">C. Media/Alat Pembelajaran</label>
-                                <textarea id="mediaEditor" class="form-control" name="media_pembelajaran">{{ old('media_pembelajaran', $agenda->media_pembelajaran ?? '') }}</textarea>
+                                <textarea class="form-control tiny-editor" name="media_pembelajaran">{{ old('media_pembelajaran', $agenda->media_pembelajaran ?? '') }}</textarea>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">D. Sumber Belajar</label>
-                                <textarea id="sumberEditor" class="form-control" name="sumber_belajar">{{ old('sumber_belajar', $agenda->sumber_belajar ?? '') }}</textarea>
+                                <textarea class="form-control tiny-editor" name="sumber_belajar">{{ old('sumber_belajar', $agenda->sumber_belajar ?? '') }}</textarea>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">E. Penilaian</label>
-                                <textarea id="penilaianEditor" class="form-control" name="penilaian">{{ old('penilaian', $agenda->penilaian ?? '') }}</textarea>
+                                <textarea class="form-control tiny-editor" name="penilaian">{{ old('penilaian', $agenda->penilaian ?? '') }}</textarea>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">F. Catatan Tambahan</label>
-                                <textarea id="catatanEditor" class="form-control" name="catatan_tambahan">{{ old('catatan_tambahan', $agenda->catatan_tambahan ?? '') }}</textarea>
+                                <textarea class="form-control tiny-editor" name="catatan_tambahan">{{ old('catatan_tambahan', $agenda->catatan_tambahan ?? '') }}</textarea>
                             </div>
 
                             <div class="d-flex gap-2">

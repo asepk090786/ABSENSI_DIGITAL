@@ -3,45 +3,17 @@
 @section('title','Tambah Agenda Kelas')
 
 @section('content')
-<!-- Summernote CSS -->
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css" rel="stylesheet">
-<!-- Summernote JS -->
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/lang/summernote-id-ID.js"></script>
-
+<script src="https://cdn.tiny.cloud/1/4ctq7tixbpx5atyue5htuo32gh3znc6tn98y7jfmhdzrp5q9/tinymce/6/tinymce.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        $('#kegiatanEditor').summernote({
-            placeholder: 'Deskripsi kegiatan pembelajaran...',
-            height: 300,
-            lang: 'id-ID',
-            toolbar: [
-                ['style', ['style']],
-                ['font', ['bold', 'italic', 'underline', 'clear']],
-                ['fontname', ['fontname']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['table', ['table']],
-                ['insert', ['link']],
-                ['view', ['fullscreen', 'codeview', 'help']]
-            ]
-        });
-
-        $('#tujuanEditor, #strategiEditor, #mediaEditor, #sumberEditor, #penilaianEditor, #catatanEditor').summernote({
-            placeholder: 'Masukkan konten...',
-            height: 250,
-            lang: 'id-ID',
-            toolbar: [
-                ['style', ['style']],
-                ['font', ['bold', 'italic', 'underline', 'clear']],
-                ['fontname', ['fontname']],
-                ['color', ['color']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['table', ['table']],
-                ['insert', ['link']],
-                ['view', ['fullscreen', 'codeview', 'help']]
-            ]
-        });
+    tinymce.init({
+        selector: 'textarea.tiny-editor',
+        plugins: 'lists link image table code help wordcount',
+        toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
+        language: 'id',
+        height: 300,
+        menubar: false,
+        statusbar: true,
+        license_key: 'gpl'
     });
 </script>
 
@@ -113,7 +85,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Kegiatan/Materi</label>
-                        <textarea name="kegiatan" id="kegiatanEditor" class="form-control @error('kegiatan') is-invalid @enderror">{{ old('kegiatan') }}</textarea>
+                        <textarea name="kegiatan" class="form-control tiny-editor @error('kegiatan') is-invalid @enderror">{{ old('kegiatan') }}</textarea>
                         @error('kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
 
