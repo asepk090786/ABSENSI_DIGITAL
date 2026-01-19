@@ -1,11 +1,12 @@
 <aside class="sidebar">
     @php
         use Illuminate\Support\Str;
-        $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
+        $originalRoleName = auth()->user()->role->role_name ?? '';
+        $roleName = strtolower(str_replace(' ', '_', $originalRoleName));
         $isGuru = Str::contains($roleName, 'guru');
     @endphp
-    <div style="color:red; font-weight:bold;">Role Debug: {{ $roleName }}</div>
-    <h5>📋 Menu Utama</h5>
+    <div style="position: fixed; top: 0; left: 0; background: red; color: white; z-index: 9999; padding: 10px; width: 100%;">DEBUG: Original="{{$originalRoleName}}" | Transformed="{{ $roleName }}" | Check={{ in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']) ? 'TRUE' : 'FALSE' }}</div>
+    <h5 style="margin-top: 60px;">📋 Menu Utama</h5>
     <ul class="menu-list">
         <li>
             <a href="{{ route('home') }}" class="menu-item {{ request()->routeIs('home') ? 'active' : '' }}">
@@ -70,7 +71,7 @@
     </ul>
 
     {{-- ...existing code... --}}
-    @if($roleName === 'admin' || $roleName === 'kepala_sekolah')
+    @if(in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']))
         <h5>👥 Data Master</h5>
         <ul class="menu-list">
             <li>
@@ -86,9 +87,27 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('wakil_kepala_sekolah.index') }}" class="menu-item {{ request()->routeIs('wakil_kepala_sekolah.*') ? 'active' : '' }}">
+                    <i class="material-icons">admin_panel_settings</i>
+                    <span>Wakil Kepala Sekolah</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('guru_bk.index') }}" class="menu-item {{ request()->routeIs('guru_bk.*') ? 'active' : '' }}">
+                    <i class="material-icons">psychology</i>
+                    <span>Guru BK</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" class="menu-item">
                     <i class="material-icons">people</i>
                     <span>Guru</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('guru_piket.index') }}" class="menu-item {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}">
+                    <i class="material-icons">security</i>
+                    <span>Guru Piket</span>
                 </a>
             </li>
             <li>

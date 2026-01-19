@@ -137,8 +137,8 @@
                             </div>
                         </li>
                         
-                        <!-- Data Master (Only for Admin and Kepala Sekolah) -->
-                        @if($roleName === 'admin' || $roleName === 'kepala_sekolah')
+                        <!-- Data Master (Only for Admin, Kepala Sekolah, and Wakil Kepala Sekolah) -->
+                        @if($roleName === 'admin' || $roleName === 'kepala_sekolah' || $roleName === 'wakil_kepala_sekolah')
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#navbar-master" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -153,8 +153,20 @@
                                 <a class="dropdown-item {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('kepala_sekolah.index') }}">
                                     <i class="ti ti-id-badge me-2"></i>Kepala Sekolah
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('wakil_kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('wakil_kepala_sekolah.index') }}">
+                                    <i class="ti ti-user-shield me-2"></i>Wakil Kepala Sekolah
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('guru_bk.*') ? 'active' : '' }}" href="{{ route('guru_bk.index') }}">
+                                    <i class="ti ti-mood-smile me-2"></i>Guru BK
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs('guru.*') ? 'active' : '' }}" href="{{ route('guru.index') }}">
                                     <i class="ti ti-users me-2"></i>Guru
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('pembina.*') ? 'active' : '' }}" href="{{ route('pembina.index') }}">
+                                    <i class="ti ti-user-star me-2"></i>Pembina
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}" href="{{ route('guru_piket.index') }}">
+                                    <i class="ti ti-shield-check me-2"></i>Guru Piket
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                                     <i class="ti ti-lock me-2"></i>Akun Pengguna

@@ -125,6 +125,10 @@ Route::middleware(['auth'])->group(function(){
     // Data Master routes
     Route::resource('sekolah', 'App\Http\Controllers\SekolahController');
     Route::resource('kepala_sekolah', 'App\Http\Controllers\KepalaSekolahController');
+    Route::resource('wakil_kepala_sekolah', 'App\Http\Controllers\WakilKepalaSekolahController');
+    Route::resource('guru_bk', 'App\Http\Controllers\GuruBkController');
+    Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
+    Route::resource('pembina', 'App\Http\Controllers\PembinaController');
     Route::get('mata-pelajaran/guru', ['App\Http\Controllers\MataPelajaranController', 'guruIndex'])->name('mata_pelajaran.guru');
     Route::resource('mata_pelajaran', 'App\Http\Controllers\MataPelajaranController');
     Route::get('mata-pelajaran-export', ['App\Http\Controllers\MataPelajaranController', 'export'])->name('mata_pelajaran.export');

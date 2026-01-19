@@ -12,11 +12,13 @@ class RoleSeeder extends Seeder
         $roles = [
             'Admin',
             'Kepala Sekolah',
+            'Wakil Kepala Sekolah',
             'Guru Kelas',
             'Wali Kelas',
             'Guru Mapel',
             'Guru BK',
             'Guru Piket',
+            'Pembina',
             'Siswa',
             'Petugas Keamanan',
         ];
