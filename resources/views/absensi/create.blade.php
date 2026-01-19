@@ -340,6 +340,8 @@
                         <script>
     document.addEventListener('DOMContentLoaded', function() {
         var kelasSelect = document.getElementById('kelas_id');
+        var tanggalInput = document.getElementById('tanggal');
+        var jamBelajarSelect = document.getElementById('jam_belajar_id');
         var siswaContainer = document.getElementById('siswaContainer');
         var siswaTableBody = document.getElementById('siswaTableBody');
         var btnSubmit = document.getElementById('btnSubmit');
@@ -362,7 +364,43 @@
             kelasSelect.addEventListener('change', function() {
                 console.log('Kelas changed to:', this.value);
                 if (this.value) {
+                    autoSelectJamBelajar();
                     loadSiswaByKelas(this.value);
+                } else {
+                    siswaContainer.style.display = 'none';
+                    siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
+                    btnSubmit.disabled = true;
+                }
+            });
+        }
+
+        if (tanggalInput) {
+            tanggalInput.addEventListener('change', function() {
+                console.log('Tanggal changed to:', this.value);
+                if (kelasSelect && kelasSelect.value) {
+                    autoSelectJamBelajar();
+                }
+            });
+        }
+
+        function autoSelectJamBelajar() {
+            if (!kelasSelect || !kelasSelect.value || !tanggalInput || !tanggalInput.value) {
+                return;
+            }
+
+            const kelasId = kelasSelect.value;
+            const tanggal = tanggalInput.value;
+            
+            // Reload page with kelas_id and tanggal parameters to refresh jam belajar options
+            const url = new URL(window.location.href);
+            url.searchParams.set('kelas_id', kelasId);
+            url.searchParams.set('tanggal', tanggal);
+            
+            // Only reload if not in quick access mode
+            if (!isQuickAccess) {
+                window.location.href = url.toString();
+            }
+        }
                 } else {
                     siswaContainer.style.display = 'none';
                     siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
@@ -387,32 +425,32 @@
                         let html = '';
                         data.siswa.forEach((siswa, index) => {
                             html += `
-                                <tr data-siswa-id="${siswa.id}">
-                                    <td>${index + 1}</td>
-                                    <td>${siswa.nis || '-'}</td>
-                                    <td>${siswa.nama}</td>
+                                <tr data-siswa-id="\${siswa.id}">
+                                    <td>\${index + 1}</td>
+                                    <td>\${siswa.nis || '-'}</td>
+                                    <td>\${siswa.nama}</td>
                                     <td>
-                                        <div class="d-flex flex-wrap gap-2 status-options" data-siswa-id="${siswa.id}">
+                                        <div class="d-flex flex-wrap gap-2 status-options" data-siswa-id="\${siswa.id}">
                                             <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[${siswa.id}]" value="hadir" data-siswa-id="${siswa.id}">
+                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="hadir" data-siswa-id="\${siswa.id}">
                                                 <span class="ms-1">Hadir</span>
                                             </label>
                                             <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[${siswa.id}]" value="sakit" data-siswa-id="${siswa.id}">
+                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="sakit" data-siswa-id="\${siswa.id}">
                                                 <span class="ms-1">Sakit</span>
                                             </label>
                                             <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[${siswa.id}]" value="izin" data-siswa-id="${siswa.id}">
+                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="izin" data-siswa-id="\${siswa.id}">
                                                 <span class="ms-1">Izin</span>
                                             </label>
                                             <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[${siswa.id}]" value="alpa" data-siswa-id="${siswa.id}">
+                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="alpa" data-siswa-id="\${siswa.id}">
                                                 <span class="ms-1">Alpa</span>
                                             </label>
                                         </div>
                                     </td>
                                     <td>
-                                        <input type="text" name="keterangan_siswa[${siswa.id}]" class="form-control form-control-sm" placeholder="Keterangan (opsional)">
+                                        <input type="text" name="keterangan_siswa[\${siswa.id}]" class="form-control form-control-sm" placeholder="Keterangan (opsional)">
                                     </td>
                                 </tr>
                             `;

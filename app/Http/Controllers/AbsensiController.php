@@ -69,8 +69,13 @@ class AbsensiController extends Controller
         $user = auth()->user();
         $selectedKelasId = $request->get('kelas_id');
         $selectedJamBelajarId = null;
-        $isQuickAccess = !empty($selectedKelasId);
+        $isQuickAccess = false;
         $selectedDate = $request->get('tanggal', date('Y-m-d'));
+        
+        // Check if this is quick access or manual with kelas preselected
+        if (!empty($selectedKelasId)) {
+            $isQuickAccess = true;
+        }
         
         // Validate teacher schedule access
         if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
@@ -160,13 +165,16 @@ class AbsensiController extends Controller
                 // Only show jam belajar from teacher's schedule
                 $scheduledJamIds = $multiSlotJadwal->pluck('jam_belajar_id')->unique();
                 $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
+                
+                if (!$selectedJamBelajarId && $multiSlotJadwal->isNotEmpty()) {
+                    $selectedJamBelajarId = $multiSlotJadwal->first()->jam_belajar_id;
+                }
             } else {
                 $jamBelajarList = JamBelajar::orderBy('urutan')->get();
             }
             
-                    $selectedJamBelajarId = $multiSlotJadwal->first()->jam_belajar_id;
-                }
-            }
+            $guruList = Guru::where('id', $user->guru_id)->get();
+            $jadwalList = $jadwalHariIni;
         } else {
             // Admin or kepala sekolah can see all
             $kelasList = Kelas::orderBy('nama_kelas')->get();
