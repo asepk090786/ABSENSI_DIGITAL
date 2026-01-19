@@ -145,7 +145,11 @@
                 <div class="row g-3">
                     <!-- Jadwal Mengajar -->
                     <div class="col-md-6 col-lg-3">
+                        @if(auth()->user()->guru_id)
+                        <a href="{{ route('jadwal-kbm.show-by-guru', auth()->user()->guru_id) }}" class="btn btn-outline-primary w-100 py-4" style="height: auto;">
+                        @else
                         <a href="{{ route('jadwal-kbm.index') }}" class="btn btn-outline-primary w-100 py-4" style="height: auto;">
+                        @endif
                             <div class="text-center">
                                 <i class="ti ti-calendar-time" style="font-size: 48px;"></i>
                                 <div class="mt-3 fw-bold">Jadwal Mengajar</div>

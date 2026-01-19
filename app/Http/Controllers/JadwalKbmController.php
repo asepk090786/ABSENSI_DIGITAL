@@ -350,7 +350,15 @@ class JadwalKbmController extends Controller
         // Ambil master kegiatan untuk kode kegiatan non-KBM
         $kegiatanList = \App\Models\Kegiatan::select('kode_kegiatan', 'nama_kegiatan')->get();
         
-        return view('jadwal_kbm.keseluruhan', compact('jadwalKeseluruhan', 'jamBelajarByHari', 'hariList', 'tahunAjaranAktif', 'semesterAktif', 'sekolah', 'viewType', 'kegiatanList'));
+        // Get current user guru id for highlighting
+        $currentUserGuruId = auth()->user()->guru_id ?? null;
+        $currentUserGuruKode = null;
+        if ($currentUserGuruId) {
+            $guru = \App\Models\Guru::find($currentUserGuruId);
+            $currentUserGuruKode = $guru->kode_guru ?? null;
+        }
+        
+        return view('jadwal_kbm.keseluruhan', compact('jadwalKeseluruhan', 'jamBelajarByHari', 'hariList', 'tahunAjaranAktif', 'semesterAktif', 'sekolah', 'viewType', 'kegiatanList', 'currentUserGuruId', 'currentUserGuruKode'));
     }
 
     /**

@@ -27,11 +27,13 @@
             <div class="card-body">
                 <!-- Tab Navigation -->
                 <ul class="nav nav-tabs mb-4" id="jadwalTab" role="tablist">
+                    @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" href="{{ route('kurikulum.index') }}">
                             <i class="ti ti-books me-2"></i>Struktur Kurikulum
                         </a>
                     </li>
+                    @endif
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="perkelas-tab" data-bs-toggle="tab" data-bs-target="#perkelas" type="button" role="tab">
                             <i class="ti ti-school me-2"></i>Jadwal Per Kelas

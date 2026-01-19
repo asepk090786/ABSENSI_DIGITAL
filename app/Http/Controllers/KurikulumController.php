@@ -14,6 +14,17 @@ class KurikulumController extends Controller
 {
     private array $jurusanList = ['IPA','IPS','MIA','IIS','UMUM'];
 
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if (!$user || !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+                abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+            }
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
         $tingkatList = Kelas::select('tingkat_kelas')->distinct()->pluck('tingkat_kelas')->filter()->values()->all();

@@ -140,7 +140,15 @@
                                                 @endphp
                                             </td>
                                             @foreach($kelasJadwal as $kelas)
-                                            <td style="font-size: 11px; vertical-align: middle;">
+                                            @php
+                                                $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
+                                                $isCurrentUserJadwal = false;
+                                                if ($jadwalJam && $jadwalJam->guru && $currentUserGuruKode) {
+                                                    $isCurrentUserJadwal = $jadwalJam->guru->kode_guru === $currentUserGuruKode;
+                                                }
+                                                $cellBgClass = $isCurrentUserJadwal ? 'bg-success-subtle' : '';
+                                            @endphp
+                                            <td style="font-size: 11px; vertical-align: middle;" class="{{ $cellBgClass }}">
                                                 @php
                                                     // Check if this is a non-KBM jam (UPACARA, ISTIRAHAT, PEMBIASAAN)
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
@@ -230,7 +238,15 @@
                                                 @endphp
                                             </td>
                                             @foreach($kelasJadwal as $kelas)
-                                            <td style="font-size: 13px; text-align: center; vertical-align: middle; padding: 4px 2px !important; font-weight: bold;">
+                                            @php
+                                                $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
+                                                $isCurrentUserJadwal = false;
+                                                if ($jadwalJam && $jadwalJam->guru && $currentUserGuruKode) {
+                                                    $isCurrentUserJadwal = $jadwalJam->guru->kode_guru === $currentUserGuruKode;
+                                                }
+                                                $cellBgClass = $isCurrentUserJadwal ? 'bg-success-subtle' : '';
+                                            @endphp
+                                            <td style="font-size: 13px; text-align: center; vertical-align: middle; padding: 4px 2px !important; font-weight: bold;" class="{{ $cellBgClass }}">
                                                 @php
                                                     // Check if this is a non-KBM jam (UPACARA, ISTIRAHAT, PEMBIASAAN)
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
@@ -316,7 +332,15 @@
                                                 @endphp
                                             </td>
                                             @foreach($kelasJadwal as $kelas)
-                                            <td style="font-size: 13px; text-align: center; vertical-align: middle; padding: 4px 2px !important; font-weight: bold;">
+                                            @php
+                                                $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
+                                                $isCurrentUserJadwal = false;
+                                                if ($jadwalJam && $jadwalJam->guru && $currentUserGuruKode) {
+                                                    $isCurrentUserJadwal = $jadwalJam->guru->kode_guru === $currentUserGuruKode;
+                                                }
+                                                $cellBgClass = $isCurrentUserJadwal ? 'bg-success-subtle' : '';
+                                            @endphp
+                                            <td style="font-size: 13px; text-align: center; vertical-align: middle; padding: 4px 2px !important; font-weight: bold;" class="{{ $cellBgClass }}">
                                                 @php
                                                     // Check if this is a non-KBM jam (UPACARA, ISTIRAHAT, PEMBIASAAN)
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();

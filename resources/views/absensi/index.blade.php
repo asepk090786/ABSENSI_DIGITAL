@@ -1,7 +1,57 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+
 <div class="container-fluid">
+    @if($kelasQuickAccess->isNotEmpty())
+    <!-- Menu Akses Cepat -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary-subtle">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-clock-play me-2"></i>Menu Akses Cepat - Absen Kelas Anda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        @foreach($kelasQuickAccess as $kelas)
+                        <div class="col-md-6 col-lg-4 col-xl-3">
+                            <div class="card border border-primary h-100 hover-shadow">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <i class="ti ti-school" style="font-size: 48px; color: var(--bs-primary);"></i>
+                                    </div>
+                                    <h5 class="card-title mb-2">{{ $kelas->nama_kelas }}</h5>
+                                    <p class="text-muted small mb-3">
+                                        @if($kelas->waliKelas)
+                                        <i class="ti ti-user me-1"></i>{{ $kelas->waliKelas->nama }}
+                                        @endif
+                                    </p>
+                                    <a href="{{ route('absensi.create', ['kelas_id' => $kelas->id]) }}" 
+                                       class="btn btn-primary btn-sm w-100">
+                                        <i class="ti ti-check me-1"></i>Absen Kelas Ini
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="row">
         <div class="col-12">
             <div class="card">
