@@ -364,43 +364,7 @@
             kelasSelect.addEventListener('change', function() {
                 console.log('Kelas changed to:', this.value);
                 if (this.value) {
-                    autoSelectJamBelajar();
                     loadSiswaByKelas(this.value);
-                } else {
-                    siswaContainer.style.display = 'none';
-                    siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
-                    btnSubmit.disabled = true;
-                }
-            });
-        }
-
-        if (tanggalInput) {
-            tanggalInput.addEventListener('change', function() {
-                console.log('Tanggal changed to:', this.value);
-                if (kelasSelect && kelasSelect.value) {
-                    autoSelectJamBelajar();
-                }
-            });
-        }
-
-        function autoSelectJamBelajar() {
-            if (!kelasSelect || !kelasSelect.value || !tanggalInput || !tanggalInput.value) {
-                return;
-            }
-
-            const kelasId = kelasSelect.value;
-            const tanggal = tanggalInput.value;
-            
-            // Reload page with kelas_id and tanggal parameters to refresh jam belajar options
-            const url = new URL(window.location.href);
-            url.searchParams.set('kelas_id', kelasId);
-            url.searchParams.set('tanggal', tanggal);
-            
-            // Only reload if not in quick access mode
-            if (!isQuickAccess) {
-                window.location.href = url.toString();
-            }
-        }
                 } else {
                     siswaContainer.style.display = 'none';
                     siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
