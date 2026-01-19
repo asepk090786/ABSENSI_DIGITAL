@@ -100,8 +100,10 @@ class AbsensiController extends Controller
                     ->exists();
                     
                 if (!$hasSchedule) {
-                    return redirect()->route('absensi.index')
-                        ->withErrors('Anda tidak memiliki jadwal mengajar di kelas ini pada hari tersebut.');
+                    // Don't redirect, just show warning - let user change date
+                    session()->flash('warning', 'Anda tidak memiliki jadwal mengajar di kelas ini pada hari ' . $hariQuery . ' (' . date('d/m/Y', strtotime($selectedDate)) . '). Silakan pilih tanggal lain.');
+                    // Clear selectedKelasId so form shows normally but kelas is pre-selected
+                    // Keep the kelas selected but don't auto-load siswa
                 }
             }
         }
@@ -417,7 +419,7 @@ class AbsensiController extends Controller
             $siswa = \App\Models\Siswa::where('kelas_id', $kelasId)
                 ->where('status_aktif', 1)
                 ->orderBy('nama')
-                ->select('id', 'nis', 'nama')
+                ->select('id', 'nis', 'nisn', 'nama', 'jenis_kelamin')
                 ->get();
 
             return response()->json([

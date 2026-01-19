@@ -158,6 +158,14 @@
                     </div>
                     @endif
 
+                    @if(session('warning'))
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong><i class="ti ti-alert-triangle me-2"></i>Perhatian:</strong>
+                        {{ session('warning') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    @endif
+
                     @if(auth()->user()->guru_id)
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle me-2"></i>
@@ -308,16 +316,24 @@
                                         <table class="table table-bordered table-hover table-absensi">
                                             <thead class="table-light sticky-top">
                                                 <tr>
-                                                    <th width="5%">No</th>
-                                                    <th width="15%">NIS</th>
-                                                    <th>Nama Siswa</th>
-                                                    <th width="25%">Status</th>
-                                                    <th width="25%">Keterangan</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="3%">No</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="8%">NIS</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="8%">NISN</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="20%">NAMA</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="10%">JENIS KELAMIN</th>
+                                                    <th colspan="4" class="text-center">STATUS</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="15%">KETERANGAN</th>
+                                                </tr>
+                                                <tr>
+                                                    <th class="text-center" width="5%">Hadir</th>
+                                                    <th class="text-center" width="5%">Sakit</th>
+                                                    <th class="text-center" width="5%">Izin</th>
+                                                    <th class="text-center" width="8%">Alpa/Tanpa Keterangan</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="siswaTableBody">
                                                 <tr>
-                                                    <td colspan="5" class="text-center text-muted">
+                                                    <td colspan="9" class="text-center text-muted">
                                                         <i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa
                                                     </td>
                                                 </tr>
@@ -367,7 +383,7 @@
                     loadSiswaByKelas(this.value);
                 } else {
                     siswaContainer.style.display = 'none';
-                    siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
+                    siswaTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
                     btnSubmit.disabled = true;
                 }
             });
@@ -388,36 +404,28 @@
                     if (data.siswa && data.siswa.length > 0) {
                         let html = '';
                         data.siswa.forEach((siswa, index) => {
-                            html += `
-                                <tr data-siswa-id="\${siswa.id}">
-                                    <td>\${index + 1}</td>
-                                    <td>\${siswa.nis || '-'}</td>
-                                    <td>\${siswa.nama}</td>
-                                    <td>
-                                        <div class="d-flex flex-wrap gap-2 status-options" data-siswa-id="\${siswa.id}">
-                                            <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="hadir" data-siswa-id="\${siswa.id}">
-                                                <span class="ms-1">Hadir</span>
-                                            </label>
-                                            <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="sakit" data-siswa-id="\${siswa.id}">
-                                                <span class="ms-1">Sakit</span>
-                                            </label>
-                                            <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="izin" data-siswa-id="\${siswa.id}">
-                                                <span class="ms-1">Izin</span>
-                                            </label>
-                                            <label class="form-check form-check-inline mb-0">
-                                                <input class="form-check-input status-radio" type="radio" name="absensi_siswa[\${siswa.id}]" value="alpa" data-siswa-id="\${siswa.id}">
-                                                <span class="ms-1">Alpa</span>
-                                            </label>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <input type="text" name="keterangan_siswa[\${siswa.id}]" class="form-control form-control-sm" placeholder="Keterangan (opsional)">
-                                    </td>
-                                </tr>
-                            `;
+                            html += '<tr data-siswa-id="' + siswa.id + '">' +
+                                '<td class="text-center">' + (index + 1) + '</td>' +
+                                '<td class="text-center">' + (siswa.nis || '-') + '</td>' +
+                                '<td class="text-center">' + (siswa.nisn || '-') + '</td>' +
+                                '<td>' + siswa.nama + '</td>' +
+                                '<td class="text-center">' + (siswa.jenis_kelamin || '-') + '</td>' +
+                                '<td class="text-center">' +
+                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
+                                '</td>' +
+                                '<td class="text-center">' +
+                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="sakit" data-siswa-id="' + siswa.id + '">' +
+                                '</td>' +
+                                '<td class="text-center">' +
+                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="izin" data-siswa-id="' + siswa.id + '">' +
+                                '</td>' +
+                                '<td class="text-center">' +
+                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="alpa" data-siswa-id="' + siswa.id + '">' +
+                                '</td>' +
+                                '<td>' +
+                                    '<input type="text" name="keterangan_siswa[' + siswa.id + ']" class="form-control form-control-sm" placeholder="Keterangan (opsional)">' +
+                                '</td>' +
+                            '</tr>';
                         });
                         siswaTableBody.innerHTML = html;
                         siswaContainer.style.display = 'block';
@@ -442,13 +450,13 @@
 
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
-                        siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
+                        siswaTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
                         btnSubmit.disabled = true;
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching siswa:', error);
-                    siswaTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
+                    siswaTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
                     btnSubmit.disabled = true;
                 });
         }
