@@ -71,6 +71,35 @@ class AbsensiController extends Controller
         $selectedJamBelajarId = null;
         $isQuickAccess = !empty($selectedKelasId);
         $selectedDate = $request->get('tanggal', date('Y-m-d'));
+        
+        // Validate teacher schedule access
+        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+            if ($selectedKelasId) {
+                $hariIndonesia = [
+                    'Monday' => 'Senin',
+                    'Tuesday' => 'Selasa',
+                    'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis',
+                    'Friday' => 'Jumat',
+                    'Saturday' => 'Sabtu',
+                    'Sunday' => 'Minggu'
+                ];
+                $hariEnglish = Carbon::parse($selectedDate)->format('l');
+                $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
+                
+                $hasSchedule = JadwalKbm::where('guru_id', $user->guru_id)
+                    ->where('kelas_id', $selectedKelasId)
+                    ->where('hari', $hariQuery)
+                    ->where('tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('semester_id', $semester->id)
+                    ->exists();
+                    
+                if (!$hasSchedule) {
+                    return redirect()->route('absensi.index')
+                        ->withErrors('Anda tidak memiliki jadwal mengajar di kelas ini pada hari tersebut.');
+                }
+            }
+        }
 
         $hariIndonesia = [
             'Monday' => 'Senin',
@@ -114,10 +143,7 @@ class AbsensiController extends Controller
             // Get unique classes from all schedules
             $kelasList = $allJadwal->pluck('kelas')->unique('id')->sortBy('nama_kelas')->values();
             
-            $jamBelajarList = JamBelajar::orderBy('urutan')->get();
-            $guruList = Guru::where('id', $user->guru_id)->get();
-            $jadwalList = $jadwalHariIni;
-
+            // Filter jam belajar based on teacher's schedule for selected class and date
             if ($selectedKelasId) {
                 $hariEnglish = Carbon::parse($selectedDate)->format('l');
                 $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
@@ -130,8 +156,14 @@ class AbsensiController extends Controller
                     ->where('semester_id', $semester->id)
                     ->orderBy('jam_ke')
                     ->get();
-
-                if (!$selectedJamBelajarId && $multiSlotJadwal->isNotEmpty()) {
+                    
+                // Only show jam belajar from teacher's schedule
+                $scheduledJamIds = $multiSlotJadwal->pluck('jam_belajar_id')->unique();
+                $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
+            } else {
+                $jamBelajarList = JamBelajar::orderBy('urutan')->get();
+            }
+            
                     $selectedJamBelajarId = $multiSlotJadwal->first()->jam_belajar_id;
                 }
             }
@@ -169,6 +201,37 @@ class AbsensiController extends Controller
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
             'semester_id' => 'required|exists:semester,id',
         ]);
+        
+        // Validate teacher can only input attendance for their schedule
+        $user = auth()->user();
+        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+            if ($validated['guru_id'] != $user->guru_id) {
+                return back()->withErrors(['error' => 'Anda hanya dapat menginput absensi untuk jadwal Anda sendiri.']);
+            }
+            
+            $hariIndonesia = [
+                'Monday' => 'Senin',
+                'Tuesday' => 'Selasa',
+                'Wednesday' => 'Rabu',
+                'Thursday' => 'Kamis',
+                'Friday' => 'Jumat',
+                'Saturday' => 'Sabtu',
+                'Sunday' => 'Minggu'
+            ];
+            $hariEnglish = Carbon::parse($validated['tanggal'])->format('l');
+            $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
+            
+            $hasSchedule = JadwalKbm::where('guru_id', $user->guru_id)
+                ->where('kelas_id', $validated['kelas_id'])
+                ->where('hari', $hariQuery)
+                ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
+                ->where('semester_id', $validated['semester_id'])
+                ->exists();
+                
+            if (!$hasSchedule) {
+                return back()->withErrors(['error' => 'Anda tidak memiliki jadwal mengajar di kelas ini pada hari tersebut.']);
+            }
+        }
 
         try {
             DB::beginTransaction();
