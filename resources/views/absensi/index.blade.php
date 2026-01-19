@@ -79,12 +79,22 @@
                                         <th>Status Kelas</th>
                                         <th>Tahun Ajaran</th>
                                         <th>Semester</th>
+                                        <th>Hadir</th>
+                                        <th>Sakit</th>
+                                        <th>Izin</th>
+                                        <th>Tidak Hadir</th>
                                         <th>Jumlah Siswa</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($items as $index => $item)
+                                        @php
+                                            $hadirCount = $item->absensiSiswa->where('status', 'hadir')->count();
+                                            $sakitCount = $item->absensiSiswa->where('status', 'sakit')->count();
+                                            $izinCount = $item->absensiSiswa->where('status', 'izin')->count();
+                                            $alpaCount = $item->absensiSiswa->where('status', 'alpa')->count();
+                                        @endphp
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td>{{ $item->tanggal->format('d/m/Y') }}</td>
@@ -100,6 +110,10 @@
                                             </td>
                                             <td>{{ $item->tahunAjaran->nama_tahun ?? '-' }}</td>
                                             <td>{{ $item->semester->nama_semester ?? '-' }}</td>
+                                            <td><span class="badge bg-success">{{ $hadirCount }}</span></td>
+                                            <td><span class="badge bg-warning text-dark">{{ $sakitCount }}</span></td>
+                                            <td><span class="badge bg-info text-dark">{{ $izinCount }}</span></td>
+                                            <td><span class="badge bg-danger">{{ $alpaCount }}</span></td>
                                             <td>
                                                 <span class="badge bg-info">
                                                     {{ $item->absensiSiswa->count() }} Siswa
