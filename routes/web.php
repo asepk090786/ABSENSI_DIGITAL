@@ -115,7 +115,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('jam-belajar-import', [JamBelajarController::class, 'import'])->name('jam_belajar.import');
     Route::delete('jam-belajar-destroy-all', [JamBelajarController::class, 'destroyAll'])->name('jam_belajar.destroy_all');
     
-    Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store','show']);
+    Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store','show','edit','update','destroy']);
     Route::resource('jenis_kegiatan', JenisKegiatanController::class)->middleware('auth');
 
     // Maintenance update routes

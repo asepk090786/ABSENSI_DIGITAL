@@ -200,4 +200,84 @@ class AgendaKelasController extends Controller
 
         return view('agenda_kelas.show', compact('agenda', 'kelas', 'jamBelajar', 'guru'));
     }
+
+    public function edit($id)
+    {
+        $agenda = AgendaKelas::findOrFail($id);
+        
+        // Validasi bahwa guru hanya bisa edit agenda mereka sendiri
+        $user = auth()->user();
+        $guru = $user->guru;
+        
+        if ($agenda->guru_id != $guru->id) {
+            return redirect()->route('agenda_kelas.index')
+                ->with('error', 'Anda tidak memiliki akses untuk mengedit agenda ini.');
+        }
+
+        $kelas = DB::table('kelas')->find($agenda->kelas_id);
+        $jamBelajar = DB::table('jam_belajar')->find($agenda->jam_belajar_id);
+
+        return view('agenda_kelas.show', compact('agenda', 'kelas', 'jamBelajar', 'guru'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $agenda = AgendaKelas::findOrFail($id);
+        
+        $user = auth()->user();
+        $guru = $user->guru;
+        
+        if ($agenda->guru_id != $guru->id) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk mengupdate agenda ini.');
+        }
+
+        $data = $request->validate([
+            'kelas_id' => 'required|integer',
+            'guru_id' => 'required|integer',
+            'jam_belajar_id' => 'required|integer',
+            'tanggal' => 'required|date',
+            'kegiatan' => 'nullable|string',
+            'tujuan_pembelajaran' => 'nullable|string',
+            'strategi_pembelajaran' => 'nullable|string',
+            'media_pembelajaran' => 'nullable|string',
+            'sumber_belajar' => 'nullable|string',
+            'penilaian' => 'nullable|string',
+            'catatan_tambahan' => 'nullable|string',
+        ]);
+
+        // Validasi guru hanya bisa update untuk kelas sesuai jadwal mengajarnya
+        $hasSchedule = DB::table('jadwal_kbm')
+            ->where('guru_id', $guru->id)
+            ->where('kelas_id', $data['kelas_id'])
+            ->where('jam_belajar_id', $data['jam_belajar_id'])
+            ->exists();
+
+        if (!$hasSchedule) {
+            return back()->withErrors('Anda tidak memiliki jadwal mengajar untuk kelas dan jam KBM yang dipilih.');
+        }
+
+        if ($data['guru_id'] != $guru->id) {
+            return back()->withErrors('Guru yang dipilih tidak sesuai.');
+        }
+
+        $agenda->update($data);
+
+        return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil diperbarui');
+    }
+
+    public function destroy($id)
+    {
+        $agenda = AgendaKelas::findOrFail($id);
+        
+        $user = auth()->user();
+        $guru = $user->guru;
+        
+        if ($agenda->guru_id != $guru->id) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk menghapus agenda ini.');
+        }
+
+        $agenda->delete();
+
+        return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil dihapus');
+    }
 }
