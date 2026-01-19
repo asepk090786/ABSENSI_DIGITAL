@@ -88,7 +88,7 @@
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td>{{ $item->tanggal->format('d/m/Y') }}</td>
-                                            <td>{{ $item->kelas->nama ?? '-' }}</td>
+                                            <td>{{ $item->kelas->nama_kelas ?? '-' }}</td>
                                             <td>{{ $item->guru->nama ?? '-' }}</td>
                                             <td>{{ $item->jamBelajar->jam_mulai ?? '-' }} - {{ $item->jamBelajar->jam_selesai ?? '-' }}</td>
                                             <td>
@@ -98,8 +98,8 @@
                                                     <span class="badge bg-secondary">-</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $item->tahunAjaran->tahun ?? '-' }}</td>
-                                            <td>{{ $item->semester->nama ?? '-' }}</td>
+                                            <td>{{ $item->tahunAjaran->nama_tahun ?? '-' }}</td>
+                                            <td>{{ $item->semester->nama_semester ?? '-' }}</td>
                                             <td>
                                                 <span class="badge bg-info">
                                                     {{ $item->absensiSiswa->count() }} Siswa
