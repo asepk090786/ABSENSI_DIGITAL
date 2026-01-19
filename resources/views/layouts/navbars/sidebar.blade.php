@@ -2,7 +2,7 @@
     @php
         use Illuminate\Support\Str;
         $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
-        $isGuru = Str::startsWith($roleName, 'guru');
+        $isGuru = Str::contains($roleName, 'guru');
     @endphp
     <div style="color:red; font-weight:bold;">Role Debug: {{ $roleName }}</div>
     <h5>📋 Menu Utama</h5>
