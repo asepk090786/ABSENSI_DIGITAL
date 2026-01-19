@@ -13,6 +13,24 @@
         </li>
     </ul>
 
+    @if($roleName === 'guru')
+    <h5>🎓 Pembelajaran</h5>
+    <ul class="menu-list">
+        <li>
+            <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
+                <i class="material-icons">event_note</i>
+                <span>Agenda Kelas</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('absensi.index') }}" class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+                <i class="material-icons">assignment</i>
+                <span>Absensi</span>
+            </a>
+        </li>
+    </ul>
+    @endif
+
     <h5>📚 Akademik</h5>
     <ul class="menu-list">
         <li>
@@ -27,6 +45,7 @@
                 <span>Jadwal KBM</span>
             </a>
         </li>
+        @if($roleName !== 'guru')
         <li>
             <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
                 <i class="material-icons">event_note</i>
@@ -39,6 +58,7 @@
                 <span>Absensi</span>
             </a>
         </li>
+        @endif
         <li>
             <a href="#" class="menu-item">
                 <i class="material-icons">grading</i>
