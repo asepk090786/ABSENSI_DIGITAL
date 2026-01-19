@@ -13,7 +13,8 @@
         height: 300,
         menubar: false,
         statusbar: true,
-        license_key: 'gpl'
+        license_key: 'gpl',
+        content_style: 'body { color: #212529; font-family: inherit; }'
     });
 </script>
 

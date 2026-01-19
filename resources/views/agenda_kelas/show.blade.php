@@ -13,7 +13,8 @@
         height: 250,
         menubar: false,
         statusbar: true,
-        license_key: 'gpl'
+        license_key: 'gpl',
+        content_style: 'body { color: #212529; font-family: inherit; }'
     });
 </script>
 
@@ -31,13 +32,13 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Kelas</label>
-                                <div class="alert alert-light border">{{ $kelas->nama_kelas }}</div>
+                                <div class="alert alert-light border text-dark">{{ $kelas->nama_kelas }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Guru Pengajar</label>
-                                <div class="alert alert-light border">{{ $guru->nama }}</div>
+                                <div class="alert alert-light border text-dark">{{ $guru->nama }}</div>
                             </div>
                         </div>
                     </div>
@@ -46,7 +47,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Tanggal</label>
-                                <div class="alert alert-light border">
+                                <div class="alert alert-light border text-dark">
                                     {{ \Carbon\Carbon::parse($agenda->tanggal)->locale('id')->translatedFormat('d/m/Y (l)') }}
                                 </div>
                             </div>
@@ -54,7 +55,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Jam KBM</label>
-                                <div class="alert alert-light border">
+                                <div class="alert alert-light border text-dark">
                                     {{ $jamBelajar->jam_mulai }} - {{ $jamBelajar->jam_selesai }} 
                                     <span class="badge bg-info ms-2">{{ $jamBelajar->hari }}</span>
                                 </div>
@@ -65,7 +66,7 @@
                     <div class="mb-4">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Kegiatan/Materi</label>
-                            <div class="alert alert-light border" style="min-height: 100px; word-break: break-word;">
+                            <div class="alert alert-light border text-dark" style="min-height: 100px; word-break: break-word;">
                                 {!! $agenda->kegiatan ?? '-' !!}
                             </div>
                         </div>
