@@ -47,7 +47,7 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Tanggal</label>
                                 <div class="alert alert-light border">
-                                    {{ \Carbon\Carbon::parse($agenda->tanggal)->format('d/m/Y (l)', locale: 'id') }}
+                                    {{ \Carbon\Carbon::parse($agenda->tanggal)->locale('id')->translatedFormat('d/m/Y (l)') }}
                                 </div>
                             </div>
                         </div>
