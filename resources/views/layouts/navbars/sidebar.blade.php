@@ -1,6 +1,8 @@
 <aside class="sidebar">
     @php
+        use Illuminate\Support\Str;
         $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
+        $isGuru = Str::startsWith($roleName, 'guru');
     @endphp
     <div style="color:red; font-weight:bold;">Role Debug: {{ $roleName }}</div>
     <h5>📋 Menu Utama</h5>
@@ -13,7 +15,7 @@
         </li>
     </ul>
 
-    @if($roleName === 'guru')
+    @if($isGuru)
     <h5>🎓 Pembelajaran</h5>
     <ul class="menu-list">
         <li>
@@ -45,7 +47,7 @@
                 <span>Jadwal KBM</span>
             </a>
         </li>
-        @if($roleName !== 'guru')
+        @if(!$isGuru)
         <li>
             <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
                 <i class="material-icons">event_note</i>
