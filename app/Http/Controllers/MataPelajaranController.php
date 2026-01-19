@@ -17,6 +17,62 @@ class MataPelajaranController extends Controller
         return view('mata_pelajaran.index', compact('items'));
     }
 
+    /**
+     * Daftar mata pelajaran khusus guru (berdasarkan jadwal KBM yang diajar).
+     */
+    public function guruIndex()
+    {
+        $user = auth()->user();
+        $guru = $user->guru;
+
+        if (!$guru) {
+            return redirect()->route('mata_pelajaran.index')->with('error', 'Anda tidak terdaftar sebagai guru.');
+        }
+
+        // Fetch jadwal KBM dengan relasi kelas dan mata pelajaran
+        $jadwalKbm = \App\Models\JadwalKbm::where('guru_id', $guru->id)
+            ->with(['mataPelajaran', 'kelas'])
+            ->whereNotNull('mata_pelajaran_id')
+            ->get();
+
+        // Group by mata pelajaran ID AND tingkat kelas
+        $groupedByMapelAndTingkat = [];
+        foreach ($jadwalKbm as $jadwal) {
+            $key = $jadwal->mata_pelajaran_id . '_' . $jadwal->kelas->tingkat_kelas;
+            if (!isset($groupedByMapelAndTingkat[$key])) {
+                $groupedByMapelAndTingkat[$key] = [];
+            }
+            $groupedByMapelAndTingkat[$key][] = $jadwal;
+        }
+
+        // Create items array with separate rows per tingkat
+        $items = [];
+        foreach ($groupedByMapelAndTingkat as $group) {
+            $mataPelajaran = $group[0]->mataPelajaran;
+            $kelas = collect($group)->pluck('kelas')->unique('id')->values();
+            
+            // Create a new object for this tingkat combination
+            $item = clone $mataPelajaran;
+            $item->kelas_list = $kelas;
+            $item->kelas_names = $kelas->pluck('nama_kelas')->sort()->join(', ');
+            $item->tingkat = $kelas->first()->tingkat_kelas ?? '-';
+            
+            $items[] = $item;
+        }
+
+        // Sort by mata pelajaran name, then by tingkat
+        usort($items, function($a, $b) {
+            $cmp = strcasecmp($a->nama_mapel, $b->nama_mapel);
+            if ($cmp !== 0) return $cmp;
+            return strcmp($b->tingkat, $a->tingkat); // Descending order (XII before XI)
+        });
+
+        return view('mata_pelajaran.index', [
+            'items' => $items,
+            'isGuruView' => true,
+        ]);
+    }
+
     public function create()
     {
         $jenisKegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();

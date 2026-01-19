@@ -125,10 +125,18 @@ Route::middleware(['auth'])->group(function(){
     // Data Master routes
     Route::resource('sekolah', 'App\Http\Controllers\SekolahController');
     Route::resource('kepala_sekolah', 'App\Http\Controllers\KepalaSekolahController');
+    Route::get('mata-pelajaran/guru', ['App\Http\Controllers\MataPelajaranController', 'guruIndex'])->name('mata_pelajaran.guru');
     Route::resource('mata_pelajaran', 'App\Http\Controllers\MataPelajaranController');
     Route::get('mata-pelajaran-export', ['App\Http\Controllers\MataPelajaranController', 'export'])->name('mata_pelajaran.export');
     Route::get('mata-pelajaran-template', ['App\Http\Controllers\MataPelajaranController', 'templateDownload'])->name('mata_pelajaran.template');
     Route::post('mata-pelajaran-import', ['App\Http\Controllers\MataPelajaranController', 'import'])->name('mata_pelajaran.import');
+    
+    // Rencana Pembelajaran routes - custom routes BEFORE resource to avoid conflicts
+    Route::get('rencana_pembelajaran/import-form', 'App\Http\Controllers\RencanaPembelajaranController@importForm')->name('rencana_pembelajaran.import_form');
+    Route::get('rencana_pembelajaran/template-download', 'App\Http\Controllers\RencanaPembelajaranController@templateDownload')->name('rencana_pembelajaran.template');
+    Route::post('rencana_pembelajaran/import-word', 'App\Http\Controllers\RencanaPembelajaranController@import')->name('rencana_pembelajaran.import_word');
+    Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-word', 'App\Http\Controllers\RencanaPembelajaranController@export')->name('rencana_pembelajaran.export_word');
+    Route::resource('rencana_pembelajaran', 'App\Http\Controllers\RencanaPembelajaranController');
     
     Route::resource('kegiatan', 'App\Http\Controllers\KegiatanController');
     

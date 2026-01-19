@@ -70,6 +70,10 @@
                 </h1>
                 
                 <div class="collapse navbar-collapse" id="sidebar-menu">
+                    @php
+                        $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
+                        $isGuru = \Illuminate\Support\Str::contains($roleName, 'guru');
+                    @endphp
                     <ul class="navbar-nav pt-lg-3">
                         <!-- Dashboard -->
                         <li class="nav-item">
@@ -80,7 +84,30 @@
                                 <span class="nav-link-title">Dashboard</span>
                             </a>
                         </li>
-                        
+
+                        @if($isGuru)
+                        <!-- Pembelajaran (Guru only) -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['agenda_kelas.*', 'absensi.*', 'mata_pelajaran.*']) ? 'active' : '' }}" href="#navbar-pembelajaran" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-notebook"></i>
+                                </span>
+                                <span class="nav-link-title">Pembelajaran</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}" href="{{ route('mata_pelajaran.guru') }}">
+                                    <i class="ti ti-book-2 me-2"></i>Mata Pelajaran
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
+                                    <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
+                                    <i class="ti ti-clipboard-check me-2"></i>Absensi
+                                </a>
+                            </div>
+                        </li>
+                        @endif
+
                         <!-- Akademik -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {{ request()->routeIs(['jam_belajar.*', 'agenda_kelas.*', 'absensi.*']) ? 'active' : '' }}" href="#navbar-akademik" data-bs-toggle="dropdown" role="button" aria-expanded="false">
@@ -96,12 +123,14 @@
                                 <a class="dropdown-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}" href="{{ url('/jadwal-kbm') }}">
                                     <i class="ti ti-calendar-month me-2"></i>Jadwal KBM
                                 </a>
+                                @unless($isGuru)
                                 <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
                                     <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
                                     <i class="ti ti-clipboard-check me-2"></i>Absensi
                                 </a>
+                                @endunless
                                 <a class="dropdown-item" href="#">
                                     <i class="ti ti-report-analytics me-2"></i>Nilai
                                 </a>
@@ -109,9 +138,6 @@
                         </li>
                         
                         <!-- Data Master (Only for Admin and Kepala Sekolah) -->
-                        @php
-                            $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
-                        @endphp
                         @if($roleName === 'admin' || $roleName === 'kepala_sekolah')
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#navbar-master" data-bs-toggle="dropdown" role="button" aria-expanded="false">
