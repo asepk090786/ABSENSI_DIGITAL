@@ -134,6 +134,7 @@ Route::middleware(['auth'])->group(function(){
     // Rencana Pembelajaran routes - custom routes BEFORE resource to avoid conflicts
     Route::get('rencana_pembelajaran/import-form', 'App\Http\Controllers\RencanaPembelajaranController@importForm')->name('rencana_pembelajaran.import_form');
     Route::get('rencana_pembelajaran/template-download', 'App\Http\Controllers\RencanaPembelajaranController@templateDownload')->name('rencana_pembelajaran.template');
+    Route::post('rencana_pembelajaran/bulk-delete', 'App\Http\Controllers\RencanaPembelajaranController@bulkDelete')->name('rencana_pembelajaran.bulkDelete');
     Route::post('rencana_pembelajaran/import-word', 'App\Http\Controllers\RencanaPembelajaranController@import')->name('rencana_pembelajaran.import_word');
     Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-word', 'App\Http\Controllers\RencanaPembelajaranController@export')->name('rencana_pembelajaran.export_word');
     Route::resource('rencana_pembelajaran', 'App\Http\Controllers\RencanaPembelajaranController');

@@ -17,11 +17,33 @@ class RencanaPembelajaranController extends Controller
         $guru = auth()->user()->guru;
         $mataPelajaranId = $request->query('mata_pelajaran_id');
         $tingkat = $request->query('tingkat');
+        $sort = $request->query('sort', 'terbaru');
 
-        $items = RencanaPembelajaran::where('guru_id', $guru->id)
+        $query = RencanaPembelajaran::where('guru_id', $guru->id)
             ->where('mata_pelajaran_id', $mataPelajaranId)
-            ->with(['mataPelajaran', 'kelas'])
-            ->get();
+            ->with(['mataPelajaran', 'kelas']);
+
+        // Apply sorting
+        switch ($sort) {
+            case 'judul_asc':
+                $query->orderBy('judul', 'asc');
+                break;
+            case 'judul_desc':
+                $query->orderBy('judul', 'desc');
+                break;
+            case 'status_asc':
+                $query->orderBy('status', 'asc');
+                break;
+            case 'terlama':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'terbaru':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $items = $query->get();
 
         $mataPelajaran = MataPelajaran::find($mataPelajaranId);
 
@@ -480,6 +502,49 @@ class RencanaPembelajaranController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Error saat membaca dokumen: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Bulk delete rencana pembelajaran
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = array_filter(explode(',', $request->input('ids')));
+        
+        if (empty($ids)) {
+            return back()->with('error', 'Tidak ada item yang dipilih');
+        }
+
+        $guru = auth()->user()->guru;
+        
+        // Get first rencana for redirect info
+        $firstRencana = RencanaPembelajaran::whereIn('id', $ids)
+            ->where('guru_id', $guru->id)
+            ->first();
+
+        if (!$firstRencana) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk menghapus item ini');
+        }
+
+        $mataPelajaranId = $firstRencana->mata_pelajaran_id;
+        $tingkat = $firstRencana->kelas->tingkat_kelas;
+        $deletedCount = 0;
+
+        // Delete only rencana that belong to this guru
+        $deletedCount = RencanaPembelajaran::whereIn('id', $ids)
+            ->where('guru_id', $guru->id)
+            ->delete();
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'tingkat' => $tingkat,
+            ])
+            ->with('success', $deletedCount . ' rencana pembelajaran berhasil dihapus.');
     }
 
     /**

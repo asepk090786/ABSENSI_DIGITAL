@@ -39,10 +39,34 @@
                     </div>
                 @endif
 
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <label class="input-group-text">Sortir</label>
+                            <select id="sortBy" class="form-select" onchange="location.href='?mata_pelajaran_id={{ request()->query('mata_pelajaran_id') }}&tingkat={{ request()->query('tingkat') }}&sort=' + this.value">
+                                <option value="">-- Pilih Sortir --</option>
+                                <option value="judul_asc" {{ request()->query('sort') === 'judul_asc' ? 'selected' : '' }}>Judul (A-Z)</option>
+                                <option value="judul_desc" {{ request()->query('sort') === 'judul_desc' ? 'selected' : '' }}>Judul (Z-A)</option>
+                                <option value="status_asc" {{ request()->query('sort') === 'status_asc' ? 'selected' : '' }}>Status (Draft - Published)</option>
+                                <option value="terbaru" {{ request()->query('sort') === 'terbaru' ? 'selected' : '' }}>Terbaru</option>
+                                <option value="terlama" {{ request()->query('sort') === 'terlama' ? 'selected' : '' }}>Terlama</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteBtn" style="display:none;">
+                            <i class="ti ti-trash me-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
+                                <th style="width: 30px;">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
                                 <th>No</th>
                                 <th>Judul</th>
                                 <th>Kelas</th>
@@ -54,6 +78,9 @@
                         <tbody>
                         @forelse($items as $index => $item)
                             <tr>
+                                <td>
+                                    <input type="checkbox" name="selected_ids[]" value="{{ $item->id }}" class="form-check-input item-checkbox">
+                                </td>
                                 <td>{{ $index + 1 }}</td>
                                 <td>
                                     <a href="{{ route('rencana_pembelajaran.show', $item->id) }}" class="text-decoration-none">
@@ -112,10 +139,62 @@
     @csrf
     @method('DELETE')
 </form>
+
+<form id="bulkDeleteForm" method="POST" style="display:none;">
+    @csrf
+    @method('POST')
+</form>
 @endsection
 
 @push('js')
 <script>
+// Select all checkbox functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    updateBulkDeleteButton();
+});
+
+// Individual checkbox change
+document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        updateBulkDeleteButton();
+    });
+});
+
+function updateBulkDeleteButton() {
+    const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
+    const btn = document.getElementById('bulkDeleteBtn');
+    document.getElementById('selectedCount').textContent = selectedCount;
+    
+    if (selectedCount > 0) {
+        btn.style.display = 'inline-block';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+// Bulk delete handler
+document.getElementById('bulkDeleteBtn').addEventListener('click', function() {
+    const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+    if (selectedCheckboxes.length === 0) {
+        alert('Pilih minimal 1 item untuk dihapus');
+        return;
+    }
+    
+    if (!confirm('Hapus ' + selectedCheckboxes.length + ' rencana pembelajaran?')) {
+        return;
+    }
+    
+    const ids = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+    const form = document.getElementById('bulkDeleteForm');
+    form.action = '{{ route("rencana_pembelajaran.bulkDelete") }}';
+    
+    // Add hidden inputs for IDs
+    form.innerHTML = '@csrf @method("POST")<input type="hidden" name="ids" value="' + ids.join(',') + '">';
+    form.submit();
+});
+
 function confirmDelete(id) {
     if (confirm('Hapus rencana pembelajaran ini?')) {
         const form = document.getElementById('deleteForm');
