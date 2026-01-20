@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgendaKelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AgendaKelasController extends Controller
 {
@@ -20,15 +21,22 @@ class AgendaKelasController extends Controller
                 ->withErrors('Tahun ajaran atau semester belum di-set aktif.');
         }
 
-        $items = AgendaKelas::where('tahun_ajaran_id', $tahun->id)
-            ->where('semester_id', $semester->id)
-            ->orderBy('tanggal','desc')
+        // Get guru yang login
+        $user = auth()->user();
+        $guru = $user->guru;
+
+        // Filter agenda hanya untuk guru yang login
+        $query = AgendaKelas::where('tahun_ajaran_id', $tahun->id)
+            ->where('semester_id', $semester->id);
+        
+        if ($guru) {
+            $query->where('guru_id', $guru->id);
+        }
+        
+        $items = $query->orderBy('tanggal','desc')
             ->get();
         
         // Get kelas quick access untuk guru yang login
-        $user = auth()->user();
-        $guru = $user->guru;
-        
         if ($guru) {
             $kelasQuickAccess = DB::table('jadwal_kbm')
                 ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
@@ -136,11 +144,16 @@ class AgendaKelasController extends Controller
             'sumber_belajar' => 'nullable|string',
             'penilaian' => 'nullable|string',
             'catatan_tambahan' => 'nullable|string',
+            'apply_to_all_jam' => 'nullable|boolean',
         ]);
 
         // Hapus agenda_id dari data jika ada (jika dari form show)
         $agendaId = $data['agenda_id'] ?? null;
         unset($data['agenda_id']);
+        
+        // Ambil flag apply_to_all_jam
+        $applyToAllJam = $data['apply_to_all_jam'] ?? false;
+        unset($data['apply_to_all_jam']);
 
         // Validasi guru hanya bisa input untuk kelas sesuai jadwal mengajarnya
         $hasSchedule = DB::table('jadwal_kbm')
@@ -168,15 +181,52 @@ class AgendaKelasController extends Controller
         $data['tahun_ajaran_id'] = $tahun->id;
         $data['semester_id'] = $semester->id;
 
-        if ($agendaId) {
-            // Update existing agenda
-            $agenda = AgendaKelas::findOrFail($agendaId);
-            $agenda->update($data);
-            $message = 'Agenda kelas berhasil diperbarui';
+        if ($applyToAllJam) {
+            // Cari semua jam KBM untuk kelas yang sama dengan guru yang login
+            $allJamForKelas = DB::table('jadwal_kbm')
+                ->where('guru_id', $guru->id)
+                ->where('kelas_id', $data['kelas_id'])
+                ->pluck('jam_belajar_id')
+                ->toArray();
+
+            // Buat agenda untuk semua jam KBM
+            $createdCount = 0;
+            foreach ($allJamForKelas as $jamId) {
+                $agendaData = $data;
+                $agendaData['jam_belajar_id'] = $jamId;
+
+                // Cek apakah sudah ada agenda untuk jam ini pada tanggal yang sama
+                $existingAgenda = AgendaKelas::where('kelas_id', $data['kelas_id'])
+                    ->where('guru_id', $guru->id)
+                    ->where('jam_belajar_id', $jamId)
+                    ->where('tanggal', $data['tanggal'])
+                    ->where('tahun_ajaran_id', $tahun->id)
+                    ->where('semester_id', $semester->id)
+                    ->first();
+
+                if ($existingAgenda) {
+                    // Update existing
+                    $existingAgenda->update($agendaData);
+                } else {
+                    // Create new
+                    AgendaKelas::create($agendaData);
+                }
+                $createdCount++;
+            }
+            
+            $message = "Agenda kelas berhasil disimpan untuk $createdCount jam KBM";
         } else {
-            // Create new agenda
-            AgendaKelas::create($data);
-            $message = 'Agenda kelas ditambahkan';
+            // Create single agenda
+            if ($agendaId) {
+                // Update existing agenda
+                $agenda = AgendaKelas::findOrFail($agendaId);
+                $agenda->update($data);
+                $message = 'Agenda kelas berhasil diperbarui';
+            } else {
+                // Create new agenda
+                AgendaKelas::create($data);
+                $message = 'Agenda kelas ditambahkan';
+            }
         }
 
         return redirect()->route('agenda_kelas.index')->with('success', $message);
@@ -279,5 +329,60 @@ class AgendaKelasController extends Controller
         $agenda->delete();
 
         return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil dihapus');
+    }
+
+    public function preview(Request $request)
+    {
+        $kelasId = $request->get('kelas_id');
+        $user = auth()->user();
+        $guru = $user->guru;
+        
+        $tahunAjaran = DB::table('tahun_ajaran')->where('is_active',1)->first();
+        $semester = DB::table('semester')->where('is_active',1)->first();
+
+        if (!$tahunAjaran || !$semester) {
+            abort(404, 'Tahun ajaran atau semester tidak ditemukan');
+        }
+
+        // Get all agenda untuk kelas dan guru ini
+        $agendas = AgendaKelas::with(['kelas', 'guru', 'jamBelajar'])
+            ->where('kelas_id', $kelasId)
+            ->where('guru_id', $guru->id)
+            ->where('tahun_ajaran_id', $tahunAjaran->id)
+            ->where('semester_id', $semester->id)
+            ->orderBy('tanggal', 'desc')
+            ->get();
+
+        $kelas = DB::table('kelas')->find($kelasId);
+
+        if (!$kelas) {
+            abort(404, 'Kelas tidak ditemukan');
+        }
+
+        // Get wali kelas dari tabel guru dengan wali_kelas_id dari kelas
+        $waliKelas = DB::table('guru')
+            ->where('id', $kelas->wali_kelas_id)
+            ->first();
+        
+        // Get kepala sekolah dari tabel kepala_sekolah dengan status Aktif
+        $kepalaSekolah = DB::table('kepala_sekolah')
+            ->where('status', 'Aktif')
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        // Jika tidak ada kepala sekolah aktif, ambil yang terbaru
+        if (!$kepalaSekolah) {
+            $kepalaSekolah = DB::table('kepala_sekolah')
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+
+        // Get data sekolah
+        $sekolah = DB::table('sekolah')->first();
+
+        $pdf = \PDF::loadView('agenda_kelas.preview_pdf', compact('agendas', 'kelas', 'guru', 'tahunAjaran', 'semester', 'waliKelas', 'kepalaSekolah', 'sekolah'));
+        $pdf->setPaper('a4', 'portrait');
+        
+        return $pdf->stream('Preview-Agenda-' . str_replace(' ', '-', $kelas->nama_kelas) . '.pdf');
     }
 }

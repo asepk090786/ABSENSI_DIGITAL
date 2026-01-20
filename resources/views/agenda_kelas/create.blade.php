@@ -77,6 +77,21 @@
                         @error('jam_belajar_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
 
+                    <div class="mb-3" id="multipleJamInfo" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="ti ti-info-circle me-2"></i>
+                            <strong>Info:</strong> Kelas ini memiliki lebih dari 1 jam KBM dengan guru Anda. 
+                            <span id="jamCountInfo"></span>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="applyToAllJam" name="apply_to_all_jam" value="1">
+                            <label class="form-check-label" for="applyToAllJam">
+                                <strong>Terapkan agenda ini ke SEMUA jam KBM kelas yang sama pada hari yang sama</strong>
+                                <br><small class="text-muted">Jika dicentang, agenda akan otomatis disalin ke semua jam KBM lainnya untuk kelas ini pada tanggal yang dipilih</small>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Tanggal</label>
                         <input type="date" name="tanggal" class="form-control @error('tanggal') is-invalid @enderror" 
@@ -103,4 +118,53 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const kelasSelect = document.getElementById('kelasSelect');
+    const jamSelect = document.getElementById('jamSelect');
+    const multipleJamInfo = document.getElementById('multipleJamInfo');
+    const jamCountInfo = document.getElementById('jamCountInfo');
+    const applyToAllJam = document.getElementById('applyToAllJam');
+    
+    // Data jadwal dari server (kelas_id -> [jam_belajar_id, jam_belajar_id, ...])
+    const jadwalMap = {
+        @foreach($kelas as $k)
+            @php
+                $jamForKelas = \Illuminate\Support\Facades\DB::table('jadwal_kbm')
+                    ->where('guru_id', auth()->user()->guru->id)
+                    ->where('kelas_id', $k->id)
+                    ->pluck('jam_belajar_id')
+                    ->toArray();
+            @endphp
+            '{{ $k->id }}': {!! json_encode($jamForKelas) !!},
+        @endforeach
+    };
+
+    function checkMultipleJam() {
+        const selectedKelasId = kelasSelect.value;
+        
+        if (!selectedKelasId) {
+            multipleJamInfo.style.display = 'none';
+            applyToAllJam.checked = false;
+            return;
+        }
+        
+        const jamList = jadwalMap[selectedKelasId] || [];
+        
+        if (jamList.length > 1) {
+            multipleJamInfo.style.display = 'block';
+            jamCountInfo.textContent = `Kelas ini memiliki ${jamList.length} jam KBM.`;
+        } else {
+            multipleJamInfo.style.display = 'none';
+            applyToAllJam.checked = false;
+        }
+    }
+    
+    kelasSelect.addEventListener('change', checkMultipleJam);
+    
+    // Check on page load
+    checkMultipleJam();
+});
+</script>
 @endsection
