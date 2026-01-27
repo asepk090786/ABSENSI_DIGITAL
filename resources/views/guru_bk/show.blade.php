@@ -40,7 +40,7 @@
                                 <tr>
                                     <th>Status</th>
                                     <td>
-                                        @if($gurubk->status == 'Aktif')
+                                        @if($gurubk->is_active)
                                             <span class="badge bg-success">Aktif</span>
                                         @else
                                             <span class="badge bg-secondary">Tidak Aktif</span>

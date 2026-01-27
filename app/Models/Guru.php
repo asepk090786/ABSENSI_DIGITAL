@@ -17,6 +17,7 @@ class Guru extends Model implements AuthenticatableContract
 
 
     protected $fillable = [
+        'guru_id',
         'nama',
         'nip',
         'kode_guru',
@@ -28,7 +29,13 @@ class Guru extends Model implements AuthenticatableContract
         'jenis_kelamin',
         'is_active',
         'email',
+        'foto',
     ];
+
+    public function guru()
+    {
+        return $this->belongsTo(Guru::class, 'guru_id');
+    }
 
     public function kepalaSekolah()
     {

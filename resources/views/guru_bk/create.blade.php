@@ -15,6 +15,28 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label class="form-label">Pilih Guru (Opsional)</label>
+                                    <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
+                                        <option value="">-- Pilih Guru atau Isi Manual --</option>
+                                        @forelse($guru as $g)
+                                            <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
+                                                {{ $g->nama }} @if($g->nip)({{ $g->nip }})@endif
+                                            </option>
+                                        @empty
+                                            <option value="" disabled>Semua guru sudah menjadi Guru BK</option>
+                                        @endforelse
+                                    </select>
+                                    @error('guru_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted d-block mt-1">Jika memilih guru, data nama, NIP akan diambil dari data guru tersebut</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label class="form-label">Nama <span class="text-danger">*</span></label>
                                     <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama') }}" required>
                                     @error('nama')
@@ -102,4 +124,24 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const guruSelect = document.querySelector('select[name="guru_id"]');
+    const guruData = {!! json_encode($guru->mapWithKeys(function($item) {
+        return [$item->id => ['nama' => $item->nama, 'nip' => $item->nip]];
+    })->all()) !!};
+
+    if (guruSelect) {
+        guruSelect.addEventListener('change', function() {
+            const guruId = this.value;
+            if (guruId && guruData[guruId]) {
+                const data = guruData[guruId];
+                document.querySelector('input[name="nama"]').value = data.nama;
+                document.querySelector('input[name="nip"]').value = data.nip || '';
+            }
+        });
+    }
+});
+</script>
 @endsection

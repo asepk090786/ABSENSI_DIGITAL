@@ -352,7 +352,7 @@
                     <div class="card-body py-2">
                         <div class="d-flex align-items-center justify-content-center">
                             <i class="ti ti-info-circle me-2" style="color: #667eea;"></i>
-                            <small><strong>Demo:</strong> admin@example.com / password</small>
+                            <small><strong>#</strong> ### / ###</small>
                         </div>
                     </div>
                 </div>

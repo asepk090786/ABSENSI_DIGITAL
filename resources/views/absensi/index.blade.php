@@ -25,11 +25,69 @@
                 <div class="card-body">
                     <div class="row g-3">
                         @foreach($kelasQuickAccess as $kelas)
+                        @php
+                            // Ekstrak tingkat kelas dari nama kelas (ambil 2 digit pertama)
+                            $namaKelas = $kelas->nama_kelas;
+                            $tingkatKelas = (int) substr($namaKelas, 0, 2);
+                            
+                            // Tentukan warna dan class berdasarkan tingkat kelas
+                            if ($tingkatKelas == 10) {
+                                $borderColor = '#3b82f6';
+                                $bgColor = 'rgba(59, 130, 246, 0.05)';
+                                $iconColor = '#3b82f6';
+                                $btnColor = '#3b82f6';
+                                $btnHover = '#2563eb';
+                                $badgeColor = '#3b82f6';
+                                $badgeBg = 'rgba(59, 130, 246, 0.1)';
+                                $tingkatLabel = 'Kelas X';
+                            } elseif ($tingkatKelas == 11) {
+                                $borderColor = '#10b981';
+                                $bgColor = 'rgba(16, 185, 129, 0.05)';
+                                $iconColor = '#10b981';
+                                $btnColor = '#10b981';
+                                $btnHover = '#059669';
+                                $badgeColor = '#10b981';
+                                $badgeBg = 'rgba(16, 185, 129, 0.1)';
+                                $tingkatLabel = 'Kelas XI';
+                            } elseif ($tingkatKelas == 12) {
+                                $borderColor = '#f59e0b';
+                                $bgColor = 'rgba(245, 158, 11, 0.05)';
+                                $iconColor = '#f59e0b';
+                                $btnColor = '#f59e0b';
+                                $btnHover = '#d97706';
+                                $badgeColor = '#f59e0b';
+                                $badgeBg = 'rgba(245, 158, 11, 0.1)';
+                                $tingkatLabel = 'Kelas XII';
+                            } else {
+                                $borderColor = '#8b5cf6';
+                                $bgColor = 'rgba(139, 92, 246, 0.05)';
+                                $iconColor = '#8b5cf6';
+                                $btnColor = '#8b5cf6';
+                                $btnHover = '#7c3aed';
+                                $badgeColor = '#8b5cf6';
+                                $badgeBg = 'rgba(139, 92, 246, 0.1)';
+                                $tingkatLabel = 'Kelas Lainnya';
+                            }
+                        @endphp
                         <div class="col-md-6 col-lg-4 col-xl-3">
-                            <div class="card border border-primary h-100 hover-shadow">
+                            <div class="card border-2 h-100 hover-shadow" 
+                                 style="border-color: {{ $borderColor }} !important; 
+                                        background: linear-gradient(135deg, {{ $bgColor }} 0%, {{ $bgColor }} 100%);
+                                        transition: all 0.3s ease;">
                                 <div class="card-body text-center">
+                                    <div class="card-class-badge" 
+                                         style="background-color: {{ $badgeBg }}; 
+                                                color: {{ $badgeColor }};
+                                                display: inline-block;
+                                                padding: 0.25rem 0.75rem;
+                                                border-radius: 0.5rem;
+                                                font-size: 0.85rem;
+                                                font-weight: 600;
+                                                margin-bottom: 0.5rem;">
+                                        {{ $tingkatLabel }}
+                                    </div>
                                     <div class="mb-3">
-                                        <i class="ti ti-school" style="font-size: 48px; color: var(--bs-primary);"></i>
+                                        <i class="ti ti-school" style="font-size: 48px; color: {{ $iconColor }} !important;"></i>
                                     </div>
                                     <h5 class="card-title mb-2">{{ $kelas->nama_kelas }}</h5>
                                     <p class="text-muted small mb-3">
@@ -38,7 +96,13 @@
                                         @endif
                                     </p>
                                     <a href="{{ route('absensi.create', ['kelas_id' => $kelas->id]) }}" 
-                                       class="btn btn-primary btn-sm w-100">
+                                       class="btn btn-sm w-100" 
+                                       style="background-color: {{ $btnColor }} !important; 
+                                              border-color: {{ $btnColor }} !important; 
+                                              color: white !important;
+                                              transition: all 0.3s ease;"
+                                       onmouseover="this.style.backgroundColor='{{ $btnHover }}'; this.style.borderColor='{{ $btnHover }}';"
+                                       onmouseout="this.style.backgroundColor='{{ $btnColor }}'; this.style.borderColor='{{ $btnColor }}';">
                                         <i class="ti ti-check me-1"></i>Absen Kelas Ini
                                     </a>
                                 </div>

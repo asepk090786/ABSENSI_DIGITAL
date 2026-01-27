@@ -32,6 +32,7 @@
                                         <th>Foto</th>
                                         <th>Nama</th>
                                         <th>NIP</th>
+                                        <th>Guru Terpilih</th>
                                         <th>Email</th>
                                         <th>Telepon</th>
                                         <th>Status</th>
@@ -53,10 +54,25 @@
                                             </td>
                                             <td>{{ $item->nama }}</td>
                                             <td>{{ $item->nip ?? '-' }}</td>
+                                            <td>
+                                                @if($item->guru_id && $item->guru)
+                                                    <span class="badge bg-info">
+                                                        <i class="ti ti-link"></i> {{ $item->guru->nama }}
+                                                    </span>
+                                                @elseif($item->guru_id)
+                                                    <span class="badge bg-warning">
+                                                        <i class="ti ti-alert-triangle"></i> Guru (ID: {{ $item->guru_id }}) - Tidak Ditemukan
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-light text-dark border border-secondary">
+                                                        <i class="ti ti-minus"></i> Input Manual
+                                                    </span>
+                                                @endif
+                                            </td>
                                             <td>{{ $item->email ?? '-' }}</td>
                                             <td>{{ $item->telepon ?? '-' }}</td>
                                             <td>
-                                                @if($item->status == 'Aktif')
+                                                @if($item->is_active)
                                                     <span class="badge bg-success">Aktif</span>
                                                 @else
                                                     <span class="badge bg-secondary">Tidak Aktif</span>
