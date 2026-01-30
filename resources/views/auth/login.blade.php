@@ -36,7 +36,7 @@
         }
         
         .login-left-section {
-            flex: 1;
+            flex: 3;
             background: url('{{ asset('images/bg.jpeg') }}') center/cover no-repeat;
             display: flex;
             align-items: center;
@@ -152,7 +152,7 @@
         }
 
         .school-logo-login {
-            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
             display: flex;
             justify-content: center;
         }
@@ -352,14 +352,14 @@
             
             @if($sekolah)
                 <div class="school-info">
-                    <div class="school-name">{{ $sekolah->nama_sekolah }}</div>
-                    @if($sekolah->alamat)
-                        <div class="school-address">{{ $sekolah->alamat }}</div>
-                    @endif
                     @if($sekolah->logo)
                         <div class="school-logo-login">
                             <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah">
                         </div>
+                    @endif
+                    <div class="school-name">{{ $sekolah->nama_sekolah }}</div>
+                    @if($sekolah->alamat)
+                        <div class="school-address">{{ $sekolah->alamat }}</div>
                     @endif
                 </div>
             @endif
