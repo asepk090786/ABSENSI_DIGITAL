@@ -14,34 +14,92 @@
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
         
         .page { 
             min-height: 100vh; 
             position: relative;
+            display: flex;
+            margin: 0;
+            padding: 0;
         }
         
-        .page::before {
+        .login-split-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .login-left-section {
+            flex: 1;
+            background: url('{{ asset('images/bg.jpeg') }}') center/cover no-repeat;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .login-left-section::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(255, 135, 135, 0.3), transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(135, 206, 235, 0.3), transparent 50%);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.6) 0%, rgba(118, 75, 162, 0.6) 100%);
+            pointer-events: none;
+        }
+        
+        .login-illustration {
+            max-width: 500px;
+            width: 100%;
+            z-index: 1;
+            animation: fadeInLeft 0.8s ease-out;
+        }
+        
+        .login-illustration img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2));
+        }
+        
+        .login-right-section {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .login-right-section::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08), transparent 70%);
             pointer-events: none;
         }
         
         .form-footer { margin-top: 1.5rem; }
         
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: #ffffff;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            border: none;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+            max-width: 420px;
+            width: 100%;
+            z-index: 1;
         }
         
         .logo-container {
@@ -75,25 +133,39 @@
         
         .school-info {
             text-align: center;
-            margin-bottom: 3rem;
-            animation: slideDown 0.6s ease-out 0.1s backwards;
+            margin-bottom: 1.5rem;
         }
         
         .school-name {
-            color: rgba(255, 255, 255, 0.95);
+            color: #ffffff;
             font-weight: 700;
-            font-size: 1.35rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            margin-bottom: 0.5rem;
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
             letter-spacing: 0.5px;
         }
         
         .school-address {
-            color: rgba(255, 255, 255, 0.85);
+            color: rgba(255, 255, 255, 0.9);
             font-weight: 400;
-            font-size: 0.95rem;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-            line-height: 1.5;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .school-logo-login {
+            margin-top: 0.75rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .school-logo-login img {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            background: #ffffff;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #ffffff;
         }
         
         @keyframes slideDown {
@@ -169,21 +241,11 @@
         
         .logos-container {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: nowrap;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1.5rem;
-            border-radius: 1rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
         
         .school-logo-wrapper {
@@ -245,29 +307,59 @@
                 transform: translateY(0);
             }
         }
+        
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .login-split-container {
+                flex-direction: column;
+            }
+            .login-left-section {
+                display: none;
+            }
+            .login-right-section {
+                flex: 1;
+            }
+        }
     </style>
 </head>
-<body class="d-flex flex-column">
+<body>
     @php
         use Illuminate\Support\Facades\Storage;
     @endphp
-    <div class="page page-center">
-        <div class="container container-tight py-4">
-            <!-- Logo Section with School Logo and SIMADIS Logo -->
+    <div class="page">
+        <div class="login-split-container">
+            <!-- Left Section - Illustration -->
+            <div class="login-left-section">
+                
+            </div>
+            
+            <!-- Right Section - Login Form -->
+            <div class="login-right-section">
+                <div style="max-width: 420px; width: 100%; z-index: 1;">
             @php
                 $sekolah = \App\Models\Sekolah::first();
             @endphp
             
-            <div class="logos-container">
-                <div class="simadis-logo-wrapper logo-display">
-                    <img src="{{ asset('images/logo_depan.png') }}" alt="SIMADIS Logo">
-                </div>
-            </div>
             @if($sekolah)
                 <div class="school-info">
                     <div class="school-name">{{ $sekolah->nama_sekolah }}</div>
                     @if($sekolah->alamat)
                         <div class="school-address">{{ $sekolah->alamat }}</div>
+                    @endif
+                    @if($sekolah->logo)
+                        <div class="school-logo-login">
+                            <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah">
+                        </div>
                     @endif
                 </div>
             @endif
@@ -277,8 +369,7 @@
             <!-- Login Card -->
             <div class="card card-md login-card">
                 <div class="card-body">
-                    <h2 class="h2 text-center mb-1">Masuk ke Akun Anda</h2>
-                    <p class="text-center text-muted mb-4">SIMADIS - Sistem Manajemen Absensi Digital</p>
+                    <h2 class="h2 text-center mb-4">Masuk ke Akun Anda</h2>
                     
                     <form method="POST" action="{{ route('login') }}" autocomplete="off">
                         @csrf
@@ -354,7 +445,9 @@
             
             <!-- Footer -->
             <div class="text-center mt-4">
-                            <small class="footer-text">&copy; {{ date('Y') }} SIMADIS - Sistem Manajemen Absensi Digital</small>
+                <small class="footer-text" style="color: rgba(255,255,255,0.9);">&copy; {{ date('Y') }} SIMADIS - Sistem Manajemen Absensi Digital</small>
+            </div>
+                </div>
             </div>
         </div>
     </div>
