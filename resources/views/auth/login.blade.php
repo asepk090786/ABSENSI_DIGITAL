@@ -67,9 +67,9 @@
         
         .logo-display img {
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-            width: auto;
-            height: 100px;
-            max-width: 300px;
+            width: 100%;
+            height: auto;
+            max-width: 360px;
             object-fit: contain;
         }
         
@@ -206,6 +206,12 @@
         .simadis-logo-wrapper {
             animation: slideUp 0.6s ease-out;
         }
+
+        .simadis-logo-wrapper img {
+            width: 100%;
+            height: auto;
+            max-width: 360px;
+        }
         
         @keyframes slideUp {
             from {
@@ -250,24 +256,12 @@
             <!-- Logo Section with School Logo and SIMADIS Logo -->
             @php
                 $sekolah = \App\Models\Sekolah::first();
-                $logoUrl = null;
-                if($sekolah && $sekolah->logo){
-                    if (Storage::disk('public')->exists($sekolah->logo)) {
-                        $logoUrl = asset('storage/' . $sekolah->logo);
-                    }
-                }
             @endphp
             
             <div class="logos-container">
                 <div class="simadis-logo-wrapper logo-display">
-                    <img src="{{ asset('images/simadis-logo.svg') }}" alt="SIMADIS Logo">
+                    <img src="{{ asset('images/logo_depan.png') }}" alt="SIMADIS Logo">
                 </div>
-                
-                @if($logoUrl)
-                    <div class="school-logo-wrapper">
-                        <img src="{{ $logoUrl }}" alt="Logo Sekolah">
-                    </div>
-                @endif
             </div>
             @if($sekolah)
                 <div class="school-info">

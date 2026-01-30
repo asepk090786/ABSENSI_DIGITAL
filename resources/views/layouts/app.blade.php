@@ -53,7 +53,7 @@
         @auth
         @php
             // Gunakan ikon default agar konsisten di navbar
-            $defaultLogo = asset('images/simadis-icon.svg');
+            $defaultLogo = asset('images/icon_simadis.png');
         @endphp
         <!-- Sidebar -->
         <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
