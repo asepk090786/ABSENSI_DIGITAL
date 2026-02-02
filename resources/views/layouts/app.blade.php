@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     
+    <!-- Mobile Responsive CSS -->
+    <link rel="stylesheet" href="{{ asset('css/responsive.css') }}">
+    
     <style>
         .navbar-brand-image { height: 2rem; }
         
@@ -44,6 +47,266 @@
         .navbar-vertical .nav-link.active {
             background: rgba(255,255,255,0.15) !important;
             color: #fff !important;
+        }
+        
+        /* ===== RESPONSIVE DESIGN FOR MOBILE ===== */
+        
+        /* Mobile-first responsive adjustments */
+        @media (max-width: 768px) {
+            /* Container adjustments */
+            .container-xl {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            
+            /* Page body adjustments */
+            .page-body {
+                padding: 0.5rem !important;
+            }
+            
+            /* Navbar brand adjustments */
+            .navbar-brand {
+                font-size: 16px !important;
+            }
+            
+            .navbar-brand img {
+                height: 36px !important;
+                width: 36px !important;
+            }
+            
+            .navbar-brand span {
+                font-size: 16px !important;
+            }
+            
+            /* Card adjustments for mobile */
+            .card {
+                margin-bottom: 1rem !important;
+            }
+            
+            .card-header {
+                padding: 0.75rem !important;
+            }
+            
+            .card-body {
+                padding: 0.75rem !important;
+            }
+            
+            /* Table responsive */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                font-size: 0.875rem !important;
+            }
+            
+            table th,
+            table td {
+                padding: 0.5rem !important;
+                white-space: nowrap;
+            }
+            
+            /* Button adjustments */
+            .btn {
+                padding: 0.5rem 0.75rem !important;
+                font-size: 0.875rem !important;
+            }
+            
+            .btn-sm {
+                padding: 0.25rem 0.5rem !important;
+                font-size: 0.75rem !important;
+            }
+            
+            /* Form adjustments */
+            .form-control,
+            .form-select {
+                font-size: 14px !important;
+            }
+            
+            .form-label {
+                font-size: 0.875rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            
+            /* Navbar collapse improvements */
+            .navbar-collapse {
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+            
+            /* Dropdown menu adjustments */
+            .dropdown-menu {
+                font-size: 0.875rem !important;
+            }
+            
+            .dropdown-item {
+                padding: 0.5rem 1rem !important;
+            }
+            
+            /* Header adjustments */
+            .page-header {
+                padding: 0.75rem 0 !important;
+            }
+            
+            .page-title {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Footer adjustments */
+            .footer {
+                font-size: 0.75rem !important;
+                padding: 0.75rem 0 !important;
+            }
+            
+            /* Avatar adjustments */
+            .avatar {
+                width: 2rem !important;
+                height: 2rem !important;
+            }
+            
+            .avatar-md {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
+            }
+            
+            /* Hide some elements on mobile */
+            .d-none.d-sm-block {
+                display: none !important;
+            }
+            
+            /* Navbar vertical on mobile */
+            .navbar-vertical {
+                position: fixed !important;
+                top: 0;
+                left: 0;
+                width: 280px !important;
+                height: 100%;
+                z-index: 1030;
+                transform: translateX(-280px);
+                transition: transform 0.3s ease-in-out;
+            }
+            
+            .navbar-vertical.show {
+                transform: translateX(0);
+            }
+            
+            /* Page wrapper adjustment when sidebar is open */
+            .page {
+                margin-left: 0 !important;
+            }
+            
+            /* Improve touch targets */
+            .nav-link,
+            .dropdown-toggle,
+            a,
+            button {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+        }
+        
+        /* Small mobile devices */
+        @media (max-width: 576px) {
+            /* Even smaller adjustments */
+            .container-xl {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            
+            .card-body {
+                padding: 0.5rem !important;
+            }
+            
+            .page-title {
+                font-size: 1.1rem !important;
+            }
+            
+            /* Stack columns on very small screens */
+            .row > [class*='col-'] {
+                margin-bottom: 0.5rem;
+            }
+            
+            /* Simplify table layout */
+            table {
+                font-size: 0.75rem !important;
+            }
+            
+            table th,
+            table td {
+                padding: 0.35rem !important;
+            }
+            
+            /* Button group stacking */
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+                border-radius: 0.25rem !important;
+                margin-bottom: 0.25rem;
+            }
+        }
+        
+        /* Landscape mode adjustments */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .navbar-vertical {
+                width: 240px !important;
+                transform: translateX(-240px);
+            }
+            
+            .navbar-collapse {
+                max-height: 60vh;
+            }
+        }
+        
+        /* Improve scrolling on mobile */
+        @media (max-width: 768px) {
+            body {
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .table-responsive {
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Make modals mobile-friendly */
+            .modal-dialog {
+                margin: 0.5rem !important;
+                max-width: calc(100% - 1rem) !important;
+            }
+            
+            .modal-body {
+                padding: 1rem !important;
+            }
+            
+            /* Breadcrumb adjustments */
+            .breadcrumb {
+                font-size: 0.875rem !important;
+                flex-wrap: wrap;
+            }
+            
+            /* Alert adjustments */
+            .alert {
+                font-size: 0.875rem !important;
+                padding: 0.75rem !important;
+            }
+            
+            /* Badge adjustments */
+            .badge {
+                font-size: 0.75rem !important;
+            }
+            
+            /* Pagination adjustments */
+            .pagination {
+                font-size: 0.875rem !important;
+            }
+            
+            .page-link {
+                padding: 0.375rem 0.75rem !important;
+            }
         }
     </style>
     @stack('css')
