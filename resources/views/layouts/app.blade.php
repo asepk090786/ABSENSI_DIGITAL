@@ -448,6 +448,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}" href="{{ route('kegiatan.index') }}">
                                     <i class="ti ti-activity me-2"></i>Kegiatan
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}" href="{{ route('ekstrakurikuler.index') }}">
+                                    <i class="ti ti-flag-3 me-2"></i>Ekstrakurikuler
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}" href="{{ route('asc_timetable.index') }}">
                                     <i class="ti ti-table me-2"></i>ASC Time Table
                                 </a>

@@ -129,6 +129,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('ekstrakurikuler.index') }}" class="menu-item {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}">
+                    <i class="material-icons">sports_soccer</i>
+                    <span>Ekstrakurikuler</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" class="menu-item">
                     <i class="material-icons">menu_book</i>
                     <span>Mata Pelajaran</span>

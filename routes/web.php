@@ -13,6 +13,7 @@ use App\Http\Controllers\JadwalKbmController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\JenisKegiatanController;
+use App\Http\Controllers\EkstrakurikulerController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -37,6 +38,8 @@ Route::middleware(['auth'])->group(function(){
     Route::get('siswa-export', ['App\Http\Controllers\SiswaController', 'export'])->name('siswa.export');
     Route::get('siswa-template', ['App\Http\Controllers\SiswaController', 'templateDownload'])->name('siswa.template');
     Route::post('siswa-import', ['App\Http\Controllers\SiswaController', 'import'])->name('siswa.import');
+
+    Route::resource('ekstrakurikuler', EkstrakurikulerController::class)->only(['index', 'create', 'store']);
 
     Route::resource('kelas','App\Http\Controllers\KelasController');
     Route::get('kelas-export', ['App\Http\Controllers\KelasController', 'export'])->name('kelas.export');
