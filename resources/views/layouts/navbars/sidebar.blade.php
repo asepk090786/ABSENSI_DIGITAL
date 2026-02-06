@@ -135,9 +135,15 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="menu-item">
+                <a href="{{ route('mata_pelajaran.index') }}" class="menu-item {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'active' : '' }}">
                     <i class="material-icons">menu_book</i>
                     <span>Mata Pelajaran</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('tugas_guru.index') }}" class="menu-item {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}">
+                    <i class="material-icons">assignment_ind</i>
+                    <span>Tugas Guru</span>
                 </a>
             </li>
             <li>

@@ -21,13 +21,13 @@ class KelasController extends Controller
 {
     public function index()
     {
-        $items = Kelas::with(['waliKelas'])->withCount('siswa')->orderBy('nama_kelas')->get();
+        $items = Kelas::with(['waliKelas.user'])->withCount('siswa')->orderBy('nama_kelas')->get();
         return view('kelas.index', compact('items'));
     }
 
     public function create()
     {
-        $guruList = Guru::orderBy('nama')->get();
+        $guruList = Guru::with('user')->orderBy('nama')->get();
         $sekolah = \App\Models\Sekolah::first();
         return view('kelas.create', compact('guruList', 'sekolah'));
     }
@@ -41,7 +41,12 @@ class KelasController extends Controller
             'wali_kelas_id' => 'nullable|exists:guru,id',
         ]);
 
-        Kelas::create($validated);
+        $kelas = Kelas::create($validated);
+
+        // Add Wali Kelas role to the assigned guru
+        if (!empty($validated['wali_kelas_id'])) {
+            $this->assignWaliKelasRole($validated['wali_kelas_id']);
+        }
 
         return redirect()->route('kelas.index')->with('success', 'Kelas berhasil ditambahkan.');
     }
@@ -49,7 +54,7 @@ class KelasController extends Controller
     public function edit(Kelas $kela)
     {
         $kela->load(['waliKelas', 'siswa.user']);
-        $guruList = Guru::orderBy('nama')->get();
+        $guruList = Guru::with('user')->orderBy('nama')->get();
         $sekolah = \App\Models\Sekolah::first();
         
         // Ambil siswa yang belum punya kelas
@@ -75,7 +80,23 @@ class KelasController extends Controller
             'wali_kelas_id' => 'nullable|exists:guru,id',
         ]);
 
+        $oldWaliKelasId = $kela->wali_kelas_id;
+        $newWaliKelasId = $validated['wali_kelas_id'] ?? null;
+
         $kela->update($validated);
+
+        // Handle wali kelas role changes
+        if ($oldWaliKelasId != $newWaliKelasId) {
+            // Remove role from old wali kelas if not wali kelas in other classes
+            if ($oldWaliKelasId) {
+                $this->removeWaliKelasRoleIfNotUsed($oldWaliKelasId);
+            }
+            
+            // Add role to new wali kelas
+            if ($newWaliKelasId) {
+                $this->assignWaliKelasRole($newWaliKelasId);
+            }
+        }
 
         return redirect()->route('kelas.index')->with('success', 'Kelas berhasil diperbarui.');
     }
@@ -86,7 +107,14 @@ class KelasController extends Controller
             return redirect()->route('kelas.index')->with('error', 'Tidak dapat menghapus karena masih ada siswa di kelas ini.');
         }
 
+        $waliKelasId = $kela->wali_kelas_id;
+        
         $kela->delete();
+
+        // Remove wali kelas role if guru is not wali kelas in other classes
+        if ($waliKelasId) {
+            $this->removeWaliKelasRoleIfNotUsed($waliKelasId);
+        }
 
         return redirect()->route('kelas.index')->with('success', 'Kelas berhasil dihapus.');
     }
@@ -310,6 +338,43 @@ class KelasController extends Controller
             : "{$activated} akun siswa berhasil diaktifkan.";
         
         return redirect()->route('kelas.edit', $kela->id)->with('success', $message);
+    }
+
+    /**
+     * Assign Wali Kelas role to guru via pivot table
+     */
+    private function assignWaliKelasRole($guruId)
+    {
+        $guru = Guru::find($guruId);
+        if (!$guru || !$guru->user) {
+            return;
+        }
+
+        $waliKelasRole = Role::where('role_name', 'Wali Kelas')->first();
+        if ($waliKelasRole) {
+            $guru->user->roles()->syncWithoutDetaching([$waliKelasRole->id]);
+        }
+    }
+
+    /**
+     * Remove Wali Kelas role from guru if not used in other classes
+     */
+    private function removeWaliKelasRoleIfNotUsed($guruId)
+    {
+        $guru = Guru::find($guruId);
+        if (!$guru || !$guru->user) {
+            return;
+        }
+
+        // Check if guru is still wali kelas in any other class
+        $isStillWaliKelas = Kelas::where('wali_kelas_id', $guruId)->exists();
+        
+        if (!$isStillWaliKelas) {
+            $waliKelasRole = Role::where('role_name', 'Wali Kelas')->first();
+            if ($waliKelasRole) {
+                $guru->user->roles()->detach($waliKelasRole->id);
+            }
+        }
     }
 }
 

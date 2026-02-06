@@ -81,6 +81,10 @@
                                     <i class="ti ti-calendar text-danger me-2"></i>
                                     <strong>Jadwal KBM</strong> - Jadwal mengajar lengkap
                                 </li>
+                                <li class="mb-2">
+                                    <i class="ti ti-clipboard-check text-purple me-2"></i>
+                                    <strong>Tugas Guru</strong> - Otomatis dibuat dari jadwal
+                                </li>
                             </ul>
                         </div>
                         
@@ -107,6 +111,7 @@
                                                 <li>Anda dapat memilih untuk: <strong>Lewati</strong>, <strong>Replace Data Lama</strong>, atau <strong>Tambah Sebagai Baru</strong></li>
                                                 <li>Nama guru yang sama tidak boleh memiliki kode guru yang berbeda (akan ditandai sebagai duplikat)</li>
                                                 <li>Data mata pelajaran, kelas, dan jam belajar yang sudah ada tidak akan ditimpa</li>
+                                                <li><strong>Tugas Guru</strong> akan otomatis dibuat/diperbarui berdasarkan jadwal yang diimport</li>
                                             </ul>
                                         </div>
                                     </div>

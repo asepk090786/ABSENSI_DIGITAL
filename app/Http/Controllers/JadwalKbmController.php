@@ -10,6 +10,7 @@ use App\Models\MataPelajaran;
 use App\Models\JamBelajar;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
+use App\Models\TugasGuru;
 use Illuminate\Support\Facades\DB;
 
 class JadwalKbmController extends Controller
@@ -32,8 +33,23 @@ class JadwalKbmController extends Controller
     public function createByKelas($kelasId)
     {
         $kelas = Kelas::with('waliKelas')->findOrFail($kelasId);
-        $guruList = Guru::orderBy('nama')->get();
+        $guruList = Guru::with('user')->orderBy('nama')->get();
         $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
+        
+        // Get tugas guru untuk filtering
+        $tugasGuruList = TugasGuru::with(['guru.user', 'mataPelajaran'])
+            ->where('tingkat_kelas', $kelas->tingkat_kelas)
+            ->where('is_active', true)
+            ->where(function($query) use ($kelas) {
+                $query->whereNull('kelas_id')
+                      ->orWhere('kelas_id', $kelas->id);
+            })
+            ->get();
+        
+        // Group by mata pelajaran for easier lookup
+        $guruByMapel = $tugasGuruList->groupBy('mata_pelajaran_id')->map(function($group) {
+            return $group->pluck('guru_id')->toArray();
+        });
         $jamBelajarList = JamBelajar::orderByDay()->get();
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
@@ -66,7 +82,9 @@ class JadwalKbmController extends Controller
             'jamBelajarByHari',
             'existingJadwal',
             'tahunAjaranAktif',
-            'semesterAktif'
+            'semesterAktif',
+            'guruByMapel',
+            'tugasGuruList'
         ));
     }
 
@@ -314,7 +332,15 @@ class JadwalKbmController extends Controller
             ->get()
             ->groupBy('hari');
         
-        return view('jadwal_kbm.show_by_guru', compact('guru', 'jadwalGuru', 'tahunAjaranAktif', 'semesterAktif'));
+        // Get tugas guru
+        $tugasGuru = TugasGuru::with(['mataPelajaran', 'kelas'])
+            ->where('guru_id', $guruId)
+            ->where('is_active', true)
+            ->orderBy('tingkat_kelas')
+            ->orderBy('mata_pelajaran_id')
+            ->get();
+        
+        return view('jadwal_kbm.show_by_guru', compact('guru', 'jadwalGuru', 'tahunAjaranAktif', 'semesterAktif', 'tugasGuru'));
     }
 
     /**
@@ -495,9 +521,32 @@ class JadwalKbmController extends Controller
 
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
+        
+        // Get kelas info for validation
+        $kelas = Kelas::findOrFail($validated['kelas_id']);
 
         DB::beginTransaction();
         try {
+            // Validate tugas guru for each entry
+            $warnings = [];
+            foreach ($validated['jadwal'] as $index => $item) {
+                $hasTugas = TugasGuru::where('guru_id', $item['guru_id'])
+                    ->where('mata_pelajaran_id', $item['mata_pelajaran_id'])
+                    ->where('tingkat_kelas', $kelas->tingkat_kelas)
+                    ->where('is_active', true)
+                    ->where(function($query) use ($kelas) {
+                        $query->whereNull('kelas_id')
+                              ->orWhere('kelas_id', $kelas->id);
+                    })
+                    ->exists();
+                
+                if (!$hasTugas) {
+                    $guru = Guru::find($item['guru_id']);
+                    $mapel = MataPelajaran::find($item['mata_pelajaran_id']);
+                    $warnings[] = "Guru {$guru->nama} tidak memiliki tugas mengajar {$mapel->nama_mapel} di tingkat {$kelas->tingkat_kelas}";
+                }
+            }
+            
             // Delete existing jadwal for this kelas in this semester
             JadwalKbm::where('kelas_id', $validated['kelas_id'])
                 ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
@@ -517,8 +566,37 @@ class JadwalKbmController extends Controller
                     'semester_id' => $semesterAktif?->id,
                 ]);
             }
+            
+            // Auto-generate/update Tugas Guru from jadwal
+            $uniqueAssignments = collect($validated['jadwal'])
+                ->unique(function ($item) {
+                    return $item['guru_id'] . '-' . $item['mata_pelajaran_id'];
+                });
+            
+            foreach ($uniqueAssignments as $item) {
+                TugasGuru::updateOrCreate(
+                    [
+                        'guru_id' => $item['guru_id'],
+                        'mata_pelajaran_id' => $item['mata_pelajaran_id'],
+                        'tingkat_kelas' => $kelas->tingkat_kelas,
+                        'kelas_id' => $kelas->id
+                    ],
+                    [
+                        'is_active' => 1,
+                        'keterangan' => 'Auto-generated from jadwal KBM',
+                        'updated_at' => now()
+                    ]
+                );
+            }
 
             DB::commit();
+            
+            if (count($warnings) > 0) {
+                return redirect()->route('jadwal-kbm.index')
+                    ->with('warning', 'Jadwal KBM berhasil disimpan dengan peringatan:')
+                    ->with('warnings', $warnings);
+            }
+            
             return redirect()->route('jadwal-kbm.index')->with('success', 'Jadwal KBM berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -538,6 +616,29 @@ class JadwalKbmController extends Controller
         ]);
 
         $jadwal = JadwalKbm::findOrFail($id);
+        
+        // Validate tugas guru
+        $kelas = $jadwal->kelas;
+        $hasTugas = TugasGuru::where('guru_id', $validated['guru_id'])
+            ->where('mata_pelajaran_id', $validated['mata_pelajaran_id'])
+            ->where('tingkat_kelas', $kelas->tingkat_kelas)
+            ->where('is_active', true)
+            ->where(function($query) use ($kelas) {
+                $query->whereNull('kelas_id')
+                      ->orWhere('kelas_id', $kelas->id);
+            })
+            ->exists();
+        
+        if (!$hasTugas) {
+            $guru = Guru::find($validated['guru_id']);
+            $mapel = MataPelajaran::find($validated['mata_pelajaran_id']);
+            return response()->json([
+                'success' => false, 
+                'message' => "Peringatan: Guru {$guru->nama} tidak memiliki tugas mengajar {$mapel->nama_mapel} di tingkat {$kelas->tingkat_kelas}",
+                'warning' => true
+            ]);
+        }
+        
         $jadwal->update($validated);
 
         return response()->json(['success' => true, 'message' => 'Jadwal berhasil diupdate']);
@@ -705,5 +806,43 @@ class JadwalKbmController extends Controller
             return redirect()->route('jadwal-kbm.index', ['tab' => 'setting'])
                 ->with('error', 'Gagal menyimpan pengaturan: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get eligible guru for specific mata pelajaran and kelas (AJAX)
+     */
+    public function getGuruByMapel(Request $request)
+    {
+        $kelasId = $request->input('kelas_id');
+        $mataPelajaranId = $request->input('mata_pelajaran_id');
+        
+        if (!$kelasId || !$mataPelajaranId) {
+            return response()->json(['error' => 'Missing parameters'], 400);
+        }
+        
+        $kelas = Kelas::findOrFail($kelasId);
+        
+        // Get guru yang memiliki tugas mengajar mata pelajaran ini di tingkat kelas ini
+        $guruList = TugasGuru::with('guru.user')
+            ->where('mata_pelajaran_id', $mataPelajaranId)
+            ->where('tingkat_kelas', $kelas->tingkat_kelas)
+            ->where('is_active', true)
+            ->where(function($query) use ($kelas) {
+                $query->whereNull('kelas_id')
+                      ->orWhere('kelas_id', $kelas->id);
+            })
+            ->get()
+            ->pluck('guru')
+            ->unique('id')
+            ->values()
+            ->map(function($guru) {
+                return [
+                    'id' => $guru->id,
+                    'nama' => $guru->user->name ?? $guru->nama,
+                    'nip' => $guru->nip
+                ];
+            });
+        
+        return response()->json($guruList);
     }
 }

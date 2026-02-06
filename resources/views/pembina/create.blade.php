@@ -20,7 +20,7 @@
                                         <option value="">-- Pilih Guru atau Isi Manual --</option>
                                         @forelse($guru as $g)
                                             <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
-                                                {{ $g->nama }} @if($g->nip)({{ $g->nip }})@endif
+                                                {{ $g->user->name ?? $g->nama }} @if($g->nip)({{ $g->nip }})@endif
                                             </option>
                                         @empty
                                             <option value="" disabled>Data guru tidak tersedia</option>
@@ -129,7 +129,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const guruSelect = document.querySelector('select[name="guru_id"]');
     const guruData = {!! json_encode($guru->mapWithKeys(function($item) {
-        return [$item->id => ['nama' => $item->nama, 'nip' => $item->nip]];
+        return [$item->id => [
+            'nama' => $item->user->name ?? $item->nama,
+            'nip' => $item->nip,
+            'email' => $item->user->email ?? $item->email,
+        ]];
     })->all()) !!};
 
     if (guruSelect) {
@@ -139,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = guruData[guruId];
                 document.querySelector('input[name="nama"]').value = data.nama;
                 document.querySelector('input[name="nip"]').value = data.nip || '';
+                document.querySelector('input[name="email"]').value = data.email || '';
             }
         });
     }

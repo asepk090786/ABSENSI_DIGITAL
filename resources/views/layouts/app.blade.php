@@ -442,8 +442,11 @@
                                 <a class="dropdown-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}">
                                     <i class="ti ti-building me-2"></i>Kelas
                                 </a>
-                                <a class="dropdown-item {{ request()->routeIs('mata_pelajaran.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}">
+                                <a class="dropdown-item {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}">
                                     <i class="ti ti-books me-2"></i>Mata Pelajaran
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}" href="{{ route('tugas_guru.index') }}">
+                                    <i class="ti ti-user-check me-2"></i>Tugas Guru
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}" href="{{ route('kegiatan.index') }}">
                                     <i class="ti ti-activity me-2"></i>Kegiatan

@@ -96,6 +96,7 @@ Route::middleware(['auth'])->group(function(){
         Route::delete('jadwal-kbm/{id}', [JadwalKbmController::class, 'destroy'])->name('jadwal-kbm.destroy');
         Route::delete('jadwal-kbm-destroy-all', [JadwalKbmController::class, 'destroyAll'])->name('jadwal-kbm.destroy-all');
         Route::get('jadwal-kbm/get-jadwal-by-kelas/{kelas}', [JadwalKbmController::class, 'getJadwalByKelas'])->name('jadwal-kbm.get-by-kelas');
+        Route::get('jadwal-kbm/get-guru-by-mapel', [JadwalKbmController::class, 'getGuruByMapel'])->name('jadwal-kbm.get-guru-by-mapel');
         Route::post('jadwal-kbm/check-konflik-guru', [JadwalKbmController::class, 'checkKonflikGuru'])->name('jadwal-kbm.check-konflik-guru');
         Route::put('jadwal-kbm/update-header', [JadwalKbmController::class, 'updateHeader'])->name('jadwal-kbm.update-header');
     
@@ -138,6 +139,11 @@ Route::middleware(['auth'])->group(function(){
     Route::get('mata-pelajaran-export', ['App\Http\Controllers\MataPelajaranController', 'export'])->name('mata_pelajaran.export');
     Route::get('mata-pelajaran-template', ['App\Http\Controllers\MataPelajaranController', 'templateDownload'])->name('mata_pelajaran.template');
     Route::post('mata-pelajaran-import', ['App\Http\Controllers\MataPelajaranController', 'import'])->name('mata_pelajaran.import');
+    
+    // Tugas Guru routes
+    Route::get('tugas-guru/get-kelas-by-tingkat', ['App\Http\Controllers\TugasGuruController', 'getKelasByTingkat'])->name('tugas_guru.get_kelas_by_tingkat');
+    Route::get('tugas-guru/guru/{guru}', ['App\Http\Controllers\TugasGuruController', 'showByGuru'])->name('tugas_guru.show_by_guru');
+    Route::resource('tugas_guru', 'App\Http\Controllers\TugasGuruController');
     
     // Rencana Pembelajaran routes - custom routes BEFORE resource to avoid conflicts
     Route::get('rencana_pembelajaran/import-form', 'App\Http\Controllers\RencanaPembelajaranController@importForm')->name('rencana_pembelajaran.import_form');

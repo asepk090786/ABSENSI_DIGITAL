@@ -109,6 +109,61 @@
                         @endif
                     @endforeach
 
+                    <!-- Tugas Guru (Assignment Info) -->
+                    @if($tugasGuru->isNotEmpty())
+                    <div class="card bg-light mt-4 mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="ti ti-clipboard-check me-2"></i>Tugas Mengajar Guru
+                            </h5>
+                            <p class="text-muted mb-3">
+                                <small>Daftar mata pelajaran yang ditugaskan kepada guru ini</small>
+                            </p>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th width="5%">No</th>
+                                            <th width="40%">Mata Pelajaran</th>
+                                            <th width="15%">Tingkat</th>
+                                            <th width="25%">Kelas</th>
+                                            <th width="15%">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($tugasGuru as $index => $tugas)
+                                        <tr>
+                                            <td class="text-center">{{ $index + 1 }}</td>
+                                            <td>
+                                                <strong>{{ $tugas->mataPelajaran->nama_mapel }}</strong>
+                                                @if($tugas->mataPelajaran->kode_mapel)
+                                                <br><small class="text-muted">{{ $tugas->mataPelajaran->kode_mapel }}</small>
+                                                @endif
+                                            </td>
+                                            <td><span class="badge bg-info">{{ $tugas->tingkat_kelas }}</span></td>
+                                            <td>
+                                                @if($tugas->kelas)
+                                                    <span class="badge bg-primary">{{ $tugas->kelas->nama_kelas }}</span>
+                                                @else
+                                                    <span class="text-muted">Semua kelas tingkat {{ $tugas->tingkat_kelas }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($tugas->is_active)
+                                                    <span class="badge bg-success">Aktif</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Tidak Aktif</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Summary -->
                     <div class="alert alert-light mt-4">
                         <div class="row">

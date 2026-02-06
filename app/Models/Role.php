@@ -21,4 +21,9 @@ class Role extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function usersPivot()
+    {
+        return $this->belongsToMany(User::class, 'role_user');
+    }
 }

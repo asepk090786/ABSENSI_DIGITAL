@@ -75,7 +75,7 @@
                                 <td>{{ $index + 1 }}</td>
                                 <td><code>{{ $it->id }}</code></td>
                                 <td>{{ $it->nama_kelas }}</td>
-                                <td>{{ $it->waliKelas->nama ?? '-' }}</td>
+                                <td>{{ $it->waliKelas->user->name ?? $it->waliKelas->nama ?? '-' }}</td>
                                 <td><span class="badge bg-blue-lt">{{ $it->siswa_count }}</span></td>
                                 <td>
                                     <div class="btn-list">

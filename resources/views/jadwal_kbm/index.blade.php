@@ -25,6 +25,35 @@
                 </div>
             </div>
             <div class="card-body">
+                <!-- Success/Error Messages -->
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="ti ti-check me-2"></i>{{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                @if(session('warning'))
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
+                        @if(session('warnings'))
+                            <ul class="mb-0 mt-2">
+                                @foreach(session('warnings') as $warning)
+                                    <li>{{ $warning }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
                 <!-- Tab Navigation -->
                 <ul class="nav nav-tabs mb-4" id="jadwalTab" role="tablist">
                     @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))

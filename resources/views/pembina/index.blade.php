@@ -51,12 +51,12 @@
                                                     </div>
                                                 @endif
                                             </td>
-                                            <td>{{ $item->nama }}</td>
+                                            <td>{{ $item->user->name ?? $item->nama }}</td>
                                             <td>{{ $item->nip ?? '-' }}</td>
                                             <td>{{ $item->email ?? '-' }}</td>
                                             <td>{{ $item->telepon ?? '-' }}</td>
                                             <td>
-                                                @if($item->status == 'Aktif')
+                                                @if($item->is_active)
                                                     <span class="badge bg-success">Aktif</span>
                                                 @else
                                                     <span class="badge bg-secondary">Tidak Aktif</span>

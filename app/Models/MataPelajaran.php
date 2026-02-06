@@ -17,4 +17,9 @@ class MataPelajaran extends Model
         'kategori',
         'jenis_kegiatan_id',
     ];
+
+    public function tugasGuru()
+    {
+        return $this->hasMany(TugasGuru::class);
+    }
 }

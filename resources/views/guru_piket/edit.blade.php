@@ -39,8 +39,8 @@
                                     <label class="form-label">Status <span class="text-danger">*</span></label>
                                     <select name="status" class="form-select @error('status') is-invalid @enderror" required>
                                         <option value="">Pilih Status</option>
-                                        <option value="Aktif" {{ old('status', $gurupiket->status) == 'Aktif' ? 'selected' : '' }}>Aktif</option>
-                                        <option value="Tidak Aktif" {{ old('status', $gurupiket->status) == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
+                                        <option value="Aktif" {{ old('status', $gurupiket->is_active ? 'Aktif' : 'Tidak Aktif') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
+                                        <option value="Tidak Aktif" {{ old('status', $gurupiket->is_active ? 'Aktif' : 'Tidak Aktif') == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
                                     </select>
                                     @error('status')
                                         <div class="invalid-feedback">{{ $message }}</div>

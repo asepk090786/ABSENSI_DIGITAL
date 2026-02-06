@@ -20,7 +20,9 @@ class EkstrakurikulerController extends Controller
     public function create()
     {
         $pembina = Guru::whereHas('user', function ($query) {
-            $query->whereHas('role', function ($q) {
+            $query->whereHas('roles', function ($q) {
+                $q->where('role_name', 'Pembina');
+            })->orWhereHas('role', function ($q) {
                 $q->where('role_name', 'Pembina');
             });
         })->orderBy('nama')->get();

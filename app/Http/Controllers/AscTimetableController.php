@@ -319,6 +319,7 @@ class AscTimetableController extends Controller
                 'teachers' => 0,
                 'classes' => 0,
                 'lessons' => 0,
+                'tugas_guru' => 0,
                 'errors' => []
             ];
 
@@ -702,6 +703,79 @@ class AscTimetableController extends Controller
                 }
             }
 
+            // Auto-generate Tugas Guru from imported Jadwal KBM
+            if (in_array('lessons', $importTypes)) {
+                $tugasGuruCount = 0;
+                
+                // Get unique guru-mapel-tingkat combinations from jadwal_kbm
+                $tugasData = DB::table('jadwal_kbm as jk')
+                    ->join('kelas as k', 'jk.kelas_id', '=', 'k.id')
+                    ->where('jk.tahun_ajaran_id', $tahunAjaranId)
+                    ->where('jk.semester_id', $semesterId)
+                    ->select(
+                        'jk.guru_id',
+                        'jk.mata_pelajaran_id',
+                        'k.tingkat_kelas',
+                        DB::raw('GROUP_CONCAT(DISTINCT jk.kelas_id) as kelas_ids')
+                    )
+                    ->groupBy('jk.guru_id', 'jk.mata_pelajaran_id', 'k.tingkat_kelas')
+                    ->get();
+
+                foreach ($tugasData as $tugas) {
+                    // Skip if tingkat_kelas is null
+                    if (empty($tugas->tingkat_kelas)) {
+                        continue;
+                    }
+
+                    // Check if kelas_ids contains multiple classes for this tingkat
+                    $kelasIds = explode(',', $tugas->kelas_ids);
+                    
+                    // If guru teaches this subject to all classes in a tingkat, create one entry without specific kelas_id
+                    // Otherwise create separate entries for each kelas
+                    $kelasCountForTingkat = DB::table('kelas')
+                        ->where('tingkat_kelas', $tugas->tingkat_kelas)
+                        ->count();
+                    
+                    if (count($kelasIds) >= $kelasCountForTingkat) {
+                        // Create entry for all classes in tingkat
+                        DB::table('tugas_guru')->updateOrCreate(
+                            [
+                                'guru_id' => $tugas->guru_id,
+                                'mata_pelajaran_id' => $tugas->mata_pelajaran_id,
+                                'tingkat_kelas' => $tugas->tingkat_kelas,
+                                'kelas_id' => null
+                            ],
+                            [
+                                'is_active' => 1,
+                                'keterangan' => 'Auto-generated from jadwal import',
+                                'updated_at' => now()
+                            ]
+                        );
+                        $tugasGuruCount++;
+                    } else {
+                        // Create separate entry for each kelas
+                        foreach ($kelasIds as $kelasId) {
+                            DB::table('tugas_guru')->updateOrCreate(
+                                [
+                                    'guru_id' => $tugas->guru_id,
+                                    'mata_pelajaran_id' => $tugas->mata_pelajaran_id,
+                                    'tingkat_kelas' => $tugas->tingkat_kelas,
+                                    'kelas_id' => $kelasId
+                                ],
+                                [
+                                    'is_active' => 1,
+                                    'keterangan' => 'Auto-generated from jadwal import',
+                                    'updated_at' => now()
+                                ]
+                            );
+                            $tugasGuruCount++;
+                        }
+                    }
+                }
+                
+                $stats['tugas_guru'] = $tugasGuruCount;
+            }
+
             DB::commit();
             
             // Clear session
@@ -709,12 +783,13 @@ class AscTimetableController extends Controller
 
             return redirect()->route('asc_timetable.index')
                 ->with('success', sprintf(
-                    'Import berhasil! Jam Belajar: %d, Mata Pelajaran: %d, Guru: %d, Kelas: %d, Jadwal: %d',
+                    'Import berhasil! Jam Belajar: %d, Mata Pelajaran: %d, Guru: %d, Kelas: %d, Jadwal: %d, Tugas Guru: %d',
                     $stats['periods'],
                     $stats['subjects'],
                     $stats['teachers'],
                     $stats['classes'],
-                    $stats['lessons']
+                    $stats['lessons'],
+                    $stats['tugas_guru'] ?? 0
                 ));
 
         } catch (\Exception $e) {
