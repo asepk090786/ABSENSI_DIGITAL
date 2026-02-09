@@ -97,6 +97,30 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Komponen Penilaian</label>
+                            <div class="@error('komponen_nilai_ids') is-invalid @enderror">
+                                @forelse($komponenNilai as $komponen)
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="komponen_nilai_ids[]" value="{{ $komponen->id }}" id="komponen_{{ $komponen->id }}" {{ in_array($komponen->id, old('komponen_nilai_ids', $selectedKomponenIds ?? [])) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="komponen_{{ $komponen->id }}">
+                                            {{ $komponen->nama_komponen }}
+                                            @if($komponen->bobot)
+                                                <span class="text-muted">({{ $komponen->bobot }}%)</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @empty
+                                    <div class="alert alert-info alert-sm mb-0">
+                                        <i class="ti ti-info-circle me-2"></i>Belum ada komponen penilaian
+                                    </div>
+                                @endforelse
+                            </div>
+                            @error('komponen_nilai_ids')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Status <span class="text-danger">*</span></label>
                             <select name="status" class="form-select @error('status') is-invalid @enderror" required>

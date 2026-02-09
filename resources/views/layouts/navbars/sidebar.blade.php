@@ -20,6 +20,18 @@
     <h5>🎓 Pembelajaran</h5>
     <ul class="menu-list">
         <li>
+            <a href="{{ route('komponen_nilai.index') }}" class="menu-item {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}">
+                <i class="material-icons">fact_check</i>
+                <span>Komponen Penilaian</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('mata_pelajaran.guru') }}" class="menu-item {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}">
+                <i class="material-icons">menu_book</i>
+                <span>Mata Pelajaran</span>
+            </a>
+        </li>
+        <li>
             <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
                 <i class="material-icons">event_note</i>
                 <span>Agenda Kelas</span>
@@ -63,7 +75,7 @@
         </li>
         @endif
         <li>
-            <a href="#" class="menu-item">
+            <a href="{{ route('nilai.index') }}" class="menu-item {{ request()->routeIs('nilai.*') ? 'active' : '' }}">
                 <i class="material-icons">grading</i>
                 <span>Nilai</span>
             </a>

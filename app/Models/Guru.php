@@ -30,6 +30,7 @@ class Guru extends Model implements AuthenticatableContract
         'is_active',
         'email',
         'foto',
+        'jenis_tugas_wakil',
     ];
 
     public function guru()

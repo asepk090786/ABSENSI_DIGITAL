@@ -360,6 +360,9 @@
                                 <span class="nav-link-title">Pembelajaran</span>
                             </a>
                             <div class="dropdown-menu">
+                                <a class="dropdown-item {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}" href="{{ route('komponen_nilai.index') }}">
+                                    <i class="ti ti-checklist me-2"></i>Komponen Penilaian
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}" href="{{ route('mata_pelajaran.guru') }}">
                                     <i class="ti ti-book-2 me-2"></i>Mata Pelajaran
                                 </a>
@@ -396,7 +399,7 @@
                                     <i class="ti ti-clipboard-check me-2"></i>Absensi
                                 </a>
                                 @endunless
-                                <a class="dropdown-item" href="#">
+                                <a class="dropdown-item {{ request()->routeIs('nilai.*') ? 'active' : '' }}" href="{{ route('nilai.index') }}">
                                     <i class="ti ti-report-analytics me-2"></i>Nilai
                                 </a>
                             </div>

@@ -30,6 +30,10 @@
                                     <td>{{ $wakil->nip ?? '-' }}</td>
                                 </tr>
                                 <tr>
+                                    <th>Jenis Tugas</th>
+                                    <td>{{ $wakil->jenis_tugas_wakil ?? '-' }}</td>
+                                </tr>
+                                <tr>
                                     <th>Email</th>
                                     <td>{{ $wakil->email ?? '-' }}</td>
                                 </tr>

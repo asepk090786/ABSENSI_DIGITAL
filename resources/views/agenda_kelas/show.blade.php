@@ -3,7 +3,7 @@
 @section('title','Detail Agenda Kelas')
 
 @section('content')
-<script src="https://cdn.tiny.cloud/1/4ctq7tixbpx5atyue5htuo32gh3znc6tn98y7jfmhdzrp5q9/tinymce/6/tinymce.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js"></script>
 <script>
     tinymce.init({
         selector: 'textarea.tiny-editor',

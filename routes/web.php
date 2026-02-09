@@ -70,7 +70,11 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
-    Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index']);
+    Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index', 'store']);
+    Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');
+    Route::post('nilai/import', ['App\Http\Controllers\NilaiController', 'import'])->name('nilai.import');
+    Route::get('nilai/template', ['App\Http\Controllers\NilaiController', 'template'])->name('nilai.template');
+    Route::resource('komponen_nilai', 'App\Http\Controllers\KomponenNilaiController')->except(['show', 'create']);
 
         // Struktur Kurikulum
         Route::get('kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');

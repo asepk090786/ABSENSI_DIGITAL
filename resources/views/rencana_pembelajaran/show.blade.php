@@ -100,6 +100,30 @@
                         <p class="form-control-plaintext">{!! nl2br(e($item->penilaian)) !!}</p>
                     </div>
                     @endif
+
+                    @if($item->komponenNilai->count() > 0)
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label text-muted">Komponen Penilaian</label>
+                        <div class="form-control-plaintext">
+                            <div class="list-group list-group-flush">
+                                @foreach($item->komponenNilai as $komponen)
+                                    <div class="list-group-item px-0 py-2">
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <strong>{{ $komponen->nama_komponen }}</strong>
+                                            </div>
+                                            @if($komponen->bobot)
+                                                <div class="col-auto">
+                                                    <span class="badge bg-blue">{{ $komponen->bobot }}%</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

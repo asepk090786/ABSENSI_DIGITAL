@@ -21,7 +21,17 @@ class WakilKepalaSekolahController extends Controller
 
     public function create()
     {
-        $guru = Guru::all();
+        // Ambil guru yang belum menjadi Wakil Kepala Sekolah
+        $wakilIds = Guru::whereHas('user', function($query) {
+            $query->whereHas('role', function($q) {
+                $q->where('role_name', 'Wakil Kepala Sekolah');
+            });
+        })->pluck('id');
+        
+        $guru = Guru::whereNotIn('id', $wakilIds)
+            ->orderBy('nama')
+            ->get();
+        
         return view('wakil_kepala_sekolah.create', compact('guru'));
     }
 
@@ -31,6 +41,7 @@ class WakilKepalaSekolahController extends Controller
             'guru_id' => 'nullable|exists:guru,id',
             'nama' => 'required|string|max:255',
             'nip' => 'nullable|string|max:50|unique:guru',
+            'jenis_tugas_wakil' => 'required|in:Bidang Kurikulum,Bidang Sarana dan Prasarana,Bidang Humas,Bidang Kesiswaan',
             'status' => 'required|in:Aktif,Tidak Aktif',
             'alamat' => 'nullable|string',
             'telepon' => 'nullable|string|max:20',
@@ -56,7 +67,18 @@ class WakilKepalaSekolahController extends Controller
     public function edit($id)
     {
         $wakil = Guru::findOrFail($id);
-        $guru = Guru::all();
+        
+        // Ambil guru yang belum menjadi Wakil Kepala Sekolah (kecuali guru yang sedang diedit)
+        $wakilIds = Guru::whereHas('user', function($query) {
+            $query->whereHas('role', function($q) {
+                $q->where('role_name', 'Wakil Kepala Sekolah');
+            });
+        })->where('id', '!=', $id)->pluck('id');
+        
+        $guru = Guru::whereNotIn('id', $wakilIds)
+            ->orderBy('nama')
+            ->get();
+        
         return view('wakil_kepala_sekolah.edit', compact('wakil', 'guru'));
     }
 
@@ -68,6 +90,7 @@ class WakilKepalaSekolahController extends Controller
             'guru_id' => 'nullable|exists:guru,id',
             'nama' => 'required|string|max:255',
             'nip' => 'nullable|string|max:50|unique:guru,nip,' . $id,
+            'jenis_tugas_wakil' => 'required|in:Bidang Kurikulum,Bidang Sarana dan Prasarana,Bidang Humas,Bidang Kesiswaan',
             'status' => 'required|in:Aktif,Tidak Aktif',
             'alamat' => 'nullable|string',
             'telepon' => 'nullable|string|max:20',

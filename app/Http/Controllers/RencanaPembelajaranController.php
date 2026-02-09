@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RencanaPembelajaran;
 use App\Models\MataPelajaran;
 use App\Models\Kelas;
+use App\Models\KomponenNilai;
 use Illuminate\Http\Request;
 
 class RencanaPembelajaranController extends Controller
@@ -77,10 +78,14 @@ class RencanaPembelajaranController extends Controller
             ->unique('id')
             ->sortBy('nama_kelas');
 
+        // Load all assessment components
+        $komponenNilai = KomponenNilai::orderBy('nama_komponen')->get();
+
         return view('rencana_pembelajaran.create', [
             'mataPelajaran' => $mataPelajaran,
             'tingkat' => $tingkat,
             'kelas' => $kelas,
+            'komponenNilai' => $komponenNilai,
         ]);
     }
 
@@ -100,6 +105,8 @@ class RencanaPembelajaranController extends Controller
             'media' => 'nullable|string',
             'sumber' => 'nullable|string',
             'penilaian' => 'nullable|string',
+            'komponen_nilai_ids' => 'nullable|array',
+            'komponen_nilai_ids.*' => 'exists:komponen_nilai,id',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date',
             'status' => 'required|in:draft,published',
@@ -108,6 +115,7 @@ class RencanaPembelajaranController extends Controller
         $guru = auth()->user()->guru;
         $mataPelajaranId = $validated['mata_pelajaran_id'];
         $tingkat = Kelas::find($validated['kelas_ids'][0])->tingkat_kelas;
+        $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
 
         // Create rencana pembelajaran for each selected class
         foreach ($validated['kelas_ids'] as $kelasId) {
@@ -115,8 +123,14 @@ class RencanaPembelajaranController extends Controller
             $data['guru_id'] = $guru->id;
             $data['kelas_id'] = $kelasId;
             unset($data['kelas_ids']);
+            unset($data['komponen_nilai_ids']);
             
-            RencanaPembelajaran::create($data);
+            $rencana = RencanaPembelajaran::create($data);
+            
+            // Sync komponen penilaian
+            if (!empty($komponenNilaiIds)) {
+                $rencana->komponenNilai()->sync($komponenNilaiIds);
+            }
         }
 
         return redirect()
@@ -154,9 +168,17 @@ class RencanaPembelajaranController extends Controller
             ->unique('id')
             ->sortBy('nama_kelas');
         
+        // Load all assessment components
+        $komponenNilai = KomponenNilai::orderBy('nama_komponen')->get();
+        
+        // Load selected komponen for this rencana
+        $selectedKomponenIds = $rencanaPembelajaran->komponenNilai()->pluck('komponen_nilai.id')->toArray();
+        
         return view('rencana_pembelajaran.edit', [
             'item' => $rencanaPembelajaran,
             'kelas' => $kelas,
+            'komponenNilai' => $komponenNilai,
+            'selectedKomponenIds' => $selectedKomponenIds,
         ]);
     }
 
@@ -174,12 +196,20 @@ class RencanaPembelajaranController extends Controller
             'media' => 'nullable|string',
             'sumber' => 'nullable|string',
             'penilaian' => 'nullable|string',
+            'komponen_nilai_ids' => 'nullable|array',
+            'komponen_nilai_ids.*' => 'exists:komponen_nilai,id',
             'tanggal_mulai' => 'nullable|date',
             'tanggal_selesai' => 'nullable|date',
             'status' => 'required|in:draft,published',
         ]);
 
+        $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
+        unset($validated['komponen_nilai_ids']);
+
         $rencanaPembelajaran->update($validated);
+        
+        // Sync komponen penilaian
+        $rencanaPembelajaran->komponenNilai()->sync($komponenNilaiIds);
 
         return redirect()
             ->route('rencana_pembelajaran.index', [
@@ -279,11 +309,18 @@ class RencanaPembelajaranController extends Controller
         // Generate filename
         $filename = 'Template_Rencana_Pembelajaran_' . date('Y-m-d') . '.docx';
         
-        // Save and download
+        // Create writer and output to stream
         $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
-        $writer->save(storage_path('app/temp/' . $filename));
         
-        return response()->download(storage_path('app/temp/' . $filename))->deleteFileAfterSend(true);
+        // Use output buffering to capture the output
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+        
+        return response($content)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Content-Length', strlen($content));
     }
 
     /**
@@ -388,11 +425,18 @@ class RencanaPembelajaranController extends Controller
         // Generate filename
         $filename = 'RP_' . \Illuminate\Support\Str::slug($rencanaPembelajaran->judul) . '_' . time() . '.docx';
         
-        // Save and download
+        // Create writer and output to stream
         $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
-        $writer->save(storage_path('app/temp/' . $filename));
         
-        return response()->download(storage_path('app/temp/' . $filename))->deleteFileAfterSend(true);
+        // Use output buffering to capture the output
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+        
+        return response($content)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Content-Length', strlen($content));
     }
 
     /**

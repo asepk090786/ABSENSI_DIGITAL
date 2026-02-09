@@ -47,4 +47,9 @@ class RencanaPembelajaran extends Model
     {
         return $this->belongsTo(JadwalKbm::class);
     }
+
+    public function komponenNilai()
+    {
+        return $this->belongsToMany(KomponenNilai::class, 'rencana_pembelajaran_komponen_nilai', 'rencana_pembelajaran_id', 'komponen_nilai_id');
+    }
 }

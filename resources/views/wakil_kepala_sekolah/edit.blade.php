@@ -16,6 +16,28 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label class="form-label">Pilih Guru (Opsional)</label>
+                                    <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
+                                        <option value="">-- Pilih Guru atau Isi Manual --</option>
+                                        @forelse($guru as $g)
+                                            <option value="{{ $g->id }}" {{ old('guru_id', $wakil->guru_id) == $g->id ? 'selected' : '' }}>
+                                                {{ $g->nama }} @if($g->nip)({{ $g->nip }})@endif
+                                            </option>
+                                        @empty
+                                            <option value="" disabled>Semua guru sudah menjadi Wakil Kepala Sekolah</option>
+                                        @endforelse
+                                    </select>
+                                    @error('guru_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted d-block mt-1">Jika memilih guru, data nama, NIP akan diambil dari data guru tersebut</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label class="form-label">Nama <span class="text-danger">*</span></label>
                                     <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama', $wakil->nama) }}" required>
                                     @error('nama')
@@ -29,6 +51,22 @@
                                     <label class="form-label">NIP</label>
                                     <input type="text" name="nip" class="form-control @error('nip') is-invalid @enderror" value="{{ old('nip', $wakil->nip) }}">
                                     @error('nip')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Jenis Tugas <span class="text-danger">*</span></label>
+                                    <select name="jenis_tugas_wakil" class="form-select @error('jenis_tugas_wakil') is-invalid @enderror" required>
+                                        <option value="">Pilih Jenis Tugas</option>
+                                        <option value="Bidang Kurikulum" {{ old('jenis_tugas_wakil', $wakil->jenis_tugas_wakil) == 'Bidang Kurikulum' ? 'selected' : '' }}>Bidang Kurikulum</option>
+                                        <option value="Bidang Sarana dan Prasarana" {{ old('jenis_tugas_wakil', $wakil->jenis_tugas_wakil) == 'Bidang Sarana dan Prasarana' ? 'selected' : '' }}>Bidang Sarana dan Prasarana</option>
+                                        <option value="Bidang Humas" {{ old('jenis_tugas_wakil', $wakil->jenis_tugas_wakil) == 'Bidang Humas' ? 'selected' : '' }}>Bidang Humas</option>
+                                        <option value="Bidang Kesiswaan" {{ old('jenis_tugas_wakil', $wakil->jenis_tugas_wakil) == 'Bidang Kesiswaan' ? 'selected' : '' }}>Bidang Kesiswaan</option>
+                                    </select>
+                                    @error('jenis_tugas_wakil')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -106,4 +144,24 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const guruSelect = document.querySelector('select[name="guru_id"]');
+    const guruData = {!! json_encode($guru->mapWithKeys(function($item) {
+        return [$item->id => ['nama' => $item->nama, 'nip' => $item->nip]];
+    })->all()) !!};
+
+    if (guruSelect) {
+        guruSelect.addEventListener('change', function() {
+            const guruId = this.value;
+            if (guruId && guruData[guruId]) {
+                const data = guruData[guruId];
+                document.querySelector('input[name="nama"]').value = data.nama;
+                document.querySelector('input[name="nip"]').value = data.nip || '';
+            }
+        });
+    }
+});
+</script>
 @endsection

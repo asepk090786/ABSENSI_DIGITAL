@@ -31,6 +31,7 @@
                                         <th>No</th>
                                         <th>Foto</th>
                                         <th>Nama</th>
+                                        <th>Jenis Tugas</th>
                                         <th>NIP</th>
                                         <th>Email</th>
                                         <th>Telepon</th>
@@ -52,6 +53,7 @@
                                                 @endif
                                             </td>
                                             <td>{{ $item->nama }}</td>
+                                            <td>{{ $item->jenis_tugas_wakil ?? '-' }}</td>
                                             <td>{{ $item->nip ?? '-' }}</td>
                                             <td>{{ $item->email ?? '-' }}</td>
                                             <td>{{ $item->telepon ?? '-' }}</td>
