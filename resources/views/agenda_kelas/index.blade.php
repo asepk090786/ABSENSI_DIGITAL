@@ -16,11 +16,41 @@
     .guru-btn {
         transition: all 0.3s ease;
         font-weight: 500;
+        min-width: 180px;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 0.5rem 1rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
     }
 
     .guru-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .guru-btn i {
+        flex-shrink: 0;
+        margin-right: 0.5rem;
+    }
+
+    .guru-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+        .guru-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        }
+        .guru-btn {
+            min-width: 150px;
+            font-size: 0.875rem;
+        }
     }
 
     /* Class Level Colors */
@@ -135,15 +165,14 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-2">
+                    <div class="guru-grid">
                         @foreach($guruQuickAccess as $g)
-                        <div class="col-auto">
                             <a href="{{ route('agenda_kelas.index', ['guru_id' => $g->id]) }}" 
                                class="btn guru-btn {{ $filterGuruId == $g->id ? 'btn-primary' : 'btn-outline-primary' }}"
-                               title="Lihat agenda {{ $g->nama }}">
-                                <i class="ti ti-user me-1"></i>{{ $g->nama }}
+                               title="{{ $g->nama }}">
+                                <i class="ti ti-user"></i>
+                                <span>{{ $g->nama }}</span>
                             </a>
-                        </div>
                         @endforeach
                     </div>
                 </div>
