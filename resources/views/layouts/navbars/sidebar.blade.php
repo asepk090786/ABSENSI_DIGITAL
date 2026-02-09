@@ -4,6 +4,17 @@
         $originalRoleName = auth()->user()->role->role_name ?? '';
         $roleName = strtolower(str_replace(' ', '_', $originalRoleName));
         $isGuru = Str::contains($roleName, 'guru');
+        
+        // Cek apakah guru adalah wali kelas
+        $isWaliKelas = false;
+        $kelasBindaan = null;
+        if ($isGuru && auth()->user()->guru) {
+            $guruId = auth()->user()->guru->id;
+            $kelasBindaan = DB::table('kelas')
+                ->where('wali_kelas_id', $guruId)
+                ->first();
+            $isWaliKelas = !is_null($kelasBindaan);
+        }
     @endphp
     <div style="position: fixed; top: 0; left: 0; background: red; color: white; z-index: 9999; padding: 10px; width: 100%;">DEBUG: Original="{{$originalRoleName}}" | Transformed="{{ $roleName }}" | Check={{ in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']) ? 'TRUE' : 'FALSE' }}</div>
     <h5 style="margin-top: 60px;">📋 Menu Utama</h5>
@@ -87,6 +98,36 @@
             </a>
         </li>
     </ul>
+
+    @if($isWaliKelas)
+    <h5>👨‍🏫 Wali Kelas</h5>
+    <ul class="menu-list">
+        <li>
+            <a href="{{ route('wali_kelas.index') }}" class="menu-item {{ request()->routeIs('wali_kelas.index') ? 'active' : '' }}">
+                <i class="material-icons">class</i>
+                <span>Kelas Binaan ({{ $kelasBindaan->nama_kelas ?? '-' }})</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('wali_kelas.siswa') }}" class="menu-item {{ request()->routeIs('wali_kelas.siswa') ? 'active' : '' }}">
+                <i class="material-icons">people</i>
+                <span>Data Siswa</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('wali_kelas.absensi') }}" class="menu-item {{ request()->routeIs('wali_kelas.absensi') ? 'active' : '' }}">
+                <i class="material-icons">assignment_turned_in</i>
+                <span>Absensi Kelas</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('wali_kelas.nilai') }}" class="menu-item {{ request()->routeIs('wali_kelas.nilai') ? 'active' : '' }}">
+                <i class="material-icons">bar_chart</i>
+                <span>Nilai Siswa</span>
+            </a>
+        </li>
+    </ul>
+    @endif
 
     {{-- ...existing code... --}}
     @if(in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']))

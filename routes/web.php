@@ -25,6 +25,14 @@ Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
 
+// Wali Kelas routes
+Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(function () {
+    Route::get('/', [App\Http\Controllers\WaliKelasController::class, 'index'])->name('index');
+    Route::get('/siswa', [App\Http\Controllers\WaliKelasController::class, 'siswa'])->name('siswa');
+    Route::get('/absensi', [App\Http\Controllers\WaliKelasController::class, 'absensi'])->name('absensi');
+    Route::get('/nilai', [App\Http\Controllers\WaliKelasController::class, 'nilai'])->name('nilai');
+});
+
 // Jam Belajar routes
 Route::middleware(['auth'])->group(function(){
     // Guru routes with export/import
