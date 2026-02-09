@@ -60,7 +60,7 @@
                     <div class="mb-3">
                         <i class="ti ti-calendar" style="font-size: 48px; color: #10b981;"></i>
                     </div>
-                    <h5 class="mb-0">{{ $tahunAjaran->nama ?? '-' }}</h5>
+                    <h5 class="mb-0">{{ $tahunAjaran->nama_tahun ?? '-' }}</h5>
                     <p class="text-muted mb-0">Tahun Ajaran</p>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                     <div class="mb-3">
                         <i class="ti ti-book" style="font-size: 48px; color: #f59e0b;"></i>
                     </div>
-                    <h5 class="mb-0">Semester {{ $semester->semester ?? '-' }}</h5>
+                    <h5 class="mb-0">Semester {{ $semester->nama_semester ?? '-' }}</h5>
                     <p class="text-muted mb-0">Semester Aktif</p>
                 </div>
             </div>

@@ -16,12 +16,7 @@
             $isWaliKelas = !is_null($kelasBindaan);
         }
     @endphp
-    <div style="position: fixed; top: 0; left: 0; background: red; color: white; z-index: 9999; padding: 10px; width: 100%; font-size: 11px;">
-        DEBUG: Original="{{$originalRoleName}}" | Transformed="{{ $roleName }}" | isGuru={{ $isGuru ? 'TRUE' : 'FALSE' }} | 
-        Guru ID={{ auth()->user()->guru->id ?? 'NULL' }} | isWaliKelas={{ $isWaliKelas ? 'TRUE' : 'FALSE' }} | 
-        Kelas={{ $kelasBindaan->nama_kelas ?? 'NULL' }}
-    </div>
-    <h5 style="margin-top: 60px;">📋 Menu Utama</h5>
+    <h5 style="margin-top: 20px;">📋 Menu Utama</h5>
     <ul class="menu-list">
         <li>
             <a href="{{ route('home') }}" class="menu-item {{ request()->routeIs('home') ? 'active' : '' }}">
