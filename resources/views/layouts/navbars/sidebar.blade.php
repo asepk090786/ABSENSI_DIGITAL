@@ -16,7 +16,11 @@
             $isWaliKelas = !is_null($kelasBindaan);
         }
     @endphp
-    <div style="position: fixed; top: 0; left: 0; background: red; color: white; z-index: 9999; padding: 10px; width: 100%;">DEBUG: Original="{{$originalRoleName}}" | Transformed="{{ $roleName }}" | Check={{ in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']) ? 'TRUE' : 'FALSE' }}</div>
+    <div style="position: fixed; top: 0; left: 0; background: red; color: white; z-index: 9999; padding: 10px; width: 100%; font-size: 11px;">
+        DEBUG: Original="{{$originalRoleName}}" | Transformed="{{ $roleName }}" | isGuru={{ $isGuru ? 'TRUE' : 'FALSE' }} | 
+        Guru ID={{ auth()->user()->guru->id ?? 'NULL' }} | isWaliKelas={{ $isWaliKelas ? 'TRUE' : 'FALSE' }} | 
+        Kelas={{ $kelasBindaan->nama_kelas ?? 'NULL' }}
+    </div>
     <h5 style="margin-top: 60px;">📋 Menu Utama</h5>
     <ul class="menu-list">
         <li>
