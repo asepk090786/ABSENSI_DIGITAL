@@ -12,6 +12,7 @@ class KomponenNilai extends Model
     protected $table = 'komponen_nilai';
 
     protected $fillable = [
+        'capaian_pembelajaran_id',
         'nama_komponen',
         'bobot',
         'capaian_pembelajaran',
@@ -19,4 +20,9 @@ class KomponenNilai extends Model
         'alur_tujuan_pembelajaran',
         'indikator_kriteria',
     ];
+
+    public function capaianPembelajaran()
+    {
+        return $this->belongsTo(CapaianPembelajaran::class);
+    }
 }

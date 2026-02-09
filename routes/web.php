@@ -75,6 +75,8 @@ Route::middleware(['auth'])->group(function(){
     Route::post('nilai/import', ['App\Http\Controllers\NilaiController', 'import'])->name('nilai.import');
     Route::get('nilai/template', ['App\Http\Controllers\NilaiController', 'template'])->name('nilai.template');
     Route::resource('komponen_nilai', 'App\Http\Controllers\KomponenNilaiController')->except(['show', 'create']);
+    Route::resource('capaian_pembelajaran', 'App\Http\Controllers\CapaianPembelajaranController')->except(['show', 'create', 'index']);
+    Route::get('capaian_pembelajaran/list', ['App\Http\Controllers\CapaianPembelajaranController', 'list'])->name('capaian_pembelajaran.list');
     
     // Rekap Nilai
     Route::get('rekap-nilai', ['App\Http\Controllers\RekapNilaiController', 'index'])->name('rekap_nilai.index');

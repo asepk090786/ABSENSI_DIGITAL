@@ -27,6 +27,24 @@
                 <form method="POST" action="{{ route('komponen_nilai.update', $item->id) }}">
                     @csrf
                     @method('PUT')
+                    <!-- Pilih Capaian Pembelajaran -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label">Capaian Pembelajaran (Opsional)</label>
+                            <select name="capaian_pembelajaran_id" class="form-select @error('capaian_pembelajaran_id') is-invalid @enderror">
+                                <option value="">-- Pilih Capaian Pembelajaran --</option>
+                                @foreach($capaianList as $cp)
+                                <option value="{{ $cp->id }}" {{ old('capaian_pembelajaran_id', $item->capaian_pembelajaran_id) == $cp->id ? 'selected' : '' }}>
+                                    [{{ $cp->fase ?? 'N/A' }}] {{ $cp->nama_capaian_pembelajaran }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('capaian_pembelajaran_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
                     <!-- Informasi Dasar -->
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
