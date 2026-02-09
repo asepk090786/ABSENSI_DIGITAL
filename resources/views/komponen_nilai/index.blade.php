@@ -110,6 +110,27 @@
                                     @enderror
                                 </div>
                                 <div class="col-md-12">
+                                    <label class="form-label">Tujuan Pembelajaran (TP)</label>
+                                    <textarea name="tujuan_pembelajaran" class="form-control @error('tujuan_pembelajaran') is-invalid @enderror" rows="3" placeholder="Turunan spesifik dari CP, lebih spesifik, operasional, dan terukur...">{{ old('tujuan_pembelajaran') }}</textarea>
+                                    @error('tujuan_pembelajaran')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Alur Tujuan Pembelajaran (ATP)</label>
+                                    <textarea name="alur_tujuan_pembelajaran" class="form-control @error('alur_tujuan_pembelajaran') is-invalid @enderror" rows="3" placeholder="Rangkaian TP yang logis, berkesinambungan, dan progresif...">{{ old('alur_tujuan_pembelajaran') }}</textarea>
+                                    @error('alur_tujuan_pembelajaran')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Indikator / Kriteria Ketercapaian (KKTP)</label>
+                                    <textarea name="indikator_kriteria" class="form-control @error('indikator_kriteria') is-invalid @enderror" rows="3" placeholder="Kriteria ketercapaian TP, ukuran apakah TP sudah tercapai...">{{ old('indikator_kriteria') }}</textarea>
+                                    @error('indikator_kriteria')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-12">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="ti ti-plus me-1"></i>Simpan CP
                                     </button>
@@ -200,6 +221,18 @@
                                                             <div class="mb-3">
                                                                 <label class="form-label">Deskripsi</label>
                                                                 <textarea name="deskripsi" class="form-control" rows="3">{{ $cp->deskripsi }}</textarea>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Tujuan Pembelajaran (TP)</label>
+                                                                <textarea name="tujuan_pembelajaran" class="form-control" rows="3">{{ $cp->tujuan_pembelajaran }}</textarea>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Alur Tujuan Pembelajaran (ATP)</label>
+                                                                <textarea name="alur_tujuan_pembelajaran" class="form-control" rows="3">{{ $cp->alur_tujuan_pembelajaran }}</textarea>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Indikator / Kriteria Ketercapaian (KKTP)</label>
+                                                                <textarea name="indikator_kriteria" class="form-control" rows="3">{{ $cp->indikator_kriteria }}</textarea>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">

@@ -11,6 +11,11 @@
                     <i class="ti ti-report-analytics me-2"></i>Daftar Nilai Harian
                 </h2>
                 <div class="text-muted mt-1">Kelola data nilai harian siswa per mata pelajaran</div>
+                @if($tahunAjaranAktif && $semesterAktif)
+                <div class="text-muted small mt-2">
+                    <i class="ti ti-calendar me-1"></i>{{ $tahunAjaranAktif->tahun_ajaran }} - <strong>{{ $semesterAktif->nama_semester }}</strong>
+                </div>
+                @endif
             </div>
             <div class="col-auto ms-auto d-print-none">
                 <div class="btn-list">

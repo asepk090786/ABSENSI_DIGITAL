@@ -14,6 +14,7 @@ class RencanaPembelajaran extends Model
     protected $fillable = [
         'guru_id',
         'mata_pelajaran_id',
+        'capaian_pembelajaran_id',
         'kelas_id',
         'jadwal_kbm_id',
         'judul',
@@ -46,6 +47,11 @@ class RencanaPembelajaran extends Model
     public function jadwalKbm()
     {
         return $this->belongsTo(JadwalKbm::class);
+    }
+
+    public function capaianPembelajaran()
+    {
+        return $this->belongsTo(CapaianPembelajaran::class);
     }
 
     public function komponenNilai()

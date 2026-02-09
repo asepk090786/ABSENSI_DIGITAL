@@ -6,6 +6,7 @@ use App\Models\RencanaPembelajaran;
 use App\Models\MataPelajaran;
 use App\Models\Kelas;
 use App\Models\KomponenNilai;
+use App\Models\CapaianPembelajaran;
 use Illuminate\Http\Request;
 
 class RencanaPembelajaranController extends Controller
@@ -174,11 +175,15 @@ class RencanaPembelajaranController extends Controller
         // Load selected komponen for this rencana
         $selectedKomponenIds = $rencanaPembelajaran->komponenNilai()->pluck('komponen_nilai.id')->toArray();
         
+        // Load all Capaian Pembelajaran
+        $capaianPembelajaran = CapaianPembelajaran::orderBy('nama_capaian_pembelajaran')->get();
+        
         return view('rencana_pembelajaran.edit', [
             'item' => $rencanaPembelajaran,
             'kelas' => $kelas,
             'komponenNilai' => $komponenNilai,
             'selectedKomponenIds' => $selectedKomponenIds,
+            'capaianPembelajaran' => $capaianPembelajaran,
         ]);
     }
 

@@ -14,6 +14,9 @@ class CapaianPembelajaran extends Model
         'deskripsi',
         'fase',
         'tahun_ajaran_id',
+        'tujuan_pembelajaran',
+        'alur_tujuan_pembelajaran',
+        'indikator_kriteria',
     ];
 
     public function tahunAjaran()

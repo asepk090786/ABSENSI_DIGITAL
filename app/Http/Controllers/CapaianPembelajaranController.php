@@ -17,6 +17,9 @@ class CapaianPembelajaranController extends Controller
             'nama_capaian_pembelajaran' => 'required|string|max:255|unique:capaian_pembelajarans,nama_capaian_pembelajaran',
             'deskripsi' => 'nullable|string',
             'fase' => 'nullable|string|max:1',
+            'tujuan_pembelajaran' => 'nullable|string',
+            'alur_tujuan_pembelajaran' => 'nullable|string',
+            'indikator_kriteria' => 'nullable|string',
         ]);
 
         CapaianPembelajaran::create($validated);
@@ -30,6 +33,9 @@ class CapaianPembelajaranController extends Controller
             'nama_capaian_pembelajaran' => 'required|string|max:255|unique:capaian_pembelajarans,nama_capaian_pembelajaran,' . $capaianPembelajaran->id,
             'deskripsi' => 'nullable|string',
             'fase' => 'nullable|string|max:1',
+            'tujuan_pembelajaran' => 'nullable|string',
+            'alur_tujuan_pembelajaran' => 'nullable|string',
+            'indikator_kriteria' => 'nullable|string',
         ]);
 
         $capaianPembelajaran->update($validated);

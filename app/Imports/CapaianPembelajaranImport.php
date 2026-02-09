@@ -22,12 +22,18 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
                 'nama_capaian_pembelajaran' => trim((string) ($row['nama_capaian_pembelajaran'] ?? '')),
                 'fase' => trim((string) ($row['fase'] ?? '')),
                 'deskripsi' => trim((string) ($row['deskripsi'] ?? '')),
+                'tujuan_pembelajaran' => trim((string) ($row['tujuan_pembelajaran'] ?? '')),
+                'alur_tujuan_pembelajaran' => trim((string) ($row['alur_tujuan_pembelajaran'] ?? '')),
+                'indikator_kriteria' => trim((string) ($row['indikator_kriteria'] ?? '')),
             ];
 
             $validator = Validator::make($payload, [
                 'nama_capaian_pembelajaran' => 'required|string|max:255',
                 'fase' => 'nullable|string|in:A,B,C,D,E,F',
                 'deskripsi' => 'nullable|string',
+                'tujuan_pembelajaran' => 'nullable|string',
+                'alur_tujuan_pembelajaran' => 'nullable|string',
+                'indikator_kriteria' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
@@ -44,6 +50,9 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
                     $existing->update([
                         'fase' => $payload['fase'] ?? $existing->fase,
                         'deskripsi' => $payload['deskripsi'] ?? $existing->deskripsi,
+                        'tujuan_pembelajaran' => $payload['tujuan_pembelajaran'] ?? $existing->tujuan_pembelajaran,
+                        'alur_tujuan_pembelajaran' => $payload['alur_tujuan_pembelajaran'] ?? $existing->alur_tujuan_pembelajaran,
+                        'indikator_kriteria' => $payload['indikator_kriteria'] ?? $existing->indikator_kriteria,
                     ]);
                 } else {
                     // Create new

@@ -21,7 +21,7 @@ class CapaianPembelajaranExport implements FromCollection, WithHeadings, WithMap
 
     public function headings(): array
     {
-        return ['No', 'Nama Capaian Pembelajaran', 'Fase', 'Deskripsi'];
+        return ['No', 'Nama Capaian Pembelajaran', 'Fase', 'Deskripsi', 'Tujuan Pembelajaran', 'Alur Tujuan Pembelajaran', 'Indikator Kriteria'];
     }
 
     public function map($item): array
@@ -31,6 +31,9 @@ class CapaianPembelajaranExport implements FromCollection, WithHeadings, WithMap
             $item->nama_capaian_pembelajaran,
             $item->fase ?? '',
             $item->deskripsi ?? '',
+            $item->tujuan_pembelajaran ?? '',
+            $item->alur_tujuan_pembelajaran ?? '',
+            $item->indikator_kriteria ?? '',
         ];
     }
 

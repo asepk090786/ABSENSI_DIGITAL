@@ -115,6 +115,17 @@ class NilaiController extends Controller
                 'komponen_nilai.nama_komponen'
             );
 
+        // Filter by active tahun ajaran and semester
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        if ($tahunAjaranAktif) {
+            $itemsQuery->where('nilai_harian.tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $itemsQuery->where('nilai_harian.semester_id', $semesterAktif->id);
+        }
+
         if ($kelasId) {
             $itemsQuery->where('nilai_harian.kelas_id', $kelasId);
             $filterKelasName = Kelas::where('id', $kelasId)->value('nama_kelas');
@@ -123,7 +134,6 @@ class NilaiController extends Controller
             $itemsQuery->where('nilai_harian.mapel_id', $mapelId);
             $filterMapelName = MataPelajaran::where('id', $mapelId)->value('nama_mapel');
         }
-
         $items = $itemsQuery->orderBy('nilai_harian.created_at','desc')->get();
 
         return view('nilai.index', compact(
@@ -138,7 +148,9 @@ class NilaiController extends Controller
             'mapelByKelas',
             'rencanaByMapel',
             'debugRencana',
-            'komponenList'
+            'komponenList',
+            'tahunAjaranAktif',
+            'semesterAktif'
         ));
     }
 

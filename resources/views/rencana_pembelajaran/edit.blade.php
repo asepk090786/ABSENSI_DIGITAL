@@ -58,8 +58,23 @@
                         </div>
 
                         <div class="col-md-12 mb-3">
+                            <label class="form-label">Capaian Pembelajaran</label>
+                            <select name="capaian_pembelajaran_id" id="capaianPembelajaranSelect" class="form-select @error('capaian_pembelajaran_id') is-invalid @enderror">
+                                <option value="">-- Pilih Capaian Pembelajaran --</option>
+                                @foreach($capaianPembelajaran as $cp)
+                                <option value="{{ $cp->id }}" data-tujuan="{{ $cp->tujuan_pembelajaran }}" {{ $item->capaian_pembelajaran_id == $cp->id ? 'selected' : '' }}>
+                                    [{{ $cp->fase ?? '-' }}] {{ $cp->nama_capaian_pembelajaran }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('capaian_pembelajaran_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Tujuan Pembelajaran</label>
-                            <textarea name="tujuan" class="form-control @error('tujuan') is-invalid @enderror" rows="3">{{ old('tujuan', $item->tujuan) }}</textarea>
+                            <textarea name="tujuan" id="tujuanPembelajaranTextarea" class="form-control @error('tujuan') is-invalid @enderror" rows="3">{{ old('tujuan', $item->tujuan) }}</textarea>
                             @error('tujuan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -144,4 +159,28 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const capaianSelect = document.getElementById('capaianPembelajaranSelect');
+    const tujuanTextarea = document.getElementById('tujuanPembelajaranTextarea');
+
+    if (capaianSelect && tujuanTextarea) {
+        capaianSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const tujuanValue = selectedOption.getAttribute('data-tujuan') || '';
+            tujuanTextarea.value = tujuanValue;
+        });
+
+        // Auto-populate on page load if a Capaian Pembelajaran is already selected
+        if (capaianSelect.value) {
+            const selectedOption = capaianSelect.options[capaianSelect.selectedIndex];
+            const tujuanValue = selectedOption.getAttribute('data-tujuan') || '';
+            if (tujuanValue && !tujuanTextarea.value) {
+                tujuanTextarea.value = tujuanValue;
+            }
+        }
+    }
+});
+</script>
 @endsection
