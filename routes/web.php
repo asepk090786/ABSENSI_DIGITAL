@@ -74,6 +74,17 @@ Route::middleware(['auth'])->group(function(){
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');
     Route::post('nilai/import', ['App\Http\Controllers\NilaiController', 'import'])->name('nilai.import');
     Route::get('nilai/template', ['App\Http\Controllers\NilaiController', 'template'])->name('nilai.template');
+    
+    // Capaian Pembelajaran Export/Import Routes
+    Route::get('capaian_pembelajaran/export', ['App\Http\Controllers\CapaianPembelajaranController', 'export'])->name('capaian_pembelajaran.export');
+    Route::get('capaian_pembelajaran/template', ['App\Http\Controllers\CapaianPembelajaranController', 'template'])->name('capaian_pembelajaran.template');
+    Route::post('capaian_pembelajaran/import', ['App\Http\Controllers\CapaianPembelajaranController', 'import'])->name('capaian_pembelajaran.import');
+    
+    // Komponen Nilai Export/Import Routes
+    Route::get('komponen_nilai/export', ['App\Http\Controllers\KomponenNilaiController', 'export'])->name('komponen_nilai.export');
+    Route::get('komponen_nilai/template', ['App\Http\Controllers\KomponenNilaiController', 'template'])->name('komponen_nilai.template');
+    Route::post('komponen_nilai/import', ['App\Http\Controllers\KomponenNilaiController', 'import'])->name('komponen_nilai.import');
+    
     Route::resource('komponen_nilai', 'App\Http\Controllers\KomponenNilaiController')->except(['show', 'create']);
     Route::resource('capaian_pembelajaran', 'App\Http\Controllers\CapaianPembelajaranController')->except(['show', 'create', 'index']);
     Route::get('capaian_pembelajaran/list', ['App\Http\Controllers\CapaianPembelajaranController', 'list'])->name('capaian_pembelajaran.list');

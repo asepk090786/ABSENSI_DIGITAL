@@ -24,6 +24,33 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         @endif
+        
+        @if(session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+        
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="ti ti-circle-x me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+        
+        @if(session('import_errors') && count(session('import_errors', [])) > 0)
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="ti ti-alert-triangle me-2"></i>
+            <strong>Kesalahan Import:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach(session('import_errors', []) as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
 
         <!-- Tab Navigation -->
         <ul class="nav nav-tabs mb-3" role="tablist">
@@ -93,8 +120,19 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Daftar Capaian Pembelajaran</h3>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Daftar Capaian Pembelajaran</h3>
+                        <div class="btn-group" role="group">
+                            <a href="{{ route('capaian_pembelajaran.export') }}" class="btn btn-sm btn-info" title="Download data CP">
+                                <i class="ti ti-download me-1"></i>Export
+                            </a>
+                            <a href="{{ route('capaian_pembelajaran.template') }}" class="btn btn-sm btn-secondary" title="Download template">
+                                <i class="ti ti-file-download me-1"></i>Template
+                            </a>
+                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#importCapaianModal" title="Upload file CP">
+                                <i class="ti ti-upload me-1"></i>Import
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         @if($capaianList->count() > 0)
@@ -183,6 +221,41 @@
                         @endif
                     </div>
                 </div>
+                
+                <!-- Import Capaian Pembelajaran Modal -->
+                <div class="modal modal-blur fade" id="importCapaianModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ route('capaian_pembelajaran.import') }}" enctype="multipart/form-data">
+                                @csrf
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Import Capaian Pembelajaran</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-info">
+                                        <i class="ti ti-info-circle me-2"></i>
+                                        <strong>Panduan:</strong> Upload file Excel (xlsx, xls, atau csv) berisi data Capaian Pembelajaran. 
+                                        <a href="{{ route('capaian_pembelajaran.template') }}">Download template</a> untuk melihat format.
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Pilih File <span class="text-danger">*</span></label>
+                                        <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,.xls,.csv" required>
+                                        @error('file')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="ti ti-upload me-1"></i>Upload
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 2: KOMPONEN PENILAIAN -->
@@ -230,97 +303,6 @@
                                 </div>
                             </div>
 
-                            <!-- Struktur Pembelajaran Mendalam -->
-                            <div class="accordion accordion-flush mb-4" id="learningAccordion">
-                                <!-- 1. Capaian Pembelajaran -->
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cpSection">
-                                            <i class="ti ti-target me-2"></i>
-                                            <strong>1. Capaian Pembelajaran (CP)</strong>
-                                            <small class="text-muted ms-2">Target kompetensi akhir pada fase</small>
-                                        </button>
-                                    </h2>
-                                    <div id="cpSection" class="accordion-collapse collapse show" data-bs-parent="#learningAccordion">
-                                        <div class="accordion-body">
-                                            <small class="text-muted d-block mb-3">
-                                                <strong>Catatan:</strong> Target kompetensi akhir pada fase (misalnya Fase E & F di SMA). Bersifat umum dan menyeluruh, menjadi acuan utama pembelajaran.
-                                            </small>
-                                            <textarea name="capaian_pembelajaran" class="form-control @error('capaian_pembelajaran') is-invalid @enderror" rows="4" placeholder="Contoh: Siswa dapat menganalisis dan mengevaluasi fenomena sosial dengan perspektif kritis...">{{ old('capaian_pembelajaran') }}</textarea>
-                                            @error('capaian_pembelajaran')
-                                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 2. Tujuan Pembelajaran -->
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tpSection">
-                                            <i class="ti ti-target me-2"></i>
-                                            <strong>2. Tujuan Pembelajaran (TP)</strong>
-                                            <small class="text-muted ms-2">Turunan spesifik dari CP</small>
-                                        </button>
-                                    </h2>
-                                    <div id="tpSection" class="accordion-collapse collapse" data-bs-parent="#learningAccordion">
-                                        <div class="accordion-body">
-                                            <small class="text-muted d-block mb-3">
-                                                <strong>Catatan:</strong> Turunan langsung dari CP, lebih spesifik, operasional, dan terukur. Menjadi sasaran pembelajaran harian/per pertemuan yang mendorong berpikir kritis, reflektif, dan bermakna.
-                                            </small>
-                                            <textarea name="tujuan_pembelajaran" class="form-control @error('tujuan_pembelajaran') is-invalid @enderror" rows="4" placeholder="Contoh: Peserta didik dapat mengidentifikasi penyebab masalah sosial dan merumuskan solusi alternatif...">{{ old('tujuan_pembelajaran') }}</textarea>
-                                            @error('tujuan_pembelajaran')
-                                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 3. Alur Tujuan Pembelajaran -->
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#atpSection">
-                                            <i class="ti ti-arrows-shuffle me-2"></i>
-                                            <strong>3. Alur Tujuan Pembelajaran (ATP)</strong>
-                                            <small class="text-muted ms-2">Rangkaian TP yang progresif</small>
-                                        </button>
-                                    </h2>
-                                    <div id="atpSection" class="accordion-collapse collapse" data-bs-parent="#learningAccordion">
-                                        <div class="accordion-body">
-                                            <small class="text-muted d-block mb-3">
-                                                <strong>Catatan:</strong> Rangkaian TP yang logis, berkesinambungan, dan progresif. Menunjukkan kedalaman pemahaman, bukan sekadar urutan materi.
-                                            </small>
-                                            <textarea name="alur_tujuan_pembelajaran" class="form-control @error('alur_tujuan_pembelajaran') is-invalid @enderror" rows="4" placeholder="Contoh: Pertemuan 1-2: Pemahaman... → Pertemuan 3-4: Analisis... → Pertemuan 5-6: Evaluasi dan refleksi...">{{ old('alur_tujuan_pembelajaran') }}</textarea>
-                                            @error('alur_tujuan_pembelajaran')
-                                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- 4. Indikator / Kriteria Ketercapaian -->
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kkSection">
-                                            <i class="ti ti-checks me-2"></i>
-                                            <strong>4. Indikator / Kriteria Ketercapaian (KKTP)</strong>
-                                            <small class="text-muted ms-2">Ukuran pencapaian TP</small>
-                                        </button>
-                                    </h2>
-                                    <div id="kkSection" class="accordion-collapse collapse" data-bs-parent="#learningAccordion">
-                                        <div class="accordion-body">
-                                            <small class="text-muted d-block mb-3">
-                                                <strong>Catatan:</strong> Kriteria Ketercapaian Tujuan Pembelajaran (KKTP). Ukuran apakah TP sudah tercapai, menekankan pemahaman konsep, transfer pengetahuan, dan refleksi.
-                                            </small>
-                                            <textarea name="indikator_kriteria" class="form-control @error('indikator_kriteria') is-invalid @enderror" rows="4" placeholder="Contoh: • Dapat menjelaskan min 3 penyebab... | • Dapat mengajukan 2 solusi yang realistis... | • Dapat merefleksikan pembelajaran dengan analisis kritis...">{{ old('indikator_kriteria') }}</textarea>
-                                            @error('indikator_kriteria')
-                                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-plus me-1"></i>Simpan Komponen Penilaian
                             </button>
@@ -329,8 +311,19 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Daftar Komponen</h3>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Daftar Komponen</h3>
+                        <div class="btn-group" role="group">
+                            <a href="{{ route('komponen_nilai.export') }}" class="btn btn-sm btn-info" title="Download data Komponen">
+                                <i class="ti ti-download me-1"></i>Export
+                            </a>
+                            <a href="{{ route('komponen_nilai.template') }}" class="btn btn-sm btn-secondary" title="Download template">
+                                <i class="ti ti-file-download me-1"></i>Template
+                            </a>
+                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#importKomponenModal" title="Upload file Komponen">
+                                <i class="ti ti-upload me-1"></i>Import
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         @if($items->count() > 0)
@@ -382,6 +375,41 @@
                                 <i class="ti ti-info-circle me-2"></i>Belum ada komponen penilaian.
                             </div>
                         @endif
+                    </div>
+                </div>
+                
+                <!-- Import Komponen Penilaian Modal -->
+                <div class="modal modal-blur fade" id="importKomponenModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ route('komponen_nilai.import') }}" enctype="multipart/form-data">
+                                @csrf
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Import Komponen Penilaian</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-info">
+                                        <i class="ti ti-info-circle me-2"></i>
+                                        <strong>Panduan:</strong> Upload file Excel (xlsx, xls, atau csv) berisi data Komponen Penilaian. 
+                                        <a href="{{ route('komponen_nilai.template') }}">Download template</a> untuk melihat format.
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Pilih File <span class="text-danger">*</span></label>
+                                        <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,.xls,.csv" required>
+                                        @error('file')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="ti ti-upload me-1"></i>Upload
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

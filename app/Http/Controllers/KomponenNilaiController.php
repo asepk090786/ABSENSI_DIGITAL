@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\KomponenNilai;
 use App\Models\CapaianPembelajaran;
+use App\Exports\KomponenNilaiExport;
+use App\Exports\KomponenNilaiTemplateExport;
+use App\Imports\KomponenNilaiImport;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class KomponenNilaiController extends Controller
 {
@@ -64,5 +68,35 @@ class KomponenNilaiController extends Controller
         $item->delete();
 
         return redirect()->route('komponen_nilai.index')->with('success', 'Komponen penilaian berhasil dihapus.');
+    }
+
+    public function export()
+    {
+        return Excel::download(new KomponenNilaiExport, 'komponen_nilai_' . date('Y-m-d') . '.xlsx');
+    }
+
+    public function template()
+    {
+        return Excel::download(new KomponenNilaiTemplateExport, 'template_komponen_nilai.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            Excel::import(new KomponenNilaiImport, $request->file('file'));
+            
+            $errors = session()->get('import_errors', []);
+            if (!empty($errors)) {
+                return back()->with('warning', 'Import selesai dengan beberapa error. ' . count($errors) . ' baris gagal.')->with('import_errors', $errors);
+            }
+            
+            return back()->with('success', 'Komponen Penilaian berhasil diimport.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error import: ' . $e->getMessage());
+        }
     }
 }
