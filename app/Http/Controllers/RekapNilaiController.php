@@ -78,9 +78,10 @@ class RekapNilaiController extends Controller
             
             // Query to get students with their grades
             $query = DB::table('siswa')
-                ->leftJoin('nilai_harian', function($join) use ($mapelId, $komponenId, $tahunAjaranActive, $semesterActive) {
+                ->leftJoin('nilai_harian', function($join) use ($mapelId, $komponenId, $tahunAjaranActive, $semesterActive, $kelasId) {
                     $join->on('siswa.id', '=', 'nilai_harian.siswa_id')
                         ->where('nilai_harian.mapel_id', $mapelId)
+                        ->where('nilai_harian.kelas_id', $kelasId)
                         ->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
                         ->where('nilai_harian.semester_id', $semesterActive->id);
                     
