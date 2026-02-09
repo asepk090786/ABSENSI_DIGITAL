@@ -18,6 +18,10 @@ class KomponenNilaiController extends Controller
         $validated = $request->validate([
             'nama_komponen' => 'required|string|max:255|unique:komponen_nilai,nama_komponen',
             'bobot' => 'nullable|numeric|min:0|max:100',
+            'capaian_pembelajaran' => 'nullable|string',
+            'tujuan_pembelajaran' => 'nullable|string',
+            'alur_tujuan_pembelajaran' => 'nullable|string',
+            'indikator_kriteria' => 'nullable|string',
         ]);
 
         KomponenNilai::create($validated);
@@ -38,6 +42,10 @@ class KomponenNilaiController extends Controller
         $validated = $request->validate([
             'nama_komponen' => 'required|string|max:255|unique:komponen_nilai,nama_komponen,' . $item->id,
             'bobot' => 'nullable|numeric|min:0|max:100',
+            'capaian_pembelajaran' => 'nullable|string',
+            'tujuan_pembelajaran' => 'nullable|string',
+            'alur_tujuan_pembelajaran' => 'nullable|string',
+            'indikator_kriteria' => 'nullable|string',
         ]);
 
         $item->update($validated);

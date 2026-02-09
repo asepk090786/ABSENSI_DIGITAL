@@ -1,9 +1,4 @@
 # Laravel/PHP
-/vendor/
-/node_modules/
-/public/storage/
-/storage/
-/bootstrap/cache/
 /.env
 /.env.*
 .phpunit.result.cache

@@ -75,6 +75,14 @@ Route::middleware(['auth'])->group(function(){
     Route::post('nilai/import', ['App\Http\Controllers\NilaiController', 'import'])->name('nilai.import');
     Route::get('nilai/template', ['App\Http\Controllers\NilaiController', 'template'])->name('nilai.template');
     Route::resource('komponen_nilai', 'App\Http\Controllers\KomponenNilaiController')->except(['show', 'create']);
+    
+    // Rekap Nilai
+    Route::get('rekap-nilai', ['App\Http\Controllers\RekapNilaiController', 'index'])->name('rekap_nilai.index');
+    Route::get('rekap-nilai/export', ['App\Http\Controllers\RekapNilaiController', 'export'])->name('rekap_nilai.export');
+    
+    // Rekap Nilai
+    Route::get('rekap-nilai', ['App\Http\Controllers\RekapNilaiController', 'index'])->name('rekap_nilai.index');
+    Route::get('rekap-nilai/export', ['App\Http\Controllers\RekapNilaiController', 'export'])->name('rekap_nilai.export');
 
         // Struktur Kurikulum
         Route::get('kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');

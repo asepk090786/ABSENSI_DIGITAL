@@ -399,8 +399,11 @@
                                     <i class="ti ti-clipboard-check me-2"></i>Absensi
                                 </a>
                                 @endunless
-                                <a class="dropdown-item {{ request()->routeIs('nilai.*') ? 'active' : '' }}" href="{{ route('nilai.index') }}">
+                                <a class="dropdown-item {{ request()->routeIs('nilai.index') ? 'active' : '' }}" href="{{ route('nilai.index') }}">
                                     <i class="ti ti-report-analytics me-2"></i>Nilai
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}" href="{{ route('rekap_nilai.index') }}">
+                                    <i class="ti ti-chart-bar me-2"></i>Rekap Nilai
                                 </a>
                             </div>
                         </li>

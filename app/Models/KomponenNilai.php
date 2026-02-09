@@ -14,5 +14,9 @@ class KomponenNilai extends Model
     protected $fillable = [
         'nama_komponen',
         'bobot',
+        'capaian_pembelajaran',
+        'tujuan_pembelajaran',
+        'alur_tujuan_pembelajaran',
+        'indikator_kriteria',
     ];
 }

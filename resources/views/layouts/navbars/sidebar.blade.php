@@ -75,9 +75,15 @@
         </li>
         @endif
         <li>
-            <a href="{{ route('nilai.index') }}" class="menu-item {{ request()->routeIs('nilai.*') ? 'active' : '' }}">
+            <a href="{{ route('nilai.index') }}" class="menu-item {{ request()->routeIs('nilai.index') ? 'active' : '' }}">
                 <i class="material-icons">grading</i>
                 <span>Nilai</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('rekap_nilai.index') }}" class="menu-item {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}">
+                <i class="material-icons">assessment</i>
+                <span>Rekap Nilai</span>
             </a>
         </li>
     </ul>
