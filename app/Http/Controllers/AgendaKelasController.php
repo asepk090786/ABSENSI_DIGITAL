@@ -9,7 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class AgendaKelasController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $tahun = DB::table('tahun_ajaran')->where('is_active',1)->first();
         $semester = DB::table('semester')->where('is_active',1)->first();
@@ -17,7 +17,9 @@ class AgendaKelasController extends Controller
         if (! $tahun || ! $semester) {
             $items = collect();
             $kelasQuickAccess = collect();
-            return view('agenda_kelas.index', compact('items', 'kelasQuickAccess'))
+            $guruQuickAccess = collect();
+            $selectedGuru = null;
+            return view('agenda_kelas.index', compact('items', 'kelasQuickAccess', 'guruQuickAccess', 'selectedGuru'))
                 ->withErrors('Tahun ajaran atau semester belum di-set aktif.');
         }
 
@@ -25,31 +27,54 @@ class AgendaKelasController extends Controller
         $user = auth()->user();
         $guru = $user->guru;
 
-        // Filter agenda hanya untuk guru yang login
+        // Get guru_id dari query parameter (untuk filter)
+        $filterGuruId = $request->get('guru_id');
+        $selectedGuru = null;
+
+        // Filter agenda
         $query = AgendaKelas::where('tahun_ajaran_id', $tahun->id)
             ->where('semester_id', $semester->id);
         
         if ($guru) {
+            // Jika ada guru yang login, hanya tampilkan agenda guru tersebut
             $query->where('guru_id', $guru->id);
+        } elseif ($filterGuruId) {
+            // Jika ada filter guru dari query parameter
+            $query->where('guru_id', $filterGuruId);
         }
         
         $items = $query->orderBy('tanggal','desc')
             ->get();
         
-        // Get kelas quick access untuk guru yang login
-        if ($guru) {
+        // Get daftar guru untuk quick access (hanya guru yang memiliki jadwal KBM)
+        $guruQuickAccess = DB::table('jadwal_kbm')
+            ->join('guru', 'jadwal_kbm.guru_id', '=', 'guru.id')
+            ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id ?? 0)
+            ->select('guru.id', 'guru.nama', 'guru.kode_guru')
+            ->distinct()
+            ->orderBy('guru.nama')
+            ->get();
+
+        // Get kelas untuk guru yang dipilih atau guru yang login
+        $activeGuruId = $guru ? $guru->id : ($filterGuruId ?: null);
+
+        if ($activeGuruId) {
+            $selectedGuru = DB::table('guru')->where('id', $activeGuruId)->first();
+            
             $kelasQuickAccess = DB::table('jadwal_kbm')
                 ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
-                ->leftJoin('guru', 'kelas.wali_kelas_id', '=', 'guru.id')
-                ->where('jadwal_kbm.guru_id', $guru->id)
-                ->select('kelas.id', 'kelas.nama_kelas', 'guru.nama as wali_nama')
+                ->leftJoin('guru as wali', 'kelas.wali_kelas_id', '=', 'wali.id')
+                ->where('jadwal_kbm.guru_id', $activeGuruId)
+                ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id ?? 0)
+                ->select('kelas.id', 'kelas.nama_kelas', 'wali.nama as wali_nama')
                 ->distinct()
+                ->orderBy('kelas.nama_kelas')
                 ->get();
         } else {
             $kelasQuickAccess = collect();
         }
         
-        return view('agenda_kelas.index', compact('items', 'kelasQuickAccess'));
+        return view('agenda_kelas.index', compact('items', 'kelasQuickAccess', 'guruQuickAccess', 'selectedGuru', 'filterGuruId'));
     }
 
     public function create(Request $request)

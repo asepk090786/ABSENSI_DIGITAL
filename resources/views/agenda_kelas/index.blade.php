@@ -12,6 +12,17 @@
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
     }
 
+    /* Guru Quick Access Styles */
+    .guru-btn {
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .guru-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1) !important;
+    }
+
     /* Class Level Colors */
     .card-class-10 {
         border-color: #3b82f6 !important;
@@ -113,15 +124,46 @@
 </style>
 
 <div class="container-fluid">
-    @if($kelasQuickAccess->isNotEmpty())
-    <!-- Menu Akses Cepat -->
+    @if($guruQuickAccess->isNotEmpty())
+    <!-- Menu Akses Cepat - Pilih Guru -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="ti ti-users me-2"></i>Pilih Guru
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach($guruQuickAccess as $g)
+                        <div class="col-auto">
+                            <a href="{{ route('agenda_kelas.index', ['guru_id' => $g->id]) }}" 
+                               class="btn guru-btn {{ $filterGuruId == $g->id ? 'btn-primary' : 'btn-outline-primary' }}"
+                               title="Lihat agenda {{ $g->nama }}">
+                                <i class="ti ti-user me-1"></i>{{ $g->nama }}
+                            </a>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($selectedGuru && $kelasQuickAccess->isNotEmpty())
+    <!-- Menu Akses Cepat - Kelas untuk Guru Terpilih -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-primary-subtle">
+                <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
-                        <i class="ti ti-clock-play me-2"></i>Menu Akses Cepat - Isi Agenda Kelas Anda
+                        <i class="ti ti-clock-play me-2"></i>Menu Akses Cepat - {{ $selectedGuru->nama }} (Isi Agenda Kelas)
                     </h5>
+                    <a href="{{ route('agenda_kelas.index') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="ti ti-x me-1"></i>Reset
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -227,7 +269,14 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0">Data Agenda Kelas</h4>
+                    <div>
+                        <h4 class="card-title mb-0">
+                            Data Agenda Kelas
+                            @if($selectedGuru)
+                                <span class="badge bg-primary ms-2">{{ $selectedGuru->nama }}</span>
+                            @endif
+                        </h4>
+                    </div>
                     <a href="{{ route('agenda_kelas.create') }}" class="btn btn-primary btn-sm">
                         <i class="ti ti-plus"></i> Tambah Agenda
                     </a>
