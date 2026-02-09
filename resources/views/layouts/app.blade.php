@@ -407,6 +407,47 @@
                                 </a>
                             </div>
                         </li>
+
+                        <!-- Wali Kelas (Only for Teachers who are homeroom teachers) -->
+                        @php
+                            $isWaliKelas = false;
+                            $kelasBindaan = null;
+                            if ($isGuru && auth()->user()->guru) {
+                                $guruId = auth()->user()->guru->id;
+                                $kelasBindaan = DB::table('kelas')
+                                    ->where('wali_kelas_id', $guruId)
+                                    ->first();
+                                $isWaliKelas = !is_null($kelasBindaan);
+                            }
+                        @endphp
+
+                        @if($isWaliKelas)
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('wali_kelas.*') ? 'active' : '' }}" href="#navbar-walikelas" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-school"></i>
+                                </span>
+                                <span class="nav-link-title">Wali Kelas</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-header">
+                                    <span class="badge bg-primary">{{ $kelasBindaan->nama_kelas ?? '-' }}</span>
+                                </div>
+                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.index') ? 'active' : '' }}" href="{{ route('wali_kelas.index') }}">
+                                    <i class="ti ti-dashboard me-2"></i>Dashboard
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.siswa') ? 'active' : '' }}" href="{{ route('wali_kelas.siswa') }}">
+                                    <i class="ti ti-users me-2"></i>Data Siswa
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.absensi') ? 'active' : '' }}" href="{{ route('wali_kelas.absensi') }}">
+                                    <i class="ti ti-calendar-check me-2"></i>Absensi Kelas
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.nilai') ? 'active' : '' }}" href="{{ route('wali_kelas.nilai') }}">
+                                    <i class="ti ti-chart-bar me-2"></i>Nilai Siswa
+                                </a>
+                            </div>
+                        </li>
+                        @endif
                         
                         <!-- Data Master (Only for Admin, Kepala Sekolah, and Wakil Kepala Sekolah) -->
                         @if($roleName === 'admin' || $roleName === 'kepala_sekolah' || $roleName === 'wakil_kepala_sekolah')
