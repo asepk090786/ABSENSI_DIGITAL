@@ -280,7 +280,7 @@
                                     <button type="button" class="btn btn-sm w-100 mt-2 btn-outline-secondary" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#previewAgendaModal"
-                                            onclick="loadAgendaPreview({{ $kelas->id }})">
+                                            onclick="loadAgendaPreview({{ $kelas->id }}, {{ $selectedGuru ? $selectedGuru->id : 'null' }})">
                                         <i class="ti ti-eye me-1"></i>Preview Agenda
                                     </button>
                                 </div>
@@ -409,10 +409,13 @@
 let selectedKelasId = null;
 
 // Function untuk load preview agenda
-function loadAgendaPreview(kelasId) {
+function loadAgendaPreview(kelasId, guruId = null) {
     selectedKelasId = kelasId;
     const pdfContainer = document.getElementById('pdfContainer');
-    const previewUrl = `{{ route('agenda_kelas.preview') }}?kelas_id=${kelasId}`;
+    let previewUrl = `{{ route('agenda_kelas.preview') }}?kelas_id=${kelasId}`;
+    if (guruId) {
+        previewUrl += `&guru_id=${guruId}`;
+    }
     
     // Show loading
     pdfContainer.innerHTML = `

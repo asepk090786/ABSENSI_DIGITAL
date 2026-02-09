@@ -359,8 +359,17 @@ class AgendaKelasController extends Controller
     public function preview(Request $request)
     {
         $kelasId = $request->get('kelas_id');
+        $guruId = $request->get('guru_id'); // Get guru_id dari query parameter
         $user = auth()->user();
-        $guru = $user->guru;
+        $guruLogin = $user->guru;
+        
+        // Tentukan guru_id yang akan digunakan
+        // Prioritas: guru yang login -> guru_id dari parameter
+        $activeGuruId = $guruLogin ? $guruLogin->id : $guruId;
+        
+        if (!$activeGuruId) {
+            abort(403, 'Guru tidak ditemukan. Silakan pilih guru terlebih dahulu.');
+        }
         
         $tahunAjaran = DB::table('tahun_ajaran')->where('is_active',1)->first();
         $semester = DB::table('semester')->where('is_active',1)->first();
@@ -369,10 +378,17 @@ class AgendaKelasController extends Controller
             abort(404, 'Tahun ajaran atau semester tidak ditemukan');
         }
 
+        // Get data guru
+        $guru = DB::table('guru')->find($activeGuruId);
+        
+        if (!$guru) {
+            abort(404, 'Data guru tidak ditemukan');
+        }
+
         // Get all agenda untuk kelas dan guru ini
         $agendas = AgendaKelas::with(['kelas', 'guru', 'jamBelajar'])
             ->where('kelas_id', $kelasId)
-            ->where('guru_id', $guru->id)
+            ->where('guru_id', $activeGuruId)
             ->where('tahun_ajaran_id', $tahunAjaran->id)
             ->where('semester_id', $semester->id)
             ->orderBy('tanggal', 'desc')
