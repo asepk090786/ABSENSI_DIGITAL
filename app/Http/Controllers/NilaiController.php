@@ -225,18 +225,11 @@ class NilaiController extends Controller
             'nilai.*' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $user = auth()->user();
-        $guru = $user ? $user->guru : null;
-        if (!$guru) {
-            return redirect()->route('nilai.index')->with('error', 'Akun guru tidak ditemukan.');
-        }
-
         $now = now();
         $updated = 0;
         foreach ($validated['nilai'] as $id => $value) {
             $affected = DB::table('nilai_harian')
                 ->where('id', $id)
-                ->where('guru_id', $guru->id)
                 ->update([
                     'nilai' => $value === '' ? null : $value,
                     'updated_at' => $now,
