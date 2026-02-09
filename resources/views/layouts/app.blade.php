@@ -445,6 +445,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('wali_kelas.nilai') ? 'active' : '' }}" href="{{ route('wali_kelas.nilai') }}">
                                     <i class="ti ti-chart-bar me-2"></i>Nilai Siswa
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('rekap_nilai.*') && request()->boolean('wali_kelas') ? 'active' : '' }}" href="{{ route('rekap_nilai.index', ['wali_kelas' => 1, 'kelas_id' => $kelasBindaan->id]) }}">
+                                    <i class="ti ti-report-analytics me-2"></i>Rekap Nilai
+                                </a>
                             </div>
                         </li>
                         @endif

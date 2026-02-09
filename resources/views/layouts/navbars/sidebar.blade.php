@@ -125,6 +125,12 @@
                 <span>Nilai Siswa</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('rekap_nilai.index', ['wali_kelas' => 1, 'kelas_id' => $kelasBindaan->id]) }}" class="menu-item {{ request()->routeIs('rekap_nilai.*') && request()->boolean('wali_kelas') ? 'active' : '' }}">
+                <i class="material-icons">assessment</i>
+                <span>Rekap Nilai</span>
+            </a>
+        </li>
     </ul>
     @endif
 

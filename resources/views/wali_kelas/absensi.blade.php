@@ -30,7 +30,7 @@
                                     <tr>
                                         <th width="5%">No</th>
                                         <th>Tanggal</th>
-                                        <th>Mata Pelajaran</th>
+                                        <th>Jam KBM</th>
                                         <th>Guru</th>
                                         <th>Hadir</th>
                                         <th>Sakit</th>
@@ -43,12 +43,12 @@
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $a->tanggal ? \Carbon\Carbon::parse($a->tanggal)->format('d/m/Y') : '-' }}</td>
-                                        <td>-</td>
-                                        <td>-</td>
-                                        <td><span class="badge bg-success">-</span></td>
-                                        <td><span class="badge bg-warning">-</span></td>
-                                        <td><span class="badge bg-info">-</span></td>
-                                        <td><span class="badge bg-danger">-</span></td>
+                                        <td>{{ $a->jam_mulai ?? '-' }} - {{ $a->jam_selesai ?? '-' }}</td>
+                                        <td>{{ $a->guru_nama ?? '-' }}</td>
+                                        <td><span class="badge bg-success">{{ $rekapCounts[$a->id]->hadir ?? 0 }}</span></td>
+                                        <td><span class="badge bg-warning">{{ $rekapCounts[$a->id]->sakit ?? 0 }}</span></td>
+                                        <td><span class="badge bg-info">{{ $rekapCounts[$a->id]->izin ?? 0 }}</span></td>
+                                        <td><span class="badge bg-danger">{{ $rekapCounts[$a->id]->alpha ?? 0 }}</span></td>
                                     </tr>
                                     @endforeach
                                 </tbody>

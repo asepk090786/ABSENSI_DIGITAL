@@ -27,20 +27,36 @@ class RekapNilaiController extends Controller
         $kelasId = $request->get('kelas_id');
         $mapelId = $request->get('mapel_id');
         $komponenId = $request->get('komponen_id');
+        $waliKelasOnly = $request->boolean('wali_kelas');
         
         // Get kelas options from guru's jadwal
         $kelasOptions = collect();
+        $kelasBinaan = null;
         if ($guru) {
-            $kelasOptions = DB::table('jadwal_kbm')
-                ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
-                ->where('jadwal_kbm.guru_id', $guru->id)
-                ->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id)
-                ->where('jadwal_kbm.semester_id', $semesterActive->id)
-                ->select('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
-                ->distinct()
-                ->orderBy('kelas.tingkat_kelas')
-                ->orderBy('kelas.nama_kelas')
-                ->get();
+            if ($waliKelasOnly) {
+                $kelasBinaan = Kelas::where('wali_kelas_id', $guru->id)->first();
+                if ($kelasBinaan) {
+                    $kelasOptions = collect([
+                        (object) [
+                            'id' => $kelasBinaan->id,
+                            'nama_kelas' => $kelasBinaan->nama_kelas,
+                            'tingkat_kelas' => $kelasBinaan->tingkat_kelas
+                        ]
+                    ]);
+                    $kelasId = $kelasBinaan->id;
+                }
+            } else {
+                $kelasOptions = DB::table('jadwal_kbm')
+                    ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
+                    ->where('jadwal_kbm.guru_id', $guru->id)
+                    ->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id)
+                    ->where('jadwal_kbm.semester_id', $semesterActive->id)
+                    ->select('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
+                    ->distinct()
+                    ->orderBy('kelas.tingkat_kelas')
+                    ->orderBy('kelas.nama_kelas')
+                    ->get();
+            }
         }
         
         // Get mapel options from guru's jadwal
@@ -60,6 +76,10 @@ class RekapNilaiController extends Controller
                 ->distinct()
                 ->orderBy('mata_pelajaran.nama_mapel')
                 ->get();
+        }
+
+        if ($waliKelasOnly && !$mapelId && $mapelOptions->isNotEmpty()) {
+            $mapelId = $mapelOptions->first()->id;
         }
         
         // Get komponen nilai options

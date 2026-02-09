@@ -29,22 +29,24 @@
                                 <thead>
                                     <tr>
                                         <th width="5%">No</th>
+                                        <th>NIS</th>
                                         <th>NISN</th>
                                         <th>Nama Siswa</th>
                                         <th>Jenis Kelamin</th>
-                                        <th>Tempat, Tanggal Lahir</th>
-                                        <th>Alamat</th>
+                                        <th>Email</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($siswa as $index => $s)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
+                                        <td>{{ $s->nis ?? '-' }}</td>
                                         <td>{{ $s->nisn ?? '-' }}</td>
                                         <td>{{ $s->nama ?? '-' }}</td>
                                         <td>{{ $s->jenis_kelamin ?? '-' }}</td>
-                                        <td>{{ $s->tempat_lahir ?? '-' }}, {{ $s->tanggal_lahir ? \Carbon\Carbon::parse($s->tanggal_lahir)->format('d/m/Y') : '-' }}</td>
-                                        <td>{{ Str::limit($s->alamat ?? '-', 50) }}</td>
+                                        <td>{{ $s->email ?? '-' }}</td>
+                                        <td>{{ ($s->status_aktif ?? 0) ? 'Aktif' : 'Nonaktif' }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>

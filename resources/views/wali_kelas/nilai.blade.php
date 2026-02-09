@@ -47,7 +47,7 @@
                                         <td>{{ $s->nisn ?? '-' }}</td>
                                         <td>{{ $s->nama ?? '-' }}</td>
                                         <td class="text-center">
-                                            <a href="{{ route('rekap_nilai.index', ['siswa_id' => $s->id]) }}" 
+                                            <a href="{{ route('wali_kelas.nilai_siswa', $s->id) }}" 
                                                class="btn btn-sm btn-primary"
                                                title="Lihat nilai">
                                                 <i class="ti ti-eye me-1"></i>Lihat Nilai

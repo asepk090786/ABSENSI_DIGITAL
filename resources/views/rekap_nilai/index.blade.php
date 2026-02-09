@@ -21,6 +21,9 @@
             <div class="card-body">
                 <!-- Filter Form -->
                 <form method="GET" action="{{ route('rekap_nilai.index') }}" class="mb-4">
+                    @if(request()->boolean('wali_kelas'))
+                        <input type="hidden" name="wali_kelas" value="1">
+                    @endif
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Kelas <span class="text-danger">*</span></label>
@@ -62,7 +65,7 @@
                                 <i class="ti ti-filter me-1"></i>Tampilkan Rekap
                             </button>
                             @if($rekapData)
-                                <a href="{{ route('rekap_nilai.export', ['kelas_id' => $kelasId, 'mapel_id' => $mapelId, 'komponen_id' => $komponenId]) }}" class="btn btn-success">
+                                <a href="{{ route('rekap_nilai.export', ['kelas_id' => $kelasId, 'mapel_id' => $mapelId, 'komponen_id' => $komponenId, 'wali_kelas' => request()->boolean('wali_kelas') ? 1 : null]) }}" class="btn btn-success">
                                     <i class="ti ti-file-spreadsheet me-1"></i>Export Excel
                                 </a>
                             @endif
