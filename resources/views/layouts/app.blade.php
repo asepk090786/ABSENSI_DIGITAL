@@ -376,6 +376,44 @@
                         </li>
                         @endif
 
+                        @php
+                            // Cek apakah guru adalah guru piket
+                            $isGuruPiket = false;
+                            if ($isGuru && auth()->user()->guru) {
+                                // Cek dari hari_piket di tabel guru
+                                $hariPiket = auth()->user()->guru->hari_piket ?? [];
+                                $isGuruPiket = !empty($hariPiket);
+                                
+                                // Atau cek dari role
+                                if (!$isGuruPiket && auth()->user()->role) {
+                                    $isGuruPiket = strtolower(auth()->user()->role->role_name) === 'guru piket';
+                                }
+                            }
+                        @endphp
+
+                        @if($isGuruPiket)
+                        <!-- Piket KBM (Guru Piket only) -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-piket" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-shield-check"></i>
+                                </span>
+                                <span class="nav-link-title">Piket KBM</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
+                                    <i class="ti ti-dashboard me-2"></i>Dashboard Piket
+                                </a>
+                                <a class="dropdown-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}" href="{{ url('/jadwal-kbm') }}">
+                                    <i class="ti ti-calendar-time me-2"></i>Jadwal Piket
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('agenda_kelas.index') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
+                                    <i class="ti ti-file-text me-2"></i>Laporan Piket
+                                </a>
+                            </div>
+                        </li>
+                        @endif
+
                         <!-- Akademik -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {{ request()->routeIs(['jam_belajar.*', 'agenda_kelas.*', 'absensi.*']) ? 'active' : '' }}" href="#navbar-akademik" data-bs-toggle="dropdown" role="button" aria-expanded="false">
