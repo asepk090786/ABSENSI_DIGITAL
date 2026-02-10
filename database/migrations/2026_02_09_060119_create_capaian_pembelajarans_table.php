@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nama_capaian_pembelajaran')->unique();
             $table->longText('deskripsi')->nullable();
             $table->string('fase')->nullable()->comment('Fase pembelajaran (A, B, C, D, E, F)');
-            $table->foreignId('tahun_ajaran_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->foreignId('tahun_ajaran_id')->nullable()->constrained('tahun_ajaran')->cascadeOnDelete();
             $table->timestamps();
         });
     }

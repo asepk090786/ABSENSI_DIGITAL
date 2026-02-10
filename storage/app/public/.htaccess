@@ -1,0 +1,17 @@
+<IfModule mod_dir.c>
+    DirectoryIndex index.html index.htm
+</IfModule>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
+
+# Allow access to all files
+<FilesMatch ".*">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
