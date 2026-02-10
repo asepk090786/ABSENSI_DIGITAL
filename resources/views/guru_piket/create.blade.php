@@ -108,6 +108,32 @@
                                     @enderror
                                 </div>
                             </div>
+
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Hari Piket</label>
+                                    @php
+                                        $selectedHari = old('hari_piket', []);
+                                    @endphp
+                                    <div id="hari-piket-container" class="row g-2">
+                                        @foreach($allHari as $hari)
+                                            <div class="col-6 col-md-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="hari_piket[]" value="{{ $hari }}" id="hari-{{ $hari }}" {{ in_array($hari, $selectedHari) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="hari-{{ $hari }}">{{ $hari }}</label>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @error('hari_piket')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    @error('hari_piket.*')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted d-block mt-1">Pilihan hari mengikuti hari tanpa jadwal mengajar.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mt-3">
@@ -128,19 +154,88 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const guruSelect = document.querySelector('select[name="guru_id"]');
-    const guruData = {!! json_encode($guru->mapWithKeys(function($item) {
-        return [$item->id => ['nama' => $item->nama, 'nip' => $item->nip]];
+    const emailInput = document.querySelector('input[name="email"]');
+    const hariContainer = document.getElementById('hari-piket-container');
+    const allHari = {!! json_encode($allHari) !!};
+    const initialSelectedHari = {!! json_encode(old('hari_piket', [])) !!};
+    const guruData = {!! json_encode($guru->mapWithKeys(function($item) use ($availableHariByGuru) {
+        return [$item->id => [
+            'nama' => $item->nama,
+            'nip' => $item->nip,
+            'email' => $item->user->email ?? $item->email,
+            'available_hari' => $availableHariByGuru[$item->id] ?? [],
+        ]];
     })->all()) !!};
+
+    const getSelectedHari = function() {
+        return Array.from(hariContainer.querySelectorAll('input[name="hari_piket[]"]:checked'))
+            .map(function(input) { return input.value; });
+    };
+
+    const renderHari = function(days, selectedDays) {
+        const selected = selectedDays || [];
+        hariContainer.innerHTML = '';
+        days.forEach(function(hari) {
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-3';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'form-check';
+
+            const input = document.createElement('input');
+            input.className = 'form-check-input';
+            input.type = 'checkbox';
+            input.name = 'hari_piket[]';
+            input.value = hari;
+            input.id = 'hari-' + hari;
+            if (selected.indexOf(hari) !== -1) {
+                input.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.htmlFor = input.id;
+            label.textContent = hari;
+
+            wrapper.appendChild(input);
+            wrapper.appendChild(label);
+            col.appendChild(wrapper);
+            hariContainer.appendChild(col);
+        });
+    };
+
+    renderHari(allHari, initialSelectedHari);
 
     if (guruSelect) {
         guruSelect.addEventListener('change', function() {
             const guruId = this.value;
+            const currentSelectedHari = getSelectedHari();
             if (guruId && guruData[guruId]) {
                 const data = guruData[guruId];
                 document.querySelector('input[name="nama"]').value = data.nama;
                 document.querySelector('input[name="nip"]').value = data.nip || '';
+                if (emailInput) {
+                    emailInput.value = data.email || '';
+                }
+                if (data.available_hari && data.available_hari.length) {
+                    renderHari(data.available_hari, currentSelectedHari);
+                } else {
+                    renderHari(allHari, currentSelectedHari);
+                }
+            } else {
+                if (emailInput) {
+                    emailInput.value = '';
+                }
+                renderHari(allHari, currentSelectedHari);
             }
         });
+
+        if (guruSelect.value && guruData[guruSelect.value]) {
+            const data = guruData[guruSelect.value];
+            if (data.available_hari && data.available_hari.length) {
+                renderHari(data.available_hari, initialSelectedHari);
+            }
+        }
     }
 });
 </script>

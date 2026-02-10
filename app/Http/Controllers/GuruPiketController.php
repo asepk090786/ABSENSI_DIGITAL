@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\JadwalKbm;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -20,12 +21,24 @@ class GuruPiketController extends Controller
                 $q->where('role_name', 'Guru Piket');
             });
         })->orderBy('created_at', 'desc')->get();
+
+        $workDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $guruByHari = collect($workDays)->mapWithKeys(function ($hari) use ($gurupiket) {
+            $items = $gurupiket->filter(function ($guru) use ($hari) {
+                $hariPiket = (array) ($guru->hari_piket ?? []);
+                return in_array($hari, $hariPiket, true);
+            })->values();
+
+            return [$hari => $items];
+        });
+        $hasAny = $guruByHari->flatten(1)->isNotEmpty();
         
-        return view('guru_piket.index', compact('gurupiket'));
+        return view('guru_piket.index', compact('gurupiket', 'workDays', 'guruByHari', 'hasAny'));
     }
 
     public function create()
     {
+        $allHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
         $guruPiketIds = Guru::whereHas('user', function($query) {
             $query->whereHas('roles', function($q) {
                 $q->where('role_name', 'Guru Piket');
@@ -38,7 +51,23 @@ class GuruPiketController extends Controller
             ->whereNotIn('id', $guruPiketIds)
             ->orderBy('nama')
             ->get();
-        return view('guru_piket.create', compact('guru'));
+
+        $guruIds = $guru->pluck('id');
+        $jadwalHariByGuru = JadwalKbm::whereIn('guru_id', $guruIds)
+            ->select('guru_id', 'hari')
+            ->distinct()
+            ->get()
+            ->groupBy('guru_id')
+            ->map(function ($items) {
+                return $items->pluck('hari')->unique()->values()->all();
+            });
+
+        $availableHariByGuru = $guruIds->mapWithKeys(function ($id) use ($allHari, $jadwalHariByGuru) {
+            $hariMengajar = $jadwalHariByGuru->get($id, []);
+            return [$id => array_values(array_diff($allHari, $hariMengajar))];
+        })->all();
+
+        return view('guru_piket.create', compact('guru', 'allHari', 'availableHariByGuru'));
     }
 
     public function store(Request $request)
@@ -51,6 +80,8 @@ class GuruPiketController extends Controller
             'alamat' => 'nullable|string',
             'telepon' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
+            'hari_piket' => 'nullable|array',
+            'hari_piket.*' => 'in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ];
 
@@ -71,14 +102,35 @@ class GuruPiketController extends Controller
 
         if ($request->filled('guru_id')) {
             $guru = Guru::findOrFail($validated['guru_id']);
+            if (! empty($validated['hari_piket'])) {
+                $hariMengajar = JadwalKbm::where('guru_id', $guru->id)
+                    ->select('hari')
+                    ->distinct()
+                    ->pluck('hari')
+                    ->unique()
+                    ->values()
+                    ->all();
+                $hariBentrok = array_intersect($validated['hari_piket'], $hariMengajar);
+                if (! empty($hariBentrok)) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['hari_piket' => 'Hari piket bentrok dengan jadwal mengajar.']);
+                }
+            }
+
             $guruData = array_intersect_key($validated, array_flip([
                 'nama',
                 'nip',
                 'alamat',
                 'telepon',
                 'email',
+                'hari_piket',
                 'foto',
             ]));
+
+            $guruData = array_filter($guruData, function ($value) {
+                return $value !== null && $value !== '';
+            });
 
             if (! empty($guruData)) {
                 $guru->update($guruData);
@@ -88,17 +140,33 @@ class GuruPiketController extends Controller
             if ($guruPiketRole) {
                 $user = $guru->user;
                 if ($user) {
-                    $user->update([
+                    if (empty($guru->email) && ! empty($user->email)) {
+                        $guru->update(['email' => $user->email]);
+                    }
+
+                    $userData = [
                         'name' => $guru->nama,
-                        'email' => $guru->email,
                         'is_active' => $validated['is_active'],
-                    ]);
+                    ];
+
+                    if (! empty($user->email)) {
+                        $userData['email'] = $user->email;
+                    }
+
+                    $user->update($userData);
                     $user->roles()->syncWithoutDetaching([$guruPiketRole->id]);
                 } else {
                     if (empty($guru->email)) {
                         return redirect()->back()
                             ->withInput()
                             ->withErrors(['email' => 'Email wajib diisi untuk membuat akun guru piket.']);
+                    }
+
+                    $emailExists = User::where('email', $guru->email)->exists();
+                    if ($emailExists) {
+                        return redirect()->back()
+                            ->withInput()
+                            ->withErrors(['email' => 'Email sudah digunakan oleh akun lain.']);
                     }
 
                     $roleGuru = Role::where('role_name', 'Guru')->first();
@@ -153,8 +221,17 @@ class GuruPiketController extends Controller
     public function edit($id)
     {
         $gurupiket = Guru::findOrFail($id);
+        $allHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        $hariMengajar = JadwalKbm::where('guru_id', $gurupiket->id)
+            ->select('hari')
+            ->distinct()
+            ->pluck('hari')
+            ->unique()
+            ->values()
+            ->all();
+        $availableHari = array_values(array_diff($allHari, $hariMengajar));
         $guru = Guru::all();
-        return view('guru_piket.edit', compact('gurupiket', 'guru'));
+        return view('guru_piket.edit', compact('gurupiket', 'guru', 'allHari', 'availableHari'));
     }
 
     public function update(Request $request, $id)
@@ -169,6 +246,8 @@ class GuruPiketController extends Controller
             'alamat' => 'nullable|string',
             'telepon' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
+            'hari_piket' => 'nullable|array',
+            'hari_piket.*' => 'in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
@@ -177,6 +256,22 @@ class GuruPiketController extends Controller
                 Storage::disk('public')->delete($gurupiket->foto);
             }
             $validated['foto'] = $request->file('foto')->store('guru', 'public');
+        }
+
+        if (! empty($validated['hari_piket'])) {
+            $hariMengajar = JadwalKbm::where('guru_id', $gurupiket->id)
+                ->select('hari')
+                ->distinct()
+                ->pluck('hari')
+                ->unique()
+                ->values()
+                ->all();
+            $hariBentrok = array_intersect($validated['hari_piket'], $hariMengajar);
+            if (! empty($hariBentrok)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['hari_piket' => 'Hari piket bentrok dengan jadwal mengajar.']);
+            }
         }
 
         $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;

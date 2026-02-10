@@ -31,6 +31,11 @@ class Guru extends Model implements AuthenticatableContract
         'email',
         'foto',
         'jenis_tugas_wakil',
+        'hari_piket',
+    ];
+
+    protected $casts = [
+        'hari_piket' => 'array',
     ];
 
     public function guru()

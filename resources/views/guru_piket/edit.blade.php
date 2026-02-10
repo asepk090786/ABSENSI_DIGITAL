@@ -90,6 +90,36 @@
                                     @enderror
                                 </div>
                             </div>
+
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Hari Piket</label>
+                                    @php
+                                        $selectedHari = old('hari_piket', $gurupiket->hari_piket ?? []);
+                                    @endphp
+                                    @if(empty($availableHari))
+                                        <div class="text-muted">Tidak ada hari tanpa jadwal mengajar.</div>
+                                    @else
+                                        <div class="row g-2">
+                                            @foreach($availableHari as $hari)
+                                                <div class="col-6 col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="hari_piket[]" value="{{ $hari }}" id="hari-{{ $hari }}" {{ in_array($hari, $selectedHari) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="hari-{{ $hari }}">{{ $hari }}</label>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                    @error('hari_piket')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    @error('hari_piket.*')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted d-block mt-1">Pilihan hari mengikuti hari tanpa jadwal mengajar.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mt-3">
