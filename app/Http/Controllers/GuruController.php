@@ -13,6 +13,35 @@ use App\Imports\GuruImport;
 
 class GuruController extends Controller
 {
+    private function resolveDefaultGuruRole(): ?Role
+    {
+        return Role::whereIn('role_name', ['Guru', 'Guru Mapel', 'Guru Kelas'])
+            ->orderByRaw("CASE role_name WHEN 'Guru' THEN 1 WHEN 'Guru Mapel' THEN 2 WHEN 'Guru Kelas' THEN 3 ELSE 99 END")
+            ->first();
+    }
+
+    private function generateSimadisIdentity(): array
+    {
+        $maxAttempt = 50;
+        $attempt = 0;
+
+        do {
+            $attempt++;
+            $rand = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            $username = 'simadis' . $rand;
+            $email = $username . '@simadis.sch.id';
+
+            $usernameExists = User::where('username', $username)->exists();
+            $emailExists = User::where('email', $email)->exists();
+
+            if (! $usernameExists && ! $emailExists) {
+                return [$username, $email];
+            }
+        } while ($attempt < $maxAttempt);
+
+        throw new \RuntimeException('Gagal menghasilkan username/email unik. Silakan coba lagi.');
+    }
+
     public function index()
     {
         $items = Guru::with('user')->orderBy('nama')->get();
@@ -50,7 +79,7 @@ class GuruController extends Controller
         ]);
 
         // Buat akun user untuk guru
-        $roleGuru = Role::where('role_name', 'Guru')->first();
+        $roleGuru = $this->resolveDefaultGuruRole();
         
         User::create([
             'name' => $validated['nama'],
@@ -120,7 +149,7 @@ class GuruController extends Controller
                 $user->save();
             } else {
                 // Buat user baru
-                $roleGuru = \App\Models\Role::where('role_name', 'Guru')->first();
+                $roleGuru = $this->resolveDefaultGuruRole();
                 \App\Models\User::create([
                     'name' => $guru->nama,
                     'username' => $username,
@@ -193,6 +222,73 @@ class GuruController extends Controller
                 ], 500);
             }
             return redirect()->route('guru.index')->with('error', 'Gagal menghapus data guru: ' . $e->getMessage());
+        }
+    }
+
+    public function generateAccount(Guru $guru)
+    {
+        if ($guru->user) {
+            return redirect()->route('guru.index')->with('warning', 'Guru ini sudah memiliki akun.');
+        }
+
+        $roleGuru = $this->resolveDefaultGuruRole();
+        if (! $roleGuru) {
+            return redirect()->route('guru.index')->with('error', 'Role guru tidak ditemukan. Pastikan role Guru Mapel/Guru Kelas tersedia.');
+        }
+
+        try {
+            $nip = trim((string) ($guru->nip ?? ''));
+
+            if ($nip !== '') {
+                if (User::where('username', $nip)->exists()) {
+                    return redirect()->route('guru.index')->with('error', 'Username dari NIP sudah digunakan. Gunakan NIP lain atau kosongkan NIP lalu generate ulang.');
+                }
+
+                $username = $nip;
+                $plainPassword = $nip;
+
+                $email = $guru->email;
+                if (empty($email) || User::where('email', $email)->exists()) {
+                    [, $generatedEmail] = $this->generateSimadisIdentity();
+                    $email = $generatedEmail;
+                }
+            } else {
+                [$username, $generatedEmail] = $this->generateSimadisIdentity();
+                $plainPassword = $username;
+                $email = 'simadis@simadis.sch.id';
+
+                if (User::where('email', $email)->exists()) {
+                    $email = $generatedEmail;
+                }
+            }
+
+            $user = User::create([
+                'name' => $guru->nama,
+                'username' => $username,
+                'password' => Hash::make($plainPassword),
+                'email' => $email,
+                'jenis_kelamin' => $guru->jenis_kelamin,
+                'role_id' => $roleGuru->id,
+                'guru_id' => $guru->id,
+                'is_active' => 1,
+            ]);
+
+            $user->roles()->syncWithoutDetaching([$roleGuru->id]);
+
+            if (empty($guru->email) || $guru->email !== $email) {
+                $guru->update(['email' => $email]);
+            }
+
+            return redirect()->route('guru.index')
+                ->with('success', 'Akun guru berhasil dibuat.')
+                ->with('generated_credentials', [
+                    'nama' => $guru->nama,
+                    'username' => $username,
+                    'password' => $plainPassword,
+                    'email' => $email,
+                ]);
+        } catch (\Throwable $e) {
+            return redirect()->route('guru.index')->with('error', 'Gagal generate akun: ' . $e->getMessage());
         }
     }
 

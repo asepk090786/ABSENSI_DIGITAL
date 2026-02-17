@@ -62,6 +62,18 @@
                     </div>
                 @endif
 
+                @if(session('generated_credentials'))
+                    @php $cred = session('generated_credentials'); @endphp
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        <i class="ti ti-key me-2"></i>
+                        Akun untuk <strong>{{ $cred['nama'] ?? '-' }}</strong> berhasil dibuat.
+                        Username: <strong>{{ $cred['username'] ?? '-' }}</strong>,
+                        Password: <strong>{{ $cred['password'] ?? '-' }}</strong>,
+                        Email: <strong>{{ $cred['email'] ?? '-' }}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
                 <!-- Search Input -->
                 <div class="mb-3">
                     <input type="text" id="searchInput" class="form-control" placeholder="Cari berdasarkan nama, kode guru, NIP, email, atau telepon...">
@@ -136,6 +148,14 @@
                                 </td>
                                 <td>
                                     <div class="btn-list">
+                                        @if(!$it->user)
+                                            <form action="{{ route('guru.generate-account', $it->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate akun otomatis untuk guru ini?')">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Generate Akun">
+                                                    <i class="ti ti-key"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                         <a href="{{ route('guru.edit', $it->id) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>

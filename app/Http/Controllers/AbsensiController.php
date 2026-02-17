@@ -27,12 +27,13 @@ class AbsensiController extends Controller
         }
 
         $user = auth()->user();
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $query = AbsensiKelas::with(['kelas', 'guru', 'jamBelajar', 'tahunAjaran', 'semester', 'absensiSiswa'])
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('semester_id', $semester->id);
         
         // Filter by guru_id if user is a teacher (not admin or kepala sekolah)
-        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+        if ($user->guru_id && !$isAdminOrKepala) {
             $query->where('guru_id', $user->guru_id);
         }
         
@@ -40,7 +41,7 @@ class AbsensiController extends Controller
         
         // Get quick access classes for teacher
         $kelasQuickAccess = collect();
-        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+        if ($user->guru_id && !$isAdminOrKepala) {
             // Get all classes taught by this teacher in current semester
             $kelasQuickAccess = JadwalKbm::with(['kelas'])
                 ->where('guru_id', $user->guru_id)
@@ -67,6 +68,7 @@ class AbsensiController extends Controller
         }
 
         $user = auth()->user();
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $selectedKelasId = $request->get('kelas_id');
         $selectedJamBelajarId = null;
         $isQuickAccess = false;
@@ -78,7 +80,7 @@ class AbsensiController extends Controller
         }
         
         // Validate teacher schedule access
-        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+        if ($user->guru_id && !$isAdminOrKepala) {
             if ($selectedKelasId) {
                 $hariIndonesia = [
                     'Monday' => 'Senin',
@@ -121,7 +123,7 @@ class AbsensiController extends Controller
         $multiSlotJadwal = collect();
         
         // Get jadwal for current user if they are a teacher
-        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+        if ($user->guru_id && !$isAdminOrKepala) {
             // Get today's schedule for display
             $hariIni = date('l');
             $jadwalHariIni = JadwalKbm::with(['kelas', 'jamBelajar', 'mataPelajaran'])
@@ -214,7 +216,8 @@ class AbsensiController extends Controller
         
         // Validate teacher can only input attendance for their schedule
         $user = auth()->user();
-        if ($user->guru_id && !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        if ($user->guru_id && !$isAdminOrKepala) {
             if ($validated['guru_id'] != $user->guru_id) {
                 return back()->withErrors(['error' => 'Anda hanya dapat menginput absensi untuk jadwal Anda sendiri.']);
             }

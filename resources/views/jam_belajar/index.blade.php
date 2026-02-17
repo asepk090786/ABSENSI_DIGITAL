@@ -10,7 +10,7 @@
                 <h2 class="fw-bold mb-0">Pengaturan Jam KBM</h2>
                 <small class="text-muted">Kelola jadwal pembelajaran setiap harinya</small>
             </div>
-            @if(!in_array(strtolower(auth()->user()->role->role_name ?? ''), ['guru mapel','guru kelas','wali kelas','guru bk','guru piket']))
+            @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
             <div class="d-flex gap-2">
                 <a href="{{ route('jam_belajar.create') }}" class="btn btn-primary">
                     <i class="ti ti-plus me-2"></i>Tambah Jam KBM
@@ -114,7 +114,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if(!in_array(strtolower(auth()->user()->role->role_name ?? ''), ['guru mapel','guru kelas','wali kelas','guru bk','guru piket']))
+                                                @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
                                                 <div class="btn-group btn-group-sm">
                                                     <a href="{{ route('jam_belajar.edit', $schedule->id) }}" class="btn btn-warning">
                                                         <i class="ti ti-edit"></i> Edit

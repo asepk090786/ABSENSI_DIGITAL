@@ -7,21 +7,48 @@ use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Hash;
 
 class GuruBkController extends Controller
 {
+    private function resolveUserForGuru(Guru $guru): ?User
+    {
+        if ($guru->user) {
+            return $guru->user;
+        }
+
+        if (!empty($guru->email)) {
+            $userByEmail = User::where('email', $guru->email)->first();
+            if ($userByEmail) {
+                if (empty($userByEmail->guru_id)) {
+                    $userByEmail->update(['guru_id' => $guru->id]);
+                }
+                return $userByEmail;
+            }
+        }
+
+        if (!empty($guru->nip)) {
+            $userByNip = User::where('nip', $guru->nip)->first();
+            if ($userByNip) {
+                if (empty($userByNip->guru_id)) {
+                    $userByNip->update(['guru_id' => $guru->id]);
+                }
+                return $userByNip;
+            }
+        }
+
+        return null;
+    }
+
     public function index()
     {
-        // Ambil guru yang menjadi Guru BK dan load relasi guru yang dipilih
-        $guruBkIds = Guru::whereHas('user', function($query) {
-            $query->whereHas('role', function($q) {
-                $q->where('role_name', 'Guru BK');
-            });
-        })->pluck('id');
-        
-        $gurubk = Guru::with('guru')
-            ->whereIn('id', $guruBkIds)
+        $gurubk = Guru::with('user')
+            ->whereHas('user', function($query) {
+                $query->whereHas('roles', function($q) {
+                    $q->where('role_name', 'Guru BK');
+                })->orWhereHas('role', function($q) {
+                    $q->where('role_name', 'Guru BK');
+                });
+            })
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -30,14 +57,16 @@ class GuruBkController extends Controller
 
     public function create()
     {
-        // Ambil guru yang belum menjadi Guru BK
         $guruBkIds = Guru::whereHas('user', function($query) {
-            $query->whereHas('role', function($q) {
+            $query->whereHas('roles', function($q) {
+                $q->where('role_name', 'Guru BK');
+            })->orWhereHas('role', function($q) {
                 $q->where('role_name', 'Guru BK');
             });
         })->pluck('id');
-        
-        $guru = Guru::whereNotIn('id', $guruBkIds)
+
+        $guru = Guru::with('user')
+            ->whereNotIn('id', $guruBkIds)
             ->orderBy('nama')
             ->get();
         
@@ -47,9 +76,9 @@ class GuruBkController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'guru_id' => 'nullable|exists:guru,id',
-            'nama' => 'required|string|max:255',
-            'nip' => 'nullable|string|max:50|unique:guru',
+            'guru_id' => 'required|exists:guru,id',
+            'nama' => 'nullable|string|max:255',
+            'nip' => 'nullable|string|max:50',
             'status' => 'required|in:Aktif,Tidak Aktif',
             'alamat' => 'nullable|string',
             'telepon' => 'nullable|string|max:20',
@@ -57,29 +86,60 @@ class GuruBkController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        $guru = Guru::with('user')->findOrFail($validated['guru_id']);
+        $user = $this->resolveUserForGuru($guru);
+
+        if (! $user) {
+            return redirect()->back()
+                ->withInput()
+                    ->withErrors(['guru_id' => 'Guru terpilih belum memiliki akun user. Buat akun guru terlebih dahulu di menu akun pengguna.']);
+        }
+
+        if (!empty($validated['email'])) {
+            $emailExists = User::where('email', $validated['email'])
+                ->where('id', '!=', $user->id)
+                ->exists();
+
+            if ($emailExists) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['email' => 'Email sudah digunakan oleh akun lain.']);
+            }
+        }
+
         if ($request->hasFile('foto')) {
             $validated['foto'] = $request->file('foto')->store('guru', 'public');
         }
 
-        // Convert status to is_active
         $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
         unset($validated['status']);
 
-        // Create guru
-        $guru = Guru::create($validated);
-        
-        // Create user with role "Guru BK"
+        $guruData = array_intersect_key($validated, array_flip([
+            'nama',
+            'nip',
+            'alamat',
+            'telepon',
+            'email',
+            'foto',
+            'is_active',
+        ]));
+
+        $guruData = array_filter($guruData, function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        if (! empty($guruData)) {
+            $guru->update($guruData);
+        }
+
         $guruBkRole = Role::where('role_name', 'Guru BK')->first();
         if ($guruBkRole) {
-            User::create([
-                'name' => $validated['nama'],
-                'username' => 'guru_bk_' . $guru->id,
-                'email' => $validated['email'] ?? null,
-                'password' => Hash::make('password123'),
-                'role_id' => $guruBkRole->id,
-                'guru_id' => $guru->id,
+            $user->update([
+                'name' => $guru->nama,
+                'email' => $validated['email'] ?? $user->email,
                 'is_active' => $validated['is_active'],
             ]);
+            $user->roles()->syncWithoutDetaching([$guruBkRole->id]);
         }
 
         return redirect()->route('guru_bk.index')->with('success', 'Data Guru BK berhasil ditambahkan.');
@@ -94,15 +154,17 @@ class GuruBkController extends Controller
     public function edit($id)
     {
         $gurubk = Guru::findOrFail($id);
-        
-        // Ambil guru yang belum menjadi Guru BK (kecuali guru yang sedang diedit)
+
         $guruBkIds = Guru::whereHas('user', function($query) {
-            $query->whereHas('role', function($q) {
+            $query->whereHas('roles', function($q) {
+                $q->where('role_name', 'Guru BK');
+            })->orWhereHas('role', function($q) {
                 $q->where('role_name', 'Guru BK');
             });
         })->where('id', '!=', $id)->pluck('id');
-        
-        $guru = Guru::whereNotIn('id', $guruBkIds)
+
+        $guru = Guru::with('user')
+            ->whereNotIn('id', $guruBkIds)
             ->orderBy('nama')
             ->get();
         
@@ -112,6 +174,13 @@ class GuruBkController extends Controller
     public function update(Request $request, $id)
     {
         $gurubk = Guru::findOrFail($id);
+        $user = User::where('guru_id', $gurubk->id)->first();
+
+        if (! $user) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['guru_id' => 'Guru BK ini belum memiliki akun user.']);
+        }
 
         $validated = $request->validate([
             'guru_id' => 'nullable|exists:guru,id',
@@ -124,6 +193,18 @@ class GuruBkController extends Controller
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        if (!empty($validated['email'])) {
+            $emailExists = User::where('email', $validated['email'])
+                ->where('id', '!=', $user->id)
+                ->exists();
+
+            if ($emailExists) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['email' => 'Email sudah digunakan oleh akun lain.']);
+            }
+        }
+
         if ($request->hasFile('foto')) {
             if ($gurubk->foto) {
                 Storage::disk('public')->delete($gurubk->foto);
@@ -131,20 +212,20 @@ class GuruBkController extends Controller
             $validated['foto'] = $request->file('foto')->store('guru', 'public');
         }
 
-        // Convert status to is_active
         $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
         unset($validated['status']);
 
         $gurubk->update($validated);
-        
-        // Update user jika ada
-        $user = User::where('guru_id', $gurubk->id)->first();
-        if ($user) {
-            $user->update([
-                'name' => $validated['nama'],
-                'email' => $validated['email'] ?? null,
-                'is_active' => $validated['is_active'],
-            ]);
+
+        $user->update([
+            'name' => $validated['nama'],
+            'email' => $validated['email'] ?? $user->email,
+            'is_active' => $validated['is_active'],
+        ]);
+
+        $guruBkRole = Role::where('role_name', 'Guru BK')->first();
+        if ($guruBkRole) {
+            $user->roles()->syncWithoutDetaching([$guruBkRole->id]);
         }
 
         return redirect()->route('guru_bk.index')->with('success', 'Data Guru BK berhasil diperbarui.');
@@ -153,15 +234,14 @@ class GuruBkController extends Controller
     public function destroy($id)
     {
         $gurubk = Guru::findOrFail($id);
-        
-        if ($gurubk->foto) {
-            Storage::disk('public')->delete($gurubk->foto);
-        }
-        
-        // Delete user jika ada
-        User::where('guru_id', $gurubk->id)->delete();
 
-        $gurubk->delete();
+        $user = User::where('guru_id', $gurubk->id)->first();
+        if ($user) {
+            $guruBkRole = Role::where('role_name', 'Guru BK')->first();
+            if ($guruBkRole) {
+                $user->roles()->detach($guruBkRole->id);
+            }
+        }
 
         return redirect()->route('guru_bk.index')->with('success', 'Data Guru BK berhasil dihapus.');
     }

@@ -20,15 +20,13 @@ class CheckAdminOrKepalaSekolah
             abort(403, 'Unauthorized access.');
         }
 
-        // Check if user has role
         $user = auth()->user();
-        if (!$user->role) {
+        if (!$user) {
             abort(403, 'Unauthorized access.');
         }
 
-        // Check if role is Admin or Kepala Sekolah
         $allowedRoles = ['Admin', 'Kepala Sekolah'];
-        if (!in_array($user->role->role_name, $allowedRoles)) {
+        if (!$user->hasAnyRole($allowedRoles)) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini. Hanya Admin dan Kepala Sekolah yang dapat mengakses pengaturan sistem.');
         }
 

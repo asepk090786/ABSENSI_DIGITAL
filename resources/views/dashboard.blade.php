@@ -2,8 +2,7 @@
 
 @section('content')
     @php
-        $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
-        $isAdminPanel = in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']);
+        $isAdminPanel = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']);
     @endphp
     <div class="row">
         <div class="col-12">

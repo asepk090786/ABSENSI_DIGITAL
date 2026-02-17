@@ -61,4 +61,46 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Siswa::class);
     }
+
+    public function roleNames(): array
+    {
+        $names = collect();
+
+        if ($this->role && $this->role->role_name) {
+            $names->push($this->role->role_name);
+        }
+
+        $additionalRoles = $this->relationLoaded('roles')
+            ? $this->roles
+            : $this->roles()->get();
+
+        $names = $names->merge($additionalRoles->pluck('role_name'));
+
+        return $names
+            ->filter()
+            ->map(fn ($name) => trim($name))
+            ->unique(fn ($name) => mb_strtolower($name))
+            ->values()
+            ->all();
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        $needle = mb_strtolower(trim($roleName));
+
+        return collect($this->roleNames())->contains(function ($name) use ($needle) {
+            return mb_strtolower(trim($name)) === $needle;
+        });
+    }
+
+    public function hasAnyRole(array $roleNames): bool
+    {
+        foreach ($roleNames as $roleName) {
+            if ($this->hasRole($roleName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

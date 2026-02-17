@@ -11,7 +11,7 @@
                     <div class="col">
                         <h4 class="card-title mb-0">Jadwal Kegiatan Belajar Mengajar (KBM)</h4>
                     </div>
-                    @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))
+                    @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
                     <div class="col-auto">
                         <form action="{{ route('jadwal-kbm.destroy-all') }}" method="POST" class="d-inline">
                             @csrf
@@ -56,7 +56,7 @@
 
                 <!-- Tab Navigation -->
                 <ul class="nav nav-tabs mb-4" id="jadwalTab" role="tablist">
-                    @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))
+                    @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" href="{{ route('kurikulum.index') }}">
                             <i class="ti ti-books me-2"></i>Struktur Kurikulum
@@ -106,7 +106,7 @@
                                             </small>
                                         </p>
                                         <div class="btn-list">
-                                            @if(!in_array(strtolower(auth()->user()->role->role_name ?? ''), ['guru mapel','guru kelas','wali kelas','guru bk','guru piket']))
+                                            @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
                                             <a href="{{ route('jadwal-kbm.create-by-kelas', $kelas->id) }}" class="btn btn-primary btn-sm">
                                                 <i class="ti ti-calendar-event me-1"></i>Atur Jadwal
                                             </a>

@@ -18,7 +18,7 @@ class KurikulumController extends Controller
     {
         $this->middleware(function ($request, $next) {
             $user = auth()->user();
-            if (!$user || !in_array(strtolower($user->role->role_name ?? ''), ['admin', 'kepala sekolah'])) {
+            if (!$user || !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
                 abort(403, 'Anda tidak memiliki akses ke halaman ini.');
             }
             return $next($request);

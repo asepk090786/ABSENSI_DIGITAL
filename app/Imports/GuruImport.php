@@ -17,7 +17,9 @@ class GuruImport implements ToCollection, WithHeadingRow
 
     public function collection(Collection $rows)
     {
-        $roleGuru = Role::where('role_name', 'Guru')->first();
+        $roleGuru = Role::whereIn('role_name', ['Guru', 'Guru Mapel', 'Guru Kelas'])
+            ->orderByRaw("CASE role_name WHEN 'Guru' THEN 1 WHEN 'Guru Mapel' THEN 2 WHEN 'Guru Kelas' THEN 3 ELSE 99 END")
+            ->first();
         
         if (!$roleGuru) {
             $this->pushError(0, 'Role Guru tidak ditemukan di database.');

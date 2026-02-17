@@ -22,9 +22,9 @@ class RoleMiddleware
         }
 
         $allowed = array_map('trim', explode('|', $roles));
-        $userRole = optional(auth()->user()->role)->role_name;
+        $user = auth()->user();
 
-        if (in_array($userRole, $allowed)) {
+        if ($user && $user->hasAnyRole($allowed)) {
             return $next($request);
         }
 

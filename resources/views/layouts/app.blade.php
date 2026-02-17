@@ -336,8 +336,9 @@
                 
                 <div class="collapse navbar-collapse" id="sidebar-menu">
                     @php
-                        $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], auth()->user()->role->role_name ?? ''));
-                        $isGuru = \Illuminate\Support\Str::contains($roleName, 'guru');
+                        $user = auth()->user();
+                        $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], $user->role->role_name ?? ''));
+                        $isGuru = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
                     @endphp
                     <ul class="navbar-nav pt-lg-3">
                         <!-- Dashboard -->
@@ -385,8 +386,8 @@
                                 $isGuruPiket = !empty($hariPiket);
                                 
                                 // Atau cek dari role
-                                if (!$isGuruPiket && auth()->user()->role) {
-                                    $isGuruPiket = strtolower(auth()->user()->role->role_name) === 'guru piket';
+                                if (!$isGuruPiket) {
+                                    $isGuruPiket = auth()->user()->hasRole('Guru Piket');
                                 }
                             }
                         @endphp
@@ -491,7 +492,7 @@
                         @endif
                         
                         <!-- Data Master (Only for Admin, Kepala Sekolah, and Wakil Kepala Sekolah) -->
-                        @if($roleName === 'admin' || $roleName === 'kepala_sekolah' || $roleName === 'wakil_kepala_sekolah')
+                        @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']))
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#navbar-master" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -561,7 +562,7 @@
                                 <a class="dropdown-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
                                     <i class="ti ti-user me-2"></i>Profile
                                 </a>
-                                @if(auth()->user()->role && in_array(auth()->user()->role->role_name, ['Admin', 'Kepala Sekolah']))
+                                @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']))
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}" href="{{ route('tahun_ajaran.index') }}">
                                     <i class="ti ti-layout-dashboard me-2"></i>Dashboard Pengaturan
@@ -641,7 +642,7 @@
                             <a href="{{ route('profile.edit') }}" class="dropdown-item">
                                 <i class="ti ti-user me-2"></i>Profile
                             </a>
-                            @if(auth()->user()->role && in_array(auth()->user()->role->role_name, ['Admin', 'Kepala Sekolah']))
+                            @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']))
                             <a href="{{ route('tahun_ajaran.index') }}" class="dropdown-item">
                                 <i class="ti ti-settings me-2"></i>Pengaturan
                             </a>

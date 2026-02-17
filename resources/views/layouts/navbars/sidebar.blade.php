@@ -1,9 +1,10 @@
 <aside class="sidebar">
     @php
         use Illuminate\Support\Str;
-        $originalRoleName = auth()->user()->role->role_name ?? '';
+        $user = auth()->user();
+        $originalRoleName = $user->role->role_name ?? '';
         $roleName = strtolower(str_replace(' ', '_', $originalRoleName));
-        $isGuru = Str::contains($roleName, 'guru');
+        $isGuru = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
         
         // Cek apakah guru adalah wali kelas
         $isWaliKelas = false;
@@ -135,7 +136,7 @@
     @endif
 
     {{-- ...existing code... --}}
-    @if(in_array($roleName, ['admin', 'kepala_sekolah', 'wakil_kepala_sekolah']))
+    @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']))
         <h5>👥 Data Master</h5>
         <ul class="menu-list">
             <li>
@@ -221,7 +222,7 @@
 
     <h5>⚙️ Pengaturan</h5>
     <ul class="menu-list">
-        @if(in_array(strtolower(auth()->user()->role->role_name ?? ''), ['admin','kepala sekolah']))
+        @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
         <li>
             <a href="{{ route('tahun_ajaran.index') }}" class="menu-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}">
                 <i class="material-icons">settings</i>

@@ -10,7 +10,10 @@ class DashboardController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $role = strtolower(str_replace(' ', '_', $user->role->role_name ?? ''));
+        $isAdmin = $user->hasRole('Admin');
+        $isGuruPanel = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
+        $isSiswa = $user->hasRole('Siswa');
+        $isKepalaSekolah = $user->hasRole('Kepala Sekolah');
 
         // Data umum untuk dashboard
         $guru = \Illuminate\Support\Facades\Schema::hasTable('guru') ? DB::table('guru')->count() : 0;
@@ -33,9 +36,9 @@ class DashboardController extends Controller
         }
 
         // Routing dashboard sesuai role
-        if ($role === 'admin') {
+        if ($isAdmin) {
             return view('dashboard.admin', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
-        } elseif (in_array($role, ['guru_mapel','guru_kelas','wali_kelas','guru_bk','guru_piket'])) {
+        } elseif ($isGuruPanel) {
             // Data khusus untuk dashboard guru
             $guruData = null;
             if ($user->guru_id) {
@@ -115,9 +118,9 @@ class DashboardController extends Controller
                 'totalJadwal','jadwalHariIni','totalAbsensiGuru','absensiHariIni',
                 'totalAgenda','agendaMingguIni','totalNilai','kelasYangDiajar'
             ));
-        } elseif ($role === 'siswa') {
+        } elseif ($isSiswa) {
             return view('dashboard.siswa', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
-        } elseif ($role === 'kepala_sekolah') {
+        } elseif ($isKepalaSekolah) {
             return view('dashboard.kepala', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
         } else {
             return view('dashboard.user');

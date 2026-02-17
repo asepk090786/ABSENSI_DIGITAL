@@ -15,21 +15,21 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label">Pilih Guru (Opsional)</label>
-                                    <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
-                                        <option value="">-- Pilih Guru atau Isi Manual --</option>
+                                    <label class="form-label">Pilih Guru <span class="text-danger">*</span></label>
+                                    <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror" required>
+                                        <option value="">-- Pilih Guru --</option>
                                         @forelse($guru as $g)
                                             <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
-                                                {{ $g->nama }} @if($g->nip)({{ $g->nip }})@endif
+                                                {{ $g->nama }} @if($g->nip)({{ $g->nip }})@endif{{ $g->user ? '' : ' - akun belum terhubung' }}
                                             </option>
                                         @empty
-                                            <option value="" disabled>Semua guru sudah menjadi Guru BK</option>
+                                            <option value="" disabled>Tidak ada guru yang tersedia</option>
                                         @endforelse
                                     </select>
                                     @error('guru_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <small class="text-muted d-block mt-1">Jika memilih guru, data nama, NIP akan diambil dari data guru tersebut</small>
+                                    <small class="text-muted d-block mt-1">Jika memilih guru, data nama, NIP, dan email akan diambil dari data guru tersebut</small>
                                 </div>
                             </div>
                         </div>
@@ -129,7 +129,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const guruSelect = document.querySelector('select[name="guru_id"]');
     const guruData = {!! json_encode($guru->mapWithKeys(function($item) {
-        return [$item->id => ['nama' => $item->nama, 'nip' => $item->nip]];
+        return [$item->id => ['nama' => $item->nama, 'nip' => $item->nip, 'email' => $item->email]];
     })->all()) !!};
 
     if (guruSelect) {
@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = guruData[guruId];
                 document.querySelector('input[name="nama"]').value = data.nama;
                 document.querySelector('input[name="nip"]').value = data.nip || '';
+                document.querySelector('input[name="email"]').value = data.email || '';
             }
         });
     }
