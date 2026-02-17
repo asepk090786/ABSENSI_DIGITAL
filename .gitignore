@@ -3,6 +3,27 @@
 /.env.*
 .phpunit.result.cache
 composer.lock
+/vendor/
+
+# Cache & build artifacts
+/bootstrap/cache/*.php
+/public/hot
+/public/storage
+
+# Storage runtime files
+/storage/*.key
+/storage/logs/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/testing/
+/storage/framework/views/
+/storage/app/public/logos/
+/storage/app/public/user_photos/
+
+# Keep folder structure
+!/storage/app/public/.gitignore
+!/storage/app/public/logos/.gitignore
+!/storage/app/public/user_photos/.gitignore
 
 # IDE/Editor
 /.vscode/
@@ -11,10 +32,8 @@ composer.lock
 *.swo
 
 # Logs
-/storage/logs/*
-/storage/framework/cache/*
-/storage/framework/sessions/*
-/storage/framework/views/*
+*.log
+
 
 # Misc
 .DS_Store
