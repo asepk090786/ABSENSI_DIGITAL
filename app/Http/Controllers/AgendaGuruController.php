@@ -255,6 +255,22 @@ class AgendaGuruController extends Controller
         // Sekolah info
         $sekolah = DB::table('sekolah')->first();
 
+        // Ambil langsung dari data kepala sekolah
+        $kepalaSekolah = DB::table('kepala_sekolah')
+            ->where('status', 'Aktif')
+            ->orderBy('tanggal_mulai_jabatan', 'desc')
+            ->first();
+
+        if (!$kepalaSekolah) {
+            $kepalaSekolah = DB::table('kepala_sekolah')
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+
+        $namaKepalaSekolah = $kepalaSekolah->nama ?? '-';
+        $nipKepalaSekolah = $kepalaSekolah->nip ?? '';
+        $nipGuru = $guru->nip ?? '';
+
         // Month name
         $monthName = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -268,6 +284,9 @@ class AgendaGuruController extends Controller
             'agendaList',
             'mataPelajaran',
             'sekolah',
+            'namaKepalaSekolah',
+            'nipKepalaSekolah',
+            'nipGuru',
             'bulan',
             'tahunFilter',
             'monthName'

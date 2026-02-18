@@ -24,7 +24,7 @@
             <div class="card">
                 <div class="card-header bg-primary">
                     <h4 class="card-title mb-0 text-white">
-                        <i class="ti ti-book-2 me-2"></i>Isi Agenda Kelas - {{ $kelas->nama_kelas }}
+                        <i class="ti ti-book-2 me-2"></i>Isi Agenda Kelas - {{ $kelas->nama_kelas ?? 'Pengembangan Diri' }}
                     </h4>
                 </div>
                 <div class="card-body">
@@ -32,7 +32,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Kelas</label>
-                                <div class="alert alert-light border text-dark">{{ $kelas->nama_kelas }}</div>
+                                <div class="alert alert-light border text-dark">{{ $kelas->nama_kelas ?? '-' }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -56,11 +56,32 @@
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Jam KBM</label>
                                 <div class="alert alert-light border text-dark">
-                                    {{ $jamBelajar->jam_mulai }} - {{ $jamBelajar->jam_selesai }} 
-                                    <span class="badge bg-info ms-2">{{ $jamBelajar->hari }}</span>
+                                    {{ $jamBelajar->jam_mulai ?? '-' }} - {{ $jamBelajar->jam_selesai ?? '-' }} 
+                                    @if($jamBelajar && !empty($jamBelajar->hari))
+                                        <span class="badge bg-info ms-2">{{ $jamBelajar->hari }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Jenis Kegiatan</label>
+                                <div class="alert alert-light border text-dark">
+                                    {{ ($agenda->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri' ? 'Pengembangan Diri' : 'KBM' }}
+                                </div>
+                            </div>
+                        </div>
+                        @if(($agenda->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri')
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nama Kegiatan</label>
+                                <div class="alert alert-light border text-dark">{{ $agenda->nama_kegiatan ?? '-' }}</div>
+                            </div>
+                        </div>
+                        @endif
                     </div>
 
                     <div class="mb-4">

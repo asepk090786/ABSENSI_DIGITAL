@@ -23,6 +23,7 @@ class SekolahController extends Controller
     {
         $validated = $request->validate([
             'nama_sekolah' => 'required|string|max:255',
+            'nama_kepala_sekolah' => 'nullable|string|max:255',
             'npsn' => 'nullable|string|max:50|unique:sekolah',
             'alamat' => 'required|string',
             'kelurahan' => 'nullable|string|max:100',
@@ -59,6 +60,7 @@ class SekolahController extends Controller
     {
         $validated = $request->validate([
             'nama_sekolah' => 'required|string|max:255',
+            'nama_kepala_sekolah' => 'nullable|string|max:255',
             'npsn' => 'nullable|string|max:50|unique:sekolah,npsn,' . $sekolah->id,
             'alamat' => 'required|string',
             'kelurahan' => 'nullable|string|max:100',

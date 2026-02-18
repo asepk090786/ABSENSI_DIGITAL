@@ -38,6 +38,16 @@
 
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label class="form-label">Nama Kepala Sekolah</label>
+                                    <input type="text" name="nama_kepala_sekolah" class="form-control @error('nama_kepala_sekolah') is-invalid @enderror" value="{{ old('nama_kepala_sekolah', $sekolah->nama_kepala_sekolah ?? '') }}">
+                                    @error('nama_kepala_sekolah')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label class="form-label">Jenjang <span class="text-danger">*</span></label>
                                     <select name="jenjang" class="form-select @error('jenjang') is-invalid @enderror" required>
                                         <option value="">Pilih Jenjang</option>

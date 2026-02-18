@@ -47,6 +47,10 @@
                                             <td>{{ $sekolah->npsn ?? '-' }}</td>
                                         </tr>
                                         <tr>
+                                            <th>Nama Kepala Sekolah</th>
+                                            <td>{{ $sekolah->nama_kepala_sekolah ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
                                             <th>Jenjang</th>
                                             <td><span class="badge bg-primary">{{ $sekolah->jenjang }}</span></td>
                                         </tr>

@@ -75,10 +75,11 @@ class AgendaGuru extends Model
             $totalSiswa += $absensiSiswa->count();
             
             foreach ($absensiSiswa as $as) {
-                if ($as->status === 'Hadir') $siswaHadir++;
-                elseif ($as->status === 'Absen') $siswaAbsen++;
-                elseif ($as->status === 'Izin') $siswaIzin++;
-                elseif ($as->status === 'Sakit') $siswaSakit++;
+                $status = strtolower(trim((string) $as->status));
+                if ($status === 'hadir') $siswaHadir++;
+                elseif (in_array($status, ['absen', 'alpa', 'alpha'], true)) $siswaAbsen++;
+                elseif ($status === 'izin') $siswaIzin++;
+                elseif ($status === 'sakit') $siswaSakit++;
             }
         }
         

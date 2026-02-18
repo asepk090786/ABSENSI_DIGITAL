@@ -13,9 +13,11 @@ class AgendaKelas extends Model
     protected $fillable = [
         'kelas_id',
         'guru_id',
+        'jenis_kegiatan',
         'jam_belajar_id',
         'tanggal',
         'kegiatan',
+        'nama_kegiatan',
         'tujuan_pembelajaran',
         'strategi_pembelajaran',
         'media_pembelajaran',
@@ -78,17 +80,33 @@ class AgendaKelas extends Model
         $absensiSiswa = \App\Models\AbsensiSiswa::where('absensi_kelas_id', $absensiKelas->id)->get();
 
         $totalSiswa = $absensiSiswa->count();
-        $siswaHadir = $absensiSiswa->where('status', 'Hadir')->count();
-        $siswaAbsen = $absensiSiswa->where('status', 'Absen')->count();
-        $siswaIzin = $absensiSiswa->where('status', 'Izin')->count();
-        $siswaSakit = $absensiSiswa->where('status', 'Sakit')->count();
+        $statusCounts = [
+            'hadir' => 0,
+            'absen' => 0,
+            'izin' => 0,
+            'sakit' => 0,
+        ];
+
+        foreach ($absensiSiswa as $item) {
+            $status = strtolower(trim((string) $item->status));
+
+            if ($status === 'hadir') {
+                $statusCounts['hadir']++;
+            } elseif (in_array($status, ['absen', 'alpa', 'alpha'], true)) {
+                $statusCounts['absen']++;
+            } elseif ($status === 'izin') {
+                $statusCounts['izin']++;
+            } elseif ($status === 'sakit') {
+                $statusCounts['sakit']++;
+            }
+        }
 
         return [
             'total' => $totalSiswa,
-            'hadir' => $siswaHadir,
-            'absen' => $siswaAbsen,
-            'izin' => $siswaIzin,
-            'sakit' => $siswaSakit,
+            'hadir' => $statusCounts['hadir'],
+            'absen' => $statusCounts['absen'],
+            'izin' => $statusCounts['izin'],
+            'sakit' => $statusCounts['sakit'],
         ];
     }
 }

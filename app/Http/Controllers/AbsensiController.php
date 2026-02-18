@@ -214,6 +214,19 @@ class AbsensiController extends Controller
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
             'semester_id' => 'required|exists:semester,id',
         ]);
+
+        $absensiSiswa = $request->input('absensi_siswa', []);
+        $keteranganSiswa = $request->input('keterangan_siswa', []);
+
+        $hasSelectedStatus = collect($absensiSiswa)->contains(function ($status) {
+            return !empty($this->normalizeAttendanceStatus($status));
+        });
+
+        if (!$hasSelectedStatus) {
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Minimal pilih status absensi untuk 1 siswa.']);
+        }
         
         // Validate teacher can only input attendance for their schedule
         $user = auth()->user();
@@ -277,12 +290,10 @@ class AbsensiController extends Controller
                 ->unique()
                 ->values();
 
-            $absensiSiswa = $request->input('absensi_siswa', []);
-            $keteranganSiswa = $request->input('keterangan_siswa', []);
-
             $createdAbsensi = [];
             $skippedJamIds = [];
             $firstExistingAbsensi = null;
+            $savedAbsensiSiswaCount = 0;
 
             foreach ($targetJamIds as $jamId) {
                 $existing = AbsensiKelas::where('kelas_id', $validated['kelas_id'])
@@ -303,13 +314,15 @@ class AbsensiController extends Controller
                     'jam_belajar_id' => $jamId,
                 ]));
                 foreach ($absensiSiswa as $siswaId => $status) {
-                    if (!empty($status)) {
+                    $normalizedStatus = $this->normalizeAttendanceStatus($status);
+                    if (!empty($normalizedStatus)) {
                         \App\Models\AbsensiSiswa::create([
                             'absensi_kelas_id' => $absensi->id,
                             'siswa_id' => $siswaId,
-                            'status' => $status,
+                            'status' => $normalizedStatus,
                             'keterangan' => $keteranganSiswa[$siswaId] ?? null,
                         ]);
+                        $savedAbsensiSiswaCount++;
                     }
                 }
 
@@ -337,7 +350,7 @@ class AbsensiController extends Controller
                 })->implode(', ');
 
             $successMessage = !empty($createdAbsensi)
-                ? 'Absensi kelas berhasil disimpan untuk ' . count($absensiSiswa) . ' siswa.'
+                ? 'Absensi kelas berhasil disimpan untuk ' . $savedAbsensiSiswaCount . ' siswa.'
                 : 'Absensi sudah tersedia untuk jadwal ini.';
             if ($targetJamIds->count() > 1) {
                 $successMessage .= ' Diterapkan ke: ' . $jamBelajarLabels . '.';
@@ -513,5 +526,25 @@ class AbsensiController extends Controller
                 }
             }
         }
+    }
+
+    /**
+     * Normalize status from form/input to canonical DB values.
+     */
+    private function normalizeAttendanceStatus($status)
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        $normalized = strtolower(trim((string) $status));
+
+        return match ($normalized) {
+            'hadir' => 'Hadir',
+            'sakit' => 'Sakit',
+            'izin' => 'Izin',
+            'alpa', 'alpha', 'absen' => 'Absen',
+            default => null,
+        };
     }
 }

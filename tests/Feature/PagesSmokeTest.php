@@ -28,6 +28,6 @@ class PagesSmokeTest extends TestCase
         $this->get('/home')->assertStatus(200);
         $this->get('/jam_belajar')->assertStatus(200);
         $this->get('/agenda_kelas')->assertStatus(200);
-        $this->get('/setting')->assertStatus(200);
+        $this->get('/setting')->assertStatus(403);
     }
 }

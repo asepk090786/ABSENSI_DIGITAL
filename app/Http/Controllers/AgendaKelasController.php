@@ -30,6 +30,7 @@ class AgendaKelasController extends Controller
 
         // Get guru_id dari query parameter (untuk filter)
         $filterGuruId = $request->get('guru_id');
+        $filterJenisKegiatan = $request->get('jenis_kegiatan');
         $selectedGuru = null;
 
         // Filter agenda
@@ -42,6 +43,10 @@ class AgendaKelasController extends Controller
         } elseif ($filterGuruId) {
             // Jika ada filter guru dari query parameter
             $query->where('guru_id', $filterGuruId);
+        }
+
+        if (in_array($filterJenisKegiatan, ['kbm', 'pengembangan_diri'], true)) {
+            $query->where('jenis_kegiatan', $filterJenisKegiatan);
         }
         
         $items = $query->orderBy('tanggal','desc')
@@ -75,7 +80,7 @@ class AgendaKelasController extends Controller
             $kelasQuickAccess = collect();
         }
         
-        return view('agenda_kelas.index', compact('items', 'kelasQuickAccess', 'guruQuickAccess', 'selectedGuru', 'filterGuruId'));
+        return view('agenda_kelas.index', compact('items', 'kelasQuickAccess', 'guruQuickAccess', 'selectedGuru', 'filterGuruId', 'filterJenisKegiatan'));
     }
 
     public function create(Request $request)
@@ -88,64 +93,97 @@ class AgendaKelasController extends Controller
                 ->with('error', 'Anda tidak terdaftar sebagai guru.');
         }
 
-        // Get jam belajar
-        $jam = DB::table('jam_belajar')->get();
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        if (!$tahun || !$semester) {
+            return redirect()->route('agenda_kelas.index')
+                ->with('error', 'Tahun ajaran atau semester belum di-set aktif.');
+        }
         
         // Get kelas berdasarkan jadwal mengajar guru yang login
         $kelas = DB::table('jadwal_kbm')
             ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
             ->where('jadwal_kbm.guru_id', $guru->id)
+            ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+            ->where('jadwal_kbm.semester_id', $semester->id)
             ->select('kelas.id', 'kelas.nama_kelas')
             ->distinct()
+            ->orderBy('kelas.nama_kelas')
             ->get();
+
+        // Get jadwal aktif guru untuk dipakai filter jam berdasarkan hari
+        $jadwalItems = DB::table('jadwal_kbm')
+            ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
+            ->where('jadwal_kbm.guru_id', $guru->id)
+            ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+            ->where('jadwal_kbm.semester_id', $semester->id)
+            ->select(
+                'jadwal_kbm.kelas_id',
+                'jadwal_kbm.jam_belajar_id',
+                'jadwal_kbm.hari',
+                'jadwal_kbm.jam_ke',
+                'jam_belajar.urutan',
+                'jam_belajar.jam_mulai',
+                'jam_belajar.jam_selesai',
+                'jam_belajar.jenis'
+            )
+            ->orderBy('jadwal_kbm.kelas_id')
+            ->orderBy('jadwal_kbm.jam_ke')
+            ->get();
+
+        $jadwalByKelas = [];
+        foreach ($jadwalItems as $item) {
+            $kelasId = (string) $item->kelas_id;
+
+            if (!isset($jadwalByKelas[$kelasId])) {
+                $jadwalByKelas[$kelasId] = [];
+            }
+
+            $jadwalByKelas[$kelasId][] = [
+                'jam_belajar_id' => (int) $item->jam_belajar_id,
+                'hari' => $item->hari,
+                'jam_ke' => (int) $item->jam_ke,
+                'urutan' => (int) ($item->urutan ?? $item->jam_ke),
+                'jam_mulai' => $item->jam_mulai,
+                'jam_selesai' => $item->jam_selesai,
+                'jenis' => $item->jenis,
+                'label' => $item->hari . ' - Jam Ke-' . $item->jam_ke . ' (' . $item->jam_mulai . ' - ' . $item->jam_selesai . ' | ' . $item->jenis . ')',
+            ];
+        }
         
         // Get all guru for reference (if needed for other features)
         $guruList = DB::table('guru')->get();
 
         // Get kelas_id dari query parameter (dari quick access)
         $selectedKelasId = $request->get('kelas_id');
-        $selectedJamData = null;
-        $suggestedDate = null;
+        $selectedDate = $request->get('tanggal', now()->format('Y-m-d'));
+        $selectedJamBelajarId = old('jam_belajar_id');
+        $selectedJenisKegiatan = old('jenis_kegiatan', $request->get('jenis_kegiatan', 'kbm'));
+        $selectedHari = $this->getHariIndonesiaFromDate($selectedDate);
 
-        if ($selectedKelasId) {
-            // Get jadwal untuk kelas yang dipilih
-            $selectedJamData = DB::table('jadwal_kbm')
-                ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
-                ->where('jadwal_kbm.guru_id', $guru->id)
-                ->where('jadwal_kbm.kelas_id', $selectedKelasId)
-                ->select('jam_belajar.*', 'jadwal_kbm.jam_belajar_id')
-                ->orderBy('jam_belajar.urutan')
-                ->first();
+        if ($selectedKelasId && empty($selectedJamBelajarId) && isset($jadwalByKelas[(string) $selectedKelasId])) {
+            $jadwalHariTerpilih = collect($jadwalByKelas[(string) $selectedKelasId])
+                ->where('hari', $selectedHari)
+                ->sortBy('jam_ke')
+                ->values();
 
-            // Hitung tanggal yang sesuai dengan jadwal (hari yang sesuai dari jam belajar)
-            if ($selectedJamData) {
-                $todayDayName = \Carbon\Carbon::now()->format('l');
-                $dayMapping = [
-                    'Monday' => 'Senin',
-                    'Tuesday' => 'Selasa',
-                    'Wednesday' => 'Rabu',
-                    'Thursday' => 'Kamis',
-                    'Friday' => 'Jumat',
-                    'Saturday' => 'Sabtu',
-                    'Sunday' => 'Minggu'
-                ];
-                
-                $targetDay = $selectedJamData->hari;
-                $today = \Carbon\Carbon::now();
-                $date = $today->copy();
-
-                // Cari tanggal terdekat dengan hari yang sesuai
-                for ($i = 0; $i < 7; $i++) {
-                    if ($date->format('l') == array_search($targetDay, $dayMapping)) {
-                        $suggestedDate = $date->format('Y-m-d');
-                        break;
-                    }
-                    $date->addDay();
-                }
+            if ($jadwalHariTerpilih->isNotEmpty()) {
+                $selectedJamBelajarId = $jadwalHariTerpilih->first()['jam_belajar_id'];
             }
         }
         
-        return view('agenda_kelas.create', compact('jam', 'kelas', 'guru', 'guruList', 'selectedKelasId', 'selectedJamData', 'suggestedDate'));
+        return view('agenda_kelas.create', compact(
+            'kelas',
+            'guru',
+            'guruList',
+            'selectedJenisKegiatan',
+            'selectedKelasId',
+            'selectedDate',
+            'selectedHari',
+            'selectedJamBelajarId',
+            'jadwalByKelas'
+        ));
     }
 
     public function store(Request $request)
@@ -159,11 +197,13 @@ class AgendaKelasController extends Controller
 
         $data = $request->validate([
             'agenda_id' => 'nullable|integer',
-            'kelas_id' => 'required|integer',
+            'jenis_kegiatan' => 'required|in:kbm,pengembangan_diri',
+            'kelas_id' => 'nullable|integer',
             'guru_id' => 'required|integer',
-            'jam_belajar_id' => 'required|integer',
+            'jam_belajar_id' => 'nullable|integer',
             'tanggal' => 'required|date',
             'kegiatan' => 'nullable|string',
+            'nama_kegiatan' => 'nullable|string|max:255',
             'tujuan_pembelajaran' => 'nullable|string',
             'strategi_pembelajaran' => 'nullable|string',
             'media_pembelajaran' => 'nullable|string',
@@ -173,6 +213,31 @@ class AgendaKelasController extends Controller
             'apply_to_all_jam' => 'nullable|boolean',
         ]);
 
+        if ($data['jenis_kegiatan'] === 'kbm') {
+            if (empty($data['kelas_id']) || empty($data['jam_belajar_id'])) {
+                return back()->withInput()->withErrors('Untuk kegiatan KBM, kelas dan jam KBM wajib dipilih.');
+            }
+        } else {
+            if (empty(trim((string) ($data['nama_kegiatan'] ?? '')))) {
+                return back()->withInput()->withErrors('Nama kegiatan wajib diisi untuk Pengembangan Diri.');
+            }
+            if (empty(trim((string) ($data['kegiatan'] ?? '')))) {
+                return back()->withInput()->withErrors('Uraian kegiatan wajib diisi untuk Pengembangan Diri.');
+            }
+            $data['kelas_id'] = null;
+            $data['jam_belajar_id'] = null;
+            $data['apply_to_all_jam'] = false;
+        }
+
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        if (! $tahun || ! $semester) {
+            return back()->withErrors('Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        $hariAgenda = $this->getHariIndonesiaFromDate($data['tanggal']);
+
         // Hapus agenda_id dari data jika ada (jika dari form show)
         $agendaId = $data['agenda_id'] ?? null;
         unset($data['agenda_id']);
@@ -181,15 +246,20 @@ class AgendaKelasController extends Controller
         $applyToAllJam = $data['apply_to_all_jam'] ?? false;
         unset($data['apply_to_all_jam']);
 
-        // Validasi guru hanya bisa input untuk kelas sesuai jadwal mengajarnya
-        $hasSchedule = DB::table('jadwal_kbm')
-            ->where('guru_id', $guru->id)
-            ->where('kelas_id', $data['kelas_id'])
-            ->where('jam_belajar_id', $data['jam_belajar_id'])
-            ->exists();
+        // Validasi guru hanya bisa input untuk kelas sesuai jadwal mengajarnya (khusus KBM)
+        if ($data['jenis_kegiatan'] === 'kbm') {
+            $hasSchedule = DB::table('jadwal_kbm')
+                ->where('guru_id', $guru->id)
+                ->where('kelas_id', $data['kelas_id'])
+                ->where('jam_belajar_id', $data['jam_belajar_id'])
+                ->where('hari', $hariAgenda)
+                ->where('tahun_ajaran_id', $tahun->id)
+                ->where('semester_id', $semester->id)
+                ->exists();
 
-        if (!$hasSchedule) {
-            return back()->withErrors('Anda tidak memiliki jadwal mengajar untuk kelas dan jam KBM yang dipilih.');
+            if (!$hasSchedule) {
+                return back()->withInput()->withErrors('Anda tidak memiliki jadwal mengajar untuk kelas dan jam KBM yang dipilih.');
+            }
         }
 
         // Validasi guru_id yang dikirim harus sama dengan guru yang login
@@ -197,21 +267,17 @@ class AgendaKelasController extends Controller
             return back()->withErrors('Guru yang dipilih tidak sesuai.');
         }
 
-        $tahun = DB::table('tahun_ajaran')->where('is_active',1)->first();
-        $semester = DB::table('semester')->where('is_active',1)->first();
-
-        if (! $tahun || ! $semester) {
-            return back()->withErrors('Tahun ajaran atau semester belum di-set aktif.');
-        }
-
         $data['tahun_ajaran_id'] = $tahun->id;
         $data['semester_id'] = $semester->id;
 
-        if ($applyToAllJam) {
+        if ($data['jenis_kegiatan'] === 'kbm' && $applyToAllJam) {
             // Cari semua jam KBM untuk kelas yang sama dengan guru yang login
             $allJamForKelas = DB::table('jadwal_kbm')
                 ->where('guru_id', $guru->id)
                 ->where('kelas_id', $data['kelas_id'])
+                ->where('hari', $hariAgenda)
+                ->where('tahun_ajaran_id', $tahun->id)
+                ->where('semester_id', $semester->id)
                 ->pluck('jam_belajar_id')
                 ->toArray();
 
@@ -249,13 +315,19 @@ class AgendaKelasController extends Controller
                 // Update existing agenda
                 $agenda = AgendaKelas::findOrFail($agendaId);
                 $agenda->update($data);
-                $this->syncAgendaGuru($agenda);
+                if ($agenda->jenis_kegiatan === 'kbm') {
+                    $this->syncAgendaGuru($agenda);
+                }
                 $message = 'Agenda kelas berhasil diperbarui';
             } else {
                 // Create new agenda
                 $agenda = AgendaKelas::create($data);
-                $this->syncAgendaGuru($agenda);
-                $message = 'Agenda kelas ditambahkan';
+                if ($agenda->jenis_kegiatan === 'kbm') {
+                    $this->syncAgendaGuru($agenda);
+                }
+                $message = $agenda->jenis_kegiatan === 'pengembangan_diri'
+                    ? 'Kegiatan pengembangan diri berhasil ditambahkan'
+                    : 'Agenda kelas ditambahkan';
             }
         }
 
@@ -325,11 +397,16 @@ class AgendaKelasController extends Controller
             'catatan_tambahan' => 'nullable|string',
         ]);
 
+        $hariAgenda = $this->getHariIndonesiaFromDate($data['tanggal']);
+
         // Validasi guru hanya bisa update untuk kelas sesuai jadwal mengajarnya
         $hasSchedule = DB::table('jadwal_kbm')
             ->where('guru_id', $guru->id)
             ->where('kelas_id', $data['kelas_id'])
             ->where('jam_belajar_id', $data['jam_belajar_id'])
+            ->where('hari', $hariAgenda)
+            ->where('tahun_ajaran_id', $agenda->tahun_ajaran_id)
+            ->where('semester_id', $agenda->semester_id)
             ->exists();
 
         if (!$hasSchedule) {
@@ -476,6 +553,23 @@ class AgendaKelasController extends Controller
                 'semester_id' => $agendaKelas->semester_id,
             ]);
         }
+    }
+
+    private function getHariIndonesiaFromDate($date)
+    {
+        $hariIndonesia = [
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu'
+        ];
+
+        $hariEnglish = \Carbon\Carbon::parse($date)->format('l');
+
+        return $hariIndonesia[$hariEnglish] ?? $hariEnglish;
     }
 
     /**

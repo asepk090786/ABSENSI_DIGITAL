@@ -173,7 +173,7 @@
                 <div class="card-body">
                     <div class="guru-grid">
                         @foreach($guruQuickAccess as $g)
-                            <a href="{{ route('agenda_kelas.index', ['guru_id' => $g->id]) }}" 
+                            <a href="{{ route('agenda_kelas.index', ['guru_id' => $g->id, 'jenis_kegiatan' => $filterJenisKegiatan]) }}" 
                                class="btn guru-btn {{ $filterGuruId == $g->id ? 'btn-primary' : 'btn-outline-primary' }}"
                                title="{{ $g->nama }}">
                                 <i class="ti ti-user"></i>
@@ -275,7 +275,7 @@
                                         <i class="ti ti-user me-1"></i>{{ $kelas->wali_nama }}
                                     </p>
                                     @endif
-                                    <a href="{{ route('agenda_kelas.create', ['kelas_id' => $kelas->id]) }}" 
+                                    <a href="{{ route('agenda_kelas.create', ['kelas_id' => $kelas->id, 'jenis_kegiatan' => $filterJenisKegiatan]) }}" 
                                        class="btn btn-sm w-100" 
                                        style="background-color: {{ $btnColor }} !important; 
                                               border-color: {{ $btnColor }} !important; 
@@ -322,6 +322,24 @@
                     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
                     @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
+                    <form method="GET" action="{{ route('agenda_kelas.index') }}" class="row g-2 mb-3">
+                        @if($filterGuruId)
+                            <input type="hidden" name="guru_id" value="{{ $filterGuruId }}">
+                        @endif
+                        <div class="col-md-4 col-lg-3">
+                            <select name="jenis_kegiatan" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">Semua Jenis Kegiatan</option>
+                                <option value="kbm" {{ $filterJenisKegiatan === 'kbm' ? 'selected' : '' }}>KBM</option>
+                                <option value="pengembangan_diri" {{ $filterJenisKegiatan === 'pengembangan_diri' ? 'selected' : '' }}>Pengembangan Diri</option>
+                            </select>
+                        </div>
+                        <div class="col-md-auto">
+                            <a href="{{ route('agenda_kelas.index', ['guru_id' => $filterGuruId]) }}" class="btn btn-sm btn-outline-secondary">
+                                Reset Filter
+                            </a>
+                        </div>
+                    </form>
+
                     @if($items->isEmpty())
                         <div class="alert alert-info">
                             <i class="ti ti-info-circle"></i> Belum ada data agenda kelas.
@@ -348,7 +366,16 @@
                                         <td>{{ $it->kelas->nama_kelas ?? '-' }}</td>
                                         <td>{{ $it->guru->nama ?? '-' }}</td>
                                         <td>{{ $it->jamBelajar->jam_mulai ?? '-' }} - {{ $it->jamBelajar->jam_selesai ?? '-' }}</td>
-                                        <td>{{ Str::limit(strip_tags($it->kegiatan), 50) }}</td>
+                                        <td>
+                                            @if(($it->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri')
+                                                <span class="badge bg-info mb-1">Pengembangan Diri</span><br>
+                                                <strong>{{ $it->nama_kegiatan ?? '-' }}</strong><br>
+                                                <small>{{ Str::limit(strip_tags($it->kegiatan), 50) }}</small>
+                                            @else
+                                                <span class="badge bg-primary mb-1">KBM</span><br>
+                                                {{ Str::limit(strip_tags($it->kegiatan), 50) }}
+                                            @endif
+                                        </td>
                                         <td>
                                             <div class="btn-group" role="group">
                                                 <a href="{{ route('agenda_kelas.show', $it->id) }}" class="btn btn-sm btn-info" title="Lihat">

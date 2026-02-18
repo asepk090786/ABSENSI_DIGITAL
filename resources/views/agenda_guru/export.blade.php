@@ -21,11 +21,28 @@
         border: 1px solid #000;
         padding: 8px;
         text-align: left;
+        vertical-align: middle;
     }
     
     .journal-table th {
         background-color: #f5f5f5;
         font-weight: bold;
+        text-align: center;
+        line-height: 1.2;
+        padding: 6px 4px;
+    }
+
+    .journal-table thead tr:nth-child(2) th {
+        font-size: 12px;
+        padding: 4px 2px;
+    }
+
+    .journal-table tbody td {
+        height: 42px;
+        line-height: 1.25;
+    }
+
+    .journal-table td.col-center {
         text-align: center;
     }
     
@@ -64,12 +81,23 @@
         text-align: center;
         width: 150px;
     }
-    
-    .signature-block p {
-        margin: 50px 0 0 0;
-        border-top: 1px solid #000;
-        padding-top: 5px;
+
+    .signature-name {
+        margin: 50px 0 6px 0;
         font-size: 12px;
+        min-height: 18px;
+    }
+
+    .signature-line {
+        border-top: 1px solid #000;
+        width: 100%;
+        margin: 0;
+    }
+
+    .signature-nip {
+        margin: 5px 0 0 0;
+        font-size: 12px;
+        min-height: 16px;
     }
 </style>
 
@@ -114,14 +142,19 @@
         <table class="journal-table">
             <thead>
                 <tr>
-                    <th style="width: 5%;">NO</th>
-                    <th style="width: 12%;">HARI / TGL</th>
-                    <th style="width: 12%;">JAM PELAJARAN</th>
-                    <th style="width: 30%;">MATERI AJAR</th>
-                    <th style="width: 15%;">KEHADIRAN SISWA</th>
-                    <th style="width: 10%;">JML HADIR</th>
-                    <th style="width: 10%;">JML TDK HADIR</th>
-                    <th style="width: 6%;">PARAF</th>
+                    <th style="width: 4%;" rowspan="2">No</th>
+                    <th style="width: 10%;" rowspan="2">Hari/Tanggal</th>
+                    <th style="width: 10%;" rowspan="2">Jam Pelajaran</th>
+                    <th style="width: 26%;" rowspan="2">Materi ajar</th>
+                    <th style="width: 15%;" colspan="3">Kehadiran siswa</th>
+                    <th style="width: 10%;" rowspan="2">Jumlah Hadir</th>
+                    <th style="width: 12%;" rowspan="2">Jumlah Tidak hadir</th>
+                    <th style="width: 6%;" rowspan="2">Paraf</th>
+                </tr>
+                <tr>
+                    <th style="width: 5%;">Sakit</th>
+                    <th style="width: 5%;">Izin</th>
+                    <th style="width: 5%;">Alpa</th>
                 </tr>
             </thead>
             <tbody>
@@ -132,6 +165,8 @@
                     @php
                         $dayName = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
                         $day = $dayName[$item->tanggal->dayOfWeek];
+                        $absensiSummary = $item->getAbsensiSummary();
+                        $jumlahTidakHadir = $absensiSummary['absen'] + $absensiSummary['izin'] + $absensiSummary['sakit'];
                     @endphp
                     <tr>
                         <td class="text-center">{{ $no++ }}</td>
@@ -150,23 +185,12 @@
                             @endif
                             {{ Str::limit(strip_tags($item->kegiatan), 200) }}
                         </td>
-                        <td class="text-center">
-                            <table style="width: 100%; border: none; margin: 0;">
-                                <tr style="border: none;">
-                                    <td style="border: none; text-align: center; padding: 2px;">S</td>
-                                    <td style="border: none; text-align: center; padding: 2px;">I</td>
-                                    <td style="border: none; text-align: center; padding: 2px;">A</td>
-                                </tr>
-                                <tr style="border: none;">
-                                    <td style="border: none; height: 20px;"></td>
-                                    <td style="border: none;"></td>
-                                    <td style="border: none;"></td>
-                                </tr>
-                            </table>
-                        </td>
-                        <td style="height: 40px;"></td>
-                        <td style="height: 40px;"></td>
-                        <td style="height: 40px;"></td>
+                        <td class="col-center">{{ $absensiSummary['sakit'] > 0 ? $absensiSummary['sakit'] : '-' }}</td>
+                        <td class="col-center">{{ $absensiSummary['izin'] > 0 ? $absensiSummary['izin'] : '-' }}</td>
+                        <td class="col-center">{{ $absensiSummary['absen'] > 0 ? $absensiSummary['absen'] : '-' }}</td>
+                        <td class="col-center">{{ $absensiSummary['hadir'] > 0 ? $absensiSummary['hadir'] : '-' }}</td>
+                        <td class="col-center">{{ $jumlahTidakHadir > 0 ? $jumlahTidakHadir : '-' }}</td>
+                        <td></td>
                     </tr>
                 @endforeach
                 
@@ -178,9 +202,11 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td style="height: 40px;"></td>
-                        <td style="height: 40px;"></td>
-                        <td style="height: 40px;"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                     </tr>
                 @endfor
             </tbody>
@@ -189,11 +215,15 @@
         <div class="signature-section">
             <div class="signature-block">
                 <strong>Guru Mata Pelajaran</strong>
-                <p>{{ $guru->nama ?? '' }}</p>
+                <div class="signature-name">{{ $guru->nama ?? '' }}</div>
+                <div class="signature-line"></div>
+                <div class="signature-nip">{{ !empty($nipGuru) ? 'NIP. ' . $nipGuru : '' }}</div>
             </div>
             <div class="signature-block">
                 <strong>Kepala Sekolah</strong>
-                <p></p>
+                <div class="signature-name">{{ $namaKepalaSekolah ?? '-' }}</div>
+                <div class="signature-line"></div>
+                <div class="signature-nip">{{ !empty($nipKepalaSekolah) ? 'NIP. ' . $nipKepalaSekolah : '' }}</div>
             </div>
         </div>
     @endif
