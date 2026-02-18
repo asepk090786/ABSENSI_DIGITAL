@@ -4,6 +4,7 @@ namespace App\Imports;
 
 use App\Models\CapaianPembelajaran;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -11,6 +12,16 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
 {
     protected array $errors = [];
+    protected ?int $userId = null;
+    protected bool $isGuruMapel = false;
+    protected bool $hasUserIdColumn = false;
+
+    public function __construct()
+    {
+        $this->userId = auth()->id();
+        $this->isGuruMapel = auth()->check() && auth()->user()->hasRole('Guru Mapel');
+        $this->hasUserIdColumn = Schema::hasColumn('capaian_pembelajarans', 'user_id');
+    }
 
     public function collection(Collection $rows): void
     {
@@ -28,7 +39,7 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
             ];
 
             $validator = Validator::make($payload, [
-                'nama_capaian_pembelajaran' => 'required|string|max:255',
+                'nama_capaian_pembelajaran' => 'required|string|max:191',
                 'fase' => 'nullable|string|in:A,B,C,D,E,F',
                 'deskripsi' => 'nullable|string',
                 'tujuan_pembelajaran' => 'nullable|string',
@@ -42,8 +53,12 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
             }
 
             try {
-                // Check if already exists by nama
-                $existing = CapaianPembelajaran::where('nama_capaian_pembelajaran', $payload['nama_capaian_pembelajaran'])->first();
+                // Check if already exists by nama (scoped for Guru Mapel)
+                $existingQuery = CapaianPembelajaran::where('nama_capaian_pembelajaran', $payload['nama_capaian_pembelajaran']);
+                if ($this->isGuruMapel && $this->hasUserIdColumn) {
+                    $existingQuery->where('user_id', $this->userId);
+                }
+                $existing = $existingQuery->first();
                 
                 if ($existing) {
                     // Update existing
@@ -56,7 +71,12 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
                     ]);
                 } else {
                     // Create new
-                    CapaianPembelajaran::create($payload);
+                    $createPayload = $payload;
+                    if ($this->hasUserIdColumn) {
+                        $createPayload['user_id'] = $this->userId;
+                    }
+
+                    CapaianPembelajaran::create($createPayload);
                 }
             } catch (\Exception $e) {
                 $this->pushError($rowNumber, 'Error: ' . $e->getMessage());

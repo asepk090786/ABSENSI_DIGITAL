@@ -7,20 +7,41 @@ use App\Exports\CapaianPembelajaranExport;
 use App\Exports\CapaianPembelajaranTemplateExport;
 use App\Imports\CapaianPembelajaranImport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CapaianPembelajaranController extends Controller
 {
+    private function isGuruMapel(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('Guru Mapel');
+    }
+
+    private function scopedCapaianQuery()
+    {
+        $query = CapaianPembelajaran::query();
+
+        if ($this->isGuruMapel() && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query;
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_capaian_pembelajaran' => 'required|string|max:255|unique:capaian_pembelajarans,nama_capaian_pembelajaran',
+            'nama_capaian_pembelajaran' => 'required|string|max:191|unique:capaian_pembelajarans,nama_capaian_pembelajaran',
             'deskripsi' => 'nullable|string',
             'fase' => 'nullable|string|max:1',
             'tujuan_pembelajaran' => 'nullable|string',
             'alur_tujuan_pembelajaran' => 'nullable|string',
             'indikator_kriteria' => 'nullable|string',
         ]);
+
+        if (Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
+            $validated['user_id'] = auth()->id();
+        }
 
         CapaianPembelajaran::create($validated);
 
@@ -29,8 +50,12 @@ class CapaianPembelajaranController extends Controller
 
     public function update(Request $request, CapaianPembelajaran $capaianPembelajaran)
     {
+        if ($this->isGuruMapel() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak diizinkan mengubah CP milik guru lain.');
+        }
+
         $validated = $request->validate([
-            'nama_capaian_pembelajaran' => 'required|string|max:255|unique:capaian_pembelajarans,nama_capaian_pembelajaran,' . $capaianPembelajaran->id,
+            'nama_capaian_pembelajaran' => 'required|string|max:191|unique:capaian_pembelajarans,nama_capaian_pembelajaran,' . $capaianPembelajaran->id,
             'deskripsi' => 'nullable|string',
             'fase' => 'nullable|string|max:1',
             'tujuan_pembelajaran' => 'nullable|string',
@@ -45,6 +70,10 @@ class CapaianPembelajaranController extends Controller
 
     public function destroy(CapaianPembelajaran $capaianPembelajaran)
     {
+        if ($this->isGuruMapel() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak diizinkan menghapus CP milik guru lain.');
+        }
+
         $capaianPembelajaran->delete();
 
         return back()->with('success', 'Capaian Pembelajaran berhasil dihapus');
@@ -52,13 +81,13 @@ class CapaianPembelajaranController extends Controller
 
     public function list()
     {
-        $capaian = CapaianPembelajaran::orderBy('nama_capaian_pembelajaran')->get();
+        $capaian = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
         return response()->json($capaian);
     }
 
     public function export()
     {
-        return Excel::download(new CapaianPembelajaranExport, 'capaian_pembelajaran_' . date('Y-m-d') . '.xlsx');
+        return Excel::download(new CapaianPembelajaranExport(auth()->user()), 'capaian_pembelajaran_' . date('Y-m-d') . '.xlsx');
     }
 
     public function template()

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\JamBelajarController;
 use App\Http\Controllers\AgendaKelasController;
+use App\Http\Controllers\AgendaGuruController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -156,6 +157,10 @@ Route::middleware(['auth'])->group(function(){
     
     Route::get('agenda_kelas/preview', [AgendaKelasController::class, 'preview'])->name('agenda_kelas.preview');
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store','show','edit','update','destroy']);
+    
+    Route::get('agenda_guru/export', [AgendaGuruController::class, 'export'])->name('agenda_guru.export');
+    Route::resource('agenda_guru', AgendaGuruController::class)->only(['index','create','store','edit','update','destroy']);
+    
     Route::resource('jenis_kegiatan', JenisKegiatanController::class)->middleware('auth');
 
     // Maintenance update routes

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgendaKelas;
+use App\Models\AgendaGuru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -232,9 +233,11 @@ class AgendaKelasController extends Controller
                 if ($existingAgenda) {
                     // Update existing
                     $existingAgenda->update($agendaData);
+                    $this->syncAgendaGuru($existingAgenda);
                 } else {
                     // Create new
-                    AgendaKelas::create($agendaData);
+                    $newAgenda = AgendaKelas::create($agendaData);
+                    $this->syncAgendaGuru($newAgenda);
                 }
                 $createdCount++;
             }
@@ -246,10 +249,12 @@ class AgendaKelasController extends Controller
                 // Update existing agenda
                 $agenda = AgendaKelas::findOrFail($agendaId);
                 $agenda->update($data);
+                $this->syncAgendaGuru($agenda);
                 $message = 'Agenda kelas berhasil diperbarui';
             } else {
                 // Create new agenda
-                AgendaKelas::create($data);
+                $agenda = AgendaKelas::create($data);
+                $this->syncAgendaGuru($agenda);
                 $message = 'Agenda kelas ditambahkan';
             }
         }
@@ -336,6 +341,9 @@ class AgendaKelasController extends Controller
         }
 
         $agenda->update($data);
+        
+        // Sync changes to agenda guru
+        $this->syncAgendaGuru($agenda);
 
         return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil diperbarui');
     }
@@ -351,6 +359,9 @@ class AgendaKelasController extends Controller
             return back()->with('error', 'Anda tidak memiliki akses untuk menghapus agenda ini.');
         }
 
+        // Cleanup agenda guru if needed
+        $this->cleanupAgendaGuru($agenda);
+        
         $agenda->delete();
 
         return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil dihapus');
@@ -425,5 +436,69 @@ class AgendaKelasController extends Controller
         $pdf->setPaper('a4', 'portrait');
         
         return $pdf->stream('Preview-Agenda-' . str_replace(' ', '-', $kelas->nama_kelas) . '.pdf');
+    }
+
+    /**
+     * Sync agenda kelas ke agenda guru
+     * Ketika guru membuat/mengubah agenda kelas, otomatis terupdate di agenda guru
+     */
+    private function syncAgendaGuru(AgendaKelas $agendaKelas)
+    {
+        // Get kelas info untuk deskripsi
+        $kelas = DB::table('kelas')->find($agendaKelas->kelas_id);
+        
+        // Buat ringkasan kegiatan: Kelas + Kegiatan
+        $kegiatanRingkasan = $kelas ? $kelas->nama_kelas . ' - ' : '';
+        $kegiatanRingkasan .= $agendaKelas->kegiatan ?? '';
+
+        // Cari atau buat agenda guru dengan kriteria yang sama
+        $agendaGuru = AgendaGuru::where('guru_id', $agendaKelas->guru_id)
+            ->where('jam_belajar_id', $agendaKelas->jam_belajar_id)
+            ->where('tanggal', $agendaKelas->tanggal)
+            ->where('tahun_ajaran_id', $agendaKelas->tahun_ajaran_id)
+            ->where('semester_id', $agendaKelas->semester_id)
+            ->first();
+
+        if ($agendaGuru) {
+            // Update existing - append kelas baru jika belum ada
+            if (strpos($agendaGuru->kegiatan, $kelas->nama_kelas) === false) {
+                $agendaGuru->kegiatan = $agendaGuru->kegiatan . "\n" . $kegiatanRingkasan;
+                $agendaGuru->save();
+            }
+        } else {
+            // Create new agenda guru
+            AgendaGuru::create([
+                'guru_id' => $agendaKelas->guru_id,
+                'jam_belajar_id' => $agendaKelas->jam_belajar_id,
+                'tanggal' => $agendaKelas->tanggal,
+                'kegiatan' => $kegiatanRingkasan,
+                'tahun_ajaran_id' => $agendaKelas->tahun_ajaran_id,
+                'semester_id' => $agendaKelas->semester_id,
+            ]);
+        }
+    }
+
+    /**
+     * Remove agenda guru jika semua agenda kelas untuk jam tersebut sudah dihapus
+     */
+    private function cleanupAgendaGuru(AgendaKelas $deletedAgenda)
+    {
+        // Cek apakah masih ada agenda kelas lain untuk jam, tanggal, dan guru yang sama
+        $otherAgendas = AgendaKelas::where('guru_id', $deletedAgenda->guru_id)
+            ->where('jam_belajar_id', $deletedAgenda->jam_belajar_id)
+            ->where('tanggal', $deletedAgenda->tanggal)
+            ->where('tahun_ajaran_id', $deletedAgenda->tahun_ajaran_id)
+            ->where('semester_id', $deletedAgenda->semester_id)
+            ->count();
+
+        // Jika tidak ada agenda kelas lain, hapus agenda guru
+        if ($otherAgendas === 0) {
+            AgendaGuru::where('guru_id', $deletedAgenda->guru_id)
+                ->where('jam_belajar_id', $deletedAgenda->jam_belajar_id)
+                ->where('tanggal', $deletedAgenda->tanggal)
+                ->where('tahun_ajaran_id', $deletedAgenda->tahun_ajaran_id)
+                ->where('semester_id', $deletedAgenda->semester_id)
+                ->delete();
+        }
     }
 }

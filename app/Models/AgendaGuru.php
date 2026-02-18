@@ -5,23 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class AgendaKelas extends Model
+class AgendaGuru extends Model
 {
     use HasFactory;
 
-    protected $table = 'agenda_kelas';
+    protected $table = 'agenda_guru';
     protected $fillable = [
-        'kelas_id',
         'guru_id',
         'jam_belajar_id',
         'tanggal',
         'kegiatan',
-        'tujuan_pembelajaran',
-        'strategi_pembelajaran',
-        'media_pembelajaran',
-        'sumber_belajar',
-        'penilaian',
-        'catatan_tambahan',
         'tahun_ajaran_id',
         'semester_id'
     ];
@@ -29,11 +22,6 @@ class AgendaKelas extends Model
     protected $casts = [
         'tanggal' => 'date',
     ];
-
-    public function kelas()
-    {
-        return $this->belongsTo(\App\Models\Kelas::class, 'kelas_id');
-    }
 
     public function guru()
     {
@@ -55,34 +43,45 @@ class AgendaKelas extends Model
         return $this->belongsTo(\App\Models\Semester::class, 'semester_id');
     }
 
-    public function getAbsensiSummary()
+    /**
+     * Get all attendance records linked to this agenda guru
+     * Through agenda_kelas relationship
+     */
+    public function absensiKelas()
     {
-        $absensiKelas = \App\Models\AbsensiKelas::where('kelas_id', $this->kelas_id)
+        return \Illuminate\Support\Facades\DB::table('absensi_kelas')
             ->where('guru_id', $this->guru_id)
             ->where('jam_belajar_id', $this->jam_belajar_id)
             ->whereDate('tanggal', $this->tanggal)
             ->where('tahun_ajaran_id', $this->tahun_ajaran_id)
-            ->where('semester_id', $this->semester_id)
-            ->first();
+            ->where('semester_id', $this->semester_id);
+    }
 
-        if (!$absensiKelas) {
-            return [
-                'total' => 0,
-                'hadir' => 0,
-                'absen' => 0,
-                'izin' => 0,
-                'sakit' => 0,
-            ];
+    /**
+     * Get summary of attendance for this time slot
+     */
+    public function getAbsensiSummary()
+    {
+        $absensi = $this->absensiKelas()->get();
+        
+        $totalSiswa = 0;
+        $siswaHadir = 0;
+        $siswaAbsen = 0;
+        $siswaIzin = 0;
+        $siswaSakit = 0;
+        
+        foreach ($absensi as $a) {
+            $absensiSiswa = \App\Models\AbsensiSiswa::where('absensi_kelas_id', $a->id)->get();
+            $totalSiswa += $absensiSiswa->count();
+            
+            foreach ($absensiSiswa as $as) {
+                if ($as->status === 'Hadir') $siswaHadir++;
+                elseif ($as->status === 'Absen') $siswaAbsen++;
+                elseif ($as->status === 'Izin') $siswaIzin++;
+                elseif ($as->status === 'Sakit') $siswaSakit++;
+            }
         }
-
-        $absensiSiswa = \App\Models\AbsensiSiswa::where('absensi_kelas_id', $absensiKelas->id)->get();
-
-        $totalSiswa = $absensiSiswa->count();
-        $siswaHadir = $absensiSiswa->where('status', 'Hadir')->count();
-        $siswaAbsen = $absensiSiswa->where('status', 'Absen')->count();
-        $siswaIzin = $absensiSiswa->where('status', 'Izin')->count();
-        $siswaSakit = $absensiSiswa->where('status', 'Sakit')->count();
-
+        
         return [
             'total' => $totalSiswa,
             'hadir' => $siswaHadir,

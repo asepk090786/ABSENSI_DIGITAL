@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\CapaianPembelajaran;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -13,10 +14,22 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class CapaianPembelajaranExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
     private int $no = 1;
+    private $user;
+
+    public function __construct($user = null)
+    {
+        $this->user = $user;
+    }
 
     public function collection()
     {
-        return CapaianPembelajaran::orderBy('nama_capaian_pembelajaran')->get();
+        $query = CapaianPembelajaran::query();
+
+        if ($this->user && $this->user->hasRole('Guru Mapel') && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
+            $query->where('user_id', $this->user->id);
+        }
+
+        return $query->orderBy('nama_capaian_pembelajaran')->get();
     }
 
     public function headings(): array

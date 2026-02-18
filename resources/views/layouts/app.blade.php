@@ -354,7 +354,7 @@
                         @if($isGuru)
                         <!-- Pembelajaran (Guru only) -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['agenda_kelas.*', 'absensi.*', 'mata_pelajaran.*']) ? 'active' : '' }}" href="#navbar-pembelajaran" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['agenda_kelas.*', 'agenda_guru.*', 'absensi.*', 'mata_pelajaran.*']) ? 'active' : '' }}" href="#navbar-pembelajaran" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-notebook"></i>
                                 </span>
@@ -369,6 +369,9 @@
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
                                     <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}" href="{{ route('agenda_guru.index') }}">
+                                    <i class="ti ti-user-circle me-2"></i>Agenda Guru
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
                                     <i class="ti ti-clipboard-check me-2"></i>Absensi

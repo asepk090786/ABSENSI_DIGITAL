@@ -8,14 +8,26 @@ use App\Exports\KomponenNilaiExport;
 use App\Exports\KomponenNilaiTemplateExport;
 use App\Imports\KomponenNilaiImport;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
 class KomponenNilaiController extends Controller
 {
+    private function scopedCapaianQuery()
+    {
+        $query = CapaianPembelajaran::query();
+
+        if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        return $query;
+    }
+
     public function index()
     {
         $items = KomponenNilai::orderBy('nama_komponen')->get();
-        $capaianList = CapaianPembelajaran::orderBy('nama_capaian_pembelajaran')->get();
+        $capaianList = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
         return view('komponen_nilai.index', compact('items', 'capaianList'));
     }
 
@@ -39,7 +51,7 @@ class KomponenNilaiController extends Controller
     public function edit($id)
     {
         $item = KomponenNilai::findOrFail($id);
-        $capaianList = CapaianPembelajaran::orderBy('nama_capaian_pembelajaran')->get();
+        $capaianList = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
         return view('komponen_nilai.edit', compact('item', 'capaianList'));
     }
 

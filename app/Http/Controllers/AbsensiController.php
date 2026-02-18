@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\AbsensiKelas;
+use App\Models\AgendaGuru;
 use App\Models\Kelas;
 use App\Models\Guru;
 use App\Models\JamBelajar;
@@ -301,7 +302,6 @@ class AbsensiController extends Controller
                 $absensi = AbsensiKelas::create(array_merge($validated, [
                     'jam_belajar_id' => $jamId,
                 ]));
-
                 foreach ($absensiSiswa as $siswaId => $status) {
                     if (!empty($status)) {
                         \App\Models\AbsensiSiswa::create([
@@ -312,6 +312,10 @@ class AbsensiController extends Controller
                         ]);
                     }
                 }
+
+                // Sync to agenda guru
+                $this->syncAbsensiToAgendaGuru($absensi);
+                $this->updateAgendaGuruAttendanceNote($absensi);
 
                 $createdAbsensi[] = $absensi;
             }
@@ -393,6 +397,9 @@ class AbsensiController extends Controller
         ]);
 
         $absensi->update($validated);
+        
+        // Update attendance note in agenda guru
+        $this->updateAgendaGuruAttendanceNote($absensi);
 
         return redirect()->route('absensi.show', $absensi->id)
             ->with('success', 'Absensi kelas berhasil diperbarui.');
@@ -435,6 +442,76 @@ class AbsensiController extends Controller
                 'error' => $e->getMessage(),
                 'debug' => config('app.debug') ? $e->getTrace() : null
             ], 500);
+        }
+    }
+
+    /**
+     * Sync attendance to agenda guru
+     * Mencatat bahwa guru sudah melakukan absensi di agenda guru
+     */
+    private function syncAbsensiToAgendaGuru(AbsensiKelas $absensi)
+    {
+        // Cari atau buat agenda guru dengan kriteria yang sama
+        $agendaGuru = AgendaGuru::where('guru_id', $absensi->guru_id)
+            ->where('jam_belajar_id', $absensi->jam_belajar_id)
+            ->where('tanggal', $absensi->tanggal)
+            ->where('tahun_ajaran_id', $absensi->tahun_ajaran_id)
+            ->where('semester_id', $absensi->semester_id)
+            ->first();
+
+        if (!$agendaGuru) {
+            // Create agenda guru if not exists
+            $kelas = DB::table('kelas')->find($absensi->kelas_id);
+            $kegiatan = $kelas ? $kelas->nama_kelas . ' - Absensi' : 'Absensi';
+            
+            AgendaGuru::create([
+                'guru_id' => $absensi->guru_id,
+                'jam_belajar_id' => $absensi->jam_belajar_id,
+                'tanggal' => $absensi->tanggal,
+                'kegiatan' => $kegiatan,
+                'tahun_ajaran_id' => $absensi->tahun_ajaran_id,
+                'semester_id' => $absensi->semester_id,
+            ]);
+        }
+    }
+
+    /**
+     * Update attendance status in agenda guru
+     * Jika ada perubahan status absensi, update catatan di agenda guru
+     */
+    private function updateAgendaGuruAttendanceNote(AbsensiKelas $absensi)
+    {
+        $absensiSummary = \App\Models\AbsensiSiswa::where('absensi_kelas_id', $absensi->id)
+            ->select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')
+            ->get();
+
+        $notes = [];
+        foreach ($absensiSummary as $summary) {
+            $notes[] = $summary->status . ': ' . $summary->total;
+        }
+        
+        if (!empty($notes)) {
+            $agendaGuru = AgendaGuru::where('guru_id', $absensi->guru_id)
+                ->where('jam_belajar_id', $absensi->jam_belajar_id)
+                ->where('tanggal', $absensi->tanggal)
+                ->where('tahun_ajaran_id', $absensi->tahun_ajaran_id)
+                ->where('semester_id', $absensi->semester_id)
+                ->first();
+
+            if ($agendaGuru) {
+                // Update kegiatan to include attendance summary if not already there
+                $kelas = DB::table('kelas')->find($absensi->kelas_id);
+                $summary = implode(', ', $notes);
+                $kegiatan = $kelas ? $kelas->nama_kelas : '';
+                $kegiatan .= ' | Absensi: ' . $summary;
+                
+                // Only update if summary not already in kegiatan
+                if (strpos($agendaGuru->kegiatan, 'Absensi:') === false) {
+                    $agendaGuru->kegiatan = $agendaGuru->kegiatan . ' (' . $summary . ')';
+                    $agendaGuru->save();
+                }
+            }
         }
     }
 }

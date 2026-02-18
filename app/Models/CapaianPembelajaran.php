@@ -14,10 +14,16 @@ class CapaianPembelajaran extends Model
         'deskripsi',
         'fase',
         'tahun_ajaran_id',
+        'user_id',
         'tujuan_pembelajaran',
         'alur_tujuan_pembelajaran',
         'indikator_kriteria',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function tahunAjaran()
     {
