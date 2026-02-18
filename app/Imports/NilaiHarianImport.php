@@ -40,18 +40,57 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
 
     public function collection(Collection $rows): void
     {
+        $students = Siswa::where('kelas_id', $this->kelasId)
+            ->get(['id', 'nis', 'nisn', 'nama']);
+
+        $studentsByNis = [];
+        $studentsByNisn = [];
+        $studentsByName = [];
+        $nameCounts = [];
+
+        foreach ($students as $student) {
+            $normalizedNis = $this->normalizeIdentity((string) ($student->nis ?? ''));
+            $normalizedNisn = $this->normalizeIdentity((string) ($student->nisn ?? ''));
+            $normalizedName = $this->normalizeName((string) ($student->nama ?? ''));
+
+            if ($normalizedNis !== '' && !isset($studentsByNis[$normalizedNis])) {
+                $studentsByNis[$normalizedNis] = $student;
+            }
+
+            if ($normalizedNisn !== '' && !isset($studentsByNisn[$normalizedNisn])) {
+                $studentsByNisn[$normalizedNisn] = $student;
+            }
+
+            if ($normalizedName !== '') {
+                if (!isset($nameCounts[$normalizedName])) {
+                    $nameCounts[$normalizedName] = 0;
+                }
+                $nameCounts[$normalizedName]++;
+
+                if (!isset($studentsByName[$normalizedName])) {
+                    $studentsByName[$normalizedName] = $student;
+                }
+            }
+        }
+
         foreach ($rows as $index => $row) {
             $rowNumber = $index + 2;
 
+            $normalizedNis = $this->normalizeIdentity((string) ($row['nis'] ?? ''));
+            $normalizedNisn = $this->normalizeIdentity((string) ($row['nisn'] ?? ''));
+            $normalizedName = $this->normalizeName((string) ($row['nama'] ?? ''));
+
             $payload = [
-                'nis' => trim((string) ($row['nis'] ?? '')),
-                'nisn' => trim((string) ($row['nisn'] ?? '')),
+                'nis' => $normalizedNis,
+                'nisn' => $normalizedNisn,
+                'nama' => $normalizedName,
                 'nilai' => $row['nilai'] ?? null,
             ];
 
             $validator = Validator::make($payload, [
                 'nis' => 'nullable|string',
                 'nisn' => 'nullable|string',
+                'nama' => 'nullable|string',
                 'nilai' => 'nullable|numeric|min:0|max:100',
             ]);
 
@@ -60,19 +99,23 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
                 continue;
             }
 
-            if ($payload['nis'] === '' && $payload['nisn'] === '') {
-                $this->pushError($rowNumber, 'NIS atau NISN wajib diisi.');
+            if ($payload['nis'] === '' && $payload['nisn'] === '' && $payload['nama'] === '') {
                 continue;
             }
 
-            $siswa = Siswa::where('kelas_id', $this->kelasId)
-                ->when($payload['nis'] !== '', function ($q) use ($payload) {
-                    return $q->where('nis', $payload['nis']);
-                })
-                ->when($payload['nis'] === '' && $payload['nisn'] !== '', function ($q) use ($payload) {
-                    return $q->where('nisn', $payload['nisn']);
-                })
-                ->first();
+            $siswa = null;
+
+            if ($payload['nis'] !== '' && isset($studentsByNis[$payload['nis']])) {
+                $siswa = $studentsByNis[$payload['nis']];
+            }
+
+            if (!$siswa && $payload['nisn'] !== '' && isset($studentsByNisn[$payload['nisn']])) {
+                $siswa = $studentsByNisn[$payload['nisn']];
+            }
+
+            if (!$siswa && $payload['nama'] !== '' && isset($studentsByName[$payload['nama']]) && ($nameCounts[$payload['nama']] ?? 0) === 1) {
+                $siswa = $studentsByName[$payload['nama']];
+            }
 
             if (!$siswa) {
                 $this->pushError($rowNumber, 'Siswa tidak ditemukan pada kelas ini.');
@@ -86,6 +129,8 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
                 ->where('mapel_id', $this->mapelId)
                 ->where('rencana_pembelajaran_id', $this->rencanaId)
                 ->whereDate('tanggal', $this->tanggal)
+                ->where('tahun_ajaran_id', $this->tahunAjaranId)
+                ->where('semester_id', $this->semesterId)
                 ->first();
 
             if ($existing) {
@@ -93,6 +138,9 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
                     ->where('id', $existing->id)
                     ->update([
                         'nilai' => $payload['nilai'],
+                        'guru_id' => $this->guruId,
+                        'tahun_ajaran_id' => $this->tahunAjaranId,
+                        'semester_id' => $this->semesterId,
                         'updated_at' => $now,
                     ]);
             } else {
@@ -122,5 +170,42 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
     protected function pushError(int $row, string $message): void
     {
         $this->errors[] = 'Baris ' . $row . ': ' . $message;
+    }
+
+    protected function normalizeIdentity(string $value): string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        $value = ltrim($value, "'’`");
+        $value = str_replace("\u{00A0}", ' ', $value);
+        $value = preg_replace('/\s+/u', '', (string) $value);
+
+        if (is_numeric($value)) {
+            if (stripos((string) $value, 'e') !== false) {
+                $value = sprintf('%.0f', (float) $value);
+            } elseif (strpos((string) $value, '.') !== false) {
+                $value = rtrim(rtrim((string) $value, '0'), '.');
+            }
+        }
+
+        return trim((string) $value);
+    }
+
+    protected function normalizeName(string $value): string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        $value = str_replace("\u{00A0}", ' ', $value);
+        $value = preg_replace('/\s+/u', ' ', (string) $value);
+
+        return mb_strtolower(trim((string) $value));
     }
 }

@@ -150,8 +150,75 @@ class NilaiController extends Controller
         }
         $items = $itemsQuery->orderBy('nilai_harian.created_at','desc')->get();
 
+        $nilaiKomponenColumns = $komponenList
+            ->map(function ($komponen) {
+                return (object) [
+                    'id' => (int) $komponen->id,
+                    'nama' => $komponen->nama_komponen,
+                ];
+            })
+            ->values();
+        $nilaiTableRows = collect();
+
+        if ($items->isNotEmpty()) {
+            $hasHarian = $items->contains(function ($row) {
+                return $row->komponen_id === null;
+            });
+
+            if ($hasHarian) {
+                $nilaiKomponenColumns = collect([(object) ['id' => 0, 'nama' => 'Harian']])
+                    ->merge($nilaiKomponenColumns)
+                    ->values();
+            }
+
+            $nilaiTableRows = $items
+                ->groupBy('siswa_id')
+                ->map(function ($rows) use ($nilaiKomponenColumns) {
+                    $first = $rows->first();
+                    $nilaiByKomponen = [];
+                    $nilaiIdByKomponen = [];
+                    $nilaiValues = [];
+
+                    foreach ($nilaiKomponenColumns as $komponen) {
+                        $komponenId = (int) $komponen->id;
+                        $match = $rows->first(function ($item) use ($komponenId) {
+                            return (int) ($item->komponen_id ?? 0) === $komponenId;
+                        });
+
+                        if ($match) {
+                            $nilaiByKomponen[$komponenId] = $match->nilai;
+                            $nilaiIdByKomponen[$komponenId] = $match->id;
+                            if ($match->nilai !== null && $match->nilai !== '') {
+                                $nilaiValues[] = (float) $match->nilai;
+                            }
+                        } else {
+                            $nilaiByKomponen[$komponenId] = null;
+                            $nilaiIdByKomponen[$komponenId] = null;
+                        }
+                    }
+
+                    $jumlah = count($nilaiValues) ? array_sum($nilaiValues) : null;
+                    $rataRata = count($nilaiValues) ? ($jumlah / count($nilaiValues)) : null;
+
+                    return (object) [
+                        'siswa_id' => $first->siswa_id,
+                        'nama_siswa' => $first->nama_siswa,
+                        'nilai_by_komponen' => $nilaiByKomponen,
+                        'nilai_id_by_komponen' => $nilaiIdByKomponen,
+                        'jumlah' => $jumlah,
+                        'rata_rata' => $rataRata,
+                    ];
+                })
+                ->sortBy(function ($row) {
+                    return mb_strtolower((string) $row->nama_siswa);
+                })
+                ->values();
+        }
+
         return view('nilai.index', compact(
             'items',
+            'nilaiKomponenColumns',
+            'nilaiTableRows',
             'quickMenus',
             'kelasId',
             'mapelId',
@@ -201,6 +268,8 @@ class NilaiController extends Controller
             ->where('mapel_id', $validated['mapel_id'])
             ->whereDate('tanggal', $validated['tanggal'])
             ->where('rencana_pembelajaran_id', $validated['rencana_pembelajaran_id'])
+            ->where('tahun_ajaran_id', $tahunAjaranAktif->id)
+            ->where('semester_id', $semesterAktif->id)
             ->whereIn('siswa_id', $siswaIds)
             ->pluck('siswa_id');
 

@@ -87,6 +87,7 @@ class RekapNilaiController extends Controller
         
         // Get rekap data if filters are applied
         $rekapData = null;
+        $rekapKomponenColumns = collect();
         $selectedKelas = null;
         $selectedMapel = null;
         $selectedKomponen = null;
@@ -95,36 +96,91 @@ class RekapNilaiController extends Controller
             $selectedKelas = Kelas::find($kelasId);
             $selectedMapel = MataPelajaran::find($mapelId);
             $selectedKomponen = $komponenId ? KomponenNilai::find($komponenId) : null;
-            
-            // Query to get students with their grades
-            $query = DB::table('siswa')
-                ->leftJoin('nilai_harian', function($join) use ($mapelId, $komponenId, $tahunAjaranActive, $semesterActive, $kelasId) {
-                    $join->on('siswa.id', '=', 'nilai_harian.siswa_id')
-                        ->where('nilai_harian.mapel_id', $mapelId)
-                        ->where('nilai_harian.kelas_id', $kelasId)
-                        ->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
-                        ->where('nilai_harian.semester_id', $semesterActive->id);
-                    
-                    if ($komponenId) {
-                        $join->where('nilai_harian.komponen_id', $komponenId);
-                    }
-                })
-                ->where('siswa.kelas_id', $kelasId)
-                ->select(
-                    'siswa.id',
-                    'siswa.nis',
-                    'siswa.nisn',
-                    'siswa.nama',
-                    DB::raw('AVG(nilai_harian.nilai) as rata_rata'),
-                    DB::raw('COUNT(nilai_harian.id) as jumlah_nilai'),
-                    DB::raw('MAX(nilai_harian.nilai) as nilai_tertinggi'),
-                    DB::raw('MIN(nilai_harian.nilai) as nilai_terendah')
-                )
-                ->groupBy('siswa.id', 'siswa.nis', 'siswa.nisn', 'siswa.nama')
-                ->orderBy('siswa.nama')
+
+            $students = DB::table('siswa')
+                ->where('kelas_id', $kelasId)
+                ->select('id', 'nis', 'nisn', 'nama')
+                ->orderBy('nama')
                 ->get();
-            
-            $rekapData = $query;
+
+            $nilaiPerKomponen = DB::table('nilai_harian')
+                ->leftJoin('komponen_nilai', 'nilai_harian.komponen_id', '=', 'komponen_nilai.id')
+                ->where('nilai_harian.kelas_id', $kelasId)
+                ->where('nilai_harian.mapel_id', $mapelId)
+                ->when($tahunAjaranActive, function ($q) use ($tahunAjaranActive) {
+                    $q->where(function ($w) use ($tahunAjaranActive) {
+                        $w->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
+                            ->orWhereNull('nilai_harian.tahun_ajaran_id');
+                    });
+                })
+                ->when($semesterActive, function ($q) use ($semesterActive) {
+                    $q->where(function ($w) use ($semesterActive) {
+                        $w->where('nilai_harian.semester_id', $semesterActive->id)
+                            ->orWhereNull('nilai_harian.semester_id');
+                    });
+                })
+                ->when($komponenId, function ($q) use ($komponenId) {
+                    $q->where('nilai_harian.komponen_id', $komponenId);
+                })
+                ->select(
+                    'nilai_harian.siswa_id',
+                    DB::raw('COALESCE(nilai_harian.komponen_id, 0) as komponen_id'),
+                    DB::raw("COALESCE(komponen_nilai.nama_komponen, 'Harian') as nama_komponen"),
+                    DB::raw('AVG(nilai_harian.nilai) as nilai_komponen')
+                )
+                ->groupBy('nilai_harian.siswa_id', DB::raw('COALESCE(nilai_harian.komponen_id, 0)'), DB::raw("COALESCE(komponen_nilai.nama_komponen, 'Harian')"))
+                ->get();
+
+            $rekapKomponenColumns = $nilaiPerKomponen
+                ->map(function ($row) {
+                    return (object) [
+                        'id' => (int) $row->komponen_id,
+                        'nama' => $row->nama_komponen,
+                    ];
+                })
+                ->unique('id')
+                ->sortBy(function ($item) {
+                    return mb_strtolower((string) $item->nama);
+                })
+                ->values();
+
+            $nilaiIndex = [];
+            foreach ($nilaiPerKomponen as $item) {
+                $studentId = (int) $item->siswa_id;
+                $komponenKey = (int) $item->komponen_id;
+                if (!isset($nilaiIndex[$studentId])) {
+                    $nilaiIndex[$studentId] = [];
+                }
+                $nilaiIndex[$studentId][$komponenKey] = $item->nilai_komponen !== null ? (float) $item->nilai_komponen : null;
+            }
+
+            $rekapData = $students->map(function ($student) use ($rekapKomponenColumns, $nilaiIndex) {
+                $studentId = (int) $student->id;
+                $componentValues = [];
+                $validValues = [];
+
+                foreach ($rekapKomponenColumns as $komponen) {
+                    $komponenId = (int) $komponen->id;
+                    $value = $nilaiIndex[$studentId][$komponenId] ?? null;
+                    $componentValues[$komponenId] = $value;
+                    if ($value !== null) {
+                        $validValues[] = (float) $value;
+                    }
+                }
+
+                $jumlah = count($validValues) ? array_sum($validValues) : null;
+                $rataRata = count($validValues) ? ($jumlah / count($validValues)) : null;
+
+                return (object) [
+                    'id' => $student->id,
+                    'nis' => $student->nis,
+                    'nisn' => $student->nisn,
+                    'nama' => $student->nama,
+                    'nilai_komponen' => $componentValues,
+                    'jumlah' => $jumlah,
+                    'rata_rata' => $rataRata,
+                ];
+            });
         }
         
         return view('rekap_nilai.index', compact(
@@ -135,6 +191,7 @@ class RekapNilaiController extends Controller
             'mapelId',
             'komponenId',
             'rekapData',
+            'rekapKomponenColumns',
             'selectedKelas',
             'selectedMapel',
             'selectedKomponen',
@@ -164,9 +221,21 @@ class RekapNilaiController extends Controller
         $query = DB::table('siswa')
             ->leftJoin('nilai_harian', function($join) use ($mapelId, $komponenId, $tahunAjaranActive, $semesterActive) {
                 $join->on('siswa.id', '=', 'nilai_harian.siswa_id')
-                    ->where('nilai_harian.mapel_id', $mapelId)
-                    ->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
-                    ->where('nilai_harian.semester_id', $semesterActive->id);
+                    ->where('nilai_harian.mapel_id', $mapelId);
+
+                if ($tahunAjaranActive) {
+                    $join->where(function ($q) use ($tahunAjaranActive) {
+                        $q->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
+                            ->orWhereNull('nilai_harian.tahun_ajaran_id');
+                    });
+                }
+
+                if ($semesterActive) {
+                    $join->where(function ($q) use ($semesterActive) {
+                        $q->where('nilai_harian.semester_id', $semesterActive->id)
+                            ->orWhereNull('nilai_harian.semester_id');
+                    });
+                }
                 
                 if ($komponenId) {
                     $join->where('nilai_harian.komponen_id', $komponenId);

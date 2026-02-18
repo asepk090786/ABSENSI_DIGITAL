@@ -103,23 +103,23 @@
                             <div class="card bg-success text-white">
                                 <div class="card-body">
                                     <h5 class="card-title">Rata-rata Kelas</h5>
-                                    <h2 class="mb-0">{{ $rekapData->avg('rata_rata') ? number_format($rekapData->avg('rata_rata'), 2) : '-' }}</h2>
+                                    <h2 class="mb-0">{{ $rekapData->whereNotNull('rata_rata')->count() ? number_format($rekapData->whereNotNull('rata_rata')->avg('rata_rata'), 2) : '-' }}</h2>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="card bg-info text-white">
                                 <div class="card-body">
-                                    <h5 class="card-title">Nilai Tertinggi</h5>
-                                    <h2 class="mb-0">{{ $rekapData->max('nilai_tertinggi') ?: '-' }}</h2>
+                                    <h5 class="card-title">Jumlah Tertinggi</h5>
+                                    <h2 class="mb-0">{{ $rekapData->whereNotNull('jumlah')->count() ? number_format($rekapData->max('jumlah'), 2) : '-' }}</h2>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="card bg-warning text-white">
                                 <div class="card-body">
-                                    <h5 class="card-title">Nilai Terendah</h5>
-                                    <h2 class="mb-0">{{ $rekapData->min('nilai_terendah') ?: '-' }}</h2>
+                                    <h5 class="card-title">Jumlah Terendah</h5>
+                                    <h2 class="mb-0">{{ $rekapData->whereNotNull('jumlah')->count() ? number_format($rekapData->min('jumlah'), 2) : '-' }}</h2>
                                 </div>
                             </div>
                         </div>
@@ -131,52 +131,33 @@
                             <thead class="table-light">
                                 <tr>
                                     <th width="50">No</th>
-                                    <th>NIS</th>
-                                    <th>NISN</th>
                                     <th>Nama Siswa</th>
-                                    <th width="100">Jumlah Nilai</th>
-                                    <th width="100">Rata-rata</th>
-                                    <th width="100">Tertinggi</th>
-                                    <th width="100">Terendah</th>
-                                    <th width="100">Keterangan</th>
+                                    @forelse(($rekapKomponenColumns ?? collect()) as $komponen)
+                                        <th class="text-center">{{ strtoupper($komponen->nama) }}</th>
+                                    @empty
+                                        <th class="text-center">KOMPONEN</th>
+                                    @endforelse
+                                    <th class="text-center">JUMLAH</th>
+                                    <th class="text-center">RATA-RATA</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($rekapData as $index => $siswa)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
-                                        <td>{{ $siswa->nis }}</td>
-                                        <td>{{ $siswa->nisn }}</td>
                                         <td>{{ $siswa->nama }}</td>
-                                        <td class="text-center">{{ $siswa->jumlah_nilai ?: '-' }}</td>
-                                        <td class="text-center">
-                                            @if($siswa->rata_rata)
-                                                <span class="badge bg-{{ $siswa->rata_rata >= 75 ? 'success' : ($siswa->rata_rata >= 60 ? 'warning' : 'danger') }}">
-                                                    {{ number_format($siswa->rata_rata, 2) }}
-                                                </span>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">{{ $siswa->nilai_tertinggi ?: '-' }}</td>
-                                        <td class="text-center">{{ $siswa->nilai_terendah ?: '-' }}</td>
-                                        <td class="text-center">
-                                            @if($siswa->rata_rata)
-                                                @if($siswa->rata_rata >= 75)
-                                                    <span class="badge bg-success">Baik</span>
-                                                @elseif($siswa->rata_rata >= 60)
-                                                    <span class="badge bg-warning">Cukup</span>
-                                                @else
-                                                    <span class="badge bg-danger">Kurang</span>
-                                                @endif
-                                            @else
-                                                <span class="badge bg-secondary">Belum Ada Nilai</span>
-                                            @endif
-                                        </td>
+                                        @forelse(($rekapKomponenColumns ?? collect()) as $komponen)
+                                            @php $nilaiKomponen = $siswa->nilai_komponen[$komponen->id] ?? null; @endphp
+                                            <td class="text-center">{{ $nilaiKomponen !== null ? number_format($nilaiKomponen, 2) : '-' }}</td>
+                                        @empty
+                                            <td class="text-center">-</td>
+                                        @endforelse
+                                        <td class="text-center fw-bold">{{ $siswa->jumlah !== null ? number_format($siswa->jumlah, 2) : '-' }}</td>
+                                        <td class="text-center fw-bold">{{ $siswa->rata_rata !== null ? number_format($siswa->rata_rata, 2) : '-' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted">Tidak ada data siswa</td>
+                                        <td colspan="{{ 4 + (($rekapKomponenColumns ?? collect())->count()) }}" class="text-center text-muted">Tidak ada data siswa</td>
                                     </tr>
                                 @endforelse
                             </tbody>

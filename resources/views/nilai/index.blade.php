@@ -141,7 +141,7 @@
             </div>
             <div class="card-body">
                 @if($kelasId || $mapelId)
-                    @if($items->count() > 0)
+                    @if(($nilaiTableRows ?? collect())->count() > 0)
                     <form method="POST" action="{{ route('nilai.update-batch') }}">
                         @csrf
                         <div class="d-flex justify-content-end mb-2">
@@ -155,21 +155,38 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Nama Siswa</th>
-                                    <th>Komponen</th>
-                                    <th class="text-center">Nilai</th>
+                                    @forelse(($nilaiKomponenColumns ?? collect()) as $komponen)
+                                        <th class="text-center">{{ strtoupper($komponen->nama) }}</th>
+                                    @empty
+                                        <th class="text-center">KOMPONEN</th>
+                                    @endforelse
+                                    <th class="text-center">JUMLAH</th>
+                                    <th class="text-center">RATA-RATA</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($items as $index => $item)
+                                @foreach(($nilaiTableRows ?? collect()) as $index => $row)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item->nama_siswa }}</td>
-                                    <td>
-                                        <span class="badge bg-info">{{ $item->nama_komponen ?? 'Harian' }}</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <input type="number" name="nilai[{{ $item->id }}]" class="form-control form-control-sm text-center" min="0" max="100" step="0.01" value="{{ $item->nilai }}" style="width: 100px; margin: 0 auto;">
-                                    </td>
+                                    <td>{{ $row->nama_siswa }}</td>
+                                    @forelse(($nilaiKomponenColumns ?? collect()) as $komponen)
+                                        @php
+                                            $komponenId = (int) $komponen->id;
+                                            $nilaiId = $row->nilai_id_by_komponen[$komponenId] ?? null;
+                                            $nilai = $row->nilai_by_komponen[$komponenId] ?? null;
+                                        @endphp
+                                        <td class="text-center">
+                                            @if($nilaiId)
+                                                <input type="number" name="nilai[{{ $nilaiId }}]" class="form-control form-control-sm text-center" min="0" max="100" step="0.01" value="{{ $nilai }}" style="width: 100px; margin: 0 auto;">
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    @empty
+                                        <td class="text-center">-</td>
+                                    @endforelse
+                                    <td class="text-center fw-bold">{{ $row->jumlah !== null ? number_format($row->jumlah, 2) : '-' }}</td>
+                                    <td class="text-center fw-bold">{{ $row->rata_rata !== null ? number_format($row->rata_rata, 2) : '-' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -296,7 +313,13 @@
                 <form method="POST" action="{{ route('nilai.import') }}" enctype="multipart/form-data" id="nilaiImportForm">
                     @csrf
                     <div class="mb-3">
-                        <a href="{{ $kelasId ? route('nilai.template', ['kelas_id' => $kelasId]) : '#' }}" class="btn btn-outline-secondary btn-sm {{ $kelasId ? '' : 'disabled' }}" @if(!$kelasId) aria-disabled="true" @endif>
+                        <a
+                            href="{{ $kelasId ? route('nilai.template', ['kelas_id' => $kelasId]) : '#' }}"
+                            data-template-base="{{ route('nilai.template') }}"
+                            id="nilaiTemplateDownloadBtn"
+                            class="btn btn-outline-secondary btn-sm {{ $kelasId ? '' : 'disabled' }}"
+                            @if(!$kelasId) aria-disabled="true" @endif
+                        >
                             <i class="ti ti-download me-1"></i>Download Template
                         </a>
                         @if(!$kelasId)
@@ -309,10 +332,10 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Kelas</label>
-                        <select class="form-select" name="kelas_id" required>
+                        <select class="form-select" name="kelas_id" id="nilaiImportKelasSelect" required>
                             <option value="">Pilih Kelas...</option>
                             @foreach($kelasOptions as $kelas)
-                                <option value="{{ $kelas->id }}">{{ $kelas->nama_kelas }}</option>
+                                <option value="{{ $kelas->id }}" {{ (string) $kelasId === (string) $kelas->id ? 'selected' : '' }}>{{ $kelas->nama_kelas }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -381,6 +404,8 @@
     const nilaiKelasSelect = document.getElementById('nilaiKelasSelect');
     const nilaiMapelSelect = document.getElementById('nilaiMapelSelect');
     const nilaiRencanaSelect = document.getElementById('nilaiRencanaSelect');
+    const nilaiImportKelasSelect = document.getElementById('nilaiImportKelasSelect');
+    const nilaiTemplateDownloadBtn = document.getElementById('nilaiTemplateDownloadBtn');
     const mapelByKelas = @json(($mapelByKelas ?? collect())->toArray());
     const rencanaByMapel = @json($rencanaByMapel ?? []);
     const allMapelOptions = @json(($mapelOptions ?? collect())->map(function($mapel) {
@@ -425,14 +450,35 @@
         updateRencanaOptions();
     }
 
+    function updateTemplateDownloadLink() {
+        if (!nilaiTemplateDownloadBtn) return;
+        const kelasId = nilaiImportKelasSelect ? nilaiImportKelasSelect.value : '';
+        const baseUrl = nilaiTemplateDownloadBtn.dataset.templateBase || '#';
+
+        if (!kelasId) {
+            nilaiTemplateDownloadBtn.setAttribute('href', '#');
+            nilaiTemplateDownloadBtn.classList.add('disabled');
+            nilaiTemplateDownloadBtn.setAttribute('aria-disabled', 'true');
+            return;
+        }
+
+        nilaiTemplateDownloadBtn.setAttribute('href', baseUrl + '?kelas_id=' + encodeURIComponent(kelasId));
+        nilaiTemplateDownloadBtn.classList.remove('disabled');
+        nilaiTemplateDownloadBtn.removeAttribute('aria-disabled');
+    }
+
     if (nilaiKelasSelect) {
         nilaiKelasSelect.addEventListener('change', onKelasChange);
     }
     if (nilaiMapelSelect) {
         nilaiMapelSelect.addEventListener('change', updateRencanaOptions);
     }
+    if (nilaiImportKelasSelect) {
+        nilaiImportKelasSelect.addEventListener('change', updateTemplateDownloadLink);
+    }
 
     const nilaiModal = document.getElementById('modalTambahNilai');
+    const nilaiImportModal = document.getElementById('modalImportNilai');
     if (nilaiModal) {
         nilaiModal.addEventListener('shown.bs.modal', function() {
             onKelasChange();
@@ -446,5 +492,13 @@
     if (nilaiMapelSelect && nilaiMapelSelect.value) {
         updateRencanaOptions();
     }
+
+    if (nilaiImportModal) {
+        nilaiImportModal.addEventListener('shown.bs.modal', function() {
+            updateTemplateDownloadLink();
+        });
+    }
+
+    updateTemplateDownloadLink();
 </script>
 @endpush
