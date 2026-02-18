@@ -11,6 +11,15 @@ use App\Imports\MataPelajaranImport;
 
 class MataPelajaranController extends Controller
 {
+    private function ensureCanManageMapel(): void
+    {
+        $user = auth()->user();
+
+        if ($user && $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas'])) {
+            abort(403, 'Akses tambah/edit mata pelajaran tidak diizinkan untuk role ini.');
+        }
+    }
+
     public function index()
     {
         $items = MataPelajaran::orderBy('nama_mapel')->get();
@@ -75,12 +84,16 @@ class MataPelajaranController extends Controller
 
     public function create()
     {
+        $this->ensureCanManageMapel();
+
         $jenisKegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
         return view('mata_pelajaran.create', compact('jenisKegiatanList'));
     }
 
     public function store(Request $request)
     {
+        $this->ensureCanManageMapel();
+
         $validated = $request->validate([
             'nama_mapel' => 'required|string|max:255|unique:mata_pelajaran,nama_mapel',
             'kode_mapel' => 'nullable|string|max:50|unique:mata_pelajaran,kode_mapel',
@@ -100,12 +113,16 @@ class MataPelajaranController extends Controller
 
     public function edit(MataPelajaran $mata_pelajaran)
     {
+        $this->ensureCanManageMapel();
+
         $jenisKegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
         return view('mata_pelajaran.edit', compact('mata_pelajaran', 'jenisKegiatanList'));
     }
 
     public function update(Request $request, MataPelajaran $mata_pelajaran)
     {
+        $this->ensureCanManageMapel();
+
         $validated = $request->validate([
             'nama_mapel' => 'required|string|max:255|unique:mata_pelajaran,nama_mapel,' . $mata_pelajaran->id,
             'kode_mapel' => 'nullable|string|max:50|unique:mata_pelajaran,kode_mapel,' . $mata_pelajaran->id,
@@ -120,6 +137,8 @@ class MataPelajaranController extends Controller
 
     public function destroy(MataPelajaran $mata_pelajaran)
     {
+        $this->ensureCanManageMapel();
+
         $mata_pelajaran->delete();
         return redirect()->route('mata_pelajaran.index')->with('success', 'Mata pelajaran berhasil dihapus.');
     }
@@ -136,6 +155,8 @@ class MataPelajaranController extends Controller
 
     public function import(Request $request)
     {
+        $this->ensureCanManageMapel();
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls|max:2048',
         ]);

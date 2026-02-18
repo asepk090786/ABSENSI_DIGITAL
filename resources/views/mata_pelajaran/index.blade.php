@@ -3,6 +3,7 @@
 @section('title','Mata Pelajaran')
 
 @php($isGuruView = $isGuruView ?? false)
+@php($canManageMapel = auth()->check() ? !auth()->user()->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas']) : false)
 
 @section('content')
 <div class="row">
@@ -14,6 +15,7 @@
                         <h4 class="card-title mb-0">Data Mata Pelajaran</h4>
                     </div>
                     @unless($isGuruView)
+                        @if($canManageMapel)
                         <div class="col-auto">
                             <div class="btn-list">
                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
@@ -30,6 +32,7 @@
                                 </a>
                             </div>
                         </div>
+                        @endif
                     @endunless
                 </div>
             </div>
@@ -77,9 +80,9 @@
                                 @unless($isGuruView)
                                     <th>Kategori</th>
                                 @endunless
-                                @unless($isGuruView)
+                                @if(!$isGuruView && $canManageMapel)
                                     <th>Aksi</th>
-                                @endunless
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -102,7 +105,7 @@
                                 @unless($isGuruView)
                                     <td>{{ $it->kategori ?? '-' }}</td>
                                 @endunless
-                                @unless($isGuruView)
+                                @if(!$isGuruView && $canManageMapel)
                                     <td>
                                         <div class="btn-list">
                                             <a href="{{ route('mata_pelajaran.edit', $it->id) }}" class="btn btn-sm btn-outline-primary">
@@ -113,7 +116,7 @@
                                             </button>
                                         </div>
                                     </td>
-                                @endunless
+                                @endif
                             </tr>
                         @empty
                             <tr>
@@ -130,7 +133,7 @@
     </div>
 </div>
 
-@unless($isGuruView)
+@if(!$isGuruView && $canManageMapel)
     <div class="modal fade" id="modalImport" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -181,10 +184,10 @@
         @csrf
         @method('DELETE')
     </form>
-@endunless
+@endif
 @endsection
 
-@unless($isGuruView)
+@if(!$isGuruView && $canManageMapel)
     @push('js')
     <script>
     function confirmDelete(id) {
@@ -196,4 +199,4 @@
     }
     </script>
     @endpush
-@endunless
+@endif

@@ -15,6 +15,28 @@ use App\Imports\SiswaImport;
 
 class SiswaController extends Controller
 {
+    private function ensureWaliKelasCanEditSiswa(Siswa $siswa): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->hasRole('Wali Kelas')) {
+            return;
+        }
+
+        $guru = $user->guru;
+        if (! $guru) {
+            abort(403, 'Akses ditolak. Anda tidak terdaftar sebagai guru.');
+        }
+
+        $isKelasBinaan = Kelas::where('id', $siswa->kelas_id)
+            ->where('wali_kelas_id', $guru->id)
+            ->exists();
+
+        if (! $isKelasBinaan) {
+            abort(403, 'Akses ditolak. Anda hanya dapat mengubah data siswa di kelas binaan Anda.');
+        }
+    }
+
     public function index()
     {
         $items = Siswa::with(['user', 'kelas'])->orderBy('nama')->get();
@@ -72,12 +94,16 @@ class SiswaController extends Controller
 
     public function edit(Siswa $siswa)
     {
+        $this->ensureWaliKelasCanEditSiswa($siswa);
+
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         return view('siswa.edit', compact('siswa', 'kelasList'));
     }
 
     public function update(Request $request, Siswa $siswa)
     {
+        $this->ensureWaliKelasCanEditSiswa($siswa);
+
         $userId = $siswa->user->id ?? null;
 
         $validated = $request->validate([
@@ -127,6 +153,10 @@ class SiswaController extends Controller
             $userData['password'] = $userData['password'] ?? Hash::make('password123');
             $userData['is_active'] = true;
             User::create($userData);
+        }
+
+        if (auth()->check() && auth()->user()->hasRole('Wali Kelas')) {
+            return redirect()->route('wali_kelas.siswa')->with('success', 'Data siswa berhasil diperbarui.');
         }
 
         return redirect()->route('siswa.index')->with('success', 'Data siswa berhasil diperbarui.');

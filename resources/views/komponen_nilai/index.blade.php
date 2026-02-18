@@ -82,7 +82,7 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Nama Capaian Pembelajaran <span class="text-danger">*</span></label>
-                                    <input type="text" name="nama_capaian_pembelajaran" class="form-control @error('nama_capaian_pembelajaran') is-invalid @enderror" value="{{ old('nama_capaian_pembelajaran') }}" required placeholder="Contoh: Menganalisis dan mengevaluasi fenomena sosial">
+                                    <input type="text" name="nama_capaian_pembelajaran" class="form-control @error('nama_capaian_pembelajaran') is-invalid @enderror" value="{{ old('nama_capaian_pembelajaran') }}" required maxlength="191" placeholder="Contoh: Menganalisis dan mengevaluasi fenomena sosial">
                                     @error('nama_capaian_pembelajaran')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -204,7 +204,7 @@
                                                         <div class="modal-body">
                                                             <div class="mb-3">
                                                                 <label class="form-label">Nama</label>
-                                                                <input type="text" name="nama_capaian_pembelajaran" class="form-control" value="{{ $cp->nama_capaian_pembelajaran }}" required>
+                                                                <input type="text" name="nama_capaian_pembelajaran" class="form-control" value="{{ $cp->nama_capaian_pembelajaran }}" required maxlength="191">
                                                             </div>
                                                             <div class="mb-3">
                                                                 <label class="form-label">Fase</label>

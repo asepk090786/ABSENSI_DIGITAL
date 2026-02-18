@@ -49,6 +49,12 @@
             </a>
         </li>
         <li>
+            <a href="{{ auth()->user()->guru ? route('agenda_kelas.index', ['guru_id' => auth()->user()->guru->id]) : route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') && request()->has('guru_id') ? 'active' : '' }}">
+                <i class="material-icons">assignment_ind</i>
+                <span>Agenda Guru</span>
+            </a>
+        </li>
+        <li>
             <a href="{{ route('absensi.index') }}" class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
                 <i class="material-icons">assignment</i>
                 <span>Absensi</span>

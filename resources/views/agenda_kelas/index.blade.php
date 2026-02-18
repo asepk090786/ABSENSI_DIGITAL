@@ -154,7 +154,13 @@
 </style>
 
 <div class="container-fluid">
-    @if($guruQuickAccess->isNotEmpty())
+    @php
+        $hideGuruPicker = auth()->user()->hasAnyRole([
+            'Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket'
+        ]);
+    @endphp
+
+    @if(!$hideGuruPicker && $guruQuickAccess->isNotEmpty())
     <!-- Menu Akses Cepat - Pilih Guru -->
     <div class="row mb-4">
         <div class="col-12">
@@ -190,9 +196,11 @@
                     <h5 class="card-title mb-0">
                         <i class="ti ti-clock-play me-2"></i>Menu Akses Cepat - {{ $selectedGuru->nama }} (Isi Agenda Kelas)
                     </h5>
+                    @if(!$hideGuruPicker)
                     <a href="{{ route('agenda_kelas.index') }}" class="btn btn-sm btn-outline-secondary">
                         <i class="ti ti-x me-1"></i>Reset
                     </a>
+                    @endif
                 </div>
                 <div class="card-body">
                     <div class="row g-3">

@@ -35,6 +35,7 @@
                                         <th>Jenis Kelamin</th>
                                         <th>Email</th>
                                         <th>Status</th>
+                                        <th width="8%">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -47,6 +48,11 @@
                                         <td>{{ $s->jenis_kelamin ?? '-' }}</td>
                                         <td>{{ $s->email ?? '-' }}</td>
                                         <td>{{ ($s->status_aktif ?? 0) ? 'Aktif' : 'Nonaktif' }}</td>
+                                        <td>
+                                            <a href="{{ route('siswa.edit', $s->id) }}" class="btn btn-sm btn-outline-primary" title="Edit Data Siswa">
+                                                <i class="ti ti-edit"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>

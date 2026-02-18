@@ -2,13 +2,16 @@
 
 @section('title','Edit Siswa')
 
+@php($isWaliKelas = auth()->check() && auth()->user()->hasRole('Wali Kelas'))
+@php($backRoute = $isWaliKelas ? route('wali_kelas.siswa') : route('siswa.index'))
+
 @section('content')
 <div class="row">
     <div class="col-md-10 mx-auto">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="card-title mb-0">Edit Siswa</h4>
-                <a href="{{ route('siswa.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
+                <a href="{{ $backRoute }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('siswa.update', $siswa->id) }}">
@@ -96,7 +99,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-device-floppy me-2"></i>Perbarui
                         </button>
-                        <a href="{{ route('siswa.index') }}" class="btn btn-secondary">Batal</a>
+                        <a href="{{ $backRoute }}" class="btn btn-secondary">Batal</a>
                     </div>
                 </form>
             </div>
