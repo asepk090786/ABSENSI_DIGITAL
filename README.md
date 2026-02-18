@@ -2,6 +2,10 @@
 
 Aplikasi manajemen absensi digital untuk sekolah yang dibangun dengan Laravel. Sistem ini mengelola data siswa, guru, kelas, jadwal, absensi, dan nilai.
 
+## Dokumentasi
+
+- Catatan perubahan versi tersedia di [CHANGELOG.md](CHANGELOG.md)
+
 ## Fitur Utama
 
 - 👥 Manajemen Pengguna (Admin, Kepala Sekolah, Guru, Siswa)
