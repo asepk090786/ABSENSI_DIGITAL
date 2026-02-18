@@ -5,21 +5,44 @@
 @section('content')
 <style>
     @media print {
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+
         body { margin: 0; padding: 0; }
         .btn-group, .card-header .btn-group { display: none; }
         .no-print { display: none; }
+
+        .journal-table {
+            font-size: 10px;
+            margin-top: 10px;
+        }
+
+        .journal-table th,
+        .journal-table td {
+            padding: 4px;
+        }
+
+        .signature-section {
+            margin-top: 12px;
+        }
+
+        .signature-name {
+            margin: 20px 0 4px 0;
+        }
     }
     
     .journal-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
-        font-size: 13px;
+        margin-top: 12px;
+        font-size: 12px;
     }
     
     .journal-table th, .journal-table td {
         border: 1px solid #000;
-        padding: 8px;
+        padding: 6px;
         text-align: left;
         vertical-align: middle;
     }
@@ -57,24 +80,24 @@
     
     .header-info {
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: 8px;
     }
     
     .header-info h3 {
-        margin: 5px 0;
-        font-size: 16px;
+        margin: 3px 0;
+        font-size: 15px;
     }
     
     .header-info p {
-        margin: 3px 0;
+        margin: 2px 0;
         font-size: 12px;
     }
     
     .signature-section {
-        margin-top: 30px;
+        margin-top: 16px;
         display: flex;
         justify-content: space-between;
-        padding-right: 50px;
+        padding-right: 30px;
     }
     
     .signature-block {
@@ -83,7 +106,7 @@
     }
 
     .signature-name {
-        margin: 50px 0 6px 0;
+        margin: 28px 0 6px 0;
         font-size: 12px;
         min-height: 18px;
     }
@@ -121,7 +144,7 @@
     </div>
 </div>
 
-<div style="page-break-after: always; margin-top: 20px;">
+<div style="margin-top: 10px;">
     <div class="header-info">
         <h3 style="font-weight: bold;">AGENDA MENGAJAR GURU</h3>
         <h4 style="font-weight: bold;">(JURNAL HARIAN)</h4>
@@ -142,19 +165,13 @@
         <table class="journal-table">
             <thead>
                 <tr>
-                    <th style="width: 4%;" rowspan="2">No</th>
-                    <th style="width: 10%;" rowspan="2">Hari/Tanggal</th>
-                    <th style="width: 10%;" rowspan="2">Jam Pelajaran</th>
-                    <th style="width: 26%;" rowspan="2">Materi ajar</th>
-                    <th style="width: 15%;" colspan="3">Kehadiran siswa</th>
-                    <th style="width: 10%;" rowspan="2">Jumlah Hadir</th>
-                    <th style="width: 12%;" rowspan="2">Jumlah Tidak hadir</th>
-                    <th style="width: 6%;" rowspan="2">Paraf</th>
-                </tr>
-                <tr>
-                    <th style="width: 5%;">Sakit</th>
-                    <th style="width: 5%;">Izin</th>
-                    <th style="width: 5%;">Alpa</th>
+                    <th style="width: 4%;">No</th>
+                    <th style="width: 10%;">Hari/Tanggal</th>
+                    <th style="width: 10%;">Jam Pelajaran</th>
+                    <th style="width: 10%;">Jenis Kegiatan</th>
+                    <th style="width: 24%;">Materi ajar</th>
+                    <th style="width: 34%;">Keterangan/Uraian Kegiatan</th>
+                    <th style="width: 8%;">Paraf</th>
                 </tr>
             </thead>
             <tbody>
@@ -179,36 +196,29 @@
                                 -
                             @endif
                         </td>
-                        <td>
-                            @if($item->kelas)
-                                [{{ $item->kelas->nama_kelas }}] 
-                            @endif
-                            {{ Str::limit(strip_tags($item->kegiatan), 200) }}
+                        <td class="col-center">
+                            {{ ($item->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri' ? 'Pengembangan Diri' : 'KBM' }}
                         </td>
-                        <td class="col-center">{{ $absensiSummary['sakit'] > 0 ? $absensiSummary['sakit'] : '-' }}</td>
-                        <td class="col-center">{{ $absensiSummary['izin'] > 0 ? $absensiSummary['izin'] : '-' }}</td>
-                        <td class="col-center">{{ $absensiSummary['absen'] > 0 ? $absensiSummary['absen'] : '-' }}</td>
-                        <td class="col-center">{{ $absensiSummary['hadir'] > 0 ? $absensiSummary['hadir'] : '-' }}</td>
-                        <td class="col-center">{{ $jumlahTidakHadir > 0 ? $jumlahTidakHadir : '-' }}</td>
+                        <td style="line-height: 1.2;">
+                            @if($item->kelas)
+                                [{{ $item->kelas->nama_kelas }}]
+                            @endif
+                            {{ Str::limit(strip_tags($item->kegiatan), 120) }}
+                        </td>
+                        <td style="line-height: 1.2; font-size: 10px;">
+                            <div>
+                                {{ Str::limit(strip_tags(($item->catatan_tambahan ?? '') ?: ($item->kegiatan ?? '')), 90) }}
+                            </div>
+                            @if(($item->jenis_kegiatan ?? 'kbm') === 'kbm')
+                                <div style="border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
+                                    <div>S: {{ $absensiSummary['sakit'] > 0 ? $absensiSummary['sakit'] : '-' }}, I: {{ $absensiSummary['izin'] > 0 ? $absensiSummary['izin'] : '-' }}, A: {{ $absensiSummary['absen'] > 0 ? $absensiSummary['absen'] : '-' }}</div>
+                                    <div>Hadir: {{ $absensiSummary['hadir'] > 0 ? $absensiSummary['hadir'] : '-' }} | Tidak: {{ $jumlahTidakHadir > 0 ? $jumlahTidakHadir : '-' }}</div>
+                                </div>
+                            @endif
+                        </td>
                         <td></td>
                     </tr>
                 @endforeach
-                
-                <!-- Add empty rows for printing -->
-                @for($i = $agendaList->count(); $i < 20; $i++)
-                    <tr>
-                        <td class="text-center">{{ $i + 1 }}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                @endfor
             </tbody>
         </table>
 

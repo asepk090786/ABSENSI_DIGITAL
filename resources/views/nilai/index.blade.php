@@ -329,9 +329,15 @@
                         <label class="form-label">Rencana Pembelajaran</label>
                         <select class="form-select" name="rencana_pembelajaran_id" required>
                             <option value="">Pilih Rencana...</option>
-                            @foreach($rencanaByMapel as $mapelId => $rencanaList)
-                                @foreach($rencanaList as $rp)
-                                    <option value="{{ $rp['id'] }}">{{ $rp['judul'] }}</option>
+                            @php $renderedRencanaIds = []; @endphp
+                            @foreach($rencanaByMapel as $kelasRencana)
+                                @foreach($kelasRencana as $rencanaList)
+                                    @foreach($rencanaList as $rp)
+                                        @if(isset($rp['id'], $rp['judul']) && !in_array($rp['id'], $renderedRencanaIds, true))
+                                            <option value="{{ $rp['id'] }}">{{ $rp['judul'] }}</option>
+                                            @php $renderedRencanaIds[] = $rp['id']; @endphp
+                                        @endif
+                                    @endforeach
                                 @endforeach
                             @endforeach
                         </select>
@@ -402,9 +408,10 @@
     }
 
     function updateRencanaOptions() {
+        const kelasId = nilaiKelasSelect ? nilaiKelasSelect.value : '';
         const mapelId = nilaiMapelSelect ? nilaiMapelSelect.value : '';
-        const rencanaItems = mapelId && rencanaByMapel[mapelId]
-            ? rencanaByMapel[mapelId].map(function(item) {
+        const rencanaItems = kelasId && mapelId && rencanaByMapel[kelasId] && rencanaByMapel[kelasId][mapelId]
+            ? rencanaByMapel[kelasId][mapelId].map(function(item) {
                 return { id: item.id, nama: item.judul };
             })
             : [];

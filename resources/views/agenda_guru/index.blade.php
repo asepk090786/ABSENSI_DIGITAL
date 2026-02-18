@@ -17,6 +17,9 @@
                         <a href="{{ route('agenda_kelas.create') }}" class="btn btn-primary btn-sm">
                             <i class="ti ti-plus"></i> Tambah Agenda Kelas
                         </a>
+                        <a href="{{ route('agenda_kelas.create', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="btn btn-warning btn-sm">
+                            <i class="ti ti-notes"></i> Tambah Kegiatan
+                        </a>
                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">
                             <i class="ti ti-calendar"></i> Filter Bulan
                         </button>

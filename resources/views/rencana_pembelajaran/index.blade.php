@@ -79,15 +79,24 @@
                         @forelse($items as $index => $item)
                             <tr>
                                 <td>
-                                    <input type="checkbox" name="selected_ids[]" value="{{ $item->id }}" class="form-check-input item-checkbox">
+                                    <input type="checkbox" name="selected_ids[]" value="{{ implode(',', $item->related_ids ?? [$item->id]) }}" class="form-check-input item-checkbox">
                                 </td>
                                 <td>{{ $index + 1 }}</td>
                                 <td>
                                     <a href="{{ route('rencana_pembelajaran.show', $item->id) }}" class="text-decoration-none">
                                         {{ $item->judul }}
                                     </a>
+                                    @if(($item->jumlah_kelas ?? 1) > 1)
+                                        <span class="badge bg-info ms-1">{{ $item->jumlah_kelas }} kelas</span>
+                                    @endif
                                 </td>
-                                <td>{{ $item->kelas->nama_kelas }}</td>
+                                <td>
+                                    @if(!empty($item->kelas_nama) && count($item->kelas_nama) > 0)
+                                        {{ $item->kelas_nama->join(', ') }}
+                                    @else
+                                        {{ $item->kelas->nama_kelas ?? '-' }}
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-{{ $item->status === 'published' ? 'success' : 'warning' }}">
                                         {{ ucfirst($item->status) }}
@@ -114,7 +123,7 @@
                                         <a href="{{ route('rencana_pembelajaran.edit', $item->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                             <i class="ti ti-edit"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDelete({{ $item->id }})" title="Hapus">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteGroup('{{ implode(',', $item->related_ids ?? [$item->id]) }}')" title="Hapus">
                                             <i class="ti ti-trash"></i>
                                         </button>
                                     </div>
@@ -195,12 +204,22 @@ document.getElementById('bulkDeleteBtn').addEventListener('click', function() {
     form.submit();
 });
 
-function confirmDelete(id) {
-    if (confirm('Hapus rencana pembelajaran ini?')) {
-        const form = document.getElementById('deleteForm');
-        form.action = `/rencana_pembelajaran/${id}`;
-        form.submit();
+function confirmDeleteGroup(ids) {
+    if (!ids) {
+        return;
     }
+
+    const idArray = String(ids).split(',').filter(Boolean);
+    const jumlah = idArray.length;
+
+    if (!confirm('Hapus rencana pembelajaran ini' + (jumlah > 1 ? ' untuk ' + jumlah + ' kelas' : '') + '?')) {
+        return;
+    }
+
+    const form = document.getElementById('bulkDeleteForm');
+    form.action = '{{ route("rencana_pembelajaran.bulkDelete") }}';
+    form.innerHTML = '@csrf @method("POST")<input type="hidden" name="ids" value="' + idArray.join(',') + '">';
+    form.submit();
 }
 </script>
 @endpush

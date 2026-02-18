@@ -354,7 +354,7 @@
                         @if($isGuru)
                         <!-- Pembelajaran (Guru only) -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['agenda_kelas.*', 'agenda_guru.*', 'absensi.*', 'mata_pelajaran.*']) ? 'active' : '' }}" href="#navbar-pembelajaran" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['agenda_kelas.*', 'agenda_guru.*', 'absensi.*', 'mata_pelajaran.*', 'rencana_pembelajaran.*']) ? 'active' : '' }}" href="#navbar-pembelajaran" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-notebook"></i>
                                 </span>
@@ -366,6 +366,9 @@
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}" href="{{ route('mata_pelajaran.guru') }}">
                                     <i class="ti ti-book-2 me-2"></i>Mata Pelajaran
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.guru') }}">
+                                    <i class="ti ti-book-upload me-2"></i>Rencana Pembelajaran
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
                                     <i class="ti ti-calendar-event me-2"></i>Agenda Kelas

@@ -187,6 +187,22 @@
                         <i class="ti ti-info-circle me-1"></i>
                         <small>Isi template ini untuk mendokumentasikan rencana pembelajaran Anda secara terstruktur.</small>
                     </div>
+
+                    @if(($agenda->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri')
+                        @php
+                            $kegiatanUmumGuru = config('kegiatan_guru.umum', []);
+                        @endphp
+                        <div class="mt-4">
+                            <h6 class="fw-bold text-primary">
+                                <i class="ti ti-list-check me-1"></i>Referensi Kegiatan Umum Guru
+                            </h6>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach($kegiatanUmumGuru as $kegiatanUmum)
+                                    <span class="badge bg-light text-dark border">{{ $kegiatanUmum }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

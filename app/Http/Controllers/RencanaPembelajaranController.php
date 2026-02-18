@@ -45,7 +45,52 @@ class RencanaPembelajaranController extends Controller
                 break;
         }
 
-        $items = $query->get();
+        $rawItems = $query->get();
+
+        // Group berdasarkan judul agar judul yang sama per tingkat tampil satu kali
+        $items = $rawItems
+            ->groupBy(function ($item) {
+                return mb_strtolower(trim((string) $item->judul));
+            })
+            ->map(function ($group) {
+                $representative = $group->sortByDesc('created_at')->first();
+                $representative->kelas_nama = $group->pluck('kelas.nama_kelas')
+                    ->filter()
+                    ->unique()
+                    ->sort()
+                    ->values();
+                $representative->related_ids = $group->pluck('id')->values()->all();
+                $representative->jumlah_kelas = count($representative->related_ids);
+
+                return $representative;
+            })
+            ->values();
+
+        // Re-apply sorting pada hasil grup
+        switch ($sort) {
+            case 'judul_asc':
+                $items = $items->sortBy(function ($item) {
+                    return mb_strtolower((string) $item->judul);
+                })->values();
+                break;
+            case 'judul_desc':
+                $items = $items->sortByDesc(function ($item) {
+                    return mb_strtolower((string) $item->judul);
+                })->values();
+                break;
+            case 'status_asc':
+                $items = $items->sortBy(function ($item) {
+                    return (string) $item->status . '|' . mb_strtolower((string) $item->judul);
+                })->values();
+                break;
+            case 'terlama':
+                $items = $items->sortBy('created_at')->values();
+                break;
+            case 'terbaru':
+            default:
+                $items = $items->sortByDesc('created_at')->values();
+                break;
+        }
 
         $mataPelajaran = MataPelajaran::find($mataPelajaranId);
 

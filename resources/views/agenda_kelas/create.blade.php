@@ -37,6 +37,10 @@
                     </div>
                 @endif
 
+                @php
+                    $kegiatanUmumGuru = config('kegiatan_guru.umum', []);
+                @endphp
+
                 <form method="POST" action="{{ route('agenda_kelas.store') }}">
                     @csrf
                     <div class="mb-3">
@@ -85,7 +89,13 @@
                     <div id="pengembanganDiriFields" style="display:none;">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Nama Kegiatan</label>
-                            <input type="text" name="nama_kegiatan" id="namaKegiatanInput" class="form-control @error('nama_kegiatan') is-invalid @enderror" value="{{ old('nama_kegiatan') }}" placeholder="Contoh: Pembinaan OSIS, Ekstrakurikuler, Literasi">
+                            <input type="text" name="nama_kegiatan" id="namaKegiatanInput" list="daftarKegiatanGuru" class="form-control @error('nama_kegiatan') is-invalid @enderror" value="{{ old('nama_kegiatan') }}" placeholder="Contoh: Pembinaan OSIS, Ekstrakurikuler, Literasi">
+                            <datalist id="daftarKegiatanGuru">
+                                @foreach($kegiatanUmumGuru as $kegiatanUmum)
+                                    <option value="{{ $kegiatanUmum }}"></option>
+                                @endforeach
+                            </datalist>
+                            <small class="text-muted d-block mt-1">Pilih dari daftar kegiatan umum atau ketik kegiatan lain sesuai kebutuhan.</small>
                             @error('nama_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
                     </div>

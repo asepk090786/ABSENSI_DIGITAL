@@ -82,14 +82,28 @@ class NilaiController extends Controller
                     ->get();
 
                 foreach ($rencana as $item) {
+                    $kelasKey = (string) $item->kelas_id;
                     $mapelKey = (string) $item->mata_pelajaran_id;
-                    if (!isset($rencanaByMapel[$mapelKey])) {
-                        $rencanaByMapel[$mapelKey] = [];
+
+                    if (!isset($rencanaByMapel[$kelasKey])) {
+                        $rencanaByMapel[$kelasKey] = [];
                     }
-                    $rencanaByMapel[$mapelKey][] = [
-                        'id' => $item->id,
-                        'judul' => $item->judul,
-                    ];
+                    if (!isset($rencanaByMapel[$kelasKey][$mapelKey])) {
+                        $rencanaByMapel[$kelasKey][$mapelKey] = [];
+                    }
+
+                    // Hindari judul duplikat pada kombinasi kelas + mapel
+                    $sudahAda = collect($rencanaByMapel[$kelasKey][$mapelKey])
+                        ->contains(function ($row) use ($item) {
+                            return mb_strtolower(trim((string) $row['judul'])) === mb_strtolower(trim((string) $item->judul));
+                        });
+
+                    if (!$sudahAda) {
+                        $rencanaByMapel[$kelasKey][$mapelKey][] = [
+                            'id' => $item->id,
+                            'judul' => $item->judul,
+                        ];
+                    }
                 }
 
                 if (request()->get('debug') === '1') {
