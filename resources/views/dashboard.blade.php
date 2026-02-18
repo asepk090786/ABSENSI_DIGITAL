@@ -79,6 +79,11 @@
                             </a>
                         </div>
                         <div class="col-6 col-md-4 col-lg-3">
+                            <a class="btn btn-outline-primary w-100" href="{{ route('absensi.index') }}">
+                                <i class="ti ti-calendar-check me-2"></i>Absensi Kelas
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-4 col-lg-3">
                             <a class="btn btn-outline-primary w-100" href="{{ route('mata_pelajaran.index') }}">
                                 <i class="ti ti-books me-2"></i>Mata Pelajaran
                             </a>

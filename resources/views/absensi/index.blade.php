@@ -12,6 +12,10 @@
 </style>
 
 <div class="container-fluid">
+    @php
+        $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
+    @endphp
+
     @if($kelasQuickAccess->isNotEmpty())
     <!-- Menu Akses Cepat -->
     <div class="row mb-4">
@@ -19,7 +23,12 @@
             <div class="card">
                 <div class="card-header bg-primary-subtle">
                     <h5 class="card-title mb-0">
-                        <i class="ti ti-clock-play me-2"></i>Menu Akses Cepat - Absen Kelas Anda
+                        <i class="ti ti-clock-play me-2"></i>
+                        @if($isAdminOrKepala)
+                            Menu Akses Cepat - Absensi Kelas Aktif
+                        @else
+                            Menu Akses Cepat - Absen Kelas Anda
+                        @endif
                     </h5>
                 </div>
                 <div class="card-body">
@@ -103,13 +112,103 @@
                                               transition: all 0.3s ease;"
                                        onmouseover="this.style.backgroundColor='{{ $btnHover }}'; this.style.borderColor='{{ $btnHover }}';"
                                        onmouseout="this.style.backgroundColor='{{ $btnColor }}'; this.style.borderColor='{{ $btnColor }}';">
-                                        <i class="ti ti-check me-1"></i>Absen Kelas Ini
+                                        <i class="ti ti-check me-1"></i>
+                                        @if($isAdminOrKepala)
+                                            Buat Absensi
+                                        @else
+                                            Absen Kelas Ini
+                                        @endif
                                     </a>
                                 </div>
                             </div>
                         </div>
                         @endforeach
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($isAdminOrKepala)
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-1">Rekap Absensi per Kelas Aktif</h5>
+                    <p class="card-category mb-0">Berdasarkan kelas yang digunakan pada jadwal KBM tahun ajaran dan semester aktif</p>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="tanggal" class="form-label mb-1">Tanggal Kehadiran</label>
+                            <input
+                                type="date"
+                                id="tanggal"
+                                name="tanggal"
+                                class="form-control"
+                                value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}"
+                            >
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-search me-1"></i>Tampilkan
+                            </button>
+                        </div>
+                    </form>
+
+                    @php
+                        $totalHadirHarian = ($rekapPerKelas ?? collect())->sum('total_hadir');
+                        $totalSakitHarian = ($rekapPerKelas ?? collect())->sum('total_sakit');
+                        $totalIzinHarian = ($rekapPerKelas ?? collect())->sum('total_izin');
+                        $totalAlphaHarian = ($rekapPerKelas ?? collect())->sum('total_alpha');
+                    @endphp
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-success">Total Hadir: {{ $totalHadirHarian }}</span>
+                        <span class="badge bg-warning text-dark">Total Sakit: {{ $totalSakitHarian }}</span>
+                        <span class="badge bg-info text-dark">Total Izin: {{ $totalIzinHarian }}</span>
+                        <span class="badge bg-danger">Total Alpha: {{ $totalAlphaHarian }}</span>
+                    </div>
+
+                    @if(($rekapPerKelas ?? collect())->isEmpty())
+                        <div class="alert alert-info mb-0">
+                            <i class="ti ti-info-circle"></i> Belum ada kelas aktif/digunakan pada periode berjalan.
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Kelas</th>
+                                        <th>Wali Kelas</th>
+                                        <th>Pertemuan</th>
+                                        <th>Hadir (Tanggal Dipilih)</th>
+                                        <th>Sakit (Tanggal Dipilih)</th>
+                                        <th>Izin (Tanggal Dipilih)</th>
+                                        <th>Alpha (Tanggal Dipilih)</th>
+                                        <th>Total Data Siswa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($rekapPerKelas as $index => $rekap)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $rekap->kelas->nama_kelas ?? '-' }}</td>
+                                            <td>{{ $rekap->kelas->waliKelas->nama ?? '-' }}</td>
+                                            <td><span class="badge bg-primary">{{ $rekap->total_pertemuan }}</span></td>
+                                            <td><span class="badge bg-success">{{ $rekap->total_hadir }}</span></td>
+                                            <td><span class="badge bg-warning text-dark">{{ $rekap->total_sakit }}</span></td>
+                                            <td><span class="badge bg-info text-dark">{{ $rekap->total_izin }}</span></td>
+                                            <td><span class="badge bg-danger">{{ $rekap->total_alpha }}</span></td>
+                                            <td><span class="badge bg-secondary">{{ $rekap->total_data_siswa }}</span></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

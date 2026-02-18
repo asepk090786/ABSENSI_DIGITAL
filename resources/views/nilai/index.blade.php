@@ -125,6 +125,74 @@
         </div>
         @endif
 
+        @if($isAdminOrKepala ?? false)
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">Rekap Nilai Diinput Guru</h3>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ route('nilai.index') }}" class="row g-2 align-items-end mb-3">
+                    @if($kelasId)
+                        <input type="hidden" name="kelas_id" value="{{ $kelasId }}">
+                    @endif
+                    @if($mapelId)
+                        <input type="hidden" name="mapel_id" value="{{ $mapelId }}">
+                    @endif
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <label for="tanggal_nilai" class="form-label">Tanggal Input Nilai</label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="tanggal_nilai"
+                            name="tanggal_nilai"
+                            value="{{ $selectedTanggalNilai ?? now()->format('Y-m-d') }}"
+                        >
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-search me-1"></i>Tampilkan
+                        </button>
+                    </div>
+                </form>
+
+                @if(($rekapInputGuru ?? collect())->isEmpty())
+                    <div class="alert alert-info mb-0">
+                        <i class="ti ti-info-circle me-1"></i>Belum ada input nilai guru pada tanggal dipilih.
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-vcenter table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Guru</th>
+                                    <th>Total Record</th>
+                                    <th>Nilai Terisi</th>
+                                    <th>Rata-Rata Nilai</th>
+                                    <th>Kelas</th>
+                                    <th>Mapel</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(($rekapInputGuru ?? collect()) as $index => $rekap)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $rekap->guru_nama }}</td>
+                                        <td><span class="badge bg-primary">{{ $rekap->total_record }}</span></td>
+                                        <td><span class="badge bg-success">{{ $rekap->total_terisi }}</span></td>
+                                        <td>{{ $rekap->rata_nilai !== null ? number_format((float) $rekap->rata_nilai, 2) : '-' }}</td>
+                                        <td>{{ $rekap->total_kelas }}</td>
+                                        <td>{{ $rekap->total_mapel }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+        @endif
+
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">Data Nilai Harian</h3>

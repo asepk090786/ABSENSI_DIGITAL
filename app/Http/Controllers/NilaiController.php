@@ -21,7 +21,13 @@ class NilaiController extends Controller
     {
         $kelasId = request()->get('kelas_id');
         $mapelId = request()->get('mapel_id');
+        $selectedTanggalNilai = request()->get('tanggal_nilai');
+        if (empty($selectedTanggalNilai)) {
+            $selectedTanggalNilai = now()->format('Y-m-d');
+        }
+
         $quickMenus = collect();
+        $rekapInputGuru = collect();
         $filterKelasName = null;
         $filterMapelName = null;
         $kelasOptions = collect();
@@ -33,11 +39,12 @@ class NilaiController extends Controller
 
         $user = auth()->user();
         $guru = $user ? $user->guru : null;
+        $isAdminOrKepala = $user && $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
 
         if ($guru) {
-            $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
-            $semesterAktif = Semester::where('is_active', true)->first();
-
             $jadwalQuery = JadwalKbm::with(['kelas', 'mataPelajaran'])
                 ->where('guru_id', $guru->id)
                 ->whereNotNull('mata_pelajaran_id')
@@ -114,6 +121,49 @@ class NilaiController extends Controller
                 }
             }
 
+        } elseif ($isAdminOrKepala) {
+            $jadwalAdminQuery = JadwalKbm::with(['kelas', 'mataPelajaran'])
+                ->whereNotNull('mata_pelajaran_id')
+                ->whereNotNull('kelas_id');
+
+            if ($tahunAjaranAktif) {
+                $jadwalAdminQuery->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+            }
+            if ($semesterAktif) {
+                $jadwalAdminQuery->where('semester_id', $semesterAktif->id);
+            }
+
+            $jadwalAdmin = $jadwalAdminQuery->get();
+
+            $quickMenus = $jadwalAdmin
+                ->unique(function ($item) {
+                    return $item->kelas_id . '-' . $item->mata_pelajaran_id;
+                })
+                ->values();
+
+            $rekapInputGuruQuery = DB::table('nilai_harian as nh')
+                ->leftJoin('guru as g', 'nh.guru_id', '=', 'g.id')
+                ->select(
+                    'nh.guru_id',
+                    DB::raw("COALESCE(g.nama, '-') as guru_nama"),
+                    DB::raw('COUNT(nh.id) as total_record'),
+                    DB::raw('SUM(CASE WHEN nh.nilai IS NOT NULL THEN 1 ELSE 0 END) as total_terisi'),
+                    DB::raw('AVG(nh.nilai) as rata_nilai'),
+                    DB::raw('COUNT(DISTINCT nh.kelas_id) as total_kelas'),
+                    DB::raw('COUNT(DISTINCT nh.mapel_id) as total_mapel')
+                )
+                ->whereDate('nh.tanggal', $selectedTanggalNilai)
+                ->groupBy('nh.guru_id', 'g.nama')
+                ->orderBy('g.nama');
+
+            if ($tahunAjaranAktif) {
+                $rekapInputGuruQuery->where('nh.tahun_ajaran_id', $tahunAjaranAktif->id);
+            }
+            if ($semesterAktif) {
+                $rekapInputGuruQuery->where('nh.semester_id', $semesterAktif->id);
+            }
+
+            $rekapInputGuru = $rekapInputGuruQuery->get();
         }
 
         $itemsQuery = DB::table('nilai_harian')
@@ -130,9 +180,6 @@ class NilaiController extends Controller
             );
 
         // Filter by active tahun ajaran and semester
-        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
-        $semesterAktif = Semester::where('is_active', true)->first();
-        
         if ($tahunAjaranAktif) {
             $itemsQuery->where('nilai_harian.tahun_ajaran_id', $tahunAjaranAktif->id);
         }
@@ -231,7 +278,10 @@ class NilaiController extends Controller
             'debugRencana',
             'komponenList',
             'tahunAjaranAktif',
-            'semesterAktif'
+            'semesterAktif',
+            'isAdminOrKepala',
+            'rekapInputGuru',
+            'selectedTanggalNilai'
         ));
     }
 

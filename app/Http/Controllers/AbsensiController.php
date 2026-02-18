@@ -16,10 +16,15 @@ use Carbon\Carbon;
 
 class AbsensiController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $tahun = DB::table('tahun_ajaran')->where('is_active',1)->first();
         $semester = DB::table('semester')->where('is_active',1)->first();
+
+        $selectedTanggal = $request->get('tanggal');
+        if (empty($selectedTanggal)) {
+            $selectedTanggal = Carbon::today()->format('Y-m-d');
+        }
 
         if (! $tahun || ! $semester) {
             $items = collect();
@@ -29,9 +34,41 @@ class AbsensiController extends Controller
 
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+
+        $kelasAktifDijadwalIds = JadwalKbm::query()
+            ->when($tahun, function ($query) use ($tahun) {
+                $query->where('tahun_ajaran_id', $tahun->id);
+            })
+            ->when($semester, function ($query) use ($semester) {
+                $query->where('semester_id', $semester->id);
+            })
+            ->select('kelas_id')
+            ->distinct()
+            ->pluck('kelas_id');
+
+        $kelasAktifDiabsensiIds = AbsensiKelas::query()
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('semester_id', $semester->id)
+            ->select('kelas_id')
+            ->distinct()
+            ->pluck('kelas_id');
+
+        $kelasAktifDigunakanIds = $kelasAktifDijadwalIds
+            ->merge($kelasAktifDiabsensiIds)
+            ->unique()
+            ->values();
+
         $query = AbsensiKelas::with(['kelas', 'guru', 'jamBelajar', 'tahunAjaran', 'semester', 'absensiSiswa'])
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('semester_id', $semester->id);
+
+        if ($isAdminOrKepala) {
+            if ($kelasAktifDigunakanIds->isNotEmpty()) {
+                $query->whereIn('kelas_id', $kelasAktifDigunakanIds);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        }
         
         // Filter by guru_id if user is a teacher (not admin or kepala sekolah)
         if ($user->guru_id && !$isAdminOrKepala) {
@@ -42,6 +79,7 @@ class AbsensiController extends Controller
         
         // Get quick access classes for teacher
         $kelasQuickAccess = collect();
+        $rekapPerKelas = collect();
         if ($user->guru_id && !$isAdminOrKepala) {
             // Get all classes taught by this teacher in current semester
             $kelasQuickAccess = JadwalKbm::with(['kelas'])
@@ -53,9 +91,45 @@ class AbsensiController extends Controller
                 ->unique('id')
                 ->sortBy('nama_kelas')
                 ->values();
+        } elseif ($isAdminOrKepala) {
+            $kelasQuickAccess = Kelas::with('waliKelas')
+                ->whereIn('id', $kelasAktifDigunakanIds)
+                ->orderBy('nama_kelas')
+                ->get();
+
+            if ($kelasQuickAccess->isNotEmpty()) {
+                $rekapPerKelas = $kelasQuickAccess->map(function ($kelas) use ($items, $selectedTanggal) {
+                    $absensiKelas = $items->where('kelas_id', $kelas->id);
+                    $absensiKelasTanggalTerpilih = $absensiKelas->filter(function ($item) use ($selectedTanggal) {
+                        if (empty($item->tanggal)) {
+                            return false;
+                        }
+
+                        return Carbon::parse($item->tanggal)->format('Y-m-d') === $selectedTanggal;
+                    });
+
+                    $absensiSiswa = $absensiKelas->flatMap(function ($item) {
+                        return $item->absensiSiswa;
+                    });
+
+                    $absensiSiswaTanggalTerpilih = $absensiKelasTanggalTerpilih->flatMap(function ($item) {
+                        return $item->absensiSiswa;
+                    });
+
+                    return (object) [
+                        'kelas' => $kelas,
+                        'total_pertemuan' => $absensiKelas->count(),
+                        'total_hadir' => $absensiSiswaTanggalTerpilih->where('status', 'hadir')->count(),
+                        'total_sakit' => $absensiSiswaTanggalTerpilih->where('status', 'sakit')->count(),
+                        'total_izin' => $absensiSiswaTanggalTerpilih->whereIn('status', ['izin', 'ijin'])->count(),
+                        'total_alpha' => $absensiSiswaTanggalTerpilih->whereIn('status', ['alpha', 'alpa', 'alfa'])->count(),
+                        'total_data_siswa' => $absensiSiswa->count(),
+                    ];
+                })->values();
+            }
         }
         
-        return view('absensi.index', compact('items', 'kelasQuickAccess'));
+        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal'));
     }
 
     public function create(Request $request)
