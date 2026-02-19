@@ -94,7 +94,7 @@
         </div>
         @endif
 
-        @if(isset($quickMenus) && $quickMenus->count())
+        @if(!($isAdminOrKepala ?? false) && isset($quickMenus) && $quickMenus->count())
         <div class="card mb-3">
             <div class="card-header">
                 <h3 class="card-title">Menu Cepat Penilaian</h3>
@@ -121,6 +121,48 @@
                         {{ $filterMapelName ? ' | Mapel ' . $filterMapelName : '' }}
                     </div>
                 @endif
+            </div>
+        </div>
+        @endif
+
+        @if($isAdminOrKepala ?? false)
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">Lihat Nilai (Sederhana)</h3>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ route('nilai.index') }}" class="row g-2 align-items-end">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <label class="form-label">Kelas</label>
+                        <select class="form-select" name="kelas_id">
+                            <option value="">Semua Kelas</option>
+                            @foreach(($kelasOptions ?? collect()) as $kelas)
+                                <option value="{{ $kelas->id }}" {{ (string) $kelasId === (string) $kelas->id ? 'selected' : '' }}>
+                                    {{ $kelas->nama_kelas }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4 col-lg-4">
+                        <label class="form-label">Mata Pelajaran</label>
+                        <select class="form-select" name="mapel_id">
+                            <option value="">Semua Mata Pelajaran</option>
+                            @foreach(($mapelOptions ?? collect()) as $mapel)
+                                <option value="{{ $mapel->id }}" {{ (string) $mapelId === (string) $mapel->id ? 'selected' : '' }}>
+                                    {{ $mapel->nama_mapel }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-search me-1"></i>Tampilkan
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ route('nilai.index') }}" class="btn btn-outline-secondary">Reset</a>
+                    </div>
+                </form>
             </div>
         </div>
         @endif
@@ -183,6 +225,53 @@
                                         <td>{{ $rekap->rata_nilai !== null ? number_format((float) $rekap->rata_nilai, 2) : '-' }}</td>
                                         <td>{{ $rekap->total_kelas }}</td>
                                         <td>{{ $rekap->total_mapel }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">Daftar Nilai Sudah Diinput Guru</h3>
+                <div class="card-actions text-muted small">
+                    Maksimal 300 data terbaru
+                </div>
+            </div>
+            <div class="card-body">
+                @if(($daftarInputNilaiGuru ?? collect())->isEmpty())
+                    <div class="alert alert-info mb-0">
+                        <i class="ti ti-info-circle me-1"></i>Belum ada nilai terisi oleh guru pada filter yang dipilih.
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-vcenter table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Tanggal</th>
+                                    <th>Guru</th>
+                                    <th>Kelas</th>
+                                    <th>Mata Pelajaran</th>
+                                    <th>Siswa</th>
+                                    <th>Komponen</th>
+                                    <th>Nilai</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(($daftarInputNilaiGuru ?? collect()) as $index => $row)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') }}</td>
+                                        <td>{{ $row->guru_nama }}</td>
+                                        <td>{{ $row->nama_kelas }}</td>
+                                        <td>{{ $row->nama_mapel }}</td>
+                                        <td>{{ $row->nama_siswa }}</td>
+                                        <td>{{ $row->nama_komponen ?: 'Harian' }}</td>
+                                        <td><span class="badge bg-success">{{ rtrim(rtrim(number_format((float) $row->nilai, 2, '.', ''), '0'), '.') }}</span></td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -278,7 +367,11 @@
                     </div>
                     @endif
                 @else
-                    <div class="text-muted">Silakan klik Menu Cepat Penilaian untuk menampilkan daftar nilai harian.</div>
+                    @if($isAdminOrKepala ?? false)
+                        <div class="text-muted">Pilih filter Kelas dan/atau Mata Pelajaran pada panel "Lihat Nilai (Sederhana)", lalu klik Tampilkan.</div>
+                    @else
+                        <div class="text-muted">Silakan klik Menu Cepat Penilaian untuk menampilkan daftar nilai harian.</div>
+                    @endif
                 @endif
             </div>
         </div>
@@ -409,7 +502,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Mata Pelajaran</label>
-                        <select class="form-select" name="mapel_id" required>
+                        <select class="form-select" name="mapel_id" id="nilaiImportMapelSelect" required>
                             <option value="">Pilih Mata Pelajaran...</option>
                             @foreach($mapelOptions as $mapel)
                                 <option value="{{ $mapel->id }}">{{ $mapel->nama_mapel }}</option>
@@ -418,19 +511,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Rencana Pembelajaran</label>
-                        <select class="form-select" name="rencana_pembelajaran_id" required>
+                        <select class="form-select" name="rencana_pembelajaran_id" id="nilaiImportRencanaSelect" required>
                             <option value="">Pilih Rencana...</option>
-                            @php $renderedRencanaIds = []; @endphp
-                            @foreach($rencanaByMapel as $kelasRencana)
-                                @foreach($kelasRencana as $rencanaList)
-                                    @foreach($rencanaList as $rp)
-                                        @if(isset($rp['id'], $rp['judul']) && !in_array($rp['id'], $renderedRencanaIds, true))
-                                            <option value="{{ $rp['id'] }}">{{ $rp['judul'] }}</option>
-                                            @php $renderedRencanaIds[] = $rp['id']; @endphp
-                                        @endif
-                                    @endforeach
-                                @endforeach
-                            @endforeach
                         </select>
                         <small class="text-muted d-block mt-1">Kolom wajib: nis/nisn dan nilai.</small>
                     </div>
@@ -473,6 +555,8 @@
     const nilaiMapelSelect = document.getElementById('nilaiMapelSelect');
     const nilaiRencanaSelect = document.getElementById('nilaiRencanaSelect');
     const nilaiImportKelasSelect = document.getElementById('nilaiImportKelasSelect');
+    const nilaiImportMapelSelect = document.getElementById('nilaiImportMapelSelect');
+    const nilaiImportRencanaSelect = document.getElementById('nilaiImportRencanaSelect');
     const nilaiTemplateDownloadBtn = document.getElementById('nilaiTemplateDownloadBtn');
     const mapelByKelas = @json(($mapelByKelas ?? collect())->toArray());
     const rencanaByMapel = @json($rencanaByMapel ?? []);
@@ -500,15 +584,28 @@
         });
     }
 
+    function getRencanaItems(kelasId, mapelId) {
+        if (!kelasId || !mapelId || !rencanaByMapel[kelasId] || !rencanaByMapel[kelasId][mapelId]) {
+            return [];
+        }
+
+        return rencanaByMapel[kelasId][mapelId].map(function(item) {
+            return { id: item.id, nama: item.judul };
+        });
+    }
+
     function updateRencanaOptions() {
         const kelasId = nilaiKelasSelect ? nilaiKelasSelect.value : '';
         const mapelId = nilaiMapelSelect ? nilaiMapelSelect.value : '';
-        const rencanaItems = kelasId && mapelId && rencanaByMapel[kelasId] && rencanaByMapel[kelasId][mapelId]
-            ? rencanaByMapel[kelasId][mapelId].map(function(item) {
-                return { id: item.id, nama: item.judul };
-            })
-            : [];
+        const rencanaItems = getRencanaItems(kelasId, mapelId);
         fillOptions(nilaiRencanaSelect, rencanaItems, 'Pilih Rencana...');
+    }
+
+    function updateImportRencanaOptions() {
+        const kelasId = nilaiImportKelasSelect ? nilaiImportKelasSelect.value : '';
+        const mapelId = nilaiImportMapelSelect ? nilaiImportMapelSelect.value : '';
+        const rencanaItems = getRencanaItems(kelasId, mapelId);
+        fillOptions(nilaiImportRencanaSelect, rencanaItems, 'Pilih Rencana...');
     }
 
     function onKelasChange() {
@@ -535,6 +632,15 @@
         nilaiTemplateDownloadBtn.removeAttribute('aria-disabled');
     }
 
+    function onImportKelasChange() {
+        const kelasId = nilaiImportKelasSelect ? nilaiImportKelasSelect.value : '';
+        const mapelItems = kelasId && mapelByKelas[kelasId] ? mapelByKelas[kelasId] : allMapelOptions;
+
+        fillOptions(nilaiImportMapelSelect, mapelItems, 'Pilih Mata Pelajaran...');
+        updateImportRencanaOptions();
+        updateTemplateDownloadLink();
+    }
+
     if (nilaiKelasSelect) {
         nilaiKelasSelect.addEventListener('change', onKelasChange);
     }
@@ -542,7 +648,10 @@
         nilaiMapelSelect.addEventListener('change', updateRencanaOptions);
     }
     if (nilaiImportKelasSelect) {
-        nilaiImportKelasSelect.addEventListener('change', updateTemplateDownloadLink);
+        nilaiImportKelasSelect.addEventListener('change', onImportKelasChange);
+    }
+    if (nilaiImportMapelSelect) {
+        nilaiImportMapelSelect.addEventListener('change', updateImportRencanaOptions);
     }
 
     const nilaiModal = document.getElementById('modalTambahNilai');
@@ -563,10 +672,10 @@
 
     if (nilaiImportModal) {
         nilaiImportModal.addEventListener('shown.bs.modal', function() {
-            updateTemplateDownloadLink();
+            onImportKelasChange();
         });
     }
 
-    updateTemplateDownloadLink();
+    onImportKelasChange();
 </script>
 @endpush

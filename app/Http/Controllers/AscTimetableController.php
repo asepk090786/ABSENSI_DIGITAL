@@ -6,6 +6,7 @@ require_once app_path('Helpers/GuruUserHelper.php');
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\TugasGuru;
 use SimpleXMLElement;
 
 class AscTimetableController extends Controller
@@ -738,7 +739,7 @@ class AscTimetableController extends Controller
                     
                     if (count($kelasIds) >= $kelasCountForTingkat) {
                         // Create entry for all classes in tingkat
-                        DB::table('tugas_guru')->updateOrCreate(
+                        TugasGuru::updateOrCreate(
                             [
                                 'guru_id' => $tugas->guru_id,
                                 'mata_pelajaran_id' => $tugas->mata_pelajaran_id,
@@ -747,15 +748,14 @@ class AscTimetableController extends Controller
                             ],
                             [
                                 'is_active' => 1,
-                                'keterangan' => 'Auto-generated from jadwal import',
-                                'updated_at' => now()
+                                'keterangan' => 'Auto-generated from jadwal import'
                             ]
                         );
                         $tugasGuruCount++;
                     } else {
                         // Create separate entry for each kelas
                         foreach ($kelasIds as $kelasId) {
-                            DB::table('tugas_guru')->updateOrCreate(
+                            TugasGuru::updateOrCreate(
                                 [
                                     'guru_id' => $tugas->guru_id,
                                     'mata_pelajaran_id' => $tugas->mata_pelajaran_id,
@@ -764,8 +764,7 @@ class AscTimetableController extends Controller
                                 ],
                                 [
                                     'is_active' => 1,
-                                    'keterangan' => 'Auto-generated from jadwal import',
-                                    'updated_at' => now()
+                                    'keterangan' => 'Auto-generated from jadwal import'
                                 ]
                             );
                             $tugasGuruCount++;

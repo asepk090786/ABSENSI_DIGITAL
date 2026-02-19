@@ -28,6 +28,7 @@ class NilaiController extends Controller
 
         $quickMenus = collect();
         $rekapInputGuru = collect();
+        $daftarInputNilaiGuru = collect();
         $filterKelasName = null;
         $filterMapelName = null;
         $kelasOptions = collect();
@@ -141,6 +142,23 @@ class NilaiController extends Controller
                 })
                 ->values();
 
+            $kelasOptions = $jadwalAdmin->pluck('kelas')->filter()->unique('id')->sortBy('nama_kelas')->values();
+            $mapelOptions = $jadwalAdmin->pluck('mataPelajaran')->filter()->unique('id')->sortBy('nama_mapel')->values();
+
+            $mapelByKelas = $jadwalAdmin->groupBy('kelas_id')->map(function ($group) {
+                return $group->pluck('mataPelajaran')
+                    ->filter()
+                    ->unique('id')
+                    ->map(function ($mapel) {
+                        return [
+                            'id' => $mapel->id,
+                            'nama' => $mapel->nama_mapel,
+                        ];
+                    })
+                    ->sortBy('nama')
+                    ->values();
+            });
+
             $rekapInputGuruQuery = DB::table('nilai_harian as nh')
                 ->leftJoin('guru as g', 'nh.guru_id', '=', 'g.id')
                 ->select(
@@ -164,6 +182,45 @@ class NilaiController extends Controller
             }
 
             $rekapInputGuru = $rekapInputGuruQuery->get();
+
+            $daftarInputNilaiGuruQuery = DB::table('nilai_harian as nh')
+                ->leftJoin('guru as g', 'nh.guru_id', '=', 'g.id')
+                ->leftJoin('siswa as s', 'nh.siswa_id', '=', 's.id')
+                ->leftJoin('kelas as k', 'nh.kelas_id', '=', 'k.id')
+                ->leftJoin('mata_pelajaran as mp', 'nh.mapel_id', '=', 'mp.id')
+                ->leftJoin('komponen_nilai as kn', 'nh.komponen_id', '=', 'kn.id')
+                ->select(
+                    'nh.id',
+                    'nh.tanggal',
+                    'nh.nilai',
+                    'nh.created_at',
+                    DB::raw("COALESCE(g.nama, '-') as guru_nama"),
+                    DB::raw("COALESCE(s.nama, '-') as nama_siswa"),
+                    DB::raw("COALESCE(k.nama_kelas, '-') as nama_kelas"),
+                    DB::raw("COALESCE(mp.nama_mapel, '-') as nama_mapel"),
+                    'kn.nama_komponen'
+                )
+                ->whereDate('nh.tanggal', $selectedTanggalNilai)
+                ->whereNotNull('nh.nilai')
+                ->orderByDesc('nh.updated_at')
+                ->orderByDesc('nh.id');
+
+            if ($tahunAjaranAktif) {
+                $daftarInputNilaiGuruQuery->where('nh.tahun_ajaran_id', $tahunAjaranAktif->id);
+            }
+            if ($semesterAktif) {
+                $daftarInputNilaiGuruQuery->where('nh.semester_id', $semesterAktif->id);
+            }
+            if ($kelasId) {
+                $daftarInputNilaiGuruQuery->where('nh.kelas_id', $kelasId);
+            }
+            if ($mapelId) {
+                $daftarInputNilaiGuruQuery->where('nh.mapel_id', $mapelId);
+            }
+
+            $daftarInputNilaiGuru = $daftarInputNilaiGuruQuery
+                ->limit(300)
+                ->get();
         }
 
         $itemsQuery = DB::table('nilai_harian')
@@ -281,6 +338,7 @@ class NilaiController extends Controller
             'semesterAktif',
             'isAdminOrKepala',
             'rekapInputGuru',
+            'daftarInputNilaiGuru',
             'selectedTanggalNilai'
         ));
     }
