@@ -11,6 +11,7 @@
     .status-hadir { background-color: #d4edda; color: #155724; }
     .status-sakit { background-color: #fff3cd; color: #856404; }
     .status-izin { background-color: #cfe2ff; color: #084298; }
+    .status-terlambat { background-color: #ffe5b4; color: #8a5a00; }
     .status-alpa { background-color: #f8d7da; color: #842029; }
     
     .table-absensi tbody tr {
@@ -166,7 +167,7 @@
                     </div>
                     @endif
 
-                    @if(auth()->user()->guru_id)
+                    @if(auth()->user()->guru_id && !($isGuruPiket ?? false))
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle me-2"></i>
                         <strong>Info:</strong> Anda dapat menginput absensi untuk {{ $kelasList->count() }} kelas yang Anda ajar.
@@ -224,6 +225,12 @@
                                 </div>
                             </div>
 
+                            @if($isGuruPiket ?? false)
+                                <input type="hidden" name="guru_id" value="{{ old('guru_id', auth()->user()->guru_id) }}">
+                                <input type="hidden" name="jam_belajar_id" value="{{ old('jam_belajar_id', $selectedJamBelajarId ?? ($jamBelajarList->first()->id ?? '')) }}">
+                            @endif
+
+                            @if(!($isGuruPiket ?? false))
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="guru_id" class="form-label">Guru <span class="text-danger">*</span></label>
@@ -277,7 +284,9 @@
                                     @enderror
                                 </div>
                             </div>
+                            @endif
 
+                            @if(!($isGuruPiket ?? false))
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     <label for="status_kelas" class="form-label">Status Kelas</label>
@@ -290,6 +299,7 @@
                                     <small class="text-muted">Opsional - Kondisi atau keterangan kelas</small>
                                 </div>
                             </div>
+                            @endif
                         </div>
 
                         <div class="alert alert-info">
@@ -304,7 +314,10 @@
                                 <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
                                     <h5 class="mb-0"><i class="ti ti-users me-2"></i>Daftar Siswa & Absensi</h5>
                                     <div class="ms-auto d-flex flex-wrap gap-2">
-                                        <button type="button" class="btn btn-sm btn-success" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
+                                        @if(!($isGuruPiket ?? false))
+                                            <button type="button" class="btn btn-sm btn-success" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
+                                        @endif
+                                        <button type="button" class="btn btn-sm btn-orange" onclick="setAllStatus('terlambat')" style="background:#f59e0b;color:#fff;">Ceklis Semua Terlambat</button>
                                         <button type="button" class="btn btn-sm btn-warning" onclick="setAllStatus('sakit')">Ceklis Semua Sakit</button>
                                         <button type="button" class="btn btn-sm btn-info" onclick="setAllStatus('izin')">Ceklis Semua Izin</button>
                                         <button type="button" class="btn btn-sm btn-danger" onclick="setAllStatus('alpa')">Ceklis Semua Alpa</button>
@@ -321,11 +334,14 @@
                                                     <th rowspan="2" class="align-middle text-center" width="8%">NISN</th>
                                                     <th rowspan="2" class="align-middle text-center" width="20%">NAMA</th>
                                                     <th rowspan="2" class="align-middle text-center" width="10%">JENIS KELAMIN</th>
-                                                    <th colspan="4" class="text-center">STATUS</th>
+                                                    <th colspan="{{ ($isGuruPiket ?? false) ? 4 : 5 }}" class="text-center">STATUS</th>
                                                     <th rowspan="2" class="align-middle text-center" width="15%">KETERANGAN</th>
                                                 </tr>
                                                 <tr>
-                                                    <th class="text-center" width="5%">Hadir</th>
+                                                    @if(!($isGuruPiket ?? false))
+                                                        <th class="text-center" width="5%">Hadir</th>
+                                                    @endif
+                                                    <th class="text-center" width="7%">Terlambat</th>
                                                     <th class="text-center" width="5%">Sakit</th>
                                                     <th class="text-center" width="5%">Izin</th>
                                                     <th class="text-center" width="8%">Alpa/Tanpa Keterangan</th>
@@ -333,7 +349,7 @@
                                             </thead>
                                             <tbody id="siswaTableBody">
                                                 <tr>
-                                                    <td colspan="9" class="text-center text-muted">
+                                                    <td colspan="{{ ($isGuruPiket ?? false) ? 10 : 11 }}" class="text-center text-muted">
                                                         <i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa
                                                     </td>
                                                 </tr>
@@ -362,6 +378,7 @@
         var siswaTableBody = document.getElementById('siswaTableBody');
         var btnSubmit = document.getElementById('btnSubmit');
         var isQuickAccess = '{{ $isQuickAccess ?? 0 }}' === '1';
+        var isGuruPiket = '{{ ($isGuruPiket ?? false) ? 1 : 0 }}' === '1';
 
         console.log('Initializing form...', {
             kelasValue: kelasSelect ? kelasSelect.value : null,
@@ -383,7 +400,7 @@
                     loadSiswaByKelas(this.value);
                 } else {
                     siswaContainer.style.display = 'none';
-                    siswaTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
+                    siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
                     btnSubmit.disabled = true;
                 }
             });
@@ -404,14 +421,23 @@
                     if (data.siswa && data.siswa.length > 0) {
                         let html = '';
                         data.siswa.forEach((siswa, index) => {
+                            let statusHadirCell = '';
+                            if (!isGuruPiket) {
+                                statusHadirCell =
+                                    '<td class="text-center">' +
+                                        '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
+                                    '</td>';
+                            }
+
                             html += '<tr data-siswa-id="' + siswa.id + '">' +
                                 '<td class="text-center">' + (index + 1) + '</td>' +
                                 '<td class="text-center">' + (siswa.nis || '-') + '</td>' +
                                 '<td class="text-center">' + (siswa.nisn || '-') + '</td>' +
                                 '<td>' + siswa.nama + '</td>' +
                                 '<td class="text-center">' + (siswa.jenis_kelamin || '-') + '</td>' +
+                                statusHadirCell +
                                 '<td class="text-center">' +
-                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
+                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="terlambat" data-siswa-id="' + siswa.id + '">' +
                                 '</td>' +
                                 '<td class="text-center">' +
                                     '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="sakit" data-siswa-id="' + siswa.id + '">' +
@@ -450,13 +476,13 @@
 
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
-                        siswaTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
+                        siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
                         btnSubmit.disabled = true;
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching siswa:', error);
-                    siswaTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
+                    siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
                     btnSubmit.disabled = true;
                 });
         }
@@ -466,11 +492,13 @@
         if (!row) return;
 
         // Remove all status classes
-        row.classList.remove('bg-success-subtle', 'bg-warning-subtle', 'bg-info-subtle', 'bg-danger-subtle');
+        row.classList.remove('bg-success-subtle', 'bg-warning-subtle', 'bg-info-subtle', 'bg-danger-subtle', 'status-terlambat');
         
         // Add new status class
         if (value === 'hadir') {
             row.classList.add('bg-success-subtle');
+        } else if (value === 'terlambat') {
+            row.classList.add('status-terlambat');
         } else if (value === 'sakit') {
             row.classList.add('bg-warning-subtle');
         } else if (value === 'izin') {

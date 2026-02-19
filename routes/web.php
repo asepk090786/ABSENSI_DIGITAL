@@ -159,6 +159,7 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store','show','edit','update','destroy']);
     
     Route::get('agenda_guru/export', [AgendaGuruController::class, 'export'])->name('agenda_guru.export');
+    Route::post('agenda_guru/absensi', [AgendaGuruController::class, 'storeAbsensiGuru'])->name('agenda_guru.absensi.store');
     Route::resource('agenda_guru', AgendaGuruController::class)->only(['index','create','store','edit','update','destroy']);
     
     Route::resource('jenis_kegiatan', JenisKegiatanController::class)->middleware('auth');

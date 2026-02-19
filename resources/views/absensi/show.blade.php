@@ -85,13 +85,16 @@
                                     <td>{{ $abs->siswa->nis ?? '-' }}</td>
                                     <td>{{ $abs->siswa->nama ?? '-' }}</td>
                                     <td>
-                                        @if($abs->status == 'hadir')
+                                        @php $statusKey = strtolower((string) $abs->status); @endphp
+                                        @if($statusKey === 'hadir')
                                             <span class="badge bg-success">Hadir</span>
-                                        @elseif($abs->status == 'sakit')
+                                        @elseif($statusKey === 'terlambat' || $statusKey === 'telat')
+                                            <span class="badge" style="background:#f59e0b;color:#fff;">Terlambat</span>
+                                        @elseif($statusKey === 'sakit')
                                             <span class="badge bg-warning">Sakit</span>
-                                        @elseif($abs->status == 'izin')
+                                        @elseif($statusKey === 'izin' || $statusKey === 'ijin')
                                             <span class="badge bg-info">Izin</span>
-                                        @elseif($abs->status == 'alpha')
+                                        @elseif(in_array($statusKey, ['alpha', 'alpa', 'alfa', 'absen'], true))
                                             <span class="badge bg-danger">Alpha</span>
                                         @else
                                             <span class="badge bg-secondary">{{ $abs->status }}</span>

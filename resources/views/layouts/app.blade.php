@@ -401,21 +401,21 @@
                         @if($isGuruPiket)
                         <!-- Piket KBM (Guru Piket only) -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#navbar-piket" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle {{ request()->is('jadwal-kbm*') || request()->routeIs('agenda_guru.*') || request()->routeIs('absensi.*') ? 'active' : '' }}" href="#navbar-piket" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-shield-check"></i>
                                 </span>
                                 <span class="nav-link-title">Piket KBM</span>
                             </a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
-                                    <i class="ti ti-dashboard me-2"></i>Dashboard Piket
-                                </a>
                                 <a class="dropdown-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}" href="{{ url('/jadwal-kbm') }}">
-                                    <i class="ti ti-calendar-time me-2"></i>Jadwal Piket
+                                    <i class="ti ti-calendar-time me-2"></i>Jadwal Mengajar
                                 </a>
-                                <a class="dropdown-item {{ request()->routeIs('agenda_kelas.index') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
-                                    <i class="ti ti-file-text me-2"></i>Laporan Piket
+                                <a class="dropdown-item {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}" href="{{ route('agenda_guru.index') }}">
+                                    <i class="ti ti-user-circle me-2"></i>Absensi Guru
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
+                                    <i class="ti ti-clipboard-check me-2"></i>Absensi Siswa
                                 </a>
                             </div>
                         </li>

@@ -16,7 +16,7 @@
         $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
     @endphp
 
-    @if($kelasQuickAccess->isNotEmpty())
+        @if($kelasQuickAccess->isNotEmpty() && !($isGuruPiket ?? false))
     <!-- Menu Akses Cepat -->
     <div class="row mb-4">
         <div class="col-12">
@@ -130,13 +130,13 @@
     </div>
     @endif
 
-    @if($isAdminOrKepala)
+    @if($isAdminOrKepala || ($isGuruPiket ?? false))
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-1">Rekap Absensi per Kelas Aktif</h5>
-                    <p class="card-category mb-0">Berdasarkan kelas yang digunakan pada jadwal KBM tahun ajaran dan semester aktif</p>
+                    <h5 class="card-title mb-1">Rekap Absensi Siswa per Kelas</h5>
+                    <p class="card-category mb-0">Data diambil dari absensi kelas yang sudah diinput guru pada periode aktif</p>
                 </div>
                 <div class="card-body">
                     <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
@@ -155,10 +155,16 @@
                                 <i class="ti ti-search me-1"></i>Tampilkan
                             </button>
                         </div>
+                        <div class="col-auto">
+                            <a href="{{ route('absensi.create') }}" class="btn btn-success">
+                                <i class="ti ti-plus me-1"></i>Tambah Absensi
+                            </a>
+                        </div>
                     </form>
 
                     @php
                         $totalHadirHarian = ($rekapPerKelas ?? collect())->sum('total_hadir');
+                        $totalTerlambatHarian = ($rekapPerKelas ?? collect())->sum('total_terlambat');
                         $totalSakitHarian = ($rekapPerKelas ?? collect())->sum('total_sakit');
                         $totalIzinHarian = ($rekapPerKelas ?? collect())->sum('total_izin');
                         $totalAlphaHarian = ($rekapPerKelas ?? collect())->sum('total_alpha');
@@ -166,6 +172,7 @@
 
                     <div class="d-flex flex-wrap gap-2 mb-3">
                         <span class="badge bg-success">Total Hadir: {{ $totalHadirHarian }}</span>
+                        <span class="badge" style="background:#f59e0b;color:#fff;">Total Terlambat: {{ $totalTerlambatHarian }}</span>
                         <span class="badge bg-warning text-dark">Total Sakit: {{ $totalSakitHarian }}</span>
                         <span class="badge bg-info text-dark">Total Izin: {{ $totalIzinHarian }}</span>
                         <span class="badge bg-danger">Total Alpha: {{ $totalAlphaHarian }}</span>
@@ -185,6 +192,7 @@
                                         <th>Wali Kelas</th>
                                         <th>Pertemuan</th>
                                         <th>Hadir (Tanggal Dipilih)</th>
+                                        <th>Terlambat (Tanggal Dipilih)</th>
                                         <th>Sakit (Tanggal Dipilih)</th>
                                         <th>Izin (Tanggal Dipilih)</th>
                                         <th>Alpha (Tanggal Dipilih)</th>
@@ -199,6 +207,7 @@
                                             <td>{{ $rekap->kelas->waliKelas->nama ?? '-' }}</td>
                                             <td><span class="badge bg-primary">{{ $rekap->total_pertemuan }}</span></td>
                                             <td><span class="badge bg-success">{{ $rekap->total_hadir }}</span></td>
+                                            <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $rekap->total_terlambat }}</span></td>
                                             <td><span class="badge bg-warning text-dark">{{ $rekap->total_sakit }}</span></td>
                                             <td><span class="badge bg-info text-dark">{{ $rekap->total_izin }}</span></td>
                                             <td><span class="badge bg-danger">{{ $rekap->total_alpha }}</span></td>
@@ -219,10 +228,18 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">Data Absensi Kelas</h3>
-                    <a href="{{ route('absensi.create') }}" class="btn btn-primary">
-                        <i class="ti ti-plus"></i> Tambah Absensi
-                    </a>
+                    <h3 class="card-title">
+                        @if($isGuruPiket ?? false)
+                            Data Absensi Siswa (Input Guru)
+                        @else
+                            Data Absensi Kelas
+                        @endif
+                    </h3>
+                    @if(!($isAdminOrKepala || ($isGuruPiket ?? false)))
+                        <a href="{{ route('absensi.create') }}" class="btn btn-primary">
+                            <i class="ti ti-plus"></i> Tambah Absensi
+                        </a>
+                    @endif
                 </div>
                 <div class="card-body">
                     @if($items->isEmpty())
@@ -243,6 +260,7 @@
                                         <th>Tahun Ajaran</th>
                                         <th>Semester</th>
                                         <th>Hadir</th>
+                                        <th>Terlambat</th>
                                         <th>Sakit</th>
                                         <th>Izin</th>
                                         <th>Tidak Hadir</th>
@@ -253,10 +271,17 @@
                                 <tbody>
                                     @foreach($items as $index => $item)
                                         @php
-                                            $hadirCount = $item->absensiSiswa->where('status', 'hadir')->count();
-                                            $sakitCount = $item->absensiSiswa->where('status', 'sakit')->count();
-                                            $izinCount = $item->absensiSiswa->where('status', 'izin')->count();
-                                            $alpaCount = $item->absensiSiswa->where('status', 'alpa')->count();
+                                            $countStatus = function($statuses) use ($item) {
+                                                $needles = collect($statuses)->map(fn($s) => strtolower((string) $s))->all();
+                                                return $item->absensiSiswa->filter(function($row) use ($needles) {
+                                                    return in_array(strtolower((string) ($row->status ?? '')), $needles, true);
+                                                })->count();
+                                            };
+                                            $hadirCount = $countStatus(['hadir']);
+                                            $terlambatCount = $countStatus(['terlambat', 'telat']);
+                                            $sakitCount = $countStatus(['sakit']);
+                                            $izinCount = $countStatus(['izin', 'ijin']);
+                                            $alpaCount = $countStatus(['alpa', 'alpha', 'alfa', 'absen']);
                                         @endphp
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
@@ -274,6 +299,7 @@
                                             <td>{{ $item->tahunAjaran->nama_tahun ?? '-' }}</td>
                                             <td>{{ $item->semester->nama_semester ?? '-' }}</td>
                                             <td><span class="badge bg-success">{{ $hadirCount }}</span></td>
+                                            <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $terlambatCount }}</span></td>
                                             <td><span class="badge bg-warning text-dark">{{ $sakitCount }}</span></td>
                                             <td><span class="badge bg-info text-dark">{{ $izinCount }}</span></td>
                                             <td><span class="badge bg-danger">{{ $alpaCount }}</span></td>

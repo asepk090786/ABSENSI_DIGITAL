@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AgendaKelas;
 use App\Models\AgendaGuru;
+use App\Models\AbsensiGuru;
 use App\Models\Guru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,40 @@ class AgendaGuruController extends Controller
         if (!$guru) {
             return redirect()->route('home')
                 ->with('error', 'Anda tidak terdaftar sebagai guru.');
+        }
+
+        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($guru->hari_piket ?? []));
+
+        if ($isGuruPiket) {
+            $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
+
+            $daftarGuru = Guru::query()
+                ->where('is_active', 1)
+                ->orderBy('nama')
+                ->get(['id', 'nama', 'nip']);
+
+            $absensiHariIni = AbsensiGuru::query()
+                ->whereDate('tanggal', $selectedTanggal)
+                ->get()
+                ->keyBy('guru_id');
+
+            $totalGuru = $daftarGuru->count();
+            $hadirCount = $absensiHariIni->where('status', 'hadir')->count();
+            $izinCount = $absensiHariIni->where('status', 'izin')->count();
+            $sakitCount = $absensiHariIni->where('status', 'sakit')->count();
+            $tidakHadirCount = $absensiHariIni->where('status', 'tidak_hadir')->count();
+
+            return view('agenda_guru.absensi_piket', compact(
+                'guru',
+                'selectedTanggal',
+                'daftarGuru',
+                'absensiHariIni',
+                'totalGuru',
+                'hadirCount',
+                'izinCount',
+                'sakitCount',
+                'tidakHadirCount'
+            ));
         }
 
         // Get active tahun and semester
@@ -78,6 +113,59 @@ class AgendaGuruController extends Controller
             'monthName',
             'mataPelajaran'
         ));
+    }
+
+    public function storeAbsensiGuru(Request $request)
+    {
+        $user = auth()->user();
+        $pencatatGuru = $user?->guru;
+
+        if (!$pencatatGuru) {
+            return redirect()->route('agenda_guru.index')
+                ->with('error', 'Akun guru tidak ditemukan.');
+        }
+
+        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($pencatatGuru->hari_piket ?? []));
+        if (!$isGuruPiket) {
+            abort(403, 'Anda tidak memiliki akses absensi guru.');
+        }
+
+        $validated = $request->validate([
+            'tanggal' => 'required|date',
+            'attendance' => 'required|array|min:1',
+            'attendance.*.status' => 'nullable|in:hadir,tidak_hadir,izin,sakit',
+            'attendance.*.keterangan' => 'nullable|string|max:255',
+        ]);
+
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        DB::transaction(function () use ($validated, $pencatatGuru, $tahun, $semester) {
+            foreach ($validated['attendance'] as $guruId => $item) {
+                $status = $item['status'] ?? null;
+
+                if (!$status) {
+                    continue;
+                }
+
+                AbsensiGuru::updateOrCreate(
+                    [
+                        'guru_id' => (int) $guruId,
+                        'tanggal' => $validated['tanggal'],
+                    ],
+                    [
+                        'pencatat_guru_id' => $pencatatGuru->id,
+                        'status' => $status,
+                        'keterangan' => $item['keterangan'] ?? null,
+                        'tahun_ajaran_id' => $tahun->id ?? null,
+                        'semester_id' => $semester->id ?? null,
+                    ]
+                );
+            }
+        });
+
+        return redirect()->route('agenda_guru.index', ['tanggal' => $validated['tanggal']])
+            ->with('success', 'Absensi guru berhasil disimpan.');
     }
 
     public function create(Request $request)

@@ -34,6 +34,7 @@ class AbsensiController extends Controller
 
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
 
         $kelasAktifDijadwalIds = JadwalKbm::query()
             ->when($tahun, function ($query) use ($tahun) {
@@ -71,7 +72,7 @@ class AbsensiController extends Controller
         }
         
         // Filter by guru_id if user is a teacher (not admin or kepala sekolah)
-        if ($user->guru_id && !$isAdminOrKepala) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             $query->where('guru_id', $user->guru_id);
         }
         
@@ -80,7 +81,7 @@ class AbsensiController extends Controller
         // Get quick access classes for teacher
         $kelasQuickAccess = collect();
         $rekapPerKelas = collect();
-        if ($user->guru_id && !$isAdminOrKepala) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             // Get all classes taught by this teacher in current semester
             $kelasQuickAccess = JadwalKbm::with(['kelas'])
                 ->where('guru_id', $user->guru_id)
@@ -91,7 +92,7 @@ class AbsensiController extends Controller
                 ->unique('id')
                 ->sortBy('nama_kelas')
                 ->values();
-        } elseif ($isAdminOrKepala) {
+        } elseif ($isAdminOrKepala || $isGuruPiket) {
             $kelasQuickAccess = Kelas::with('waliKelas')
                 ->whereIn('id', $kelasAktifDigunakanIds)
                 ->orderBy('nama_kelas')
@@ -116,20 +117,31 @@ class AbsensiController extends Controller
                         return $item->absensiSiswa;
                     });
 
+                    $countByStatus = function ($collection, array $statusKeys) {
+                        $normalizedKeys = collect($statusKeys)->map(function ($key) {
+                            return strtolower((string) $key);
+                        })->all();
+
+                        return $collection->filter(function ($absen) use ($normalizedKeys) {
+                            return in_array(strtolower((string) ($absen->status ?? '')), $normalizedKeys, true);
+                        })->count();
+                    };
+
                     return (object) [
                         'kelas' => $kelas,
                         'total_pertemuan' => $absensiKelas->count(),
-                        'total_hadir' => $absensiSiswaTanggalTerpilih->where('status', 'hadir')->count(),
-                        'total_sakit' => $absensiSiswaTanggalTerpilih->where('status', 'sakit')->count(),
-                        'total_izin' => $absensiSiswaTanggalTerpilih->whereIn('status', ['izin', 'ijin'])->count(),
-                        'total_alpha' => $absensiSiswaTanggalTerpilih->whereIn('status', ['alpha', 'alpa', 'alfa'])->count(),
+                        'total_hadir' => $countByStatus($absensiSiswaTanggalTerpilih, ['hadir']),
+                        'total_terlambat' => $countByStatus($absensiSiswaTanggalTerpilih, ['terlambat', 'telat']),
+                        'total_sakit' => $countByStatus($absensiSiswaTanggalTerpilih, ['sakit']),
+                        'total_izin' => $countByStatus($absensiSiswaTanggalTerpilih, ['izin', 'ijin']),
+                        'total_alpha' => $countByStatus($absensiSiswaTanggalTerpilih, ['alpha', 'alpa', 'alfa', 'absen']),
                         'total_data_siswa' => $absensiSiswa->count(),
                     ];
                 })->values();
             }
         }
         
-        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal'));
+        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket'));
     }
 
     public function create(Request $request)
@@ -144,6 +156,7 @@ class AbsensiController extends Controller
 
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
         $selectedKelasId = $request->get('kelas_id');
         $selectedJamBelajarId = null;
         $isQuickAccess = false;
@@ -155,7 +168,7 @@ class AbsensiController extends Controller
         }
         
         // Validate teacher schedule access
-        if ($user->guru_id && !$isAdminOrKepala) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             if ($selectedKelasId) {
                 $hariIndonesia = [
                     'Monday' => 'Senin',
@@ -198,7 +211,7 @@ class AbsensiController extends Controller
         $multiSlotJadwal = collect();
         
         // Get jadwal for current user if they are a teacher
-        if ($user->guru_id && !$isAdminOrKepala) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             // Get today's schedule for display
             $hariIni = date('l');
             $jadwalHariIni = JadwalKbm::with(['kelas', 'jamBelajar', 'mataPelajaran'])
@@ -255,10 +268,17 @@ class AbsensiController extends Controller
             $guruList = Guru::where('id', $user->guru_id)->get();
             $jadwalList = $jadwalHariIni;
         } else {
-            // Admin or kepala sekolah can see all
+            // Admin, kepala sekolah, atau guru piket dapat input absensi lintas kelas
             $kelasList = Kelas::orderBy('nama_kelas')->get();
-            $guruList = Guru::orderBy('nama')->get();
+            if ($isGuruPiket && $user->guru_id) {
+                $guruList = Guru::where('id', $user->guru_id)->get();
+            } else {
+                $guruList = Guru::orderBy('nama')->get();
+            }
             $jamBelajarList = JamBelajar::orderBy('urutan')->get();
+            if ($isGuruPiket && !$selectedJamBelajarId && $jamBelajarList->isNotEmpty()) {
+                $selectedJamBelajarId = $jamBelajarList->first()->id;
+            }
             $jadwalList = collect();
         }
 
@@ -273,12 +293,30 @@ class AbsensiController extends Controller
             'selectedJamBelajarId',
             'isQuickAccess',
             'selectedDate',
-            'multiSlotJadwal'
+            'multiSlotJadwal',
+            'isGuruPiket'
         ));
     }
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+
+        if ($isGuruPiket) {
+            if (!$request->filled('guru_id') && $user->guru_id) {
+                $request->merge(['guru_id' => $user->guru_id]);
+            }
+
+            if (!$request->filled('jam_belajar_id')) {
+                $defaultJamBelajarId = JamBelajar::orderBy('urutan')->value('id');
+                if ($defaultJamBelajarId) {
+                    $request->merge(['jam_belajar_id' => $defaultJamBelajarId]);
+                }
+            }
+        }
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'guru_id' => 'required|exists:guru,id',
@@ -303,9 +341,7 @@ class AbsensiController extends Controller
         }
         
         // Validate teacher can only input attendance for their schedule
-        $user = auth()->user();
-        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        if ($user->guru_id && !$isAdminOrKepala) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             if ($validated['guru_id'] != $user->guru_id) {
                 return back()->withErrors(['error' => 'Anda hanya dapat menginput absensi untuk jadwal Anda sendiri.']);
             }
@@ -615,6 +651,7 @@ class AbsensiController extends Controller
 
         return match ($normalized) {
             'hadir' => 'Hadir',
+            'terlambat', 'telat' => 'Terlambat',
             'sakit' => 'Sakit',
             'izin' => 'Izin',
             'alpa', 'alpha', 'absen' => 'Absen',
