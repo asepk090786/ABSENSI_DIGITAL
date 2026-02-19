@@ -2,6 +2,26 @@
 
 Semua perubahan penting pada proyek ini dicatat di file ini.
 
+## v2026.02.19-admin-nilai-xml-fix - 2026-02-19
+
+### Added
+- Panel admin **Lihat Nilai (Sederhana)** dengan filter Kelas dan Mata Pelajaran agar akses data nilai lebih ringkas.
+- Panel admin **Daftar Nilai Sudah Diinput Guru** untuk melihat detail nilai terisi (guru, kelas, mapel, siswa, komponen, nilai).
+
+### Changed
+- Tampilan halaman Nilai untuk admin disederhanakan dengan menghilangkan **Menu Cepat Penilaian** yang terlalu padat.
+- Opsi filter kelas/mapel untuk admin disiapkan dari jadwal aktif secara unik dan terurut.
+- Dropdown rencana pembelajaran pada modal Import Nilai dibuat dinamis mengikuti kombinasi **kelas + mapel**.
+
+### Fixed
+- Perbaikan error import XML: `Call to undefined method Illuminate\\Database\\Query\\Builder::updateOrCreate()`.
+- Proses auto-generate `tugas_guru` saat import XML kini memakai `TugasGuru::updateOrCreate()` (Eloquent) sehingga import berjalan normal.
+
+### Files Updated
+- `app/Http/Controllers/AscTimetableController.php`
+- `app/Http/Controllers/NilaiController.php`
+- `resources/views/nilai/index.blade.php`
+
 ## v2026.02.18-nilai-dinamis - 2026-02-18
 
 ### Added
