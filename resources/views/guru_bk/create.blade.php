@@ -71,6 +71,26 @@
 
                             <div class="col-md-6">
                                 <div class="mb-3">
+                                    <label class="form-label">Pilihan Kelas Binaan</label>
+                                    <select name="kelas_binaan[]" class="form-select @error('kelas_binaan') is-invalid @enderror @error('kelas_binaan.*') is-invalid @enderror" multiple>
+                                        @foreach($kelasList as $kelas)
+                                            <option value="{{ $kelas->id }}" {{ in_array($kelas->id, old('kelas_binaan', [])) ? 'selected' : '' }}>
+                                                {{ $kelas->nama_kelas }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('kelas_binaan')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    @error('kelas_binaan.*')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted d-block mt-1">Tekan Ctrl (Windows/Linux) untuk memilih lebih dari satu kelas.</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
                                     <label class="form-label">Foto</label>
                                     <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror" accept="image/*">
                                     @error('foto')

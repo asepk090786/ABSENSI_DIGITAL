@@ -112,11 +112,34 @@ class DashboardController extends Controller
                     ->distinct('kelas_id')
                     ->count('kelas_id');
             }
+
+            $isGuruBk = $user->hasRole('Guru BK');
+            $kelasBinaanBk = collect();
+            if (
+                $isGuruBk &&
+                $guruData &&
+                \Illuminate\Support\Facades\Schema::hasTable('kelas') &&
+                \Illuminate\Support\Facades\Schema::hasColumn('kelas', 'guru_bk_id')
+            ) {
+                $kelasBinaanBk = DB::table('kelas')
+                    ->leftJoin('siswa', 'siswa.kelas_id', '=', 'kelas.id')
+                    ->where('kelas.guru_bk_id', $guruData->id)
+                    ->select(
+                        'kelas.id',
+                        'kelas.nama_kelas',
+                        'kelas.tingkat_kelas',
+                        DB::raw('COUNT(siswa.id) as total_siswa')
+                    )
+                    ->groupBy('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
+                    ->orderBy('kelas.nama_kelas')
+                    ->get();
+            }
             
             return view('dashboard.guru', compact(
                 'guru','siswa','kelas','absensi','tahunAjaran','semestrName',
                 'totalJadwal','jadwalHariIni','totalAbsensiGuru','absensiHariIni',
-                'totalAgenda','agendaMingguIni','totalNilai','kelasYangDiajar'
+                'totalAgenda','agendaMingguIni','totalNilai','kelasYangDiajar',
+                'isGuruBk','kelasBinaanBk'
             ));
         } elseif ($isSiswa) {
             return view('dashboard.siswa', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));

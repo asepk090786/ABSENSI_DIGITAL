@@ -33,6 +33,7 @@
                                         <th>Nama</th>
                                         <th>NIP</th>
                                         <th>Guru Terpilih</th>
+                                        <th>Kelas Binaan</th>
                                         <th>Email</th>
                                         <th>Telepon</th>
                                         <th>Status</th>
@@ -67,6 +68,17 @@
                                                     <span class="badge bg-light text-dark border border-secondary">
                                                         <i class="ti ti-minus"></i> Input Manual
                                                     </span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if(!($hasGuruBkKelasColumn ?? false))
+                                                    <span class="text-muted">-</span>
+                                                @elseif($item->kelasBinaanBk->isEmpty())
+                                                    <span class="text-muted">Belum ada</span>
+                                                @else
+                                                    @foreach($item->kelasBinaanBk as $kelasBinaan)
+                                                        <span class="badge bg-primary me-1 mb-1">{{ $kelasBinaan->nama_kelas }}</span>
+                                                    @endforeach
                                                 @endif
                                             </td>
                                             <td>{{ $item->email ?? '-' }}</td>

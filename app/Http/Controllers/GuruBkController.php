@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\Kelas;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 class GuruBkController extends Controller
 {
@@ -41,7 +43,9 @@ class GuruBkController extends Controller
 
     public function index()
     {
-        $gurubk = Guru::with('user')
+        $hasGuruBkKelasColumn = Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id');
+
+        $guruBkQuery = Guru::with('user')
             ->whereHas('user', function($query) {
                 $query->whereHas('roles', function($q) {
                     $q->where('role_name', 'Guru BK');
@@ -49,10 +53,15 @@ class GuruBkController extends Controller
                     $q->where('role_name', 'Guru BK');
                 });
             })
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('created_at', 'desc');
+
+        if ($hasGuruBkKelasColumn) {
+            $guruBkQuery->with('kelasBinaanBk');
+        }
+
+        $gurubk = $guruBkQuery->get();
         
-        return view('guru_bk.index', compact('gurubk'));
+        return view('guru_bk.index', compact('gurubk', 'hasGuruBkKelasColumn'));
     }
 
     public function create()
@@ -69,8 +78,10 @@ class GuruBkController extends Controller
             ->whereNotIn('id', $guruBkIds)
             ->orderBy('nama')
             ->get();
+
+        $kelasList = Kelas::orderBy('nama_kelas')->get();
         
-        return view('guru_bk.create', compact('guru'));
+        return view('guru_bk.create', compact('guru', 'kelasList'));
     }
 
     public function store(Request $request)
@@ -84,6 +95,8 @@ class GuruBkController extends Controller
             'telepon' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'kelas_binaan' => 'nullable|array',
+            'kelas_binaan.*' => 'exists:kelas,id',
         ]);
 
         $guru = Guru::with('user')->findOrFail($validated['guru_id']);
@@ -132,6 +145,18 @@ class GuruBkController extends Controller
             $guru->update($guruData);
         }
 
+        $kelasBinaanIds = collect($validated['kelas_binaan'] ?? [])
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        Kelas::where('guru_bk_id', $guru->id)->update(['guru_bk_id' => null]);
+        if (! empty($kelasBinaanIds)) {
+            Kelas::whereIn('id', $kelasBinaanIds)->update(['guru_bk_id' => $guru->id]);
+        }
+
         $guruBkRole = Role::where('role_name', 'Guru BK')->first();
         if ($guruBkRole) {
             $user->update([
@@ -167,8 +192,11 @@ class GuruBkController extends Controller
             ->whereNotIn('id', $guruBkIds)
             ->orderBy('nama')
             ->get();
+
+        $kelasList = Kelas::orderBy('nama_kelas')->get();
+        $kelasBinaanIds = Kelas::where('guru_bk_id', $id)->pluck('id')->all();
         
-        return view('guru_bk.edit', compact('gurubk', 'guru'));
+        return view('guru_bk.edit', compact('gurubk', 'guru', 'kelasList', 'kelasBinaanIds'));
     }
 
     public function update(Request $request, $id)
@@ -191,6 +219,8 @@ class GuruBkController extends Controller
             'telepon' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'kelas_binaan' => 'nullable|array',
+            'kelas_binaan.*' => 'exists:kelas,id',
         ]);
 
         if (!empty($validated['email'])) {
@@ -215,7 +245,21 @@ class GuruBkController extends Controller
         $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
         unset($validated['status']);
 
+        $kelasBinaanIds = collect($validated['kelas_binaan'] ?? [])
+            ->filter()
+            ->map(fn ($kelasId) => (int) $kelasId)
+            ->unique()
+            ->values()
+            ->all();
+
+        unset($validated['kelas_binaan']);
+
         $gurubk->update($validated);
+
+        Kelas::where('guru_bk_id', $gurubk->id)->update(['guru_bk_id' => null]);
+        if (! empty($kelasBinaanIds)) {
+            Kelas::whereIn('id', $kelasBinaanIds)->update(['guru_bk_id' => $gurubk->id]);
+        }
 
         $user->update([
             'name' => $validated['nama'],
@@ -234,6 +278,8 @@ class GuruBkController extends Controller
     public function destroy($id)
     {
         $gurubk = Guru::findOrFail($id);
+
+        Kelas::where('guru_bk_id', $gurubk->id)->update(['guru_bk_id' => null]);
 
         $user = User::where('guru_id', $gurubk->id)->first();
         if ($user) {

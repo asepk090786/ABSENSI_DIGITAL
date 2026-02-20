@@ -80,6 +80,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-deactivate', ['App\Http\Controllers\KelasController', 'bulkDeactivateStudent'])->name('kelas.siswa.bulk-deactivate');
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
+    Route::get('absensi/bk-monitoring/export', ['App\Http\Controllers\AbsensiController', 'exportBkMonitoring'])->name('absensi.bk-monitoring.export');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index', 'store']);
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');
@@ -173,6 +174,16 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('kepala_sekolah', 'App\Http\Controllers\KepalaSekolahController');
     Route::resource('wakil_kepala_sekolah', 'App\Http\Controllers\WakilKepalaSekolahController');
     Route::resource('guru_bk', 'App\Http\Controllers\GuruBkController');
+    Route::prefix('guru-bk')->name('guru_bk_layanan.')->group(function () {
+        Route::get('kelas-binaan/{kelas}', [App\Http\Controllers\GuruBkLayananController::class, 'menu'])->name('menu');
+        Route::get('kelas-binaan/{kelas}/layanan', [App\Http\Controllers\GuruBkLayananController::class, 'layanan'])->name('layanan');
+        Route::post('kelas-binaan/{kelas}/layanan', [App\Http\Controllers\GuruBkLayananController::class, 'storeLayanan'])->name('layanan.store');
+        Route::get('kelas-binaan/{kelas}/layanan/print', [App\Http\Controllers\GuruBkLayananController::class, 'printLayanan'])->name('layanan.print');
+        Route::get('kelas-binaan/{kelas}/daftar-hadir', [App\Http\Controllers\GuruBkLayananController::class, 'daftarHadir'])->name('daftar_hadir');
+        Route::get('kelas-binaan/{kelas}/daftar-hadir/print', [App\Http\Controllers\GuruBkLayananController::class, 'printDaftarHadir'])->name('daftar_hadir.print');
+        Route::get('kelas-binaan/{kelas}/pembinaan', [App\Http\Controllers\GuruBkLayananController::class, 'pembinaan'])->name('pembinaan');
+        Route::get('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'tindakLanjut'])->name('tindak_lanjut');
+    });
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
     Route::resource('pembina', 'App\Http\Controllers\PembinaController');
     Route::get('mata-pelajaran/guru', ['App\Http\Controllers\MataPelajaranController', 'guruIndex'])->name('mata_pelajaran.guru');

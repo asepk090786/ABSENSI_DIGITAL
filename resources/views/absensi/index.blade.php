@@ -14,6 +14,7 @@
 <div class="container-fluid">
     @php
         $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruBk = $isGuruBk ?? auth()->user()->hasRole('Guru BK');
     @endphp
 
         @if($kelasQuickAccess->isNotEmpty() && !($isGuruPiket ?? false))
@@ -26,6 +27,8 @@
                         <i class="ti ti-clock-play me-2"></i>
                         @if($isAdminOrKepala)
                             Menu Akses Cepat - Absensi Kelas Aktif
+                        @elseif($isGuruBk)
+                            Menu Akses Cepat - Absensi Kelas Binaan BK
                         @else
                             Menu Akses Cepat - Absen Kelas Anda
                         @endif
@@ -115,6 +118,8 @@
                                         <i class="ti ti-check me-1"></i>
                                         @if($isAdminOrKepala)
                                             Buat Absensi
+                                        @elseif($isGuruBk)
+                                            Absen Kelas Binaan
                                         @else
                                             Absen Kelas Ini
                                         @endif
@@ -124,6 +129,102 @@
                         </div>
                         @endforeach
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($isGuruBk && !($isGuruPiket ?? false))
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-1">Monitoring Siswa Kelas Binaan BK</h5>
+                    <p class="card-category mb-0">Menampilkan siswa terlambat dan tidak masuk dari kelas binaan pada tanggal dipilih</p>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="tanggal-bk" class="form-label mb-1">Tanggal Kehadiran</label>
+                            <input
+                                type="date"
+                                id="tanggal-bk"
+                                name="tanggal"
+                                class="form-control"
+                                value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}"
+                            >
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-search me-1"></i>Tampilkan
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ route('absensi.bk-monitoring.export', ['tanggal' => ($selectedTanggal ?? now()->format('Y-m-d'))]) }}" class="btn btn-success">
+                                <i class="ti ti-file-export me-1"></i>Export Excel
+                            </a>
+                        </div>
+                    </form>
+
+                    @php
+                        $totalTerlambatBk = ($siswaPerluPerhatian ?? collect())->filter(function ($row) {
+                            return in_array(strtolower((string) ($row->status ?? '')), ['terlambat', 'telat'], true);
+                        })->count();
+                        $totalTidakMasukBk = ($siswaPerluPerhatian ?? collect())->filter(function ($row) {
+                            return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
+                        })->count();
+                    @endphp
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge" style="background:#f59e0b;color:#fff;">Total Terlambat: {{ $totalTerlambatBk }}</span>
+                        <span class="badge bg-danger">Total Tidak Masuk: {{ $totalTidakMasukBk }}</span>
+                    </div>
+
+                    @if(($siswaPerluPerhatian ?? collect())->isEmpty())
+                        <div class="alert alert-info mb-0">
+                            <i class="ti ti-info-circle"></i> Tidak ada siswa terlambat/tidak masuk pada tanggal ini.
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Tanggal</th>
+                                        <th>Kelas</th>
+                                        <th>Siswa</th>
+                                        <th>Status</th>
+                                        <th>Guru Penginput</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach(($siswaPerluPerhatian ?? collect()) as $index => $row)
+                                        @php
+                                            $statusNormalized = strtolower((string) ($row->status ?? ''));
+                                            $isTerlambat = in_array($statusNormalized, ['terlambat', 'telat'], true);
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($row->tanggal)->format('d/m/Y') }}</td>
+                                            <td>{{ $row->nama_kelas ?? '-' }}</td>
+                                            <td>{{ $row->nama_siswa ?? '-' }}</td>
+                                            <td>
+                                                @if($isTerlambat)
+                                                    <span class="badge" style="background:#f59e0b;color:#fff;">Terlambat</span>
+                                                @else
+                                                    <span class="badge bg-danger">Tidak Masuk</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $row->nama_guru ?? '-' }}</td>
+                                            <td>{{ $row->keterangan ?: '-' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

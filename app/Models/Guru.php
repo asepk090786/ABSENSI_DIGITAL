@@ -57,4 +57,9 @@ class Guru extends Model implements AuthenticatableContract
     {
         return $this->hasMany(TugasGuru::class);
     }
+
+    public function kelasBinaanBk()
+    {
+        return $this->hasMany(Kelas::class, 'guru_bk_id');
+    }
 }

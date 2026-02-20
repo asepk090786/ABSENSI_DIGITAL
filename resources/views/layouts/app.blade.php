@@ -496,6 +496,42 @@
                             </div>
                         </li>
                         @endif
+
+                        @php
+                            $isGuruBk = $user->hasRole('Guru BK');
+                            $kelasBinaanBk = collect();
+
+                            if ($isGuruBk && $user->guru_id) {
+                                $kelasBinaanBk = DB::table('kelas')
+                                    ->where('guru_bk_id', $user->guru_id)
+                                    ->select('id', 'nama_kelas')
+                                    ->orderBy('nama_kelas')
+                                    ->get();
+                            }
+                        @endphp
+
+                        @if($isGuruBk)
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('guru_bk_layanan.*') ? 'active' : '' }}" href="#navbar-guru-bk" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-mood-smile"></i>
+                                </span>
+                                <span class="nav-link-title">Guru BK</span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-header">Pilihan Kelas Binaan</div>
+                                @forelse($kelasBinaanBk as $kelasBk)
+                                    <a class="dropdown-item {{ request()->routeIs('guru_bk_layanan.*') && (int) request()->route('kelas')?->id === (int) $kelasBk->id ? 'active' : '' }}" href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelasBk->id]) }}">
+                                        <i class="ti ti-building me-2"></i>{{ $kelasBk->nama_kelas }}
+                                    </a>
+                                @empty
+                                    <span class="dropdown-item text-muted">
+                                        <i class="ti ti-info-circle me-2"></i>Belum ada kelas binaan
+                                    </span>
+                                @endforelse
+                            </div>
+                        </li>
+                        @endif
                         
                         <!-- Data Master (Only for Admin, Kepala Sekolah, and Wakil Kepala Sekolah) -->
                         @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']))

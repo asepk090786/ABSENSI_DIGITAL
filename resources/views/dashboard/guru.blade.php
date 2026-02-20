@@ -19,6 +19,31 @@
     </div>
 </div>
 
+@if(($isGuruBk ?? false) === true)
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Kelas Binaan Guru BK</h3>
+        <span class="badge bg-primary">{{ ($kelasBinaanBk ?? collect())->count() }} Kelas</span>
+    </div>
+    <div class="card-body">
+        @if(($kelasBinaanBk ?? collect())->isEmpty())
+            <div class="text-muted">Belum ada kelas binaan yang ditetapkan.</div>
+        @else
+            <div class="row g-3">
+                @foreach($kelasBinaanBk as $kelasBinaan)
+                    <div class="col-md-6 col-lg-4">
+                        <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id]) }}" class="btn btn-outline-primary w-100 text-start py-3" style="height: auto;">
+                            <div class="fw-bold">{{ $kelasBinaan->nama_kelas }}</div>
+                            <div class="small text-muted">Tingkat: {{ $kelasBinaan->tingkat_kelas ?? '-' }} • {{ $kelasBinaan->total_siswa ?? 0 }} siswa</div>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
+@endif
+
 <!-- Quick Stats Cards -->
 <div class="row row-cards mb-4">
     <!-- Jadwal Mengajar -->

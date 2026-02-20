@@ -12,7 +12,10 @@ use App\Models\JamBelajar;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\JadwalKbm;
+use App\Exports\AbsensiBkMonitoringExport;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AbsensiController extends Controller
 {
@@ -35,6 +38,8 @@ class AbsensiController extends Controller
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $isGuruBk = $user->hasRole('Guru BK');
+        $hasGuruBkKelasColumn = Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id');
 
         $kelasAktifDijadwalIds = JadwalKbm::query()
             ->when($tahun, function ($query) use ($tahun) {
@@ -69,10 +74,14 @@ class AbsensiController extends Controller
             } else {
                 $query->whereRaw('1 = 0');
             }
+        } elseif ($user->guru_id && $isGuruBk && $hasGuruBkKelasColumn) {
+            $query->whereHas('kelas', function ($kelasQuery) use ($user) {
+                $kelasQuery->where('guru_bk_id', $user->guru_id);
+            });
         }
         
         // Filter by guru_id if user is a teacher (not admin or kepala sekolah)
-        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk) {
             $query->where('guru_id', $user->guru_id);
         }
         
@@ -81,7 +90,16 @@ class AbsensiController extends Controller
         // Get quick access classes for teacher
         $kelasQuickAccess = collect();
         $rekapPerKelas = collect();
-        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
+        $siswaPerluPerhatian = collect();
+
+        if ($user->guru_id && $isGuruBk && $hasGuruBkKelasColumn) {
+            $kelasQuickAccess = Kelas::with('waliKelas')
+                ->where('guru_bk_id', $user->guru_id)
+                ->orderBy('nama_kelas')
+                ->get();
+
+            $siswaPerluPerhatian = $this->getGuruBkMonitoringData($user->guru_id, $selectedTanggal);
+        } elseif ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             // Get all classes taught by this teacher in current semester
             $kelasQuickAccess = JadwalKbm::with(['kelas'])
                 ->where('guru_id', $user->guru_id)
@@ -141,7 +159,28 @@ class AbsensiController extends Controller
             }
         }
         
-        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket'));
+        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian'));
+    }
+
+    public function exportBkMonitoring(Request $request)
+    {
+        $user = auth()->user();
+        $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
+
+        if (! $user || ! $user->hasRole('Guru BK') || empty($user->guru_id)) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Guru BK.');
+        }
+
+        if (! Schema::hasTable('kelas') || ! Schema::hasColumn('kelas', 'guru_bk_id')) {
+            return redirect()->route('absensi.index')
+                ->with('error', 'Kolom kelas binaan Guru BK belum tersedia. Jalankan migrasi terlebih dahulu.');
+        }
+
+        $rows = $this->getGuruBkMonitoringData($user->guru_id, $selectedTanggal);
+
+        $filename = 'monitoring_absensi_bk_' . Carbon::parse($selectedTanggal)->format('Ymd') . '.xlsx';
+
+        return Excel::download(new AbsensiBkMonitoringExport($rows), $filename);
     }
 
     public function create(Request $request)
@@ -596,6 +635,32 @@ class AbsensiController extends Controller
                 'semester_id' => $absensi->semester_id,
             ]);
         }
+    }
+
+    private function getGuruBkMonitoringData(int $guruId, string $selectedTanggal)
+    {
+        return DB::table('absensi_siswa')
+            ->join('absensi_kelas', 'absensi_kelas.id', '=', 'absensi_siswa.absensi_kelas_id')
+            ->join('siswa', 'siswa.id', '=', 'absensi_siswa.siswa_id')
+            ->join('kelas', 'kelas.id', '=', 'absensi_kelas.kelas_id')
+            ->leftJoin('guru', 'guru.id', '=', 'absensi_kelas.guru_id')
+            ->where('kelas.guru_bk_id', $guruId)
+            ->whereDate('absensi_kelas.tanggal', $selectedTanggal)
+            ->whereIn(DB::raw('LOWER(absensi_siswa.status)'), ['terlambat', 'telat', 'alpa', 'alpha', 'alfa', 'absen'])
+            ->select(
+                'absensi_kelas.id as absensi_kelas_id',
+                'absensi_kelas.tanggal',
+                'kelas.id as kelas_id',
+                'kelas.nama_kelas',
+                'siswa.id as siswa_id',
+                'siswa.nama as nama_siswa',
+                'absensi_siswa.status',
+                'absensi_siswa.keterangan',
+                'guru.nama as nama_guru'
+            )
+            ->orderBy('kelas.nama_kelas')
+            ->orderBy('siswa.nama')
+            ->get();
     }
 
     /**

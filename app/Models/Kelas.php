@@ -19,11 +19,17 @@ class Kelas extends Model
         'tingkat_kelas',
         'jurusan',
         'wali_kelas_id',
+        'guru_bk_id',
     ];
 
     public function waliKelas()
     {
         return $this->belongsTo(Guru::class, 'wali_kelas_id');
+    }
+
+    public function guruBk()
+    {
+        return $this->belongsTo(Guru::class, 'guru_bk_id');
     }
 
     public function siswa()
