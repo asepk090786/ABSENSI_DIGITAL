@@ -31,6 +31,7 @@ Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(fu
     Route::get('/', [App\Http\Controllers\WaliKelasController::class, 'index'])->name('index');
     Route::get('/siswa', [App\Http\Controllers\WaliKelasController::class, 'siswa'])->name('siswa');
     Route::get('/absensi', [App\Http\Controllers\WaliKelasController::class, 'absensi'])->name('absensi');
+    Route::get('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'laporanGuru'])->name('laporan_guru');
     Route::get('/nilai', [App\Http\Controllers\WaliKelasController::class, 'nilai'])->name('nilai');
     Route::get('/nilai/{siswa}', [App\Http\Controllers\WaliKelasController::class, 'nilaiSiswa'])->name('nilai_siswa');
 });
@@ -81,6 +82,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
     Route::get('absensi/bk-monitoring/export', ['App\Http\Controllers\AbsensiController', 'exportBkMonitoring'])->name('absensi.bk-monitoring.export');
+    Route::post('absensi/{absensi}/laporan-siswa', ['App\Http\Controllers\AbsensiController', 'storeLaporanSiswa'])->name('absensi.laporan-siswa.store');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index', 'store']);
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');
@@ -182,6 +184,9 @@ Route::middleware(['auth'])->group(function(){
         Route::get('kelas-binaan/{kelas}/daftar-hadir', [App\Http\Controllers\GuruBkLayananController::class, 'daftarHadir'])->name('daftar_hadir');
         Route::get('kelas-binaan/{kelas}/daftar-hadir/print', [App\Http\Controllers\GuruBkLayananController::class, 'printDaftarHadir'])->name('daftar_hadir.print');
         Route::get('kelas-binaan/{kelas}/pembinaan', [App\Http\Controllers\GuruBkLayananController::class, 'pembinaan'])->name('pembinaan');
+        Route::post('kelas-binaan/{kelas}/pembinaan', [App\Http\Controllers\GuruBkLayananController::class, 'storePembinaan'])->name('pembinaan.store');
+        Route::get('kelas-binaan/{kelas}/pembinaan/rekap-absensi', [App\Http\Controllers\GuruBkLayananController::class, 'rekapAbsensiSiswa'])->name('pembinaan.rekap_absensi');
+        Route::get('kelas-binaan/{kelas}/pembinaan/print', [App\Http\Controllers\GuruBkLayananController::class, 'printPembinaan'])->name('pembinaan.print');
         Route::get('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'tindakLanjut'])->name('tindak_lanjut');
     });
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');

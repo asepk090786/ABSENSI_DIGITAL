@@ -134,6 +134,39 @@ class WaliKelasController extends Controller
         
         return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester'));
     }
+
+    public function laporanGuru()
+    {
+        $user = Auth::user();
+        $guru = $user->guru;
+
+        if (!$guru) {
+            return redirect()->route('home')->with('error', 'Anda tidak terdaftar sebagai guru.');
+        }
+
+        $kelasBinaan = DB::table('kelas')
+            ->where('wali_kelas_id', $guru->id)
+            ->first();
+
+        if (!$kelasBinaan) {
+            return redirect()->route('home')->with('error', 'Anda tidak ditugaskan sebagai wali kelas.');
+        }
+
+        $laporanGuru = DB::table('laporan_siswa_guru as lsg')
+            ->leftJoin('siswa as s', 's.id', '=', 'lsg.siswa_id')
+            ->leftJoin('guru as gp', 'gp.id', '=', 'lsg.guru_pelapor_id')
+            ->where('lsg.kelas_id', $kelasBinaan->id)
+            ->select(
+                'lsg.*',
+                's.nama as nama_siswa',
+                's.nis as nis_siswa',
+                'gp.nama as nama_guru_pelapor'
+            )
+            ->orderBy('lsg.created_at', 'desc')
+            ->get();
+
+        return view('wali_kelas.laporan_guru', compact('kelasBinaan', 'laporanGuru', 'guru'));
+    }
     
     /**
      * Halaman nilai siswa kelas binaan

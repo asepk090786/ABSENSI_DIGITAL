@@ -487,6 +487,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('wali_kelas.absensi') ? 'active' : '' }}" href="{{ route('wali_kelas.absensi') }}">
                                     <i class="ti ti-calendar-check me-2"></i>Absensi Kelas
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.laporan_guru') ? 'active' : '' }}" href="{{ route('wali_kelas.laporan_guru') }}">
+                                    <i class="ti ti-message-report me-2"></i>Laporan Guru
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs('wali_kelas.nilai') ? 'active' : '' }}" href="{{ route('wali_kelas.nilai') }}">
                                     <i class="ti ti-chart-bar me-2"></i>Nilai Siswa
                                 </a>

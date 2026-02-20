@@ -76,6 +76,7 @@
                                     <th>Nama Siswa</th>
                                     <th>Status</th>
                                     <th>Keterangan</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -101,6 +102,22 @@
                                         @endif
                                     </td>
                                     <td>{{ $abs->keterangan ?? '-' }}</td>
+                                    <td>
+                                        @if(auth()->user()->guru_id)
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-outline-danger btn-lapor-siswa"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalLaporanSiswa"
+                                                data-siswa-id="{{ $abs->siswa->id ?? '' }}"
+                                                data-siswa-nama="{{ $abs->siswa->nama ?? '-' }}"
+                                            >
+                                                <i class="ti ti-message-report"></i> Lapor
+                                            </button>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -117,4 +134,48 @@
         </div>
     </div>
 </div>
+
+@if(auth()->user()->guru_id)
+<div class="modal fade" id="modalLaporanSiswa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('absensi.laporan-siswa.store', $absensi->id) }}">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Laporan ke Wali Kelas & Guru BK</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="siswa_id" id="lapor_siswa_id">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Siswa</label>
+                        <input type="text" id="lapor_siswa_nama" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Permasalahan <span class="text-danger">*</span></label>
+                        <textarea name="deskripsi_permasalahan" class="form-control" rows="4" required placeholder="Tuliskan permasalahan yang ditemukan pada siswa..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-send me-1"></i>Kirim Laporan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-lapor-siswa').forEach(function (button) {
+        button.addEventListener('click', function () {
+            document.getElementById('lapor_siswa_id').value = this.getAttribute('data-siswa-id') || '';
+            document.getElementById('lapor_siswa_nama').value = this.getAttribute('data-siswa-nama') || '-';
+        });
+    });
+});
+</script>
+@endif
 @endsection

@@ -12,6 +12,7 @@ use App\Models\JamBelajar;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\JadwalKbm;
+use App\Models\LaporanSiswaGuru;
 use App\Exports\AbsensiBkMonitoringExport;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -605,6 +606,47 @@ class AbsensiController extends Controller
                 'debug' => config('app.debug') ? $e->getTrace() : null
             ], 500);
         }
+    }
+
+    public function storeLaporanSiswa(Request $request, $absensiId)
+    {
+        $user = auth()->user();
+
+        if (! $user || empty($user->guru_id)) {
+            return redirect()->back()->withErrors(['error' => 'Hanya akun guru yang dapat mengirim laporan.']);
+        }
+
+        $absensi = AbsensiKelas::with('kelas')->findOrFail($absensiId);
+
+        $validated = $request->validate([
+            'siswa_id' => 'required|exists:siswa,id',
+            'deskripsi_permasalahan' => 'required|string|min:5',
+        ]);
+
+        $siswa = DB::table('siswa')
+            ->where('id', $validated['siswa_id'])
+            ->where('kelas_id', $absensi->kelas_id)
+            ->first();
+
+        if (! $siswa) {
+            return redirect()->back()->withErrors(['error' => 'Siswa tidak berada di kelas absensi ini.']);
+        }
+
+        $waliKelasId = $absensi->kelas->wali_kelas_id ?? null;
+        $guruBkId = $absensi->kelas->guru_bk_id ?? null;
+
+        LaporanSiswaGuru::create([
+            'absensi_kelas_id' => $absensi->id,
+            'kelas_id' => $absensi->kelas_id,
+            'siswa_id' => $validated['siswa_id'],
+            'guru_pelapor_id' => $user->guru_id,
+            'wali_kelas_id' => $waliKelasId,
+            'guru_bk_id' => $guruBkId,
+            'deskripsi_permasalahan' => $validated['deskripsi_permasalahan'],
+        ]);
+
+        return redirect()->route('absensi.show', $absensi->id)
+            ->with('success', 'Laporan permasalahan siswa berhasil dikirim ke Wali Kelas dan Guru BK.');
     }
 
     /**
