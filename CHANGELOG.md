@@ -2,6 +2,51 @@
 
 Semua perubahan penting pada proyek ini dicatat di file ini.
 
+## v2026.02.20-bk-layanan-pembinaan-laporan - 2026-02-20
+
+### Added
+- Modul **Guru BK per Kelas Binaan**: menu kelas binaan, submenu Layanan BK, Daftar Hadir Layanan BK, Pembinaan BK, dan Tindak Lanjut.
+- Form input **Layanan BK** dan sinkron otomatis ke **Daftar Hadir Layanan BK**.
+- Fitur **Print Output + Preview Popup** untuk Layanan BK dan Daftar Hadir Layanan BK dengan header sekolah dinamis (logo kiri/kanan, header text/html).
+- Fitur **Pembinaan BK** lengkap: input siswa kelas binaan, rekap absensi otomatis (hadir/sakit/izin/alpa/terlambat), laporan guru/wali kelas, dan upload bukti dukung gambar (file + kamera).
+- Fitur **Laporan Guru dari Absensi**: guru mapel dapat melaporkan permasalahan siswa ke wali kelas dan Guru BK langsung dari detail absensi.
+- Halaman **Laporan Guru** pada akun Wali Kelas untuk menerima laporan dari guru.
+
+### Changed
+- Dashboard dan menu Guru BK disesuaikan untuk menampilkan kelas binaan dan monitoring siswa terlambat/tidak masuk.
+- Integrasi pembinaan BK diperluas agar kolom **Laporan Guru** otomatis menarik data laporan guru terbaru untuk siswa terpilih.
+
+### Database
+- Penambahan kolom relasi `guru_bk_id` pada tabel `kelas`.
+- Penambahan tabel `layanan_bk` untuk data layanan konseling BK.
+- Penambahan tabel `pembinaan_bk` untuk data pembinaan dan tindak lanjut BK.
+- Penambahan tabel `laporan_siswa_guru` untuk alur laporan guru ke wali kelas & BK.
+
+### Files Updated
+- `routes/web.php`
+- `app/Http/Controllers/AbsensiController.php`
+- `app/Http/Controllers/DashboardController.php`
+- `app/Http/Controllers/GuruBkController.php`
+- `app/Http/Controllers/GuruBkLayananController.php`
+- `app/Http/Controllers/WaliKelasController.php`
+- `app/Models/Kelas.php`
+- `app/Models/Guru.php`
+- `app/Models/LayananBk.php`
+- `app/Models/PembinaanBk.php`
+- `app/Models/LaporanSiswaGuru.php`
+- `app/Exports/AbsensiBkMonitoringExport.php`
+- `resources/views/layouts/app.blade.php`
+- `resources/views/dashboard/guru.blade.php`
+- `resources/views/absensi/index.blade.php`
+- `resources/views/absensi/show.blade.php`
+- `resources/views/guru_bk/*.blade.php`
+- `resources/views/guru_bk_layanan/*.blade.php`
+- `resources/views/wali_kelas/laporan_guru.blade.php`
+- `database/migrations/2026_02_20_000001_add_guru_bk_id_to_kelas_table.php`
+- `database/migrations/2026_02_20_000002_create_layanan_bk_table.php`
+- `database/migrations/2026_02_20_000003_create_pembinaan_bk_table.php`
+- `database/migrations/2026_02_20_000004_create_laporan_siswa_guru_table.php`
+
 ## v2026.02.19-admin-nilai-xml-fix - 2026-02-19
 
 ### Added
