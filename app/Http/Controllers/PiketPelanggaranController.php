@@ -85,6 +85,8 @@ class PiketPelanggaranController extends Controller
             'tanggal' => 'required|date',
             'status' => 'required|array|min:1',
             'status.*' => 'required|in:hadir,terlambat,sakit,izin,alpa',
+            'point' => 'nullable|array',
+            'point.*' => 'nullable|integer|min:0|max:1000',
             'pelanggaran' => 'nullable|array',
             'pelanggaran.*' => 'nullable|string|max:1000',
             'keterangan' => 'nullable|array',
@@ -147,6 +149,7 @@ class PiketPelanggaranController extends Controller
 
                 $keterangan = $validated['keterangan'][$siswaId] ?? null;
                 $deskripsiPelanggaran = $validated['pelanggaran'][$siswaId] ?? null;
+                $pointPelanggaran = (int) ($validated['point'][$siswaId] ?? 0);
 
                 $existingAbsensiSiswa = DB::table('absensi_siswa')
                     ->where('absensi_kelas_id', $absensiId)
@@ -187,6 +190,7 @@ class PiketPelanggaranController extends Controller
                             'absensi_kelas_id' => $absensiId,
                             'status_absensi' => strtolower($normalizedStatus),
                             'deskripsi_pelanggaran' => $deskripsiPelanggaran,
+                            'poin_pelanggaran' => $pointPelanggaran,
                             'jam_ke_1_mulai' => $jamMulai,
                             'waktu_input_pelanggaran' => $waktuInput,
                             'terlambat_menit' => $terlambatMenit,

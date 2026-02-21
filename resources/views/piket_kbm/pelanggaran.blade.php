@@ -84,6 +84,7 @@
                                     <th class="text-center">Sakit</th>
                                     <th class="text-center">Izin</th>
                                     <th class="text-center">Alpa</th>
+                                    <th class="text-center">Point</th>
                                     <th></th>
                                     <th></th>
                                 </tr>
@@ -120,6 +121,9 @@
                                             <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="alpa" {{ $selectedStatus === 'alpa' ? 'checked' : '' }}>
                                         </td>
                                         <td>
+                                            <input type="number" min="0" max="1000" class="form-control form-control-sm" name="point[{{ $siswa->id }}]" value="{{ old('point.' . $siswa->id, $existing->poin_pelanggaran ?? 0) }}" placeholder="0">
+                                        </td>
+                                        <td>
                                             <input type="text" class="form-control form-control-sm" name="pelanggaran[{{ $siswa->id }}]" value="{{ old('pelanggaran.' . $siswa->id, $existing->deskripsi_pelanggaran ?? '') }}" placeholder="Contoh: Terlambat masuk kelas">
                                         </td>
                                         <td>
@@ -128,7 +132,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="10" class="text-center text-muted">Tidak ada siswa di kelas ini.</td>
+                                        <td colspan="11" class="text-center text-muted">Tidak ada siswa di kelas ini.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

@@ -52,6 +52,15 @@
         </div>
 
         <div class="col-md-6 col-lg-3">
+            <a href="{{ route('guru_bk_layanan.kartu_kendali', ['kelas' => $kelas->id]) }}" class="btn btn-outline-secondary w-100 py-4" style="height: auto;">
+                <div class="text-center">
+                    <i class="ti ti-clipboard-list" style="font-size: 44px;"></i>
+                    <div class="mt-2 fw-bold">Kartu Kendali Pelanggaran</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
             <button type="button" class="btn btn-outline-dark w-100 py-4 btn-print-preview" style="height: auto;" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-bs-toggle="modal" data-bs-target="#printPreviewModal">
                 <div class="text-center">
                     <i class="ti ti-printer" style="font-size: 44px;"></i>

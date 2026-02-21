@@ -338,13 +338,22 @@ class AgendaKelasController extends Controller
     {
         $agenda = AgendaKelas::findOrFail($id);
         
-        // Validasi bahwa guru hanya bisa akses agenda mereka sendiri
         $user = auth()->user();
-        $guru = $user->guru;
+        $guruLogin = $user->guru;
+        $isPrivilegedViewer = $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']);
         
-        if ($agenda->guru_id != $guru->id) {
+        if (!$isPrivilegedViewer) {
+            if (!$guruLogin || (int) $agenda->guru_id !== (int) $guruLogin->id) {
+                return redirect()->route('agenda_kelas.index')
+                    ->with('error', 'Anda tidak memiliki akses untuk agenda ini.');
+            }
+        }
+
+        $guru = DB::table('guru')->find($agenda->guru_id) ?: $guruLogin;
+
+        if (!$guru) {
             return redirect()->route('agenda_kelas.index')
-                ->with('error', 'Anda tidak memiliki akses untuk agenda ini.');
+                ->with('error', 'Data guru untuk agenda ini tidak ditemukan.');
         }
 
         $kelas = DB::table('kelas')->find($agenda->kelas_id);
@@ -360,6 +369,11 @@ class AgendaKelasController extends Controller
         // Validasi bahwa guru hanya bisa edit agenda mereka sendiri
         $user = auth()->user();
         $guru = $user->guru;
+
+        if (!$guru) {
+            return redirect()->route('agenda_kelas.index')
+                ->with('error', 'Aksi ini hanya dapat dilakukan oleh akun guru.');
+        }
         
         if ($agenda->guru_id != $guru->id) {
             return redirect()->route('agenda_kelas.index')
@@ -378,6 +392,10 @@ class AgendaKelasController extends Controller
         
         $user = auth()->user();
         $guru = $user->guru;
+
+        if (!$guru) {
+            return back()->with('error', 'Aksi ini hanya dapat dilakukan oleh akun guru.');
+        }
         
         if ($agenda->guru_id != $guru->id) {
             return back()->with('error', 'Anda tidak memiliki akses untuk mengupdate agenda ini.');
@@ -431,6 +449,10 @@ class AgendaKelasController extends Controller
         
         $user = auth()->user();
         $guru = $user->guru;
+
+        if (!$guru) {
+            return back()->with('error', 'Aksi ini hanya dapat dilakukan oleh akun guru.');
+        }
         
         if ($agenda->guru_id != $guru->id) {
             return back()->with('error', 'Anda tidak memiliki akses untuk menghapus agenda ini.');

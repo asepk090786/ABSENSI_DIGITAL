@@ -18,6 +18,7 @@ class RekapNilaiController extends Controller
     public function index(Request $request)
     {
         $guru = auth()->user()->guru;
+        $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']);
         
         // Get active tahun ajaran and semester
         $tahunAjaranActive = TahunAjaran::where('is_active', true)->first();
@@ -46,11 +47,58 @@ class RekapNilaiController extends Controller
                     $kelasId = $kelasBinaan->id;
                 }
             } else {
-                $kelasOptions = DB::table('jadwal_kbm')
+                $kelasQuery = DB::table('jadwal_kbm')
                     ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
-                    ->where('jadwal_kbm.guru_id', $guru->id)
-                    ->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id)
-                    ->where('jadwal_kbm.semester_id', $semesterActive->id)
+                    ->where('jadwal_kbm.guru_id', $guru->id);
+
+                if ($tahunAjaranActive) {
+                    $kelasQuery->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id);
+                }
+
+                if ($semesterActive) {
+                    $kelasQuery->where('jadwal_kbm.semester_id', $semesterActive->id);
+                }
+
+                $kelasOptions = $kelasQuery
+                    ->select('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
+                    ->distinct()
+                    ->orderBy('kelas.tingkat_kelas')
+                    ->orderBy('kelas.nama_kelas')
+                    ->get();
+            }
+        } elseif ($isAdminOrKepala) {
+            $kelasQuery = DB::table('jadwal_kbm')
+                ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id');
+
+            if ($tahunAjaranActive) {
+                $kelasQuery->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id);
+            }
+
+            if ($semesterActive) {
+                $kelasQuery->where('jadwal_kbm.semester_id', $semesterActive->id);
+            }
+
+            $kelasOptions = $kelasQuery
+                ->select('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
+                ->distinct()
+                ->orderBy('kelas.tingkat_kelas')
+                ->orderBy('kelas.nama_kelas')
+                ->get();
+
+            if ($kelasOptions->isEmpty()) {
+                $kelasDariNilaiQuery = DB::table('nilai_harian')
+                    ->join('kelas', 'nilai_harian.kelas_id', '=', 'kelas.id')
+                    ->whereNotNull('nilai_harian.nilai');
+
+                if ($tahunAjaranActive) {
+                    $kelasDariNilaiQuery->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id);
+                }
+
+                if ($semesterActive) {
+                    $kelasDariNilaiQuery->where('nilai_harian.semester_id', $semesterActive->id);
+                }
+
+                $kelasOptions = $kelasDariNilaiQuery
                     ->select('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
                     ->distinct()
                     ->orderBy('kelas.tingkat_kelas')
@@ -64,9 +112,15 @@ class RekapNilaiController extends Controller
         if ($guru) {
             $query = DB::table('jadwal_kbm')
                 ->join('mata_pelajaran', 'jadwal_kbm.mata_pelajaran_id', '=', 'mata_pelajaran.id')
-                ->where('jadwal_kbm.guru_id', $guru->id)
-                ->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id)
-                ->where('jadwal_kbm.semester_id', $semesterActive->id);
+                ->where('jadwal_kbm.guru_id', $guru->id);
+
+            if ($tahunAjaranActive) {
+                $query->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id);
+            }
+
+            if ($semesterActive) {
+                $query->where('jadwal_kbm.semester_id', $semesterActive->id);
+            }
             
             if ($kelasId) {
                 $query->where('jadwal_kbm.kelas_id', $kelasId);
@@ -76,6 +130,50 @@ class RekapNilaiController extends Controller
                 ->distinct()
                 ->orderBy('mata_pelajaran.nama_mapel')
                 ->get();
+        } elseif ($isAdminOrKepala) {
+            $query = DB::table('jadwal_kbm')
+                ->join('mata_pelajaran', 'jadwal_kbm.mata_pelajaran_id', '=', 'mata_pelajaran.id');
+
+            if ($tahunAjaranActive) {
+                $query->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranActive->id);
+            }
+
+            if ($semesterActive) {
+                $query->where('jadwal_kbm.semester_id', $semesterActive->id);
+            }
+
+            if ($kelasId) {
+                $query->where('jadwal_kbm.kelas_id', $kelasId);
+            }
+
+            $mapelOptions = $query->select('mata_pelajaran.id', 'mata_pelajaran.nama_mapel')
+                ->distinct()
+                ->orderBy('mata_pelajaran.nama_mapel')
+                ->get();
+
+            if ($mapelOptions->isEmpty()) {
+                $mapelDariNilaiQuery = DB::table('nilai_harian')
+                    ->join('mata_pelajaran', 'nilai_harian.mapel_id', '=', 'mata_pelajaran.id')
+                    ->whereNotNull('nilai_harian.nilai');
+
+                if ($tahunAjaranActive) {
+                    $mapelDariNilaiQuery->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id);
+                }
+
+                if ($semesterActive) {
+                    $mapelDariNilaiQuery->where('nilai_harian.semester_id', $semesterActive->id);
+                }
+
+                if ($kelasId) {
+                    $mapelDariNilaiQuery->where('nilai_harian.kelas_id', $kelasId);
+                }
+
+                $mapelOptions = $mapelDariNilaiQuery
+                    ->select('mata_pelajaran.id', 'mata_pelajaran.nama_mapel')
+                    ->distinct()
+                    ->orderBy('mata_pelajaran.nama_mapel')
+                    ->get();
+            }
         }
 
         if ($waliKelasOnly && !$mapelId && $mapelOptions->isNotEmpty()) {

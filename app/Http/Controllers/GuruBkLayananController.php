@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AbsensiKelas;
 use App\Models\Kelas;
 use App\Models\KepalaSekolah;
+use App\Models\JenisPelanggaran;
 use App\Models\LayananBk;
 use App\Models\LaporanSiswaGuru;
 use App\Models\PembinaanBk;
@@ -301,6 +302,213 @@ class GuruBkLayananController extends Controller
             'guruBkNip',
             'kepalaSekolahNama',
             'kepalaSekolahNip'
+        ));
+    }
+
+    public function kartuKendali(Kelas $kelas)
+    {
+        $this->authorizeKelasBinaan($kelas);
+
+        $selectedSiswaId = request('siswa_id');
+        $tanggalMulai = request('tanggal_mulai');
+        $tanggalSelesai = request('tanggal_selesai');
+
+        $siswaList = Siswa::where('kelas_id', $kelas->id)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nis', 'nisn']);
+
+        $pelanggaranQuery = DB::table('pelanggaran_siswa as ps')
+            ->join('siswa as s', 'ps.siswa_id', '=', 's.id')
+            ->where('ps.kelas_id', $kelas->id)
+            ->select(
+                'ps.id',
+                'ps.tanggal',
+                'ps.siswa_id',
+                DB::raw("COALESCE(s.nama, '-') as nama_siswa"),
+                DB::raw("COALESCE(s.nis, '-') as nis"),
+                DB::raw("COALESCE(s.nisn, '-') as nisn"),
+                DB::raw("COALESCE(ps.deskripsi_pelanggaran, '-') as deskripsi_pelanggaran"),
+                DB::raw('COALESCE(ps.poin_pelanggaran, 0) as poin_pelanggaran'),
+                DB::raw("COALESCE(ps.status_absensi, '-') as status_absensi")
+            );
+
+        if (!empty($selectedSiswaId)) {
+            $pelanggaranQuery->where('ps.siswa_id', $selectedSiswaId);
+        }
+
+        if (!empty($tanggalMulai)) {
+            $pelanggaranQuery->whereDate('ps.tanggal', '>=', $tanggalMulai);
+        }
+
+        if (!empty($tanggalSelesai)) {
+            $pelanggaranQuery->whereDate('ps.tanggal', '<=', $tanggalSelesai);
+        }
+
+        $kartuItems = $pelanggaranQuery
+            ->orderBy('ps.tanggal', 'asc')
+            ->orderBy('ps.id', 'asc')
+            ->get();
+
+        $jenisPelanggaranOptions = JenisPelanggaran::query()
+            ->where('is_active', true)
+            ->orderBy('nama')
+            ->get(['id', 'kode', 'nama', 'poin_default']);
+
+        $selectedSiswa = null;
+        if (!empty($selectedSiswaId)) {
+            $selectedSiswa = $siswaList->firstWhere('id', (int) $selectedSiswaId);
+        }
+
+        return view('guru_bk_layanan.kartu_kendali', compact(
+            'kelas',
+            'siswaList',
+            'selectedSiswaId',
+            'selectedSiswa',
+            'tanggalMulai',
+            'tanggalSelesai',
+            'kartuItems',
+            'jenisPelanggaranOptions'
+        ));
+    }
+
+    public function storeKartuKendali(Request $request, Kelas $kelas)
+    {
+        $this->authorizeKelasBinaan($kelas);
+
+        $validated = $request->validate([
+            'siswa_id' => 'required|exists:siswa,id',
+            'tanggal' => 'required|date',
+            'status_absensi' => 'required|in:hadir,terlambat,sakit,izin,alpa',
+            'jenis_pelanggaran_id' => 'required|exists:jenis_pelanggaran,id',
+            'deskripsi_pelanggaran' => 'nullable|string|max:1000',
+            'poin_pelanggaran' => 'nullable|integer|min:0|max:1000',
+            'terlambat_menit' => 'nullable|integer|min:0|max:1000',
+        ]);
+
+        $siswa = Siswa::where('id', $validated['siswa_id'])
+            ->where('kelas_id', $kelas->id)
+            ->first();
+
+        if (! $siswa) {
+            return back()->withInput()->withErrors([
+                'siswa_id' => 'Siswa yang dipilih bukan bagian dari kelas binaan ini.',
+            ]);
+        }
+
+        $tahunAjaranAktif = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semesterAktif = DB::table('semester')->where('is_active', 1)->first();
+
+        $statusMap = [
+            'alpa' => 'absen',
+            'terlambat' => 'terlambat',
+            'hadir' => 'hadir',
+            'izin' => 'izin',
+            'sakit' => 'sakit',
+        ];
+
+        $statusAbsensi = $statusMap[$validated['status_absensi']] ?? 'hadir';
+        $terlambatMenit = $statusAbsensi === 'terlambat'
+            ? (int) ($validated['terlambat_menit'] ?? 0)
+            : 0;
+
+        $jenisPelanggaran = JenisPelanggaran::find($validated['jenis_pelanggaran_id']);
+        $pointFinal = $validated['poin_pelanggaran'] ?? null;
+        if ($pointFinal === null && $jenisPelanggaran) {
+            $pointFinal = (int) $jenisPelanggaran->poin_default;
+        }
+        if ($pointFinal === null) {
+            $pointFinal = 0;
+        }
+
+        $deskripsiFinal = $jenisPelanggaran->nama ?? 'Pelanggaran';
+        if (!empty($validated['deskripsi_pelanggaran'])) {
+            $deskripsiFinal .= ' - ' . $validated['deskripsi_pelanggaran'];
+        }
+
+        DB::table('pelanggaran_siswa')->updateOrInsert(
+            [
+                'kelas_id' => $kelas->id,
+                'siswa_id' => $validated['siswa_id'],
+                'tanggal' => $validated['tanggal'],
+            ],
+            [
+                'guru_piket_id' => auth()->user()->guru_id,
+                'status_absensi' => $statusAbsensi,
+                'deskripsi_pelanggaran' => $deskripsiFinal,
+                'poin_pelanggaran' => (int) $pointFinal,
+                'terlambat_menit' => $terlambatMenit,
+                'waktu_input_pelanggaran' => now(),
+                'tahun_ajaran_id' => $tahunAjaranAktif->id ?? null,
+                'semester_id' => $semesterAktif->id ?? null,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return redirect()->route('guru_bk_layanan.kartu_kendali', [
+            'kelas' => $kelas->id,
+            'siswa_id' => $validated['siswa_id'],
+        ])->with('success', 'Data pelanggaran dan point berhasil disimpan.');
+    }
+
+    public function printKartuKendali(Kelas $kelas)
+    {
+        $this->authorizeKelasBinaan($kelas);
+
+        ['sekolah' => $sekolah, 'guruBkNama' => $guruBkNama, 'guruBkNip' => $guruBkNip, 'kepalaSekolahNama' => $kepalaSekolahNama, 'kepalaSekolahNip' => $kepalaSekolahNip] = $this->getPrintProfileData();
+
+        $selectedSiswaId = request('siswa_id');
+        $tanggalMulai = request('tanggal_mulai');
+        $tanggalSelesai = request('tanggal_selesai');
+
+        $selectedSiswa = null;
+        if (!empty($selectedSiswaId)) {
+            $selectedSiswa = Siswa::where('id', $selectedSiswaId)
+                ->where('kelas_id', $kelas->id)
+                ->first();
+        }
+
+        $pelanggaranQuery = DB::table('pelanggaran_siswa as ps')
+            ->where('ps.kelas_id', $kelas->id)
+            ->select(
+                'ps.id',
+                'ps.tanggal',
+                DB::raw("COALESCE(ps.deskripsi_pelanggaran, '-') as deskripsi_pelanggaran"),
+                DB::raw('COALESCE(ps.poin_pelanggaran, 0) as poin_pelanggaran'),
+                DB::raw("COALESCE(ps.status_absensi, '-') as status_absensi")
+            );
+
+        if (!empty($selectedSiswaId)) {
+            $pelanggaranQuery->where('ps.siswa_id', $selectedSiswaId);
+        }
+
+        if (!empty($tanggalMulai)) {
+            $pelanggaranQuery->whereDate('ps.tanggal', '>=', $tanggalMulai);
+        }
+
+        if (!empty($tanggalSelesai)) {
+            $pelanggaranQuery->whereDate('ps.tanggal', '<=', $tanggalSelesai);
+        }
+
+        $kartuItems = $pelanggaranQuery
+            ->orderBy('ps.tanggal', 'asc')
+            ->orderBy('ps.id', 'asc')
+            ->get();
+
+        $todayLabel = Carbon::now()->translatedFormat('d F Y');
+
+        return view('guru_bk_layanan.print_kartu_kendali', compact(
+            'kelas',
+            'sekolah',
+            'guruBkNama',
+            'guruBkNip',
+            'kepalaSekolahNama',
+            'kepalaSekolahNip',
+            'selectedSiswa',
+            'kartuItems',
+            'tanggalMulai',
+            'tanggalSelesai',
+            'todayLabel'
         ));
     }
 

@@ -50,6 +50,15 @@
             background: rgba(255,255,255,0.15) !important;
             color: #fff !important;
         }
+
+        /* Sidebar hide/unhide state */
+        body.sidebar-hidden .navbar-vertical {
+            display: none !important;
+        }
+
+        body.sidebar-hidden .page-wrapper {
+            margin-left: 0 !important;
+        }
         
         /* ===== RESPONSIVE DESIGN FOR MOBILE ===== */
         
@@ -588,6 +597,9 @@
                                 <a class="dropdown-item {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}" href="{{ route('kegiatan.index') }}">
                                     <i class="ti ti-activity me-2"></i>Kegiatan
                                 </a>
+                                <a class="dropdown-item {{ request()->routeIs('jenis_pelanggaran.*') ? 'active' : '' }}" href="{{ route('jenis_pelanggaran.index') }}">
+                                    <i class="ti ti-alert-octagon me-2"></i>Jenis Pelanggaran
+                                </a>
                                 <a class="dropdown-item {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}" href="{{ route('ekstrakurikuler.index') }}">
                                     <i class="ti ti-flag-3 me-2"></i>Ekstrakurikuler
                                 </a>
@@ -637,7 +649,14 @@
         <div class="page-wrapper">
             <!-- Minimal Header - User dropdown only -->
             <div class="container-xl pt-3 pb-2">
-                <div class="d-flex justify-content-end">
+                <div class="d-flex justify-content-between align-items-center">
+                    @if(request()->routeIs('home'))
+                    <button id="toggleSidebarBtn" type="button" class="btn btn-outline-secondary btn-sm" aria-label="Sembunyikan menu navbar" title="Sembunyikan/Tampilkan Navbar">
+                        <i id="toggleSidebarIcon" class="ti ti-layout-sidebar-left-collapse"></i>
+                    </button>
+                    @else
+                    <div></div>
+                    @endif
                     <!-- User Menu -->
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
@@ -746,6 +765,43 @@
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
     <!-- Mobile Navigation Enhancement -->
     <script src="{{ asset('js/mobile-nav.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const storageKey = 'simadis_sidebar_hidden';
+            const toggleButton = document.getElementById('toggleSidebarBtn');
+            const toggleIcon = document.getElementById('toggleSidebarIcon');
+
+            if (!toggleButton || !toggleIcon) {
+                return;
+            }
+
+            const applySidebarState = function (isHidden) {
+                document.body.classList.toggle('sidebar-hidden', isHidden);
+                toggleIcon.className = isHidden
+                    ? 'ti ti-layout-sidebar-left-expand'
+                    : 'ti ti-layout-sidebar-left-collapse';
+                toggleButton.setAttribute(
+                    'aria-label',
+                    isHidden ? 'Tampilkan menu navbar' : 'Sembunyikan menu navbar'
+                );
+                toggleButton.setAttribute(
+                    'title',
+                    isHidden ? 'Tampilkan Navbar' : 'Sembunyikan Navbar'
+                );
+            };
+
+            const isSavedHidden = localStorage.getItem(storageKey) === '1';
+            applySidebarState(isSavedHidden);
+
+            toggleButton.addEventListener('click', function () {
+                const isCurrentlyHidden = document.body.classList.contains('sidebar-hidden');
+                const nextState = !isCurrentlyHidden;
+
+                applySidebarState(nextState);
+                localStorage.setItem(storageKey, nextState ? '1' : '0');
+            });
+        });
+    </script>
     @stack('js')
 </body>
 </html>

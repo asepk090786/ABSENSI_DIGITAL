@@ -184,6 +184,145 @@ class AbsensiController extends Controller
         return Excel::download(new AbsensiBkMonitoringExport($rows), $filename);
     }
 
+    public function printLaporanSiswa(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin dan Kepala Sekolah.');
+        }
+
+        $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
+        $kelasId = $request->get('kelas_id');
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        $laporanQuery = DB::table('absensi_siswa as abs_s')
+            ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
+            ->leftJoin('siswa as s', 'abs_s.siswa_id', '=', 's.id')
+            ->leftJoin('kelas as k', 'abs_k.kelas_id', '=', 'k.id')
+            ->leftJoin('guru as g', 'abs_k.guru_id', '=', 'g.id')
+            ->whereDate('abs_k.tanggal', $selectedTanggal)
+            ->select(
+                'abs_k.tanggal',
+                'abs_k.kelas_id',
+                DB::raw("COALESCE(k.nama_kelas, '-') as nama_kelas"),
+                DB::raw("COALESCE(s.nama, '-') as nama_siswa"),
+                DB::raw("COALESCE(s.nis, '-') as nis"),
+                DB::raw("COALESCE(s.nisn, '-') as nisn"),
+                DB::raw("COALESCE(g.nama, '-') as nama_guru"),
+                'abs_s.status',
+                'abs_s.keterangan'
+            )
+            ->orderBy('k.nama_kelas')
+            ->orderBy('s.nama');
+
+        if ($kelasId) {
+            $laporanQuery->where('abs_k.kelas_id', $kelasId);
+        }
+
+        if ($tahun) {
+            $laporanQuery->where('abs_k.tahun_ajaran_id', $tahun->id);
+        }
+
+        if ($semester) {
+            $laporanQuery->where('abs_k.semester_id', $semester->id);
+        }
+
+        $laporanRows = $laporanQuery->get();
+
+        $summary = [
+            'hadir' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'hadir')->count(),
+            'terlambat' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['terlambat', 'telat'], true))->count(),
+            'izin' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['izin', 'ijin'], true))->count(),
+            'sakit' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'sakit')->count(),
+            'alpha' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true))->count(),
+            'total' => $laporanRows->count(),
+        ];
+
+        $sekolah = DB::table('sekolah')->first();
+        $kelasLabel = null;
+        if ($kelasId) {
+            $kelasLabel = DB::table('kelas')->where('id', $kelasId)->value('nama_kelas');
+        }
+
+        $pdf = \PDF::loadView('absensi.reports.siswa_pdf', compact(
+            'laporanRows',
+            'summary',
+            'selectedTanggal',
+            'kelasLabel',
+            'tahun',
+            'semester',
+            'sekolah'
+        ));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Laporan-Kehadiran-Siswa-' . $selectedTanggal . '.pdf');
+    }
+
+    public function printLaporanGuru(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin dan Kepala Sekolah.');
+        }
+
+        $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        $laporanQuery = DB::table('absensi_guru as ag')
+            ->join('guru as g', 'ag.guru_id', '=', 'g.id')
+            ->leftJoin('guru as pg', 'ag.pencatat_guru_id', '=', 'pg.id')
+            ->whereDate('ag.tanggal', $selectedTanggal)
+            ->select(
+                'ag.tanggal',
+                DB::raw("COALESCE(g.nama, '-') as nama_guru"),
+                DB::raw("COALESCE(g.nip, '-') as nip"),
+                'ag.status',
+                'ag.keterangan',
+                DB::raw("COALESCE(pg.nama, '-') as dicatat_oleh")
+            )
+            ->orderBy('g.nama');
+
+        if ($tahun) {
+            $laporanQuery->where(function ($q) use ($tahun) {
+                $q->where('ag.tahun_ajaran_id', $tahun->id)
+                    ->orWhereNull('ag.tahun_ajaran_id');
+            });
+        }
+
+        if ($semester) {
+            $laporanQuery->where(function ($q) use ($semester) {
+                $q->where('ag.semester_id', $semester->id)
+                    ->orWhereNull('ag.semester_id');
+            });
+        }
+
+        $laporanRows = $laporanQuery->get();
+
+        $summary = [
+            'hadir' => $laporanRows->where('status', 'hadir')->count(),
+            'izin' => $laporanRows->where('status', 'izin')->count(),
+            'sakit' => $laporanRows->where('status', 'sakit')->count(),
+            'tidak_hadir' => $laporanRows->where('status', 'tidak_hadir')->count(),
+            'total' => $laporanRows->count(),
+        ];
+
+        $sekolah = DB::table('sekolah')->first();
+
+        $pdf = \PDF::loadView('absensi.reports.guru_pdf', compact(
+            'laporanRows',
+            'summary',
+            'selectedTanggal',
+            'tahun',
+            'semester',
+            'sekolah'
+        ));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream('Laporan-Kehadiran-Guru-' . $selectedTanggal . '.pdf');
+    }
+
     public function create(Request $request)
     {
         $tahunAjaran = TahunAjaran::where('is_active', 1)->first();

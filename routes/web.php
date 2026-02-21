@@ -82,6 +82,8 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-deactivate', ['App\Http\Controllers\KelasController', 'bulkDeactivateStudent'])->name('kelas.siswa.bulk-deactivate');
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
+    Route::get('absensi/laporan-siswa/print', ['App\Http\Controllers\AbsensiController', 'printLaporanSiswa'])->name('absensi.laporan-siswa.print');
+    Route::get('absensi/laporan-guru/print', ['App\Http\Controllers\AbsensiController', 'printLaporanGuru'])->name('absensi.laporan-guru.print');
     Route::get('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'index'])->name('piket.pelanggaran.index');
     Route::post('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'store'])->name('piket.pelanggaran.store');
     Route::get('absensi/bk-monitoring/export', ['App\Http\Controllers\AbsensiController', 'exportBkMonitoring'])->name('absensi.bk-monitoring.export');
@@ -169,6 +171,10 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('agenda_guru', AgendaGuruController::class)->only(['index','create','store','edit','update','destroy']);
     
     Route::resource('jenis_kegiatan', JenisKegiatanController::class)->middleware('auth');
+    Route::get('jenis_pelanggaran/export', ['App\Http\Controllers\JenisPelanggaranController', 'export'])->name('jenis_pelanggaran.export');
+    Route::get('jenis_pelanggaran/template', ['App\Http\Controllers\JenisPelanggaranController', 'template'])->name('jenis_pelanggaran.template');
+    Route::post('jenis_pelanggaran/import', ['App\Http\Controllers\JenisPelanggaranController', 'import'])->name('jenis_pelanggaran.import');
+    Route::resource('jenis_pelanggaran', 'App\Http\Controllers\JenisPelanggaranController')->except(['show']);
 
     // Maintenance update routes
     Route::get('maintenance/update', [UpdateController::class, 'index'])->name('maintenance.update.index');
@@ -190,6 +196,9 @@ Route::middleware(['auth'])->group(function(){
         Route::post('kelas-binaan/{kelas}/pembinaan', [App\Http\Controllers\GuruBkLayananController::class, 'storePembinaan'])->name('pembinaan.store');
         Route::get('kelas-binaan/{kelas}/pembinaan/rekap-absensi', [App\Http\Controllers\GuruBkLayananController::class, 'rekapAbsensiSiswa'])->name('pembinaan.rekap_absensi');
         Route::get('kelas-binaan/{kelas}/pembinaan/print', [App\Http\Controllers\GuruBkLayananController::class, 'printPembinaan'])->name('pembinaan.print');
+        Route::get('kelas-binaan/{kelas}/kartu-kendali', [App\Http\Controllers\GuruBkLayananController::class, 'kartuKendali'])->name('kartu_kendali');
+        Route::post('kelas-binaan/{kelas}/kartu-kendali', [App\Http\Controllers\GuruBkLayananController::class, 'storeKartuKendali'])->name('kartu_kendali.store');
+        Route::get('kelas-binaan/{kelas}/kartu-kendali/print', [App\Http\Controllers\GuruBkLayananController::class, 'printKartuKendali'])->name('kartu_kendali.print');
         Route::get('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'tindakLanjut'])->name('tindak_lanjut');
         Route::post('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'storeTindakLanjut'])->name('tindak_lanjut.store');
         Route::get('kelas-binaan/{kelas}/tindak-lanjut/{tindakLanjut}/print', [App\Http\Controllers\GuruBkLayananController::class, 'printTindakLanjut'])->name('tindak_lanjut.print');
