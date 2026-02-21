@@ -645,6 +645,59 @@ class GuruBkLayananController extends Controller
         ])->with('success', 'Rencana tindak lanjut berhasil disimpan.');
     }
 
+    public function printTindakLanjut(Kelas $kelas, TindakLanjutBk $tindakLanjut)
+    {
+        $this->authorizeKelasBinaan($kelas);
+
+        if ((int) $tindakLanjut->kelas_id !== (int) $kelas->id) {
+            abort(404, 'Data tindak lanjut tidak ditemukan pada kelas ini.');
+        }
+
+        ['sekolah' => $sekolah, 'guruBkNama' => $guruBkNama, 'guruBkNip' => $guruBkNip, 'kepalaSekolahNama' => $kepalaSekolahNama, 'kepalaSekolahNip' => $kepalaSekolahNip] = $this->getPrintProfileData();
+
+        $todayLabel = Carbon::now()->translatedFormat('d F Y');
+
+        return view('guru_bk_layanan.print_tindak_lanjut', compact(
+            'kelas',
+            'tindakLanjut',
+            'sekolah',
+            'todayLabel',
+            'guruBkNama',
+            'guruBkNip',
+            'kepalaSekolahNama',
+            'kepalaSekolahNip'
+        ));
+    }
+
+    public function pdfTindakLanjut(Kelas $kelas, TindakLanjutBk $tindakLanjut)
+    {
+        $this->authorizeKelasBinaan($kelas);
+
+        if ((int) $tindakLanjut->kelas_id !== (int) $kelas->id) {
+            abort(404, 'Data tindak lanjut tidak ditemukan pada kelas ini.');
+        }
+
+        ['sekolah' => $sekolah, 'guruBkNama' => $guruBkNama, 'guruBkNip' => $guruBkNip, 'kepalaSekolahNama' => $kepalaSekolahNama, 'kepalaSekolahNip' => $kepalaSekolahNip] = $this->getPrintProfileData();
+
+        $todayLabel = Carbon::now()->translatedFormat('d F Y');
+
+        $pdf = \PDF::loadView('guru_bk_layanan.print_tindak_lanjut', compact(
+            'kelas',
+            'tindakLanjut',
+            'sekolah',
+            'todayLabel',
+            'guruBkNama',
+            'guruBkNip',
+            'kepalaSekolahNama',
+            'kepalaSekolahNip'
+        ))->setPaper('a4', 'portrait');
+
+        $safeNamaSiswa = preg_replace('/[^A-Za-z0-9\-_]/', '_', (string) $tindakLanjut->nama_siswa);
+        $filename = 'Rencana_Tindak_Lanjut_' . ($safeNamaSiswa ?: 'Siswa') . '_' . now()->format('Ymd_His') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     private function getPrintProfileData(): array
     {
         $sekolah = Sekolah::first();

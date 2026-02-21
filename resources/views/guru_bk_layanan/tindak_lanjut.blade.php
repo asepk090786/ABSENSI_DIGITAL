@@ -226,6 +226,7 @@
                                         <th>Waktu</th>
                                         <th>Penyusun</th>
                                         <th>Rencana</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -262,6 +263,16 @@
                                                         </table>
                                                     </div>
                                                 </details>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    <a href="{{ route('guru_bk_layanan.tindak_lanjut.print', ['kelas' => $kelas->id, 'tindakLanjut' => $item->id]) }}" target="_blank" class="btn btn-sm btn-dark">
+                                                        <i class="ti ti-printer me-1"></i>Print
+                                                    </a>
+                                                    <a href="{{ route('guru_bk_layanan.tindak_lanjut.pdf', ['kelas' => $kelas->id, 'tindakLanjut' => $item->id]) }}" class="btn btn-sm btn-primary">
+                                                        <i class="ti ti-file-type-pdf me-1"></i>PDF
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach

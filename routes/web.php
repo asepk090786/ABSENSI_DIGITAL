@@ -192,6 +192,8 @@ Route::middleware(['auth'])->group(function(){
         Route::get('kelas-binaan/{kelas}/pembinaan/print', [App\Http\Controllers\GuruBkLayananController::class, 'printPembinaan'])->name('pembinaan.print');
         Route::get('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'tindakLanjut'])->name('tindak_lanjut');
         Route::post('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'storeTindakLanjut'])->name('tindak_lanjut.store');
+        Route::get('kelas-binaan/{kelas}/tindak-lanjut/{tindakLanjut}/print', [App\Http\Controllers\GuruBkLayananController::class, 'printTindakLanjut'])->name('tindak_lanjut.print');
+        Route::get('kelas-binaan/{kelas}/tindak-lanjut/{tindakLanjut}/pdf', [App\Http\Controllers\GuruBkLayananController::class, 'pdfTindakLanjut'])->name('tindak_lanjut.pdf');
     });
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
     Route::resource('pembina', 'App\Http\Controllers\PembinaController');
