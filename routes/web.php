@@ -191,6 +191,7 @@ Route::middleware(['auth'])->group(function(){
         Route::get('kelas-binaan/{kelas}/pembinaan/rekap-absensi', [App\Http\Controllers\GuruBkLayananController::class, 'rekapAbsensiSiswa'])->name('pembinaan.rekap_absensi');
         Route::get('kelas-binaan/{kelas}/pembinaan/print', [App\Http\Controllers\GuruBkLayananController::class, 'printPembinaan'])->name('pembinaan.print');
         Route::get('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'tindakLanjut'])->name('tindak_lanjut');
+        Route::post('kelas-binaan/{kelas}/tindak-lanjut', [App\Http\Controllers\GuruBkLayananController::class, 'storeTindakLanjut'])->name('tindak_lanjut.store');
     });
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
     Route::resource('pembina', 'App\Http\Controllers\PembinaController');

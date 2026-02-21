@@ -10,6 +10,7 @@ use App\Models\LaporanSiswaGuru;
 use App\Models\PembinaanBk;
 use App\Models\Sekolah;
 use App\Models\Siswa;
+use App\Models\TindakLanjutBk;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -409,7 +410,239 @@ class GuruBkLayananController extends Controller
     {
         $this->authorizeKelasBinaan($kelas);
 
-        return view('guru_bk_layanan.tindak_lanjut', compact('kelas'));
+        $user = auth()->user();
+        $guruBkNama = $user->guru->nama ?? $user->name ?? '-';
+        $waliKelasNama = $kelas->waliKelas->nama ?? '-';
+
+        $kelasBinaan = Kelas::query()
+            ->where('guru_bk_id', $user->guru_id)
+            ->orderBy('nama_kelas')
+            ->get(['id', 'nama_kelas']);
+
+        $selectedSiswaId = (int) (old('siswa_id') ?: request('siswa_id'));
+
+        $siswaList = Siswa::query()
+            ->where('kelas_id', $kelas->id)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nis', 'nisn']);
+
+        $siswaIds = $siswaList->pluck('id')->all();
+
+        $layananBySiswa = collect();
+        $pelanggaranBySiswa = collect();
+        $absensiBySiswa = collect();
+        $laporanGuruBySiswa = [];
+        $laporanWaliBySiswa = [];
+
+        $tahunAjaranAktif = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semesterAktif = DB::table('semester')->where('is_active', 1)->first();
+
+        if (! empty($siswaIds)) {
+            $layananBySiswa = DB::table('layanan_bk')
+                ->where('kelas_id', $kelas->id)
+                ->whereIn('siswa_id', $siswaIds)
+                ->select('siswa_id', DB::raw('COUNT(id) as total_layanan'))
+                ->groupBy('siswa_id')
+                ->get()
+                ->keyBy('siswa_id');
+
+            $pelanggaranBySiswa = DB::table('pelanggaran_siswa')
+                ->where('kelas_id', $kelas->id)
+                ->whereIn('siswa_id', $siswaIds)
+                ->when($tahunAjaranAktif, function ($query) use ($tahunAjaranAktif) {
+                    $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+                })
+                ->when($semesterAktif, function ($query) use ($semesterAktif) {
+                    $query->where('semester_id', $semesterAktif->id);
+                })
+                ->select(
+                    'siswa_id',
+                    DB::raw('COUNT(id) as total_pelanggaran'),
+                    DB::raw("SUM(CASE WHEN LOWER(status_absensi) IN ('terlambat', 'telat') THEN 1 ELSE 0 END) as total_terlambat"),
+                    DB::raw("SUM(CASE WHEN LOWER(status_absensi) IN ('terlambat', 'telat') THEN terlambat_menit ELSE 0 END) as total_menit_terlambat")
+                )
+                ->groupBy('siswa_id')
+                ->get()
+                ->keyBy('siswa_id');
+
+            $absensiBySiswa = DB::table('absensi_siswa as asi')
+                ->join('absensi_kelas as ak', 'ak.id', '=', 'asi.absensi_kelas_id')
+                ->where('ak.kelas_id', $kelas->id)
+                ->whereIn('asi.siswa_id', $siswaIds)
+                ->when($tahunAjaranAktif, function ($query) use ($tahunAjaranAktif) {
+                    $query->where('ak.tahun_ajaran_id', $tahunAjaranAktif->id);
+                })
+                ->when($semesterAktif, function ($query) use ($semesterAktif) {
+                    $query->where('ak.semester_id', $semesterAktif->id);
+                })
+                ->select(
+                    'asi.siswa_id',
+                    DB::raw("SUM(CASE WHEN LOWER(asi.status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
+                    DB::raw("SUM(CASE WHEN LOWER(asi.status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
+                    DB::raw("SUM(CASE WHEN LOWER(asi.status) IN ('izin', 'ijin') THEN 1 ELSE 0 END) as izin"),
+                    DB::raw("SUM(CASE WHEN LOWER(asi.status) IN ('alpa', 'alpha', 'alfa', 'absen') THEN 1 ELSE 0 END) as alpa"),
+                    DB::raw("SUM(CASE WHEN LOWER(asi.status) IN ('terlambat', 'telat') THEN 1 ELSE 0 END) as terlambat")
+                )
+                ->groupBy('asi.siswa_id')
+                ->get()
+                ->keyBy('siswa_id');
+
+            $laporanRows = DB::table('laporan_siswa_guru')
+                ->where('kelas_id', $kelas->id)
+                ->whereIn('siswa_id', $siswaIds)
+                ->orderByDesc('created_at')
+                ->get(['siswa_id', 'absensi_kelas_id', 'deskripsi_permasalahan', 'created_at']);
+
+            foreach ($laporanRows as $row) {
+                if (! isset($laporanGuruBySiswa[$row->siswa_id]) && ! empty($row->absensi_kelas_id)) {
+                    $laporanGuruBySiswa[$row->siswa_id] = [
+                        'tanggal' => Carbon::parse($row->created_at)->format('d/m/Y'),
+                        'deskripsi' => (string) $row->deskripsi_permasalahan,
+                    ];
+                }
+
+                if (! isset($laporanWaliBySiswa[$row->siswa_id]) && empty($row->absensi_kelas_id)) {
+                    $laporanWaliBySiswa[$row->siswa_id] = [
+                        'tanggal' => Carbon::parse($row->created_at)->format('d/m/Y'),
+                        'deskripsi' => (string) $row->deskripsi_permasalahan,
+                    ];
+                }
+
+                if (
+                    isset($laporanGuruBySiswa[$row->siswa_id])
+                    && isset($laporanWaliBySiswa[$row->siswa_id])
+                ) {
+                    continue;
+                }
+            }
+        }
+
+        $ringkasanSiswa = $siswaList->map(function ($siswa) use ($layananBySiswa, $pelanggaranBySiswa, $absensiBySiswa, $laporanGuruBySiswa, $laporanWaliBySiswa) {
+            $layanan = $layananBySiswa->get($siswa->id);
+            $pelanggaran = $pelanggaranBySiswa->get($siswa->id);
+            $absensi = $absensiBySiswa->get($siswa->id);
+            $lapGuru = $laporanGuruBySiswa[$siswa->id] ?? null;
+            $lapWali = $laporanWaliBySiswa[$siswa->id] ?? null;
+
+            return (object) [
+                'id' => $siswa->id,
+                'nama' => $siswa->nama,
+                'nis' => $siswa->nis,
+                'nisn' => $siswa->nisn,
+                'total_layanan' => (int) ($layanan->total_layanan ?? 0),
+                'total_pelanggaran' => (int) ($pelanggaran->total_pelanggaran ?? 0),
+                'total_terlambat' => (int) ($pelanggaran->total_terlambat ?? 0),
+                'total_menit_terlambat' => (int) ($pelanggaran->total_menit_terlambat ?? 0),
+                'hadir' => (int) ($absensi->hadir ?? 0),
+                'sakit' => (int) ($absensi->sakit ?? 0),
+                'izin' => (int) ($absensi->izin ?? 0),
+                'alpa' => (int) ($absensi->alpa ?? 0),
+                'terlambat_absensi' => (int) ($absensi->terlambat ?? 0),
+                'laporan_guru' => $lapGuru,
+                'laporan_wali' => $lapWali,
+            ];
+        });
+
+        $selectedSiswa = $ringkasanSiswa->firstWhere('id', $selectedSiswaId);
+        if (! $selectedSiswa && $ringkasanSiswa->isNotEmpty()) {
+            $selectedSiswa = $ringkasanSiswa->first();
+            $selectedSiswaId = $selectedSiswa->id;
+        }
+
+        $tindakLanjutItems = TindakLanjutBk::query()
+            ->where('kelas_id', $kelas->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('guru_bk_layanan.tindak_lanjut', compact(
+            'kelas',
+            'kelasBinaan',
+            'waliKelasNama',
+            'guruBkNama',
+            'ringkasanSiswa',
+            'selectedSiswaId',
+            'selectedSiswa',
+            'tindakLanjutItems'
+        ));
+    }
+
+    public function storeTindakLanjut(Request $request, Kelas $kelas)
+    {
+        $this->authorizeKelasBinaan($kelas);
+
+        $validated = $request->validate([
+            'siswa_id' => 'required|exists:siswa,id',
+            'waktu' => 'required|string|max:255',
+            'rencana_kegiatan' => 'required|array|min:1',
+            'rencana_kegiatan.*' => 'nullable|string|max:1000',
+            'waktu_tempat' => 'required|array|min:1',
+            'waktu_tempat.*' => 'nullable|string|max:1000',
+            'pihak_terkait' => 'required|array|min:1',
+            'pihak_terkait.*' => 'nullable|string|max:500',
+        ]);
+
+        $siswa = Siswa::query()
+            ->where('id', $validated['siswa_id'])
+            ->where('kelas_id', $kelas->id)
+            ->first();
+
+        if (! $siswa) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['siswa_id' => 'Siswa tidak berada di kelas binaan ini.']);
+        }
+
+        $rencanaItems = [];
+        $kegiatanList = $validated['rencana_kegiatan'] ?? [];
+        $waktuTempatList = $validated['waktu_tempat'] ?? [];
+        $pihakTerkaitList = $validated['pihak_terkait'] ?? [];
+        $totalBaris = max(count($kegiatanList), count($waktuTempatList), count($pihakTerkaitList));
+
+        for ($index = 0; $index < $totalBaris; $index++) {
+            $kegiatan = trim((string) ($kegiatanList[$index] ?? ''));
+            $waktuTempat = trim((string) ($waktuTempatList[$index] ?? ''));
+            $pihakTerkait = trim((string) ($pihakTerkaitList[$index] ?? ''));
+
+            if ($kegiatan === '' && $waktuTempat === '' && $pihakTerkait === '') {
+                continue;
+            }
+
+            $rencanaItems[] = [
+                'no' => count($rencanaItems) + 1,
+                'rencana_kegiatan' => $kegiatan,
+                'waktu_tempat' => $waktuTempat,
+                'pihak_terkait' => $pihakTerkait,
+            ];
+        }
+
+        if (empty($rencanaItems)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['rencana_kegiatan' => 'Isi minimal satu rencana kegiatan tindak lanjut.']);
+        }
+
+        $user = auth()->user();
+        $guruBkNama = $user->guru->nama ?? $user->name ?? '-';
+
+        TindakLanjutBk::create([
+            'kelas_id' => $kelas->id,
+            'siswa_id' => $siswa->id,
+            'guru_bk_id' => $user->guru_id,
+            'nama_siswa' => $siswa->nama,
+            'nama_kelas' => $kelas->nama_kelas,
+            'nis' => $siswa->nis,
+            'nisn' => $siswa->nisn,
+            'nama_wali_kelas' => $kelas->waliKelas->nama ?? null,
+            'nama_guru_bk' => $guruBkNama,
+            'waktu' => $validated['waktu'],
+            'nama_penyusun' => $guruBkNama,
+            'rencana_items' => $rencanaItems,
+        ]);
+
+        return redirect()->route('guru_bk_layanan.tindak_lanjut', [
+            'kelas' => $kelas->id,
+            'siswa_id' => $siswa->id,
+        ])->with('success', 'Rencana tindak lanjut berhasil disimpan.');
     }
 
     private function getPrintProfileData(): array
