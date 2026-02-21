@@ -152,6 +152,11 @@ class WaliKelasController extends Controller
             return redirect()->route('home')->with('error', 'Anda tidak ditugaskan sebagai wali kelas.');
         }
 
+        $siswaList = DB::table('siswa')
+            ->where('kelas_id', $kelasBinaan->id)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nis']);
+
         $laporanGuru = DB::table('laporan_siswa_guru as lsg')
             ->leftJoin('siswa as s', 's.id', '=', 'lsg.siswa_id')
             ->leftJoin('guru as gp', 'gp.id', '=', 'lsg.guru_pelapor_id')
@@ -160,12 +165,60 @@ class WaliKelasController extends Controller
                 'lsg.*',
                 's.nama as nama_siswa',
                 's.nis as nis_siswa',
-                'gp.nama as nama_guru_pelapor'
+                'gp.nama as nama_guru_pelapor',
+                DB::raw('CASE WHEN lsg.absensi_kelas_id IS NULL THEN 1 ELSE 0 END as is_laporan_wali')
             )
             ->orderBy('lsg.created_at', 'desc')
             ->get();
 
-        return view('wali_kelas.laporan_guru', compact('kelasBinaan', 'laporanGuru', 'guru'));
+        return view('wali_kelas.laporan_guru', compact('kelasBinaan', 'laporanGuru', 'guru', 'siswaList'));
+    }
+
+    public function storeLaporanGuru(Request $request)
+    {
+        $user = Auth::user();
+        $guru = $user->guru;
+
+        if (!$guru) {
+            return redirect()->route('home')->with('error', 'Anda tidak terdaftar sebagai guru.');
+        }
+
+        $kelasBinaan = DB::table('kelas')
+            ->where('wali_kelas_id', $guru->id)
+            ->first();
+
+        if (!$kelasBinaan) {
+            return redirect()->route('home')->with('error', 'Anda tidak ditugaskan sebagai wali kelas.');
+        }
+
+        $validated = $request->validate([
+            'siswa_id' => 'required|exists:siswa,id',
+            'deskripsi_permasalahan' => 'required|string|min:5',
+        ]);
+
+        $siswa = DB::table('siswa')
+            ->where('id', $validated['siswa_id'])
+            ->where('kelas_id', $kelasBinaan->id)
+            ->first();
+
+        if (!$siswa) {
+            return redirect()->back()->withErrors(['siswa_id' => 'Siswa tidak berada di kelas binaan Anda.'])->withInput();
+        }
+
+        DB::table('laporan_siswa_guru')->insert([
+            'absensi_kelas_id' => null,
+            'kelas_id' => $kelasBinaan->id,
+            'siswa_id' => $validated['siswa_id'],
+            'guru_pelapor_id' => $guru->id,
+            'wali_kelas_id' => $kelasBinaan->wali_kelas_id,
+            'guru_bk_id' => $kelasBinaan->guru_bk_id,
+            'deskripsi_permasalahan' => $validated['deskripsi_permasalahan'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->route('wali_kelas.laporan_guru')
+            ->with('success', 'Laporan wali kelas berhasil dikirim ke pembinaan Guru BK.');
     }
     
     /**

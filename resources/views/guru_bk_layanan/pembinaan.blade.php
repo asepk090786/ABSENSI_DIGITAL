@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const buktiAbsensi = document.getElementById('bukti_dukung_absensi');
     const waliKelas = document.getElementById('wali_kelas_nama');
     const laporanGuru = document.getElementById('laporan_guru');
+    const laporanWaliKelas = document.querySelector('textarea[name="laporan_wali_kelas"]');
     const openPrintBtn = document.getElementById('btnOpenPrintPreviewPembinaan');
     const printFrame = document.getElementById('printPreviewFramePembinaan');
     const printFromPreviewBtn = document.getElementById('btnPrintFromPreviewPembinaan');
@@ -281,6 +282,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 if (laporanGuru && !laporanGuru.value) {
                     laporanGuru.value = data.laporan_guru ?? '';
+                }
+                if (laporanWaliKelas && !laporanWaliKelas.value) {
+                    laporanWaliKelas.value = data.laporan_wali_kelas ?? '';
                 }
             })
             .catch(() => {

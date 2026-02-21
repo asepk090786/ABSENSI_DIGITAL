@@ -32,6 +32,7 @@ Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(fu
     Route::get('/siswa', [App\Http\Controllers\WaliKelasController::class, 'siswa'])->name('siswa');
     Route::get('/absensi', [App\Http\Controllers\WaliKelasController::class, 'absensi'])->name('absensi');
     Route::get('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'laporanGuru'])->name('laporan_guru');
+    Route::post('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'storeLaporanGuru'])->name('laporan_guru.store');
     Route::get('/nilai', [App\Http\Controllers\WaliKelasController::class, 'nilai'])->name('nilai');
     Route::get('/nilai/{siswa}', [App\Http\Controllers\WaliKelasController::class, 'nilaiSiswa'])->name('nilai_siswa');
 });

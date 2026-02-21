@@ -310,6 +310,7 @@ class GuruBkLayananController extends Controller
             'terlambat' => $rekap['terlambat'],
             'bukti_dukung_absensi' => $this->buildAbsensiSummaryText($rekap),
             'laporan_guru' => $this->buildGuruReportSummaryText($kelas->id, (int) $siswa->id),
+            'laporan_wali_kelas' => $this->buildWaliKelasReportSummaryText($kelas->id, (int) $siswa->id),
             'wali_kelas_nama' => $kelas->waliKelas->nama ?? '-',
         ]);
     }
@@ -373,7 +374,9 @@ class GuruBkLayananController extends Controller
             'laporan_guru' => !empty($validated['laporan_guru'])
                 ? $validated['laporan_guru']
                 : $this->buildGuruReportSummaryText($kelas->id, (int) $siswa->id),
-            'laporan_wali_kelas' => $validated['laporan_wali_kelas'] ?? null,
+            'laporan_wali_kelas' => !empty($validated['laporan_wali_kelas'])
+                ? $validated['laporan_wali_kelas']
+                : $this->buildWaliKelasReportSummaryText($kelas->id, (int) $siswa->id),
             'bukti_dukung_files' => $uploadedPaths,
         ]);
 
@@ -462,6 +465,7 @@ class GuruBkLayananController extends Controller
             ->with('guruPelapor')
             ->where('kelas_id', $kelasId)
             ->where('siswa_id', $siswaId)
+            ->whereNotNull('absensi_kelas_id')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -474,6 +478,28 @@ class GuruBkLayananController extends Controller
             $tanggal = optional($item->created_at)->format('d/m/Y');
             $guruNama = $item->guruPelapor->nama ?? 'Guru';
             return ($index + 1) . '. [' . $tanggal . '] ' . $guruNama . ': ' . $item->deskripsi_permasalahan;
+        })->implode("\n");
+    }
+
+    private function buildWaliKelasReportSummaryText(int $kelasId, int $siswaId): ?string
+    {
+        $laporan = LaporanSiswaGuru::query()
+            ->with('guruPelapor')
+            ->where('kelas_id', $kelasId)
+            ->where('siswa_id', $siswaId)
+            ->whereNull('absensi_kelas_id')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        if ($laporan->isEmpty()) {
+            return null;
+        }
+
+        return $laporan->map(function ($item, $index) {
+            $tanggal = optional($item->created_at)->format('d/m/Y');
+            $waliNama = $item->guruPelapor->nama ?? 'Wali Kelas';
+            return ($index + 1) . '. [' . $tanggal . '] ' . $waliNama . ': ' . $item->deskripsi_permasalahan;
         })->implode("\n");
     }
 }
