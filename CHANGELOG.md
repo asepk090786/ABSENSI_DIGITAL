@@ -2,6 +2,24 @@
 
 Semua perubahan penting pada proyek ini dicatat di file ini.
 
+## v2026.02.20-wali-kelas-laporan-ke-bk - 2026-02-20
+
+### Added
+- Form **input laporan wali kelas** pada menu `Wali Kelas > Laporan Guru` untuk mengirim kasus siswa langsung ke alur tindak lanjut Guru BK.
+- Route baru `POST /wali-kelas/laporan-guru` (`wali_kelas.laporan_guru.store`) untuk penyimpanan laporan wali kelas.
+- Penanda sumber laporan di halaman wali kelas (`Wali Kelas` vs `Guru Mapel`) agar riwayat laporan lebih jelas.
+
+### Changed
+- Halaman **Pembinaan BK** kini otomatis mengisi kolom `Laporan Wali Kelas` saat siswa dipilih.
+- Ringkasan laporan pada pembinaan BK dipisahkan antara `Laporan Guru` (dari absensi) dan `Laporan Wali Kelas` (input langsung wali kelas).
+
+### Files Updated
+- `app/Http/Controllers/WaliKelasController.php`
+- `app/Http/Controllers/GuruBkLayananController.php`
+- `resources/views/wali_kelas/laporan_guru.blade.php`
+- `resources/views/guru_bk_layanan/pembinaan.blade.php`
+- `routes/web.php`
+
 ## v2026.02.20-bk-layanan-pembinaan-laporan - 2026-02-20
 
 ### Added
