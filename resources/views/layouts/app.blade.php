@@ -401,7 +401,7 @@
                         @if($isGuruPiket)
                         <!-- Piket KBM (Guru Piket only) -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->is('jadwal-kbm*') || request()->routeIs('agenda_guru.*') || request()->routeIs('absensi.*') ? 'active' : '' }}" href="#navbar-piket" data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle {{ request()->is('jadwal-kbm*') || request()->routeIs('agenda_guru.*') || request()->routeIs('absensi.*') || request()->routeIs('piket.pelanggaran.*') ? 'active' : '' }}" href="#navbar-piket" data-bs-toggle="dropdown" role="button" aria-expanded="false">
                                 <span class="nav-link-icon d-md-none d-lg-inline-block">
                                     <i class="ti ti-shield-check"></i>
                                 </span>
@@ -416,6 +416,9 @@
                                 </a>
                                 <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
                                     <i class="ti ti-clipboard-check me-2"></i>Absensi Siswa
+                                </a>
+                                <a class="dropdown-item {{ request()->routeIs('piket.pelanggaran.*') ? 'active' : '' }}" href="{{ route('piket.pelanggaran.index') }}">
+                                    <i class="ti ti-alert-triangle me-2"></i>Pelanggaran
                                 </a>
                             </div>
                         </li>

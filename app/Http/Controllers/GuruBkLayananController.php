@@ -216,6 +216,26 @@ class GuruBkLayananController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $startMonth = now()->startOfMonth()->toDateString();
+        $endMonth = now()->endOfMonth()->toDateString();
+
+        $akumulasiTerlambatBulanan = DB::table('pelanggaran_siswa as ps')
+            ->join('siswa as s', 's.id', '=', 'ps.siswa_id')
+            ->where('ps.kelas_id', $kelas->id)
+            ->whereDate('ps.tanggal', '>=', $startMonth)
+            ->whereDate('ps.tanggal', '<=', $endMonth)
+            ->whereIn(DB::raw('LOWER(ps.status_absensi)'), ['terlambat', 'telat'])
+            ->select(
+                'ps.siswa_id',
+                's.nama as nama_siswa',
+                DB::raw('COUNT(ps.id) as total_terlambat'),
+                DB::raw('SUM(ps.terlambat_menit) as total_menit_terlambat')
+            )
+            ->groupBy('ps.siswa_id', 's.nama')
+            ->orderByDesc('total_terlambat')
+            ->orderByDesc('total_menit_terlambat')
+            ->get();
+
         $waliKelasNama = $kelas->waliKelas->nama ?? '-';
 
         return view('guru_bk_layanan.pembinaan', compact(
@@ -225,7 +245,8 @@ class GuruBkLayananController extends Controller
             'waliKelasNama',
             'selectedSiswaId',
             'tanggalMulai',
-            'tanggalSelesai'
+            'tanggalSelesai',
+            'akumulasiTerlambatBulanan'
         ));
     }
 

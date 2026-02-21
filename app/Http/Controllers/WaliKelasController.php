@@ -116,6 +116,27 @@ class WaliKelasController extends Controller
             ->orderBy('ak.tanggal', 'desc')
             ->get();
 
+        $startMonth = now()->startOfMonth()->toDateString();
+        $endMonth = now()->endOfMonth()->toDateString();
+
+        $akumulasiTerlambatBulanan = DB::table('pelanggaran_siswa as ps')
+            ->join('siswa as s', 's.id', '=', 'ps.siswa_id')
+            ->where('ps.kelas_id', $kelasBinaan->id)
+            ->whereDate('ps.tanggal', '>=', $startMonth)
+            ->whereDate('ps.tanggal', '<=', $endMonth)
+            ->whereIn(DB::raw('LOWER(ps.status_absensi)'), ['terlambat', 'telat'])
+            ->select(
+                'ps.siswa_id',
+                's.nama as nama_siswa',
+                's.nis as nis_siswa',
+                DB::raw('COUNT(ps.id) as total_terlambat'),
+                DB::raw('SUM(ps.terlambat_menit) as total_menit_terlambat')
+            )
+            ->groupBy('ps.siswa_id', 's.nama', 's.nis')
+            ->orderByDesc('total_terlambat')
+            ->orderByDesc('total_menit_terlambat')
+            ->get();
+
         $rekapCounts = collect();
         if ($absensi->isNotEmpty()) {
             $rekapCounts = DB::table('absensi_siswa')
@@ -132,7 +153,7 @@ class WaliKelasController extends Controller
                 ->keyBy('absensi_kelas_id');
         }
         
-        return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester'));
+        return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester', 'akumulasiTerlambatBulanan'));
     }
 
     public function laporanGuru()

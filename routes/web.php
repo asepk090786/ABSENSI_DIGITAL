@@ -82,6 +82,8 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-deactivate', ['App\Http\Controllers\KelasController', 'bulkDeactivateStudent'])->name('kelas.siswa.bulk-deactivate');
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
+    Route::get('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'index'])->name('piket.pelanggaran.index');
+    Route::post('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'store'])->name('piket.pelanggaran.store');
     Route::get('absensi/bk-monitoring/export', ['App\Http\Controllers\AbsensiController', 'exportBkMonitoring'])->name('absensi.bk-monitoring.export');
     Route::post('absensi/{absensi}/laporan-siswa', ['App\Http\Controllers\AbsensiController', 'storeLaporanSiswa'])->name('absensi.laporan-siswa.store');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');

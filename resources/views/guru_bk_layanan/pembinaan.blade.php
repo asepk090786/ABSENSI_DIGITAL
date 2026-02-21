@@ -19,6 +19,36 @@
                     </a>
                 </div>
                 <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="mb-2">Akumulasi Terlambat Bulan Ini</h5>
+                        @if(($akumulasiTerlambatBulanan ?? collect())->isEmpty())
+                            <div class="alert alert-light border mb-0">Belum ada data keterlambatan pada bulan ini.</div>
+                        @else
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Siswa</th>
+                                            <th>Total Terlambat</th>
+                                            <th>Total Menit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($akumulasiTerlambatBulanan as $index => $row)
+                                            <tr>
+                                                <td>{{ $index + 1 }}</td>
+                                                <td>{{ $row->nama_siswa }}</td>
+                                                <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $row->total_terlambat }}x</span></td>
+                                                <td><span class="badge bg-danger">{{ $row->total_menit_terlambat ?? 0 }} menit</span></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+
                     <form action="{{ route('guru_bk_layanan.pembinaan.store', ['kelas' => $kelas->id]) }}" method="POST" enctype="multipart/form-data">
                         @csrf
 

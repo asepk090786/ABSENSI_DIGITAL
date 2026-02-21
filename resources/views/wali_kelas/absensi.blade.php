@@ -19,6 +19,36 @@
                     </a>
                 </div>
                 <div class="card-body">
+                    <div class="mb-4">
+                        <h5 class="mb-2">Akumulasi Terlambat Bulan Ini</h5>
+                        @if(($akumulasiTerlambatBulanan ?? collect())->isEmpty())
+                            <div class="alert alert-light border mb-0">Belum ada data keterlambatan bulan ini.</div>
+                        @else
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Siswa</th>
+                                            <th>Total Terlambat</th>
+                                            <th>Total Menit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($akumulasiTerlambatBulanan as $index => $row)
+                                            <tr>
+                                                <td>{{ $index + 1 }}</td>
+                                                <td>{{ $row->nama_siswa }} <small class="text-muted d-block">NIS: {{ $row->nis_siswa ?: '-' }}</small></td>
+                                                <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $row->total_terlambat }}x</span></td>
+                                                <td><span class="badge bg-danger">{{ $row->total_menit_terlambat ?? 0 }} menit</span></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+
                     @if($absensi->isEmpty())
                         <div class="alert alert-info">
                             <i class="ti ti-info-circle me-2"></i>Belum ada data absensi untuk kelas ini.
