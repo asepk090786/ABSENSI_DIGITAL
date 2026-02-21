@@ -2,6 +2,51 @@
 
 Semua perubahan penting pada proyek ini dicatat di file ini.
 
+## v2026.02.21-admin-attendance-bk-kartu-kendali - 2026-02-21
+
+### Added
+- Dashboard Admin: rekap nilai per kelas & mapel, statistik kehadiran harian siswa/guru, rekap kehadiran siswa per kelas, dan rekap kehadiran guru per hari.
+- Fitur printout laporan kehadiran siswa dan guru (PDF) dari panel **Admin** dan **Kepala Sekolah**, termasuk filter tanggal dan kelas.
+- Menu cepat **Kartu Kendali Pelanggaran** pada Guru BK per kelas binaan, lengkap dengan halaman list dan format printout kartu kendali.
+- Input pelanggaran + point pada alur **Piket KBM** dan juga input pelanggaran + point langsung dari menu **Guru BK**.
+- Master **Jenis Pelanggaran** (CRUD) dengan `point default`, terintegrasi ke form Guru BK dengan auto-fill point.
+- Fitur **Import / Export / Template Excel** untuk master jenis pelanggaran.
+
+### Changed
+- Perbaikan akses role untuk preview agenda kelas agar admin/kepala sekolah tidak terkena error null guru.
+- Perapian layout dashboard admin/kepala untuk menampilkan tombol aksi dan printout laporan.
+- Penyesuaian template print kartu kendali agar garis tabel terlihat konsisten dan teks kolom keterangan tidak melewati garis.
+
+### Database
+- Penambahan kolom `poin_pelanggaran` pada tabel `pelanggaran_siswa`.
+- Penambahan tabel `jenis_pelanggaran` sebagai master pelanggaran + point default.
+
+### Files Updated
+- `app/Http/Controllers/AbsensiController.php`
+- `app/Http/Controllers/AgendaKelasController.php`
+- `app/Http/Controllers/DashboardController.php`
+- `app/Http/Controllers/GuruBkLayananController.php`
+- `app/Http/Controllers/JenisPelanggaranController.php`
+- `app/Http/Controllers/PiketPelanggaranController.php`
+- `app/Http/Controllers/RekapNilaiController.php`
+- `app/Models/JenisPelanggaran.php`
+- `app/Exports/JenisPelanggaranExport.php`
+- `app/Exports/JenisPelanggaranTemplateExport.php`
+- `app/Imports/JenisPelanggaranImport.php`
+- `resources/views/dashboard/admin.blade.php`
+- `resources/views/dashboard/kepala.blade.php`
+- `resources/views/guru_bk_layanan/menu.blade.php`
+- `resources/views/guru_bk_layanan/kartu_kendali.blade.php`
+- `resources/views/guru_bk_layanan/print_kartu_kendali.blade.php`
+- `resources/views/absensi/reports/siswa_pdf.blade.php`
+- `resources/views/absensi/reports/guru_pdf.blade.php`
+- `resources/views/jenis_pelanggaran/*.blade.php`
+- `resources/views/layouts/app.blade.php`
+- `resources/views/piket_kbm/pelanggaran.blade.php`
+- `routes/web.php`
+- `database/migrations/2026_02_21_090000_add_poin_pelanggaran_to_pelanggaran_siswa_table.php`
+- `database/migrations/2026_02_21_091000_create_jenis_pelanggaran_table.php`
+
 ## v2026.02.20-wali-kelas-laporan-ke-bk - 2026-02-20
 
 ### Added
