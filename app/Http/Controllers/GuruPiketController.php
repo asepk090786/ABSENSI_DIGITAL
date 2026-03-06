@@ -6,21 +6,19 @@ use App\Models\Guru;
 use App\Models\JadwalKbm;
 use App\Models\Role;
 use App\Models\User;
+use App\Traits\GuruRoleTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class GuruPiketController extends Controller
 {
+    use GuruRoleTrait;
+
     public function index()
     {
-        $gurupiket = Guru::with('user')->whereHas('user', function($query) {
-            $query->whereHas('roles', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            })->orWhereHas('role', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            });
-        })->orderBy('created_at', 'desc')->get();
+        $gurupiket = $this->queryGuruByRole('Guru Piket')
+            ->orderBy('created_at', 'desc')->get();
 
         $workDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
         $guruByHari = collect($workDays)->mapWithKeys(function ($hari) use ($gurupiket) {
@@ -39,13 +37,7 @@ class GuruPiketController extends Controller
     public function create()
     {
         $allHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        $guruPiketIds = Guru::whereHas('user', function($query) {
-            $query->whereHas('roles', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            })->orWhereHas('role', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            });
-        })->pluck('id');
+        $guruPiketIds = $this->getGuruIdsByRole('Guru Piket');
 
         $guru = Guru::with('user')
             ->whereNotIn('id', $guruPiketIds)
@@ -97,8 +89,7 @@ class GuruPiketController extends Controller
             $validated['foto'] = $request->file('foto')->store('guru', 'public');
         }
 
-        $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
-        unset($validated['status']);
+        $validated = $this->convertStatusToIsActive($validated);
 
         if ($request->filled('guru_id')) {
             $guru = Guru::findOrFail($validated['guru_id']);
@@ -118,19 +109,7 @@ class GuruPiketController extends Controller
                 }
             }
 
-            $guruData = array_intersect_key($validated, array_flip([
-                'nama',
-                'nip',
-                'alamat',
-                'telepon',
-                'email',
-                'hari_piket',
-                'foto',
-            ]));
-
-            $guruData = array_filter($guruData, function ($value) {
-                return $value !== null && $value !== '';
-            });
+            $guruData = $this->filterGuruUpdateData($validated, ['hari_piket']);
 
             if (! empty($guruData)) {
                 $guru->update($guruData);
@@ -154,7 +133,7 @@ class GuruPiketController extends Controller
                     }
 
                     $user->update($userData);
-                    $user->roles()->syncWithoutDetaching([$guruPiketRole->id]);
+                    $this->syncUserRole($user, 'Guru Piket');
                 } else {
                     if (empty($guru->email)) {
                         return redirect()->back()
@@ -179,7 +158,7 @@ class GuruPiketController extends Controller
                         'guru_id' => $guru->id,
                         'is_active' => $validated['is_active'],
                     ]);
-                    $user->roles()->syncWithoutDetaching([$guruPiketRole->id]);
+                    $this->syncUserRole($user, 'Guru Piket');
                 }
             }
 
@@ -206,7 +185,7 @@ class GuruPiketController extends Controller
                 'guru_id' => $guru->id,
                 'is_active' => $validated['is_active'],
             ]);
-            $user->roles()->syncWithoutDetaching([$guruPiketRole->id]);
+            $this->syncUserRole($user, 'Guru Piket');
         }
 
         return redirect()->route('guru_piket.index')->with('success', 'Data Guru Piket berhasil ditambahkan.');
@@ -274,8 +253,7 @@ class GuruPiketController extends Controller
             }
         }
 
-        $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
-        unset($validated['status']);
+        $validated = $this->convertStatusToIsActive($validated);
 
         $gurupiket->update($validated);
 
@@ -286,10 +264,7 @@ class GuruPiketController extends Controller
                 'email' => $validated['email'] ?? $user->email,
                 'is_active' => $validated['is_active'],
             ]);
-            $guruPiketRole = Role::where('role_name', 'Guru Piket')->first();
-            if ($guruPiketRole) {
-                $user->roles()->syncWithoutDetaching([$guruPiketRole->id]);
-            }
+            $this->syncUserRole($user, 'Guru Piket');
         } else {
             $guruPiketRole = Role::where('role_name', 'Guru Piket')->first();
             if ($guruPiketRole) {
@@ -309,7 +284,7 @@ class GuruPiketController extends Controller
                     'guru_id' => $gurupiket->id,
                     'is_active' => $validated['is_active'],
                 ]);
-                $user->roles()->syncWithoutDetaching([$guruPiketRole->id]);
+                $this->syncUserRole($user, 'Guru Piket');
             }
         }
 
@@ -326,10 +301,7 @@ class GuruPiketController extends Controller
 
         $user = User::where('guru_id', $gurupiket->id)->first();
         if ($user) {
-            $guruPiketRole = Role::where('role_name', 'Guru Piket')->first();
-            if ($guruPiketRole) {
-                $user->roles()->detach($guruPiketRole->id);
-            }
+            $this->detachUserRole($user, 'Guru Piket');
         }
 
         return redirect()->route('guru_piket.index')->with('success', 'Data Guru Piket berhasil dihapus.');
