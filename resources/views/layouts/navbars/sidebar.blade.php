@@ -170,7 +170,7 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="menu-item">
+                <a href="{{ route('guru.index') }}" class="menu-item {{ request()->routeIs('guru.*') ? 'active' : '' }}">
                     <i class="material-icons">people</i>
                     <span>Guru</span>
                 </a>
@@ -182,13 +182,13 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="menu-item">
+                <a href="{{ route('siswa.index') }}" class="menu-item {{ request()->routeIs('siswa.*') ? 'active' : '' }}">
                     <i class="material-icons">school</i>
                     <span>Siswa</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="menu-item">
+                <a href="{{ route('kelas.index') }}" class="menu-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}">
                     <i class="material-icons">class</i>
                     <span>Kelas</span>
                 </a>

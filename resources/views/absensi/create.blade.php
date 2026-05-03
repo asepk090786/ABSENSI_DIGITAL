@@ -135,6 +135,10 @@
 </style>
 
 <div class="container-fluid">
+    @php
+        $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $lockQuickAccessField = ($isQuickAccess ?? false) && !$isAdminOrKepala && !($isGuruPiket ?? false);
+    @endphp
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -167,7 +171,7 @@
                     </div>
                     @endif
 
-                    @if(auth()->user()->guru_id && !($isGuruPiket ?? false))
+                    @if(auth()->user()->guru_id && !($isGuruPiket ?? false) && !$isAdminOrKepala)
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle me-2"></i>
                         <strong>Info:</strong> Anda dapat menginput absensi untuk {{ $kelasList->count() }} kelas yang Anda ajar.
@@ -180,7 +184,11 @@
                     @if($isQuickAccess ?? false)
                     <div class="alert alert-success">
                         <i class="ti ti-check-circle me-2"></i>
-                        <strong>Mode Akses Cepat:</strong> Kelas dan jam belajar telah diisi otomatis sesuai jadwal hari ini.
+                        @if($isAdminOrKepala)
+                            <strong>Mode Akses Cepat:</strong> Kelas telah dipilih dari menu cepat, silakan pilih guru dan jam belajar sesuai kebutuhan.
+                        @else
+                            <strong>Mode Akses Cepat:</strong> Kelas dan jam belajar telah diisi otomatis sesuai jadwal hari ini.
+                        @endif
                     </div>
                     @endif
 
@@ -195,7 +203,7 @@
                                 <div class="mb-3">
                                     <label for="tanggal" class="form-label">Tanggal <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control @error('tanggal') is-invalid @enderror" 
-                                           id="tanggal" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" required>
+                                         id="tanggal" name="tanggal" value="{{ old('tanggal', $selectedDate ?? date('Y-m-d')) }}" required>
                                     @error('tanggal')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -207,7 +215,7 @@
                                     <label for="kelas_id" class="form-label">Kelas <span class="text-danger">*</span></label>
                                     <select class="form-select @error('kelas_id') is-invalid @enderror" 
                                             id="kelas_id" name="kelas_id" required
-                                            {{ ($isQuickAccess ?? false) ? 'disabled' : '' }}>
+                                            {{ $lockQuickAccessField ? 'disabled' : '' }}>
                                         <option value="">Pilih Kelas</option>
                                         @foreach($kelasList as $kelas)
                                             <option value="{{ $kelas->id }}" 
@@ -216,7 +224,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    @if($isQuickAccess ?? false)
+                                    @if($lockQuickAccessField)
                                     <input type="hidden" name="kelas_id" value="{{ $selectedKelasId }}">
                                     @endif
                                     @error('kelas_id')
@@ -254,7 +262,7 @@
                                     <label for="jam_belajar_id" class="form-label">Jam Belajar <span class="text-danger">*</span></label>
                                     <select class="form-select @error('jam_belajar_id') is-invalid @enderror" 
                                             id="jam_belajar_id" name="jam_belajar_id" required
-                                            {{ ($isQuickAccess ?? false) ? 'disabled' : '' }}>
+                                            {{ $lockQuickAccessField ? 'disabled' : '' }}>
                                         <option value="">Pilih Jam Belajar</option>
                                         @foreach($jamBelajarList as $jam)
                                             <option value="{{ $jam->id }}" {{ old('jam_belajar_id', $selectedJamBelajarId ?? '') == $jam->id ? 'selected' : '' }}>
@@ -262,7 +270,7 @@
                                             </option>
                                         @endforeach
                                     </select>
-                                    @if($isQuickAccess ?? false)
+                                    @if($lockQuickAccessField)
                                     <input type="hidden" name="jam_belajar_id" value="{{ $selectedJamBelajarId }}">
                                     @endif
                                     @php

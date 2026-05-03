@@ -33,13 +33,16 @@
                         <button type="submit" class="btn btn-outline-primary">
                             <i class="ti ti-printer me-1"></i>Print Laporan Kehadiran Siswa
                         </button>
+                        <a href="{{ route('absensi.laporan-siswa.export', ['tanggal' => $tanggalLaporan, 'kelas_id' => $kelasLaporanId]) }}" class="btn btn-outline-info">
+                            <i class="ti ti-file-export me-1"></i>Export Excel Siswa
+                        </a>
                         <a href="{{ route('absensi.laporan-guru.print', ['tanggal' => $tanggalLaporan]) }}" target="_blank" class="btn btn-outline-success">
                             <i class="ti ti-printer me-1"></i>Print Laporan Kehadiran Guru
                         </a>
                     </div>
                 </form>
                 <div class="text-muted small mt-2">
-                    Laporan guru difilter berdasarkan tanggal. Laporan siswa bisa difilter tanggal dan kelas.
+                    Laporan siswa (PDF/Excel) dihitung sebagai status kehadiran harian per siswa agar konsisten dengan statistik harian.
                 </div>
             </div>
         </div>
@@ -81,6 +84,11 @@
                     <div class="col-6 col-md-4 col-lg-3">
                         <a class="btn btn-outline-primary w-100" href="{{ route('jam_belajar.index') }}">
                             <i class="ti ti-clock me-2"></i>Jam Belajar
+                        </a>
+                    </div>
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <a class="btn btn-outline-primary w-100" href="{{ route('absensi.generate.form') }}">
+                            <i class="ti ti-bolt me-2"></i>Generate Absensi
                         </a>
                     </div>
                     <div class="col-6 col-md-4 col-lg-3">

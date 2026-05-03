@@ -82,7 +82,11 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-deactivate', ['App\Http\Controllers\KelasController', 'bulkDeactivateStudent'])->name('kelas.siswa.bulk-deactivate');
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
+    Route::get('absensi/generate', ['App\Http\Controllers\AbsensiController', 'generateForm'])->name('absensi.generate.form');
+    Route::post('absensi/generate', ['App\Http\Controllers\AbsensiController', 'generateStore'])->name('absensi.generate.store');
+    Route::delete('absensi/delete-by-date', ['App\Http\Controllers\AbsensiController', 'destroyByDate'])->name('absensi.destroy-by-date');
     Route::get('absensi/laporan-siswa/print', ['App\Http\Controllers\AbsensiController', 'printLaporanSiswa'])->name('absensi.laporan-siswa.print');
+    Route::get('absensi/laporan-siswa/export', ['App\Http\Controllers\AbsensiController', 'exportLaporanSiswa'])->name('absensi.laporan-siswa.export');
     Route::get('absensi/laporan-guru/print', ['App\Http\Controllers\AbsensiController', 'printLaporanGuru'])->name('absensi.laporan-guru.print');
     Route::get('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'index'])->name('piket.pelanggaran.index');
     Route::post('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'store'])->name('piket.pelanggaran.store');

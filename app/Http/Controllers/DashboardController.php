@@ -113,44 +113,59 @@ class DashboardController extends Controller
                 \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas') &&
                 \Illuminate\Support\Facades\Schema::hasTable('kelas')
             ) {
-                $statSiswaQuery = DB::table('absensi_siswa as abs_s')
+                $dailySiswaSubQuery = DB::table('absensi_siswa as abs_s')
                     ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
-                    ->whereDate('abs_k.tanggal', $tanggalHariIni)
                     ->select(
-                        DB::raw('COUNT(abs_s.id) as total_entri'),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpha")
-                    );
-
-                $rekapSiswaPerKelasQuery = DB::table('absensi_siswa as abs_s')
-                    ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
-                    ->join('kelas as k', 'abs_k.kelas_id', '=', 'k.id')
-                    ->select(
-                        'k.id as kelas_id',
-                        'k.nama_kelas',
-                        DB::raw('COUNT(abs_s.id) as total_entri'),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
-                        DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpha"),
-                        DB::raw('MAX(abs_k.tanggal) as tanggal_terakhir')
+                        'abs_k.kelas_id',
+                        'abs_s.siswa_id',
+                        DB::raw('DATE(abs_k.tanggal) as tanggal'),
+                        DB::raw("MAX(CASE
+                            WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
+                            WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                            WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
+                            WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
+                            WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                            ELSE 0
+                        END) as status_rank")
                     )
-                    ->groupBy('k.id', 'k.nama_kelas')
-                    ->orderBy('k.nama_kelas');
+                    ->groupBy('abs_k.kelas_id', 'abs_s.siswa_id', DB::raw('DATE(abs_k.tanggal)'));
 
                 if ($tahun) {
-                    $statSiswaQuery->where('abs_k.tahun_ajaran_id', $tahun->id);
-                    $rekapSiswaPerKelasQuery->where('abs_k.tahun_ajaran_id', $tahun->id);
+                    $dailySiswaSubQuery->where('abs_k.tahun_ajaran_id', $tahun->id);
                 }
 
                 if ($semester) {
-                    $statSiswaQuery->where('abs_k.semester_id', $semester->id);
-                    $rekapSiswaPerKelasQuery->where('abs_k.semester_id', $semester->id);
+                    $dailySiswaSubQuery->where('abs_k.semester_id', $semester->id);
                 }
+
+                $statSiswaQuery = DB::query()
+                    ->fromSub($dailySiswaSubQuery, 'daily_siswa')
+                    ->whereDate('daily_siswa.tanggal', $tanggalHariIni)
+                    ->select(
+                        DB::raw('COUNT(*) as total_entri'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpha')
+                    );
+
+                $rekapSiswaPerKelasQuery = DB::query()
+                    ->fromSub($dailySiswaSubQuery, 'daily_siswa')
+                    ->join('kelas as k', 'daily_siswa.kelas_id', '=', 'k.id')
+                    ->select(
+                        'k.id as kelas_id',
+                        'k.nama_kelas',
+                        DB::raw('COUNT(*) as total_entri'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpha'),
+                        DB::raw('MAX(daily_siswa.tanggal) as tanggal_terakhir')
+                    )
+                    ->groupBy('k.id', 'k.nama_kelas')
+                    ->orderBy('k.nama_kelas');
 
                 $statSiswaRaw = $statSiswaQuery->first();
                 if ($statSiswaRaw) {

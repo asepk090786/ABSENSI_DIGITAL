@@ -237,7 +237,7 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-1">Rekap Absensi Siswa per Kelas</h5>
-                    <p class="card-category mb-0">Data diambil dari absensi kelas yang sudah diinput guru pada periode aktif</p>
+                    <p class="card-category mb-0">Statistik siswa dihitung per hari (status dominan harian per siswa), bukan per jam mata pelajaran</p>
                 </div>
                 <div class="card-body">
                     <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
@@ -261,7 +261,37 @@
                                 <i class="ti ti-plus me-1"></i>Tambah Absensi
                             </a>
                         </div>
+                        @if($isAdminOrKepala)
+                        <div class="col-auto">
+                            <a href="{{ route('absensi.generate.form') }}" class="btn btn-primary">
+                                <i class="ti ti-bolt me-1"></i>Generate Absensi
+                            </a>
+                        </div>
+                        @endif
                     </form>
+
+                    @if($isAdminOrKepala)
+                    <form method="POST" action="{{ route('absensi.destroy-by-date') }}" class="row g-2 align-items-end mb-3" onsubmit="return confirm('Yakin ingin menghapus semua data absensi pada tanggal yang dipilih? Tindakan ini tidak dapat dibatalkan.');">
+                        @csrf
+                        @method('DELETE')
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="tanggal_hapus" class="form-label mb-1">Hapus Data Tanggal</label>
+                            <input
+                                type="date"
+                                id="tanggal_hapus"
+                                name="tanggal_hapus"
+                                class="form-control"
+                                value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}"
+                                required
+                            >
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="ti ti-trash me-1"></i>Hapus Absensi per Tanggal
+                            </button>
+                        </div>
+                    </form>
+                    @endif
 
                     @php
                         $totalHadirHarian = ($rekapPerKelas ?? collect())->sum('total_hadir');
