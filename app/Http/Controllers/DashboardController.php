@@ -371,7 +371,85 @@ class DashboardController extends Controller
                 'isGuruBk','kelasBinaanBk'
             ));
         } elseif ($isSiswa) {
-            return view('dashboard.siswa', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName'));
+            $classPosition = $user->getClassPosition();
+            $positionLabels = [
+                'ketua' => 'Ketua Kelas',
+                'wakil' => 'Wakil Ketua Kelas',
+                'sekretaris' => 'Sekretaris Kelas',
+            ];
+            $classPositionLabel = $positionLabels[$classPosition] ?? null;
+            $isSiswaOfficer = ! is_null($classPosition);
+
+            $attendanceSummary = [
+                'hadir' => 0,
+                'terlambat' => 0,
+                'izin' => 0,
+                'sakit' => 0,
+                'alpa' => 0,
+                'total' => 0,
+                'present_percent' => 0,
+            ];
+
+            if (
+                \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') &&
+                ! empty($user->siswa_id) &&
+                $user->siswa
+            ) {
+                $rekapRows = DB::table('absensi_siswa')
+                    ->join('absensi_kelas', 'absensi_kelas.id', '=', 'absensi_siswa.absensi_kelas_id')
+                    ->where('absensi_siswa.siswa_id', $user->siswa_id)
+                    ->when($tahun, function ($query) use ($tahun) {
+                        $query->where('absensi_kelas.tahun_ajaran_id', $tahun->id);
+                    })
+                    ->when($semester, function ($query) use ($semester) {
+                        $query->where('absensi_kelas.semester_id', $semester->id);
+                    })
+                    ->select('absensi_siswa.status')
+                    ->get();
+
+                $normalizeStatus = function ($status) {
+                    return mb_strtolower(trim((string) $status));
+                };
+
+                foreach ($rekapRows as $row) {
+                    $status = $normalizeStatus($row->status);
+
+                    if ($status === 'hadir') {
+                        $attendanceSummary['hadir']++;
+                    } elseif (in_array($status, ['terlambat', 'telat'], true)) {
+                        $attendanceSummary['terlambat']++;
+                    } elseif (in_array($status, ['izin', 'ijin'], true)) {
+                        $attendanceSummary['izin']++;
+                    } elseif ($status === 'sakit') {
+                        $attendanceSummary['sakit']++;
+                    } elseif (in_array($status, ['alpa', 'alpha', 'alfa', 'absen'], true)) {
+                        $attendanceSummary['alpa']++;
+                    }
+                }
+
+                $attendanceSummary['total'] = array_sum([
+                    $attendanceSummary['hadir'],
+                    $attendanceSummary['terlambat'],
+                    $attendanceSummary['izin'],
+                    $attendanceSummary['sakit'],
+                    $attendanceSummary['alpa'],
+                ]);
+                $attendanceSummary['present_percent'] = $attendanceSummary['total'] > 0
+                    ? round(($attendanceSummary['hadir'] / $attendanceSummary['total']) * 100, 2)
+                    : 0;
+            }
+
+            return view('dashboard.siswa', compact(
+                'guru',
+                'siswa',
+                'kelas',
+                'absensi',
+                'tahunAjaran',
+                'semestrName',
+                'classPositionLabel',
+                'isSiswaOfficer',
+                'attendanceSummary'
+            ));
         } elseif ($isKepalaSekolah) {
             $kelasLaporanOptions = collect();
             if (\Illuminate\Support\Facades\Schema::hasTable('kelas')) {
