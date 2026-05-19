@@ -18,10 +18,10 @@
     });
 </script>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary">
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10 mx-auto">
+        <div class="card shadow-sm rounded-4 border-0">
+            <div class="card-header bg-primary rounded-top-4 border-0">
                 <h4 class="card-title mb-0 text-white">
                     <i class="ti ti-plus me-2"></i>Tambah Agenda Kelas
                 </h4>
@@ -43,98 +43,125 @@
 
                 <form method="POST" action="{{ route('agenda_kelas.store') }}">
                     @csrf
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Jenis Kegiatan</label>
-                        <select name="jenis_kegiatan" id="jenisKegiatanSelect" class="form-select @error('jenis_kegiatan') is-invalid @enderror" required>
-                            <option value="kbm" {{ old('jenis_kegiatan', $selectedJenisKegiatan ?? 'kbm') === 'kbm' ? 'selected' : '' }}>KBM</option>
-                            <option value="pengembangan_diri" {{ old('jenis_kegiatan', $selectedJenisKegiatan ?? 'kbm') === 'pengembangan_diri' ? 'selected' : '' }}>Pengembangan Diri</option>
-                        </select>
-                        @error('jenis_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div id="kbmFields">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Kelas</label>
-                        <select name="kelas_id" class="form-select @error('kelas_id') is-invalid @enderror" required id="kelasSelect">
-                            <option value="">-- Pilih Kelas --</option>
-                            @forelse($kelas as $k)
-                                <option value="{{ $k->id }}" @if($selectedKelasId == $k->id || request('kelas_id') == $k->id || old('kelas_id') == $k->id) selected @endif>
-                                    {{ $k->nama_kelas ?? 'Kelas '.$k->id }}
-                                </option>
-                            @empty
-                                <option disabled>Tidak ada kelas sesuai jadwal mengajar Anda</option>
-                            @endforelse
-                        </select>
-                        @error('kelas_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Guru</label>
-                        <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror" required>
-                            <option value="{{ $guru->id }}">{{ $guru->nama ?? 'Guru '.$guru->id }} (Anda)</option>
-                        </select>
-                        @error('guru_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Jam KBM</label>
-                        <select name="jam_belajar_id" class="form-select @error('jam_belajar_id') is-invalid @enderror" required id="jamSelect">
-                            <option value="">-- Pilih Jam KBM --</option>
-                        </select>
-                        <small class="text-muted d-block mt-1">Daftar jam otomatis mengikuti hari pada tanggal yang dipilih.</small>
-                        @error('jam_belajar_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    </div>
-                    </div>
-
-                    <div id="pengembanganDiriFields" style="display:none;">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Nama Kegiatan</label>
-                            <input type="text" name="nama_kegiatan" id="namaKegiatanInput" list="daftarKegiatanGuru" class="form-control @error('nama_kegiatan') is-invalid @enderror" value="{{ old('nama_kegiatan') }}" placeholder="Contoh: Pembinaan OSIS, Ekstrakurikuler, Literasi">
-                            <datalist id="daftarKegiatanGuru">
-                                @foreach($kegiatanUmumGuru as $kegiatanUmum)
-                                    <option value="{{ $kegiatanUmum }}"></option>
-                                @endforeach
-                            </datalist>
-                            <small class="text-muted d-block mt-1">Pilih dari daftar kegiatan umum atau ketik kegiatan lain sesuai kebutuhan.</small>
-                            @error('nama_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Jenis Kegiatan</label>
+                            <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                <span class="input-group-text bg-white border-0 px-3">
+                                    <i class="ti ti-clipboard-list"></i>
+                                </span>
+                                <select name="jenis_kegiatan" id="jenisKegiatanSelect" class="form-control border-0 @error('jenis_kegiatan') is-invalid @enderror" required>
+                                    <option value="kbm" {{ old('jenis_kegiatan', $selectedJenisKegiatan ?? 'kbm') === 'kbm' ? 'selected' : '' }}>KBM</option>
+                                    <option value="pengembangan_diri" {{ old('jenis_kegiatan', $selectedJenisKegiatan ?? 'kbm') === 'pengembangan_diri' ? 'selected' : '' }}>Pengembangan Diri</option>
+                                </select>
+                            </div>
+                            @error('jenis_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Tanggal</label>
+                            <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                <span class="input-group-text bg-white border-0 px-3">
+                                    <i class="ti ti-calendar-event"></i>
+                                </span>
+                                <input type="date" name="tanggal" class="form-control border-0 @error('tanggal') is-invalid @enderror" value="{{ old('tanggal', $selectedDate ?? now()->format('Y-m-d')) }}" required id="tanggalInput">
+                            </div>
+                            @error('tanggal')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
-                    <div class="mb-3" id="multipleJamInfo" style="display: none;">
-                        <div class="alert alert-info">
-                            <i class="ti ti-info-circle me-2"></i>
-                            <strong>Info:</strong> Kelas ini memiliki lebih dari 1 jam KBM dengan guru Anda. 
-                            <span id="jamCountInfo"></span>
+                    <div class="row g-4 mt-2">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Kelas</label>
+                            <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                <span class="input-group-text bg-white border-0 px-3">
+                                    <i class="ti ti-users"></i>
+                                </span>
+                                <select name="kelas_id" class="form-control border-0 @error('kelas_id') is-invalid @enderror" required id="kelasSelect">
+                                    <option value="">-- Pilih Kelas --</option>
+                                    @forelse($kelas as $k)
+                                        <option value="{{ $k->id }}" @if($selectedKelasId == $k->id || request('kelas_id') == $k->id || old('kelas_id') == $k->id) selected @endif>
+                                            {{ $k->nama_kelas ?? 'Kelas '.$k->id }}
+                                        </option>
+                                    @empty
+                                        <option disabled>Tidak ada kelas sesuai jadwal mengajar Anda</option>
+                                    @endforelse
+                                </select>
+                            </div>
+                            @error('kelas_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="applyToAllJam" name="apply_to_all_jam" value="1">
-                            <label class="form-check-label" for="applyToAllJam">
-                                <strong>Terapkan agenda ini ke SEMUA jam KBM kelas yang sama pada hari yang sama</strong>
-                                <br><small class="text-muted">Jika dicentang, agenda akan otomatis disalin ke semua jam KBM lainnya untuk kelas ini pada tanggal yang dipilih</small>
-                            </label>
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">Guru</label>
+                            <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                <span class="input-group-text bg-white border-0 px-3">
+                                    <i class="ti ti-user"></i>
+                                </span>
+                                <select name="guru_id" id="guruSelect" class="form-control border-0 @error('guru_id') is-invalid @enderror" required>
+                                    <option value="{{ $guru->id }}">{{ $guru->nama ?? 'Guru '.$guru->id }} (Anda)</option>
+                                </select>
+                            </div>
+                            @error('guru_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Jam KBM</label>
+                            <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                <span class="input-group-text bg-white border-0 px-3">
+                                    <i class="ti ti-clock"></i>
+                                </span>
+                                <select name="jam_belajar_id" class="form-control border-0 @error('jam_belajar_id') is-invalid @enderror" required id="jamSelect">
+                                    <option value="">-- Pilih Jam KBM --</option>
+                                </select>
+                            </div>
+                            @error('jam_belajar_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            <small class="text-muted d-block mt-2">Jam mengikuti hari yang dipilih.</small>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Tanggal</label>
-                        <input type="date" name="tanggal" class="form-control @error('tanggal') is-invalid @enderror" 
-                               value="{{ old('tanggal', $selectedDate ?? now()->format('Y-m-d')) }}" required id="tanggalInput">
-                        @error('tanggal')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    </div>
+                        <div id="pengembanganDiriFields" class="col-12" style="display:none;">
+                            <div class="form-floating">
+                                <input type="text" name="nama_kegiatan" id="namaKegiatanInput" list="daftarKegiatanGuru" class="form-control @error('nama_kegiatan') is-invalid @enderror" value="{{ old('nama_kegiatan') }}" placeholder="Nama Kegiatan">
+                                <label for="namaKegiatanInput">Nama Kegiatan</label>
+                                <datalist id="daftarKegiatanGuru">
+                                    @foreach($kegiatanUmumGuru as $kegiatanUmum)
+                                        <option value="{{ $kegiatanUmum }}"></option>
+                                    @endforeach
+                                </datalist>
+                                @error('nama_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                <small class="text-muted d-block mt-2">Pilih dari daftar atau ketik kegiatan lain sesuai kebutuhan.</small>
+                            </div>
+                        </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold" id="kegiatanLabel">Kegiatan/Materi</label>
-                        <textarea name="kegiatan" class="form-control tiny-editor @error('kegiatan') is-invalid @enderror">{{ old('kegiatan') }}</textarea>
-                        @error('kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                    </div>
+                        <div class="col-12" id="multipleJamInfo" style="display: none;">
+                            <div class="alert alert-info mb-0">
+                                <div class="d-flex align-items-start gap-2">
+                                    <i class="ti ti-info-circle fs-4 mt-1"></i>
+                                    <div>
+                                        <strong>Info:</strong> Kelas ini memiliki lebih dari 1 jam KBM dengan guru Anda.
+                                        <div id="jamCountInfo" class="small text-muted"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-check mt-3">
+                                <input class="form-check-input" type="checkbox" id="applyToAllJam" name="apply_to_all_jam" value="1">
+                                <label class="form-check-label" for="applyToAllJam">
+                                    Terapkan agenda ini ke semua jam KBM kelas yang sama pada hari yang sama.
+                                </label>
+                            </div>
+                        </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ti ti-check me-1"></i>Lanjut Isi Template Agenda
-                        </button>
-                        <a href="{{ route('agenda_kelas.index') }}" class="btn btn-secondary">
-                            <i class="ti ti-arrow-left me-1"></i>Kembali
-                        </a>
+                        <div class="col-12">
+                            <label class="form-label fw-bold" id="kegiatanLabel">Kegiatan/Materi</label>
+                            <textarea name="kegiatan" class="form-control tiny-editor @error('kegiatan') is-invalid @enderror" rows="4">{{ old('kegiatan') }}</textarea>
+                            @error('kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+
+                        <div class="col-12 d-flex justify-content-end gap-2">
+                            <a href="{{ route('agenda_kelas.index') }}" class="btn btn-outline-secondary">
+                                <i class="ti ti-arrow-left me-1"></i>Batal
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="ti ti-check me-1"></i>Lanjut Isi Template Agenda
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

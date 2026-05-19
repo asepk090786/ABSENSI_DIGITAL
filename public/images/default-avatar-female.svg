@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Default Female Avatar">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ff6b81" />
+      <stop offset="100%" stop-color="#f96d80" />
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="32" fill="url(#bg)" />
+  <circle cx="120" cy="82" r="42" fill="#fff" opacity="0.92" />
+  <path d="M76 170c0-22 18-40 40-40s40 18 40 40v24H76v-24z" fill="#fff" opacity="0.9" />
+  <path d="M82 146c0-16 14-30 30-30s30 14 30 30v4H82v-4z" fill="#3f4661" opacity="0.14" />
+  <path d="M108 98c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8zm24 0c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8z" fill="#3b6fb7" opacity="0.3" />
+</svg>

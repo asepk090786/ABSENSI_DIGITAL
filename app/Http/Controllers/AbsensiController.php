@@ -312,6 +312,91 @@ class AbsensiController extends Controller
         return $pdf->stream('Laporan-Kehadiran-Guru-' . $selectedTanggal . '.pdf');
     }
 
+    public function printGuruRekap(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user || $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk akun guru.');
+        }
+
+        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        if ($isGuruPiket) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk akun guru biasa.');
+        }
+
+        if (empty($user->guru_id)) {
+            abort(403, 'Akun guru tidak ditemukan.');
+        }
+
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        if (! $tahun || ! $semester) {
+            return redirect()->route('absensi.index')
+                ->withErrors('Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        $query = AbsensiKelas::with(['kelas', 'guru', 'jamBelajar', 'tahunAjaran', 'semester', 'absensiSiswa'])
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('semester_id', $semester->id);
+
+        $isGuruBk = $user->hasRole('Guru BK');
+        if ($isGuruBk && Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id')) {
+            $query->whereHas('kelas', function ($kelasQuery) use ($user) {
+                $kelasQuery->where('guru_bk_id', $user->guru_id);
+            });
+        } else {
+            $query->where('guru_id', $user->guru_id);
+        }
+
+        $items = $query->orderBy('tanggal', 'desc')->get();
+
+        $summary = [
+            'total_sessions' => $items->count(),
+            'total_hadir' => $items->sum(function ($item) {
+                return $item->absensiSiswa->filter(function ($row) {
+                    return in_array(strtolower((string) ($row->status ?? '')), ['hadir'], true);
+                })->count();
+            }),
+            'total_terlambat' => $items->sum(function ($item) {
+                return $item->absensiSiswa->filter(function ($row) {
+                    return in_array(strtolower((string) ($row->status ?? '')), ['terlambat', 'telat'], true);
+                })->count();
+            }),
+            'total_sakit' => $items->sum(function ($item) {
+                return $item->absensiSiswa->filter(function ($row) {
+                    return strtolower((string) ($row->status ?? '')) === 'sakit';
+                })->count();
+            }),
+            'total_izin' => $items->sum(function ($item) {
+                return $item->absensiSiswa->filter(function ($row) {
+                    return in_array(strtolower((string) ($row->status ?? '')), ['izin', 'ijin'], true);
+                })->count();
+            }),
+            'total_alpha' => $items->sum(function ($item) {
+                return $item->absensiSiswa->filter(function ($row) {
+                    return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
+                })->count();
+            }),
+            'total_siswa' => $items->sum(function ($item) {
+                return $item->absensiSiswa->count();
+            }),
+        ];
+
+        $sekolah = DB::table('sekolah')->first();
+
+        $pdf = \PDF::loadView('absensi.reports.guru_kelas_pdf', compact(
+            'items',
+            'summary',
+            'tahun',
+            'semester',
+            'sekolah'
+        ));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Rekap-Absensi-Guru-' . Carbon::now()->format('YmdHis') . '.pdf');
+    }
+
     public function create(Request $request)
     {
         $tahunAjaran = TahunAjaran::where('is_active', 1)->first();
@@ -323,8 +408,14 @@ class AbsensiController extends Controller
         }
 
         $user = auth()->user();
+        if ($user->hasRole('Siswa') && ! $user->hasClassPosition()) {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Hanya siswa dengan jabatan kelas yang bisa menginput absensi.');
+        }
+
+        $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $isGuruBk = $user->hasRole('Guru BK');
         $selectedKelasId = $request->get('kelas_id');
         $selectedJamBelajarId = null;
         $isQuickAccess = false;
@@ -334,9 +425,15 @@ class AbsensiController extends Controller
         if (!empty($selectedKelasId)) {
             $isQuickAccess = true;
         }
+
+        if ($isSiswaOfficer) {
+            $siswa = $user->siswa;
+            $selectedKelasId = $siswa->kelas_id;
+            $isQuickAccess = true;
+        }
         
         // Validate teacher schedule access
-        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk) {
             if ($selectedKelasId) {
                 $hariIndonesia = [
                     'Monday' => 'Senin',
@@ -407,6 +504,12 @@ class AbsensiController extends Controller
             
             // Get unique classes from all schedules
             $kelasList = $allJadwal->pluck('kelas')->unique('id')->sortBy('nama_kelas')->values();
+
+            if ($isGuruBk && Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id')) {
+                $kelasBinaanIds = Kelas::where('guru_bk_id', $user->guru_id)->pluck('id');
+                $additionalKelas = Kelas::whereIn('id', $kelasBinaanIds)->get();
+                $kelasList = $kelasList->merge($additionalKelas)->unique('id')->sortBy('nama_kelas')->values();
+            }
             
             // Filter jam belajar based on teacher's schedule for selected class and date
             if ($selectedKelasId) {
@@ -422,9 +525,12 @@ class AbsensiController extends Controller
                     ->orderBy('jam_ke')
                     ->get();
                     
-                // Only show jam belajar from teacher's schedule
                 $scheduledJamIds = $multiSlotJadwal->pluck('jam_belajar_id')->unique();
-                $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
+                if ($scheduledJamIds->isNotEmpty()) {
+                    $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
+                } else {
+                    $jamBelajarList = JamBelajar::orderBy('urutan')->get();
+                }
                 
                 if (!$selectedJamBelajarId && $multiSlotJadwal->isNotEmpty()) {
                     $selectedJamBelajarId = $multiSlotJadwal->first()->jam_belajar_id;
@@ -435,6 +541,14 @@ class AbsensiController extends Controller
             
             $guruList = Guru::where('id', $user->guru_id)->get();
             $jadwalList = $jadwalHariIni;
+        } elseif ($isSiswaOfficer) {
+            $siswa = $user->siswa;
+            $kelas = Kelas::find($siswa->kelas_id);
+            $kelasList = $kelas ? collect([$kelas]) : collect();
+            $selectedKelasId = $kelas->id ?? null;
+            $guruList = $kelas && $kelas->waliKelas ? collect([$kelas->waliKelas]) : Guru::orderBy('nama')->get();
+            $jamBelajarList = JamBelajar::orderBy('urutan')->get();
+            $jadwalList = collect();
         } else {
             // Admin, kepala sekolah, atau guru piket dapat input absensi lintas kelas
             $kelasList = Kelas::orderBy('nama_kelas')->get();
@@ -729,8 +843,14 @@ class AbsensiController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
+        if ($user->hasRole('Siswa') && ! $user->hasClassPosition()) {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Hanya siswa dengan jabatan kelas yang bisa menginput absensi.');
+        }
+
+        $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $isGuruBk = $user->hasRole('Guru BK');
 
         if ($isGuruPiket) {
             if (!$request->filled('guru_id') && $user->guru_id) {
@@ -767,13 +887,12 @@ class AbsensiController extends Controller
                 ->withInput()
                 ->withErrors(['error' => 'Minimal pilih status absensi untuk 1 siswa.']);
         }
-        
-        // Validate teacher can only input attendance for their schedule
-        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
+
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk) {
             if ($validated['guru_id'] != $user->guru_id) {
                 return back()->withErrors(['error' => 'Anda hanya dapat menginput absensi untuk jadwal Anda sendiri.']);
             }
-            
+
             $hariIndonesia = [
                 'Monday' => 'Senin',
                 'Tuesday' => 'Selasa',
@@ -785,16 +904,41 @@ class AbsensiController extends Controller
             ];
             $hariEnglish = Carbon::parse($validated['tanggal'])->format('l');
             $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
-            
+
             $hasSchedule = JadwalKbm::where('guru_id', $user->guru_id)
                 ->where('kelas_id', $validated['kelas_id'])
                 ->where('hari', $hariQuery)
                 ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
                 ->where('semester_id', $validated['semester_id'])
                 ->exists();
-                
+
             if (!$hasSchedule) {
                 return back()->withErrors(['error' => 'Anda tidak memiliki jadwal mengajar di kelas ini pada hari tersebut.']);
+            }
+        }
+
+        if ($isGuruBk && Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id')) {
+            $isKelasBinaan = Kelas::where('id', $validated['kelas_id'])
+                ->where('guru_bk_id', $user->guru_id)
+                ->exists();
+            if (! $isKelasBinaan) {
+                return back()->withErrors(['error' => 'Kelas ini bukan kelas binaan Anda.']);
+            }
+        }
+
+        if ($isSiswaOfficer) {
+            $siswa = $user->siswa;
+            if (! $siswa || $validated['kelas_id'] != $siswa->kelas_id) {
+                return back()->withErrors(['error' => 'Anda hanya dapat menginput absensi untuk kelas Anda.']);
+            }
+
+            $kelas = Kelas::find($siswa->kelas_id);
+            if ($kelas && !$request->filled('guru_id') && $kelas->wali_kelas_id) {
+                $validated['guru_id'] = $kelas->wali_kelas_id;
+            }
+
+            if (empty($validated['guru_id'])) {
+                return back()->withErrors(['error' => 'Guru kelas belum ditentukan. Hubungi admin.']);
             }
         }
 
@@ -810,14 +954,12 @@ class AbsensiController extends Controller
                 'Saturday' => 'Sabtu',
                 'Sunday' => 'Minggu'
             ];
-
             $hariEnglish = Carbon::parse($validated['tanggal'])->format('l');
             $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
 
-            if ($isAdminOrKepala || $isGuruPiket) {
+            if ($isAdminOrKepala || $isGuruPiket || $isGuruBk) {
                 $targetJamIds = collect([$validated['jam_belajar_id']]);
-            } else {
-                // Guru: terapkan ke seluruh slot jadwal di kelas/hari yang sama
+            } elseif ($user->guru_id) {
                 $jadwalJamIds = JadwalKbm::where('guru_id', $validated['guru_id'])
                     ->where('kelas_id', $validated['kelas_id'])
                     ->where('hari', $hariQuery)
@@ -830,6 +972,8 @@ class AbsensiController extends Controller
                     ->push($validated['jam_belajar_id'])
                     ->unique()
                     ->values();
+            } else {
+                $targetJamIds = collect([$validated['jam_belajar_id']]);
             }
 
             $createdAbsensi = [];
@@ -855,10 +999,11 @@ class AbsensiController extends Controller
                 $absensi = AbsensiKelas::create(array_merge($validated, [
                     'jam_belajar_id' => $jamId,
                 ]));
+
                 foreach ($absensiSiswa as $siswaId => $status) {
                     $normalizedStatus = $this->normalizeAttendanceStatus($status);
                     if (!empty($normalizedStatus)) {
-                        \App\Models\AbsensiSiswa::create([
+                        AbsensiSiswa::create([
                             'absensi_kelas_id' => $absensi->id,
                             'siswa_id' => $siswaId,
                             'status' => $normalizedStatus,
@@ -868,7 +1013,6 @@ class AbsensiController extends Controller
                     }
                 }
 
-                // Sync to agenda guru
                 $this->syncAbsensiToAgendaGuru($absensi);
                 $this->updateAgendaGuruAttendanceNote($absensi);
 

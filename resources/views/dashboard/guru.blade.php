@@ -32,9 +32,10 @@
             <div class="row g-3">
                 @foreach($kelasBinaanBk as $kelasBinaan)
                     <div class="col-md-6 col-lg-4">
-                        <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id]) }}" class="btn btn-outline-primary w-100 text-start py-3" style="height: auto;">
+                        <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelasBinaan->id]) }}" class="btn btn-outline-primary w-100 text-start py-3" style="height: auto;">
                             <div class="fw-bold">{{ $kelasBinaan->nama_kelas }}</div>
                             <div class="small text-muted">Tingkat: {{ $kelasBinaan->tingkat_kelas ?? '-' }} • {{ $kelasBinaan->total_siswa ?? 0 }} siswa</div>
+                            <div class="small text-primary mt-1">Klik untuk lihat statistik kelas binaan</div>
                         </a>
                     </div>
                 @endforeach
@@ -171,7 +172,7 @@
                     <!-- Jadwal Mengajar -->
                     <div class="col-md-6 col-lg-3">
                         @if(auth()->user()->guru_id)
-                        <a href="{{ route('jadwal-kbm.show-by-guru', auth()->user()->guru_id) }}" class="btn btn-outline-primary w-100 py-4" style="height: auto;">
+                        <a href="{{ route('jadwal-kbm.show-by-guru', ['guru' => auth()->user()->guru_id]) }}" class="btn btn-outline-primary w-100 py-4" style="height: auto;">
                         @else
                         <a href="{{ route('jadwal-kbm.index') }}" class="btn btn-outline-primary w-100 py-4" style="height: auto;">
                         @endif

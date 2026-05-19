@@ -158,6 +158,7 @@
         $hideGuruPicker = auth()->user()->hasAnyRole([
             'Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket'
         ]);
+        $disableAgendaActions = auth()->user()->hasRole('Siswa') && ! auth()->user()->hasClassPosition();
     @endphp
 
     @if(!$hideGuruPicker && $guruQuickAccess->isNotEmpty())
@@ -275,6 +276,7 @@
                                         <i class="ti ti-user me-1"></i>{{ $kelas->wali_nama }}
                                     </p>
                                     @endif
+                                    @unless($disableAgendaActions)
                                     <a href="{{ route('agenda_kelas.create', ['kelas_id' => $kelas->id, 'jenis_kegiatan' => $filterJenisKegiatan]) }}" 
                                        class="btn btn-sm w-100" 
                                        style="background-color: {{ $btnColor }} !important; 
@@ -285,9 +287,10 @@
                                        onmouseout="this.style.backgroundColor='{{ $btnColor }}'; this.style.borderColor='{{ $btnColor }}';">
                                         <i class="ti ti-edit me-1"></i>Isi Agenda Kelas
                                     </a>
+                                    @endunless
                                     <button type="button" class="btn btn-sm w-100 mt-2 btn-outline-secondary" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#previewAgendaModal"
+                                            data-toggle="modal" 
+                                            data-target="#previewAgendaModal"
                                             onclick="loadAgendaPreview({{ $kelas->id }}, {{ $selectedGuru ? $selectedGuru->id : 'null' }})">
                                         <i class="ti ti-eye me-1"></i>Preview Agenda
                                     </button>
@@ -314,9 +317,11 @@
                             @endif
                         </h4>
                     </div>
+                    @unless($disableAgendaActions)
                     <a href="{{ route('agenda_kelas.create') }}" class="btn btn-primary btn-sm">
                         <i class="ti ti-plus"></i> Tambah Agenda
                     </a>
+                    @endunless
                 </div>
                 <div class="card-body">
                     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
@@ -377,7 +382,8 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <div class="btn-group" role="group">
+                                            @unless($disableAgendaActions)
+                                        <div class="btn-group" role="group">
                                                 <a href="{{ route('agenda_kelas.show', $it->id) }}" class="btn btn-sm btn-info" title="Lihat">
                                                     <i class="ti ti-eye"></i>
                                                 </a>
@@ -392,6 +398,7 @@
                                                     </button>
                                                 </form>
                                             </div>
+                                        @endunless
                                         </td>
                                     </tr>
                                 @endforeach
@@ -413,7 +420,7 @@
                 <h5 class="modal-title text-white" id="previewAgendaLabel">
                     <i class="ti ti-file-pdf me-2"></i>Preview Agenda Kelas
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 600px;">
                 <div id="pdfContainer" class="w-100 h-100">
@@ -434,7 +441,7 @@
                 <a href="#" id="printLink" class="btn btn-info" target="_blank" style="display: none;">
                     <i class="ti ti-printer me-1"></i>Print
                 </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>

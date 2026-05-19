@@ -12,6 +12,16 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class JamBelajarController extends Controller
 {
+    protected function authorizeJamBelajarManagement()
+    {
+        $user = auth()->user();
+        if ($user && $user->hasAnyRole(['Siswa','Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket'])) {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Hanya pengelola pusat yang dapat mengatur jam belajar.');
+        }
+
+        return null;
+    }
+
     public function index()
     {
         $items = JamBelajar::orderByDay()->get();
@@ -23,6 +33,10 @@ class JamBelajarController extends Controller
 
     public function create()
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
         $kegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
         return view('jam_belajar.create', compact('days', 'kegiatanList'));
@@ -30,6 +44,10 @@ class JamBelajarController extends Controller
 
     public function store(Request $request)
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $data = $request->validate([
             'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'urutan' => 'required|integer|min:1',
@@ -53,6 +71,10 @@ class JamBelajarController extends Controller
 
     public function edit(JamBelajar $jamBelajar)
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
         $kegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
         return view('jam_belajar.edit', ['item' => $jamBelajar, 'days' => $days, 'kegiatanList' => $kegiatanList]);
@@ -60,6 +82,10 @@ class JamBelajarController extends Controller
 
     public function update(Request $request, JamBelajar $jamBelajar)
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $data = $request->validate([
             'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'urutan' => 'required|integer|min:1',
@@ -84,12 +110,20 @@ class JamBelajarController extends Controller
 
     public function destroy(JamBelajar $jamBelajar)
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $jamBelajar->delete();
         return redirect()->route('jam_belajar.index')->with('success','Jam belajar dihapus');
     }
 
     public function destroyAll()
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         JamBelajar::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
@@ -98,6 +132,10 @@ class JamBelajarController extends Controller
 
     public function insertSlot(Request $request)
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $data = $request->validate([
             'hari' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
             'urutan' => 'required|integer|min:1',
@@ -140,16 +178,28 @@ class JamBelajarController extends Controller
 
     public function export()
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         return Excel::download(new JamBelajarExport, 'Jam_KBM_' . date('Y-m-d') . '.xlsx');
     }
 
     public function templateDownload()
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         return Excel::download(new JamBelajarTemplateExport, 'Template_Jam_KBM.xlsx');
     }
 
     public function import(Request $request)
     {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);

@@ -3,6 +3,9 @@
 @section('title','Jam Belajar')
 
 @section('content')
+@php
+    $isSiswa = auth()->user()->hasRole('Siswa');
+@endphp
 <div class="row mb-4">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
@@ -10,12 +13,12 @@
                 <h2 class="fw-bold mb-0">Pengaturan Jam KBM</h2>
                 <small class="text-muted">Kelola jadwal pembelajaran setiap harinya</small>
             </div>
-            @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
+            @unless($isSiswa)
             <div class="d-flex gap-2">
                 <a href="{{ route('jam_belajar.create') }}" class="btn btn-primary">
                     <i class="ti ti-plus me-2"></i>Tambah Jam KBM
                 </a>
-                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#insertModal">
+                <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#insertModal">
                     <i class="ti ti-plus me-2"></i>Sisipkan Waktu
                 </button>
                 <a href="{{ route('jam_belajar.export') }}" class="btn btn-success">
@@ -24,7 +27,7 @@
                 <a href="{{ route('jam_belajar.template') }}" class="btn btn-info">
                     <i class="ti ti-file-spreadsheet me-2"></i>Download Template
                 </a>
-                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importModal">
+                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#importModal">
                     <i class="ti ti-upload me-2"></i>Import Excel
                 </button>
                 <form action="{{ route('jam_belajar.destroy_all') }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA pengaturan jam KBM? Tindakan ini tidak dapat dibatalkan.')">
@@ -35,7 +38,7 @@
                     </button>
                 </form>
             </div>
-            @endif
+            @endunless
         </div>
     </div>
 </div>
@@ -43,7 +46,7 @@
 @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show">
         <i class="ti ti-check me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
     </div>
 @endif
 
@@ -58,7 +61,7 @@
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
     </div>
 @endif
 
@@ -70,7 +73,7 @@
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
     </div>
 @endif
 
@@ -114,7 +117,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
+                                                @unless($isSiswa)
                                                 <div class="btn-group btn-group-sm">
                                                     <a href="{{ route('jam_belajar.edit', $schedule->id) }}" class="btn btn-warning">
                                                         <i class="ti ti-edit"></i> Edit
@@ -127,7 +130,7 @@
                                                         </button>
                                                     </form>
                                                 </div>
-                                                @endif
+                                                @endunless
                                             </td>
                                         </tr>
                                     @endforeach
@@ -175,7 +178,7 @@
 <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="ti ti-file-upload me-2"></i>Import Jadwal Jam KBM
@@ -215,7 +218,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="ti ti-upload me-1"></i>Import Jadwal
                     </button>
@@ -229,7 +232,7 @@
     <div class="modal fade" id="insertModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-plus me-2"></i>Sisipkan Waktu/Jam Baru
@@ -279,7 +282,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-plus me-1"></i>Sisipkan
                         </button>

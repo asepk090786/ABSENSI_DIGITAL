@@ -14,6 +14,47 @@
         </div>
     </div>
 
+    <div class="row row-cards mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h1 text-primary mb-2">{{ $stats->total_siswa ?? 0 }}</div>
+                    <div class="text-muted">Siswa Aktif</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h1 text-success mb-2">{{ $stats->absensi_count ?? 0 }}</div>
+                    <div class="text-muted">Total Absensi</div>
+                    @if($stats->last_absensi_date)
+                        <div class="text-muted small">Terakhir: {{ \Carbon\Carbon::parse($stats->last_absensi_date)->translatedFormat('d F Y') }}</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h1 text-warning mb-2">{{ $stats->agenda_count ?? 0 }}</div>
+                    <div class="text-muted">Agenda Kelas</div>
+                    @if($stats->last_agenda_date)
+                        <div class="text-muted small">Terakhir: {{ \Carbon\Carbon::parse($stats->last_agenda_date)->translatedFormat('d F Y') }}</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="h1 text-danger mb-2">{{ $stats->laporan_wali_kelas_count ?? 0 }}</div>
+                    <div class="text-muted">Laporan Wali Kelas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3">
         <div class="col-md-6 col-lg-3">
             <a href="{{ route('guru_bk_layanan.layanan', ['kelas' => $kelas->id]) }}" class="btn btn-outline-primary w-100 py-4" style="height: auto;">
@@ -61,7 +102,7 @@
         </div>
 
         <div class="col-md-6 col-lg-3">
-            <button type="button" class="btn btn-outline-dark w-100 py-4 btn-print-preview" style="height: auto;" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-bs-toggle="modal" data-bs-target="#printPreviewModal">
+            <button type="button" class="btn btn-outline-dark w-100 py-4 btn-print-preview" style="height: auto;" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-toggle="modal" data-target="#printPreviewModal">
                 <div class="text-center">
                     <i class="ti ti-printer" style="font-size: 44px;"></i>
                     <div class="mt-2 fw-bold">Print Output Layanan BK</div>
@@ -76,13 +117,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Preview Print Layanan BK</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 75vh;">
                 <iframe id="printPreviewFrame" src="" style="width:100%;height:100%;border:0;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" id="btnPrintFromPreview">
                     <i class="ti ti-printer me-1"></i>Print
                 </button>

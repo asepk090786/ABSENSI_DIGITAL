@@ -12,7 +12,7 @@
             </div>
             <div class="col-auto ms-auto">
                 <div class="btn-list">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#importModal">
                         <i class="ti ti-upload me-2"></i>Import XML
                     </button>
                 </div>
@@ -31,7 +31,7 @@
                     <div class="text-secondary">{{ session('success') }}</div>
                 </div>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -46,7 +46,7 @@
                     <div class="text-secondary">{{ session('error') }}</div>
                 </div>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -152,7 +152,7 @@
                         <i class="ti ti-upload me-2"></i>
                         Import XML Time Table
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -179,7 +179,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
                         <i class="ti ti-x me-2"></i>Batal
                     </button>
                     <button type="submit" class="btn btn-primary">

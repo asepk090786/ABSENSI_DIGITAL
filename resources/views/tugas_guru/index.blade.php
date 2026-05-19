@@ -15,26 +15,30 @@
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
                     @endif
 
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
                     @endif
 
                     <!-- Tab Navigation -->
                     <ul class="nav nav-tabs mb-4" id="tugasTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="semua-tab" data-bs-toggle="tab" data-bs-target="#semua" type="button" role="tab">
+                            <button class="nav-link active" id="semua-tab" data-toggle="tab" data-target="#semua" type="button" role="tab">
                                 <i class="ti ti-list me-2"></i>Semua Tugas
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="perguru-tab" data-bs-toggle="tab" data-bs-target="#perguru" type="button" role="tab">
+                            <button class="nav-link" id="perguru-tab" data-toggle="tab" data-target="#perguru" type="button" role="tab">
                                 <i class="ti ti-user me-2"></i>Per Guru
                             </button>
                         </li>
@@ -58,13 +62,13 @@
                                         @if($itemsByTingkat->has($tingkat))
                                         <div class="accordion-item">
                                             <h2 class="accordion-header">
-                                                <button class="accordion-button {{ $indexTingkat === 0 ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $tingkat }}" aria-expanded="{{ $indexTingkat === 0 ? 'true' : 'false' }}">
+                                                <button class="accordion-button {{ $indexTingkat === 0 ? '' : 'collapsed' }}" type="button" data-toggle="collapse" data-target="#collapse{{ $tingkat }}" aria-expanded="{{ $indexTingkat === 0 ? 'true' : 'false' }}">
                                                     <i class="ti ti-school me-2"></i>
                                                     <strong>Tingkat {{ $tingkat }}</strong>
                                                     <span class="badge bg-primary ms-3">{{ $itemsByTingkat[$tingkat]->count() }} Tugas</span>
                                                 </button>
                                             </h2>
-                                            <div id="collapse{{ $tingkat }}" class="accordion-collapse collapse {{ $indexTingkat === 0 ? 'show' : '' }}" data-bs-parent="#tugasAccordion">
+                                            <div id="collapse{{ $tingkat }}" class="accordion-collapse collapse {{ $indexTingkat === 0 ? 'show' : '' }}" data-parent="#tugasAccordion">
                                                 <div class="accordion-body p-0">
                                                     <div class="table-responsive">
                                                         <table class="table table-striped table-hover mb-0">

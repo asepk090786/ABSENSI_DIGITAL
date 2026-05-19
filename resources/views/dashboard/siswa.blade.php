@@ -19,7 +19,7 @@
 </div>
 
 <div class="row row-cards mb-4">
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
         <div class="card card-sm">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
         <div class="card card-sm">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
         <div class="card card-sm">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -78,7 +78,43 @@
         </div>
     </div>
 
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-info text-white avatar">
+                            <i class="ti ti-medical-cross"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="font-weight-medium">{{ $attendanceSummary['izin'] ?? 0 }}</div>
+                        <div class="text-muted">Izin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="bg-secondary text-white avatar">
+                            <i class="ti ti-heart-pulse"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="font-weight-medium">{{ $attendanceSummary['sakit'] ?? 0 }}</div>
+                        <div class="text-muted">Sakit</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-2">
         <div class="card card-sm">
             <div class="card-body">
                 <div class="row align-items-center">

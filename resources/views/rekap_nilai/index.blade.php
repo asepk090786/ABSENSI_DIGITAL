@@ -20,6 +20,10 @@
             </div>
             <div class="card-body">
                 <!-- Filter Form -->
+                @php
+                    $isSiswa = auth()->user()->hasRole('Siswa');
+                    $siswaKelas = optional(auth()->user()->siswa)->kelas_id ? ($kelasOptions->first() ?? null) : null;
+                @endphp
                 <form method="GET" action="{{ route('rekap_nilai.index') }}" class="mb-4">
                     @if(request()->boolean('wali_kelas'))
                         <input type="hidden" name="wali_kelas" value="1">
@@ -27,14 +31,19 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Kelas <span class="text-danger">*</span></label>
-                            <select name="kelas_id" id="kelasSelect" class="form-select" required>
-                                <option value="">Pilih Kelas</option>
-                                @foreach($kelasOptions as $kelas)
-                                    <option value="{{ $kelas->id }}" {{ $kelasId == $kelas->id ? 'selected' : '' }}>
-                                        {{ $kelas->nama_kelas }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @if($isSiswa && $siswaKelas)
+                                <input type="text" class="form-control" value="{{ $siswaKelas->nama_kelas }}" readonly>
+                                <input type="hidden" name="kelas_id" value="{{ $kelasId }}">
+                            @else
+                                <select name="kelas_id" id="kelasSelect" class="form-select" required>
+                                    <option value="">Pilih Kelas</option>
+                                    @foreach($kelasOptions as $kelas)
+                                        <option value="{{ $kelas->id }}" {{ $kelasId == $kelas->id ? 'selected' : '' }}>
+                                            {{ $kelas->nama_kelas }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Mata Pelajaran <span class="text-danger">*</span></label>

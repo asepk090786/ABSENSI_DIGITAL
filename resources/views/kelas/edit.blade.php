@@ -14,21 +14,21 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('warning'))
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         @if(session('import_errors'))
                             <hr>
                             <strong>Detail Error:</strong>
@@ -125,7 +125,7 @@
                     <a href="{{ route('kelas.siswa.export', ['kela' => $kelas->id]) }}" class="btn btn-info btn-sm">
                         <i class="ti ti-download me-1"></i>Export Siswa
                     </a>
-                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportSiswa">
+                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImportSiswa">
                         <i class="ti ti-upload me-1"></i>Import Siswa
                     </button>
                     <a href="{{ route('kelas.siswa.template', ['kela' => $kelas->id]) }}" class="btn btn-outline-primary btn-sm">
@@ -336,7 +336,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Import Siswa Kelas</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="{{ route('kelas.siswa.import', ['kela' => $kelas->id]) }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -366,7 +366,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="ti ti-upload me-1"></i>Upload & Import
                     </button>

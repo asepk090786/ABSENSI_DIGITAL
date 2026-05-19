@@ -7,6 +7,7 @@ use App\Models\MataPelajaran;
 use App\Models\Kelas;
 use App\Models\KomponenNilai;
 use App\Models\CapaianPembelajaran;
+use App\Models\JadwalKbm;
 use Illuminate\Http\Request;
 
 class RencanaPembelajaranController extends Controller
@@ -20,6 +21,51 @@ class RencanaPembelajaranController extends Controller
         $mataPelajaranId = $request->query('mata_pelajaran_id');
         $tingkat = $request->query('tingkat');
         $sort = $request->query('sort', 'terbaru');
+
+        if (!$mataPelajaranId || !$tingkat) {
+            $jadwalKbm = JadwalKbm::where('guru_id', $guru->id)
+                ->with(['mataPelajaran', 'kelas'])
+                ->whereNotNull('mata_pelajaran_id')
+                ->get();
+
+            $groupedByMapelAndTingkat = [];
+            foreach ($jadwalKbm as $jadwal) {
+                if (!$jadwal->kelas) {
+                    continue;
+                }
+                $key = $jadwal->mata_pelajaran_id . '_' . $jadwal->kelas->tingkat_kelas;
+                if (!isset($groupedByMapelAndTingkat[$key])) {
+                    $groupedByMapelAndTingkat[$key] = [];
+                }
+                $groupedByMapelAndTingkat[$key][] = $jadwal;
+            }
+
+            $items = [];
+            foreach ($groupedByMapelAndTingkat as $group) {
+                $mataPelajaran = $group[0]->mataPelajaran;
+                $kelas = collect($group)->pluck('kelas')->unique('id')->values();
+
+                $item = clone $mataPelajaran;
+                $item->kelas_list = $kelas;
+                $item->kelas_names = $kelas->pluck('nama_kelas')->sort()->join(', ');
+                $item->tingkat = $kelas->first()->tingkat_kelas ?? '-';
+
+                $items[] = $item;
+            }
+
+            usort($items, function ($a, $b) {
+                $cmp = strcasecmp($a->nama_mapel, $b->nama_mapel);
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
+                return strcmp($a->tingkat, $b->tingkat);
+            });
+
+            return view('rencana_pembelajaran.index', [
+                'items' => collect($items),
+                'isLanding' => true,
+            ]);
+        }
 
         $query = RencanaPembelajaran::where('guru_id', $guru->id)
             ->where('mata_pelajaran_id', $mataPelajaranId)
@@ -104,6 +150,19 @@ class RencanaPembelajaranController extends Controller
     /**
      * Show the form for creating a new resource.
      */
+    private function scopedKomponenNilaiQuery()
+    {
+        $query = KomponenNilai::query();
+
+        if (auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+            $query->whereHas('capaianPembelajaran', function ($subQuery) {
+                $subQuery->where('user_id', auth()->id());
+            });
+        }
+
+        return $query;
+    }
+
     public function create(Request $request)
     {
         $guru = auth()->user()->guru;
@@ -124,8 +183,8 @@ class RencanaPembelajaranController extends Controller
             ->unique('id')
             ->sortBy('nama_kelas');
 
-        // Load all assessment components
-        $komponenNilai = KomponenNilai::orderBy('nama_komponen')->get();
+        // Load assessment components created by this guru
+        $komponenNilai = $this->scopedKomponenNilaiQuery()->orderBy('nama_komponen')->get();
 
         return view('rencana_pembelajaran.create', [
             'mataPelajaran' => $mataPelajaran,
@@ -162,6 +221,17 @@ class RencanaPembelajaranController extends Controller
         $mataPelajaranId = $validated['mata_pelajaran_id'];
         $tingkat = Kelas::find($validated['kelas_ids'][0])->tingkat_kelas;
         $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
+
+        if (!empty($komponenNilaiIds) && auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+            $allowedKomponenIds = $this->scopedKomponenNilaiQuery()
+                ->whereIn('id', $komponenNilaiIds)
+                ->pluck('id')
+                ->toArray();
+
+            if (count($allowedKomponenIds) !== count($komponenNilaiIds)) {
+                abort(403, 'Akses ditolak untuk salah satu komponen penilaian.');
+            }
+        }
 
         // Create rencana pembelajaran for each selected class
         foreach ($validated['kelas_ids'] as $kelasId) {
@@ -214,8 +284,8 @@ class RencanaPembelajaranController extends Controller
             ->unique('id')
             ->sortBy('nama_kelas');
         
-        // Load all assessment components
-        $komponenNilai = KomponenNilai::orderBy('nama_komponen')->get();
+        // Load assessment components created by this guru
+        $komponenNilai = $this->scopedKomponenNilaiQuery()->orderBy('nama_komponen')->get();
         
         // Load selected komponen for this rencana
         $selectedKomponenIds = $rencanaPembelajaran->komponenNilai()->pluck('komponen_nilai.id')->toArray();
@@ -255,6 +325,17 @@ class RencanaPembelajaranController extends Controller
 
         $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
         unset($validated['komponen_nilai_ids']);
+
+        if (!empty($komponenNilaiIds) && auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+            $allowedKomponenIds = $this->scopedKomponenNilaiQuery()
+                ->whereIn('id', $komponenNilaiIds)
+                ->pluck('id')
+                ->toArray();
+
+            if (count($allowedKomponenIds) !== count($komponenNilaiIds)) {
+                abort(403, 'Akses ditolak untuk salah satu komponen penilaian.');
+            }
+        }
 
         $rencanaPembelajaran->update($validated);
         

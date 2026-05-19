@@ -24,9 +24,22 @@ class KomponenNilaiController extends Controller
         return $query;
     }
 
+    private function scopedKomponenQuery()
+    {
+        $query = KomponenNilai::query();
+
+        if (auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+            $query->whereHas('capaianPembelajaran', function ($subQuery) {
+                $subQuery->where('user_id', auth()->id());
+            });
+        }
+
+        return $query;
+    }
+
     public function index()
     {
-        $items = KomponenNilai::orderBy('nama_komponen')->get();
+        $items = $this->scopedKomponenQuery()->orderBy('nama_komponen')->get();
         $capaianList = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
         return view('komponen_nilai.index', compact('items', 'capaianList'));
     }
@@ -43,6 +56,16 @@ class KomponenNilaiController extends Controller
             'indikator_kriteria' => 'nullable|string',
         ]);
 
+        if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && $validated['capaian_pembelajaran_id']) {
+            $allowed = CapaianPembelajaran::where('id', $validated['capaian_pembelajaran_id'])
+                ->where('user_id', auth()->id())
+                ->exists();
+
+            if (! $allowed) {
+                abort(403, 'Akses ditolak untuk capaian pembelajaran ini.');
+            }
+        }
+
         KomponenNilai::create($validated);
 
         return redirect()->route('komponen_nilai.index')->with('success', 'Komponen penilaian berhasil ditambahkan.');
@@ -50,14 +73,14 @@ class KomponenNilaiController extends Controller
 
     public function edit($id)
     {
-        $item = KomponenNilai::findOrFail($id);
+        $item = $this->scopedKomponenQuery()->findOrFail($id);
         $capaianList = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
         return view('komponen_nilai.edit', compact('item', 'capaianList'));
     }
 
     public function update(Request $request, $id)
     {
-        $item = KomponenNilai::findOrFail($id);
+        $item = $this->scopedKomponenQuery()->findOrFail($id);
 
         $validated = $request->validate([
             'capaian_pembelajaran_id' => 'nullable|exists:capaian_pembelajarans,id',
@@ -69,6 +92,16 @@ class KomponenNilaiController extends Controller
             'indikator_kriteria' => 'nullable|string',
         ]);
 
+        if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && $validated['capaian_pembelajaran_id']) {
+            $allowed = CapaianPembelajaran::where('id', $validated['capaian_pembelajaran_id'])
+                ->where('user_id', auth()->id())
+                ->exists();
+
+            if (! $allowed) {
+                abort(403, 'Akses ditolak untuk capaian pembelajaran ini.');
+            }
+        }
+
         $item->update($validated);
 
         return redirect()->route('komponen_nilai.index')->with('success', 'Komponen penilaian berhasil diperbarui.');
@@ -76,7 +109,7 @@ class KomponenNilaiController extends Controller
 
     public function destroy($id)
     {
-        $item = KomponenNilai::findOrFail($id);
+        $item = $this->scopedKomponenQuery()->findOrFail($id);
         $item->delete();
 
         return redirect()->route('komponen_nilai.index')->with('success', 'Komponen penilaian berhasil dihapus.');

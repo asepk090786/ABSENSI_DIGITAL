@@ -9,6 +9,9 @@
                     <h5 class="title">Foto Profile</h5>
                 </div>
                 <div class="card-body text-center">
+                    @php
+                        $defaultAvatar = auth()->user()->jenis_kelamin === 'P' ? asset('images/default-avatar-female.svg') : asset('images/default-avatar-male.svg');
+                    @endphp
                     <div class="mb-3">
                         @if(auth()->user()->foto)
                             <img src="{{ asset('storage/' . auth()->user()->foto) }}" 
@@ -17,12 +20,11 @@
                                  style="width: 150px; height: 150px; object-fit: cover;"
                                  id="preview-image">
                         @else
-                            <img src="{{ asset('white') }}/img/default-avatar.png" 
-                                 alt="Default Photo" 
+                            <img src="{{ $defaultAvatar }}" 
+                                 alt="Default Profile Photo" 
                                  class="rounded-circle"
                                  style="width: 150px; height: 150px; object-fit: cover;"
-                                 id="preview-image"
-                                 onerror="this.src='{{ asset('white') }}/img/emilyz.jpg'">
+                                 id="preview-image">
                         @endif
                     </div>
                     <h5 class="title mb-1">{{ auth()->user()->name }}</h5>

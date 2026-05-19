@@ -16,7 +16,7 @@
                     <a href="{{ route('users.export') }}" class="btn btn-success btn-sm" title="Export ke Excel">
                         <i class="ti ti-download"></i> Export
                     </a>
-                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#importModal" title="Import dari Excel">
+                    <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#importModal" title="Import dari Excel">
                         <i class="ti ti-upload"></i> Import
                     </button>
                     <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteBtn" style="display: none;">
@@ -38,7 +38,7 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -50,7 +50,7 @@
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -238,7 +238,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importModalLabel">Import Akun Pengguna dari Excel</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="{{ route('users.import') }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -253,7 +253,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Upload & Import</button>
                 </div>
             </form>
@@ -267,7 +267,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="bulkDeleteModalLabel">Hapus Akun Terpilih</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="bulkDeleteForm" method="POST">
                 @csrf
@@ -277,7 +277,7 @@
                     <div id="selectedUsersList" style="max-height: 300px; overflow-y: auto;"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-danger">Hapus Sekarang</button>
                 </div>
             </form>

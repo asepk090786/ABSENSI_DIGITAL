@@ -41,11 +41,13 @@ class NilaiController extends Controller
         $user = auth()->user();
         $guru = $user ? $user->guru : null;
         $isAdminOrKepala = $user && $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruBk = $user && $user->hasRole('Guru BK');
+        $binaanKelasIds = collect();
 
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
 
-        if ($guru) {
+        if ($guru && !$isAdminOrKepala && !$isGuruBk) {
             $jadwalQuery = JadwalKbm::with(['kelas', 'mataPelajaran'])
                 ->where('guru_id', $guru->id)
                 ->whereNotNull('mata_pelajaran_id')
@@ -121,6 +123,47 @@ class NilaiController extends Controller
                     ];
                 }
             }
+
+        } elseif ($isGuruBk && $guru) {
+            $binaanKelasIds = Kelas::where('guru_bk_id', $guru->id)->pluck('id');
+
+            $nilaiMenuQuery = DB::table('nilai_harian as nh')
+                ->join('kelas as k', 'nh.kelas_id', '=', 'k.id')
+                ->join('mata_pelajaran as mp', 'nh.mapel_id', '=', 'mp.id')
+                ->whereIn('nh.kelas_id', $binaanKelasIds)
+                ->when($tahunAjaranAktif, function ($query) use ($tahunAjaranAktif) {
+                    $query->where('nh.tahun_ajaran_id', $tahunAjaranAktif->id);
+                })
+                ->when($semesterAktif, function ($query) use ($semesterAktif) {
+                    $query->where('nh.semester_id', $semesterAktif->id);
+                })
+                ->select('nh.kelas_id', 'nh.mapel_id', 'k.nama_kelas', 'mp.nama_mapel')
+                ->distinct();
+
+            $nilaiMenuRows = $nilaiMenuQuery->get();
+
+            $quickMenus = $nilaiMenuRows->map(function ($row) {
+                return (object) [
+                    'kelas_id' => $row->kelas_id,
+                    'mata_pelajaran_id' => $row->mapel_id,
+                    'kelas' => (object) ['id' => $row->kelas_id, 'nama_kelas' => $row->nama_kelas],
+                    'mataPelajaran' => (object) ['id' => $row->mapel_id, 'nama_mapel' => $row->nama_mapel],
+                ];
+            })->values();
+
+            $kelasOptions = $nilaiMenuRows->unique('kelas_id')->map(function ($row) {
+                return (object) ['id' => $row->kelas_id, 'nama_kelas' => $row->nama_kelas];
+            })->values();
+
+            $mapelOptions = $nilaiMenuRows->unique('mapel_id')->map(function ($row) {
+                return (object) ['id' => $row->mapel_id, 'nama_mapel' => $row->nama_mapel];
+            })->values();
+
+            $mapelByKelas = $nilaiMenuRows->groupBy('kelas_id')->map(function ($group) {
+                return $group->map(function ($row) {
+                    return ['id' => $row->mapel_id, 'nama' => $row->nama_mapel];
+                })->unique('id')->values();
+            });
 
         } elseif ($isAdminOrKepala) {
             $jadwalAdminQuery = JadwalKbm::with(['kelas', 'mataPelajaran'])
@@ -242,6 +285,10 @@ class NilaiController extends Controller
         }
         if ($semesterAktif) {
             $itemsQuery->where('nilai_harian.semester_id', $semesterAktif->id);
+        }
+
+        if ($isGuruBk && $binaanKelasIds->isNotEmpty()) {
+            $itemsQuery->whereIn('nilai_harian.kelas_id', $binaanKelasIds);
         }
 
         if ($kelasId) {

@@ -18,7 +18,7 @@
                         @if($canManageMapel)
                         <div class="col-auto">
                             <div class="btn-list">
-                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalImport">
+                                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImport">
                                     <i class="ti ti-upload me-1"></i>Import Excel
                                 </button>
                                 <a href="{{ route('mata_pelajaran.export') }}" class="btn btn-info btn-sm">
@@ -40,21 +40,21 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('warning'))
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         @if(session('import_errors'))
                             <hr>
                             <strong>Detail Error:</strong>
@@ -139,7 +139,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Import Mata Pelajaran dari Excel</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <form action="{{ route('mata_pelajaran.import') }}" method="POST" enctype="multipart/form-data">
                     @csrf
@@ -170,7 +170,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-upload me-1"></i>Upload & Import
                         </button>

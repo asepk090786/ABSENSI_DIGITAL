@@ -37,6 +37,34 @@ class SiswaController extends Controller
         }
     }
 
+    private function ensureWaliKelasCanStoreSiswa(Request $request): void
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $user->hasRole('Wali Kelas')) {
+            return;
+        }
+
+        $guru = $user->guru;
+        if (! $guru) {
+            abort(403, 'Akses ditolak. Anda tidak terdaftar sebagai guru.');
+        }
+
+        $kelasBinaan = Kelas::where('wali_kelas_id', $guru->id)->first();
+        if (! $kelasBinaan) {
+            abort(403, 'Akses ditolak. Anda tidak ditugaskan sebagai wali kelas.');
+        }
+
+        if ((int) $request->input('kelas_id') !== $kelasBinaan->id) {
+            abort(403, 'Akses ditolak. Anda hanya dapat menambahkan siswa ke kelas binaan Anda.');
+        }
+    }
+
+    private function canManageClassPositions(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['Admin', 'Wali Kelas']);
+    }
+
     public function index()
     {
         $items = Siswa::with(['user', 'kelas'])->orderBy('nama')->get();
@@ -51,6 +79,8 @@ class SiswaController extends Controller
 
     public function store(Request $request)
     {
+        $this->ensureWaliKelasCanStoreSiswa($request);
+
         $validated = $request->validate([
             'nis' => 'required|string|max:50|unique:siswa,nis',
             'nisn' => 'required|string|max:50|unique:siswa,nisn',
@@ -60,6 +90,7 @@ class SiswaController extends Controller
             'email' => 'required|email|max:255|unique:users,email|unique:siswa,email',
             'username' => 'required|string|max:255|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
+            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris',
         ]);
 
         $roleSiswa = Role::where('role_name', 'Siswa')->first();
@@ -68,7 +99,7 @@ class SiswaController extends Controller
             return redirect()->route('siswa.index')->with('error', 'Role Siswa belum tersedia.');
         }
 
-        $siswa = Siswa::create([
+        $siswaData = [
             'nis' => $validated['nis'],
             'nisn' => $validated['nisn'],
             'nama' => $validated['nama'],
@@ -76,7 +107,13 @@ class SiswaController extends Controller
             'kelas_id' => $validated['kelas_id'],
             'email' => $validated['email'],
             'status_aktif' => true,
-        ]);
+        ];
+
+        if ($this->canManageClassPositions()) {
+            $siswaData['jabatan_kelas'] = $validated['jabatan_kelas'] ?? null;
+        }
+
+        $siswa = Siswa::create($siswaData);
 
         User::create([
             'name' => $validated['nama'],
@@ -115,6 +152,7 @@ class SiswaController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $userId . '|unique:siswa,email,' . $siswa->id,
             'username' => 'required|string|max:255|unique:users,username,' . $userId,
             'password' => 'nullable|string|min:6|confirmed',
+            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris',
         ]);
 
         $roleSiswa = Role::where('role_name', 'Siswa')->first();
@@ -123,14 +161,20 @@ class SiswaController extends Controller
             return redirect()->route('siswa.index')->with('error', 'Role Siswa belum tersedia.');
         }
 
-        $siswa->update([
+        $siswaData = [
             'nis' => $validated['nis'],
             'nisn' => $validated['nisn'],
             'nama' => $validated['nama'],
             'jenis_kelamin' => $validated['jenis_kelamin'],
             'kelas_id' => $validated['kelas_id'],
             'email' => $validated['email'],
-        ]);
+        ];
+
+        if ($this->canManageClassPositions()) {
+            $siswaData['jabatan_kelas'] = $validated['jabatan_kelas'] ?? null;
+        }
+
+        $siswa->update($siswaData);
 
         $user = $siswa->user ?: User::where('siswa_id', $siswa->id)->first();
 

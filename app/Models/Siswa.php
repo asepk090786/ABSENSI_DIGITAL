@@ -21,6 +21,7 @@ class Siswa extends Model
         'kelas_id',
         'email',
         'status_aktif',
+        'jabatan_kelas',
     ];
 
     public function user()

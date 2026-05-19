@@ -27,7 +27,7 @@
                             <i class="ti ti-printer me-1"></i>Cetak
                         </button>
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
                                 <i class="ti ti-download me-1"></i>Download PDF
                             </button>
                             <ul class="dropdown-menu">

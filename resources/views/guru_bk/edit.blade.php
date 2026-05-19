@@ -14,10 +14,10 @@
                         @method('PUT')
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-12">
                                 <div class="mb-3">
                                     <label class="form-label">Pilih Guru (Opsional)</label>
-                                    <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
+                                    <select name="guru_id" class="form-control @error('guru_id') is-invalid @enderror">
                                         <option value="">-- Pilih Guru atau Isi Manual --</option>
                                         @forelse($guru as $g)
                                             <option value="{{ $g->id }}" {{ old('guru_id', $gurubk->guru_id) == $g->id ? 'selected' : '' }}>
@@ -55,11 +55,13 @@
                                     @enderror
                                 </div>
                             </div>
+                        </div>
 
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Status <span class="text-danger">*</span></label>
-                                    <select name="status" class="form-select @error('status') is-invalid @enderror" required>
+                                    <select name="status" class="form-control @error('status') is-invalid @enderror" required>
                                         <option value="">Pilih Status</option>
                                         <option value="Aktif" {{ old('status', $gurubk->is_active ? 'Aktif' : 'Tidak Aktif') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
                                         <option value="Tidak Aktif" {{ old('status', $gurubk->is_active ? 'Aktif' : 'Tidak Aktif') == 'Tidak Aktif' ? 'selected' : '' }}>Tidak Aktif</option>
@@ -76,7 +78,7 @@
                                     @php
                                         $selectedKelasBinaan = old('kelas_binaan', $kelasBinaanIds ?? []);
                                     @endphp
-                                    <select name="kelas_binaan[]" class="form-select @error('kelas_binaan') is-invalid @enderror @error('kelas_binaan.*') is-invalid @enderror" multiple>
+                                    <select name="kelas_binaan[]" class="form-control @error('kelas_binaan') is-invalid @enderror @error('kelas_binaan.*') is-invalid @enderror" multiple size="5">
                                         @foreach($kelasList as $kelas)
                                             <option value="{{ $kelas->id }}" {{ in_array($kelas->id, $selectedKelasBinaan) ? 'selected' : '' }}>
                                                 {{ $kelas->nama_kelas }}
@@ -92,8 +94,10 @@
                                     <small class="text-muted d-block mt-1">Tekan Ctrl (Windows/Linux) untuk memilih lebih dari satu kelas.</small>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
+                        <div class="row">
+                            <div class="col-12">
                                 <div class="mb-3">
                                     <label class="form-label">Foto</label>
                                     <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror" accept="image/*">
@@ -101,11 +105,13 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                     @if($gurubk->foto)
-                                        <img src="{{ asset('storage/' . $gurubk->foto) }}" alt="Foto" class="mt-2 rounded" style="max-height: 100px;">
+                                        <img src="{{ asset('storage/' . $gurubk->foto) }}" alt="Foto" class="mt-2 rounded" style="max-height: 120px;">
                                     @endif
                                 </div>
                             </div>
+                        </div>
 
+                        <div class="row">
                             <div class="col-12">
                                 <div class="mb-3">
                                     <label class="form-label">Alamat</label>
@@ -115,7 +121,9 @@
                                     @enderror
                                 </div>
                             </div>
+                        </div>
 
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Telepon</label>

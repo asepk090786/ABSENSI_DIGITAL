@@ -822,7 +822,7 @@
                                 <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" 
                                        placeholder="Password" required>
                                 <span class="input-group-text">
-                                    <a href="#" class="link-secondary" data-bs-toggle="tooltip" title="Tampilkan password" 
+                                    <a href="#" class="link-secondary" data-toggle="tooltip" title="Tampilkan password" 
                                        onclick="togglePassword(event)">
                                         <i class="ti ti-eye" id="toggleIcon"></i>
                                     </a>

@@ -21,21 +21,21 @@
         @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="ti ti-check me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
         @if(session('warning'))
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
         @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="ti ti-circle-x me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
@@ -48,19 +48,19 @@
                 <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
 
         <!-- Tab Navigation -->
         <ul class="nav nav-tabs mb-3" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="capaian-tab" data-bs-toggle="tab" data-bs-target="#capaian-pane" type="button" role="tab">
+                <button class="nav-link active" id="capaian-tab" data-toggle="tab" data-target="#capaian-pane" type="button" role="tab">
                     <i class="ti ti-book me-2"></i>Capaian Pembelajaran
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="komponen-tab" data-bs-toggle="tab" data-bs-target="#komponen-pane" type="button" role="tab">
+                <button class="nav-link" id="komponen-tab" data-toggle="tab" data-target="#komponen-pane" type="button" role="tab">
                     <i class="ti ti-checklist-2 me-2"></i>Komponen Penilaian
                 </button>
             </li>
@@ -150,7 +150,7 @@
                             <a href="{{ route('capaian_pembelajaran.template') }}" class="btn btn-sm btn-secondary" title="Download template">
                                 <i class="ti ti-file-download me-1"></i>Template
                             </a>
-                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#importCapaianModal" title="Upload file CP">
+                            <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#importCapaianModal" title="Upload file CP">
                                 <i class="ti ti-upload me-1"></i>Import
                             </button>
                         </div>
@@ -177,7 +177,7 @@
                                             <td><small>{{ Str::limit($cp->deskripsi, 50) }}</small></td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCapaianModal{{ $cp->id }}" title="Edit">
+                                                    <button type="button" class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editCapaianModal{{ $cp->id }}" title="Edit">
                                                         <i class="ti ti-edit"></i>
                                                     </button>
                                                     <form action="{{ route('capaian_pembelajaran.destroy', $cp->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus capaian ini?')">
@@ -199,7 +199,7 @@
                                                         @method('PUT')
                                                         <div class="modal-header">
                                                             <h5 class="modal-title">Edit Capaian Pembelajaran</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                                         </div>
                                                         <div class="modal-body">
                                                             <div class="mb-3">
@@ -236,7 +236,7 @@
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                                                             <button type="submit" class="btn btn-primary">Update</button>
                                                         </div>
                                                     </form>
@@ -263,7 +263,7 @@
                                 @csrf
                                 <div class="modal-header">
                                     <h5 class="modal-title">Import Capaian Pembelajaran</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="alert alert-info">
@@ -280,7 +280,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="ti ti-upload me-1"></i>Upload
                                     </button>
@@ -353,7 +353,7 @@
                             <a href="{{ route('komponen_nilai.template') }}" class="btn btn-sm btn-secondary" title="Download template">
                                 <i class="ti ti-file-download me-1"></i>Template
                             </a>
-                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#importKomponenModal" title="Upload file Komponen">
+                            <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#importKomponenModal" title="Upload file Komponen">
                                 <i class="ti ti-upload me-1"></i>Import
                             </button>
                         </div>
@@ -419,7 +419,7 @@
                                 @csrf
                                 <div class="modal-header">
                                     <h5 class="modal-title">Import Komponen Penilaian</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="alert alert-info">
@@ -436,7 +436,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="ti ti-upload me-1"></i>Upload
                                     </button>

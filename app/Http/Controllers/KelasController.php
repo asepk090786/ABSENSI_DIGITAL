@@ -19,6 +19,16 @@ use App\Imports\KelasSiswaImport;
 
 class KelasController extends Controller
 {
+    protected function authorizeKelasDataAccess()
+    {
+        $user = auth()->user();
+        if ($user && $user->hasRole('Siswa') && ! $user->hasClassPosition()) {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Hanya siswa dengan jabatan kelas yang dapat mengubah data kelas.');
+        }
+
+        return null;
+    }
+
     public function index()
     {
         $items = Kelas::with(['waliKelas.user'])->withCount('siswa')->orderBy('nama_kelas')->get();
@@ -27,6 +37,10 @@ class KelasController extends Controller
 
     public function create()
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $guruList = Guru::with('user')->orderBy('nama')->get();
         $sekolah = \App\Models\Sekolah::first();
         return view('kelas.create', compact('guruList', 'sekolah'));
@@ -34,6 +48,10 @@ class KelasController extends Controller
 
     public function store(Request $request)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255|unique:kelas,nama_kelas',
             'tingkat_kelas' => 'nullable|string|max:50',
@@ -53,6 +71,10 @@ class KelasController extends Controller
 
     public function edit(Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $kela->load(['waliKelas', 'siswa.user']);
         $guruList = Guru::with('user')->orderBy('nama')->get();
         $sekolah = \App\Models\Sekolah::first();
@@ -73,6 +95,10 @@ class KelasController extends Controller
 
     public function update(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'nama_kelas' => 'required|string|max:255|unique:kelas,nama_kelas,' . $kela->id,
             'tingkat_kelas' => 'nullable|string|max:50',
@@ -103,6 +129,10 @@ class KelasController extends Controller
 
     public function destroy(Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         if ($kela->siswa()->count() > 0) {
             return redirect()->route('kelas.index')->with('error', 'Tidak dapat menghapus karena masih ada siswa di kelas ini.');
         }
@@ -131,6 +161,10 @@ class KelasController extends Controller
 
     public function import(Request $request)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls|max:2048',
         ]);
@@ -174,6 +208,10 @@ class KelasController extends Controller
 
     public function studentImport(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls|max:2048',
         ]);
@@ -198,6 +236,10 @@ class KelasController extends Controller
 
     public function addStudent(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'nis' => 'required|string|max:50|unique:siswa,nis',
             'nisn' => 'required|string|max:50|unique:siswa,nisn',
@@ -240,6 +282,10 @@ class KelasController extends Controller
 
     public function assignExistingStudent(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'siswa_ids' => 'required|array|min:1',
             'siswa_ids.*' => 'required|exists:siswa,id',
@@ -268,6 +314,10 @@ class KelasController extends Controller
 
     public function deleteStudent(Request $request, Kelas $kela, Siswa $siswa)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         // Check if student belongs to this class
         if ($siswa->kelas_id != $kela->id) {
             return redirect()->route('kelas.edit', $kela->id)->with('error', 'Siswa ini bukan bagian dari kelas ini.');
@@ -281,6 +331,10 @@ class KelasController extends Controller
 
     public function bulkDeleteStudent(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'siswa_ids' => 'required|array|min:1',
             'siswa_ids.*' => 'required|exists:siswa,id',
@@ -300,6 +354,10 @@ class KelasController extends Controller
 
     public function bulkDeactivateStudent(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'siswa_ids' => 'required|array|min:1',
             'siswa_ids.*' => 'required|exists:siswa,id',
@@ -321,6 +379,10 @@ class KelasController extends Controller
 
     public function bulkActivateStudent(Request $request, Kelas $kela)
     {
+        if ($redirect = $this->authorizeKelasDataAccess()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'siswa_ids' => 'required|array|min:1',
             'siswa_ids.*' => 'required|exists:siswa,id',

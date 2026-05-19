@@ -7,7 +7,7 @@
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                 </div>
             @endif
         </div>
@@ -19,7 +19,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Data Absensi Kelas - {{ $kelas->nama_kelas }}</h3>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-dark btn-sm" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-bs-toggle="modal" data-bs-target="#printPreviewModalLayanan" id="btnOpenPrintPreviewLayanan">
+                        <button type="button" class="btn btn-dark btn-sm" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-toggle="modal" data-target="#printPreviewModalLayanan" id="btnOpenPrintPreviewLayanan">
                             <i class="ti ti-printer"></i> Print Output
                         </button>
                         <form method="GET" action="{{ route('guru_bk_layanan.layanan', ['kelas' => $kelas->id]) }}" class="d-flex gap-2">
@@ -188,13 +188,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Preview Print Layanan BK</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 75vh;">
                 <iframe id="printPreviewFrameLayanan" src="" style="width:100%;height:100%;border:0;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" id="btnPrintFromPreviewLayanan">
                     <i class="ti ti-printer me-1"></i>Print
                 </button>

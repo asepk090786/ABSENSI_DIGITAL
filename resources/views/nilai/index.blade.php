@@ -18,16 +18,21 @@
                 @endif
             </div>
             <div class="col-auto ms-auto d-print-none">
+                @php
+                    $isSiswaWithoutClassPosition = auth()->user()->hasRole('Siswa') && ! auth()->user()->hasClassPosition();
+                @endphp
+                @unless($isSiswaWithoutClassPosition)
                 <div class="btn-list">
-                    <a href="#" class="btn btn-outline-primary d-none d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modalImportNilai">
+                    <a href="#" class="btn btn-outline-primary d-none d-sm-inline-block" data-toggle="modal" data-target="#modalImportNilai">
                         <i class="ti ti-file-import"></i>
                         Import Excel
                     </a>
-                    <a href="#" class="btn btn-primary d-none d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modalTambahNilai">
+                    <a href="#" class="btn btn-primary d-none d-sm-inline-block" data-toggle="modal" data-target="#modalTambahNilai">
                         <i class="ti ti-plus"></i>
                         Tambah Nilai
                     </a>
                 </div>
+                @endunless
             </div>
         </div>
     </div>
@@ -38,7 +43,7 @@
         @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="ti ti-check me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         @if(session('warning') && session('import_errors'))
@@ -49,7 +54,7 @@
                     <li>{{ $err }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
 
@@ -358,12 +363,14 @@
                         <p class="empty-subtitle text-muted">
                             Tambahkan nilai siswa dengan mengklik tombol "Tambah Nilai" di atas.
                         </p>
+                        @unless($isSiswaWithoutClassPosition)
                         <div class="empty-action">
-                            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahNilai">
+                            <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#modalTambahNilai">
                                 <i class="ti ti-plus"></i>
                                 Tambah Nilai Pertama
                             </a>
                         </div>
+                        @endunless
                     </div>
                     @endif
                 @else
@@ -406,7 +413,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Tambah Nilai Harian</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ route('nilai.store') }}" id="nilaiForm">
@@ -455,7 +462,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary" form="nilaiForm">Simpan</button>
             </div>
         </div>
@@ -468,7 +475,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Import Nilai Harian (Excel)</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ route('nilai.import') }}" enctype="multipart/form-data" id="nilaiImportForm">
@@ -523,7 +530,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary" form="nilaiImportForm">Import</button>
             </div>
         </div>
@@ -546,10 +553,8 @@
     });
 
     // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    // Initialize Bootstrap 4 tooltips
+    $('[data-toggle="tooltip"]').tooltip();
 
     const nilaiKelasSelect = document.getElementById('nilaiKelasSelect');
     const nilaiMapelSelect = document.getElementById('nilaiMapelSelect');

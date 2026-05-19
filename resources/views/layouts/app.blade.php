@@ -2,806 +2,478 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>@yield('title', 'Absensi Digital')</title>
-    
-    <!-- Tabler CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-    
-    <!-- Mobile Responsive CSS -->
+
+    <!-- Bootstrap 4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tabler Icons (for ti ti-* icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css">
+    <!-- AdminLTE -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/css/adminlte.min.css">
+    <!-- Custom responsive styles -->
     <link rel="stylesheet" href="{{ asset('css/responsive.css') }}">
-    
+
     <style>
-        .navbar-brand-image { height: 2rem; }
-        
-        /* Clean header styling */
-        .page-wrapper {
-            background: #f6f8fb;
-        }
-        .page-wrapper > header.navbar {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-        .page-header {
-            background: transparent;
-            border: none;
-            padding-top: 1rem;
-        }
-        .page-body {
-            padding-top: 0;
-        }
-        
-        /* Sidebar styling */
-        .navbar-vertical {
-            background: linear-gradient(180deg, #1e3a5f 0%, #2c5282 100%) !important;
-        }
-        .navbar-vertical .nav-link {
-            color: rgba(255,255,255,0.85) !important;
-        }
-        .navbar-vertical .nav-link:hover {
-            background: rgba(255,255,255,0.1) !important;
-        }
-        .navbar-vertical .nav-link.active {
-            background: rgba(255,255,255,0.15) !important;
-            color: #fff !important;
+        .brand-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
         }
 
-        /* Sidebar hide/unhide state */
-        body.sidebar-hidden .navbar-vertical {
-            display: none !important;
+        .brand-text {
+            white-space: normal;
         }
 
-        body.sidebar-hidden .page-wrapper {
-            margin-left: 0 !important;
+        .brand-image {
+            width: 2.2rem !important;
+            height: 2.2rem !important;
+            object-fit: cover;
         }
-        
-        /* ===== RESPONSIVE DESIGN FOR MOBILE ===== */
-        
-        /* Mobile-first responsive adjustments */
+
+        .user-panel .image .img-circle,
+        .img-circle.elevation-2 {
+            display: inline-block;
+            width: 2.5rem;
+            height: 2.5rem;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .main-footer {
+            background: #f4f6f9;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
         @media (max-width: 768px) {
-            /* Container adjustments */
-            .container-xl {
+            .content-header .container-fluid,
+            .content .container-fluid {
                 padding-left: 0.75rem !important;
                 padding-right: 0.75rem !important;
             }
-            
-            /* Page body adjustments */
-            .page-body {
-                padding: 0.5rem !important;
-            }
-            
-            /* Navbar brand adjustments */
-            .navbar-brand {
-                font-size: 16px !important;
-            }
-            
-            .navbar-brand img {
-                height: 36px !important;
-                width: 36px !important;
-            }
-            
-            .navbar-brand span {
-                font-size: 16px !important;
-            }
-            
-            /* Card adjustments for mobile */
-            .card {
-                margin-bottom: 1rem !important;
-            }
-            
-            .card-header {
-                padding: 0.75rem !important;
-            }
-            
-            .card-body {
-                padding: 0.75rem !important;
-            }
-            
-            /* Table responsive */
-            .table-responsive {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            table {
-                font-size: 0.875rem !important;
-            }
-            
-            table th,
-            table td {
-                padding: 0.5rem !important;
-                white-space: nowrap;
-            }
-            
-            /* Button adjustments */
-            .btn {
-                padding: 0.5rem 0.75rem !important;
-                font-size: 0.875rem !important;
-            }
-            
-            .btn-sm {
-                padding: 0.25rem 0.5rem !important;
-                font-size: 0.75rem !important;
-            }
-            
-            /* Form adjustments */
-            .form-control,
-            .form-select {
-                font-size: 14px !important;
-            }
-            
-            .form-label {
-                font-size: 0.875rem !important;
-                margin-bottom: 0.25rem !important;
-            }
-            
-            /* Navbar collapse improvements */
-            .navbar-collapse {
-                max-height: 70vh;
-                overflow-y: auto;
-            }
-            
-            /* Dropdown menu adjustments */
-            .dropdown-menu {
-                font-size: 0.875rem !important;
-            }
-            
-            .dropdown-item {
-                padding: 0.5rem 1rem !important;
-            }
-            
-            /* Header adjustments */
-            .page-header {
-                padding: 0.75rem 0 !important;
-            }
-            
-            .page-title {
-                font-size: 1.25rem !important;
-            }
-            
-            /* Footer adjustments */
-            .footer {
-                font-size: 0.75rem !important;
-                padding: 0.75rem 0 !important;
-            }
-            
-            /* Avatar adjustments */
-            .avatar {
-                width: 2rem !important;
-                height: 2rem !important;
-            }
-            
-            .avatar-md {
-                width: 2.5rem !important;
-                height: 2.5rem !important;
-            }
-            
-            /* Hide some elements on mobile */
-            .d-none.d-sm-block {
-                display: none !important;
-            }
-            
-            /* Navbar vertical on mobile */
-            .navbar-vertical {
-                position: fixed !important;
-                top: 0;
-                left: 0;
-                width: 280px !important;
-                height: 100%;
-                z-index: 1030;
-                transform: translateX(-280px);
-                transition: transform 0.3s ease-in-out;
-            }
-            
-            .navbar-vertical.show {
-                transform: translateX(0);
-            }
-            
-            /* Page wrapper adjustment when sidebar is open */
-            .page {
-                margin-left: 0 !important;
-            }
-            
-            /* Improve touch targets */
-            .nav-link,
-            .dropdown-toggle,
-            a,
-            button {
-                min-height: 44px;
-                display: flex;
-                align-items: center;
-            }
-        }
-        
-        /* Small mobile devices */
-        @media (max-width: 576px) {
-            /* Even smaller adjustments */
-            .container-xl {
-                padding-left: 0.5rem !important;
-                padding-right: 0.5rem !important;
-            }
-            
-            .card-body {
-                padding: 0.5rem !important;
-            }
-            
-            .page-title {
-                font-size: 1.1rem !important;
-            }
-            
-            /* Stack columns on very small screens */
-            .row > [class*='col-'] {
-                margin-bottom: 0.5rem;
-            }
-            
-            /* Simplify table layout */
-            table {
-                font-size: 0.75rem !important;
-            }
-            
-            table th,
-            table td {
-                padding: 0.35rem !important;
-            }
-            
-            /* Button group stacking */
-            .btn-group {
-                flex-direction: column;
-            }
-            
-            .btn-group .btn {
-                width: 100%;
-                border-radius: 0.25rem !important;
-                margin-bottom: 0.25rem;
-            }
-        }
-        
-        /* Landscape mode adjustments */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .navbar-vertical {
-                width: 240px !important;
-                transform: translateX(-240px);
-            }
-            
-            .navbar-collapse {
-                max-height: 60vh;
-            }
-        }
-        
-        /* Improve scrolling on mobile */
-        @media (max-width: 768px) {
-            body {
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .table-responsive {
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            /* Make modals mobile-friendly */
-            .modal-dialog {
-                margin: 0.5rem !important;
-                max-width: calc(100% - 1rem) !important;
-            }
-            
-            .modal-body {
-                padding: 1rem !important;
-            }
-            
-            /* Breadcrumb adjustments */
-            .breadcrumb {
-                font-size: 0.875rem !important;
-                flex-wrap: wrap;
-            }
-            
-            /* Alert adjustments */
-            .alert {
-                font-size: 0.875rem !important;
-                padding: 0.75rem !important;
-            }
-            
-            /* Badge adjustments */
-            .badge {
-                font-size: 0.75rem !important;
-            }
-            
-            /* Pagination adjustments */
-            .pagination {
-                font-size: 0.875rem !important;
-            }
-            
-            .page-link {
-                padding: 0.375rem 0.75rem !important;
-            }
         }
     </style>
+
     @stack('css')
 </head>
-<body class="layout-fluid">
-    <div class="page">
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
         @auth
         @php
-            // Gunakan ikon default agar konsisten di navbar
             $defaultLogo = asset('images/icon_simadis.png');
+            $user = auth()->user();
+            $userPhoto = $defaultLogo;
+            if ($user->foto) {
+                $photoPath = storage_path('app/public/' . $user->foto);
+                if (file_exists($photoPath)) {
+                    $userPhoto = asset('storage/' . $user->foto);
+                }
+            } elseif ($user->guru_id) {
+                $guru = \App\Models\Guru::find($user->guru_id);
+                if ($guru && $guru->foto) {
+                    $guruPhotoPath = public_path('uploads/foto_guru/' . $guru->foto);
+                    if (file_exists($guruPhotoPath)) {
+                        $userPhoto = asset('uploads/foto_guru/' . $guru->foto);
+                    }
+                }
+            }
         @endphp
-        <!-- Sidebar -->
-        <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
-            <div class="container-fluid">
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                
-                <h1 class="navbar-brand navbar-brand-autodark d-flex align-items-center" style="gap: 10px;">
-                     <a href="{{ route('home') }}" class="d-flex align-items-center text-decoration-none" style="gap: 10px;">
-                        <img src="{{ $defaultLogo }}" alt="Logo Aplikasi" style="height: 48px; width: 48px; object-fit: contain;" loading="lazy">
-                        <span class="text-white fw-bold" style="font-size: 19px; letter-spacing: 0.8px; text-transform: uppercase;">SIMADIS</span>
-                     </a>
-                </h1>
-                
-                <div class="collapse navbar-collapse" id="sidebar-menu">
+
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block">
+                    <a href="{{ route('home') }}" class="nav-link">Home</a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <img src="{{ $userPhoto }}" class="img-circle elevation-2" alt="User Image" style="width:32px;height:32px;object-fit:cover">
+                        <span class="ml-2 d-none d-md-inline">{{ $user->name }}</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                        <div class="dropdown-header text-center">
+                            <img src="{{ $userPhoto }}" class="img-circle elevation-2 mb-2" alt="User Image" style="width:60px;height:60px;object-fit:cover">
+                            <p class="mb-0">{{ $user->name }}</p>
+                            <small class="text-muted">{{ $user->role->role_name ?? 'User' }}</small>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                            <i class="fas fa-user mr-2"></i> Profile
+                        </a>
+                        @if($user->hasAnyRole(['Admin', 'Kepala Sekolah']))
+                        <a href="{{ route('tahun_ajaran.index') }}" class="dropdown-item">
+                            <i class="fas fa-cog mr-2"></i> Pengaturan
+                        </a>
+                        @endif
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Keluar
+                        </a>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Sidebar Container -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="{{ route('home') }}" class="brand-link">
+                <img src="{{ $defaultLogo }}" alt="SIMADIS Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">SIMADIS</span>
+            </a>
+
+            <div class="sidebar">
+                <nav class="mt-2">
                     @php
-                        $user = auth()->user();
                         $roleName = strtolower(str_replace([' ', '-', '.'], ['_', '', ''], $user->role->role_name ?? ''));
                         $isGuru = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
                     @endphp
-                    <ul class="navbar-nav pt-lg-3">
-                        <!-- Dashboard -->
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-home"></i>
-                                </span>
-                                <span class="nav-link-title">Dashboard</span>
+                            <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>Dashboard</p>
                             </a>
                         </li>
 
                         @if($isGuru)
-                        <!-- Pembelajaran (Guru only) -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['agenda_kelas.*', 'agenda_guru.*', 'absensi.*', 'mata_pelajaran.*', 'rencana_pembelajaran.*']) ? 'active' : '' }}" href="#navbar-pembelajaran" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-notebook"></i>
-                                </span>
-                                <span class="nav-link-title">Pembelajaran</span>
+                        <li class="nav-item has-treeview {{ request()->routeIs(['agenda_kelas.*', 'agenda_guru.*', 'absensi.*', 'mata_pelajaran.*', 'rencana_pembelajaran.*']) ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs(['agenda_kelas.*', 'agenda_guru.*', 'absensi.*', 'mata_pelajaran.*', 'rencana_pembelajaran.*']) ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>
+                                    Pembelajaran
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
                             </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}" href="{{ route('komponen_nilai.index') }}">
-                                    <i class="ti ti-checklist me-2"></i>Komponen Penilaian
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}" href="{{ route('mata_pelajaran.guru') }}">
-                                    <i class="ti ti-book-2 me-2"></i>Mata Pelajaran
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.guru') }}">
-                                    <i class="ti ti-book-upload me-2"></i>Rencana Pembelajaran
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
-                                    <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}" href="{{ route('agenda_guru.index') }}">
-                                    <i class="ti ti-user-circle me-2"></i>Agenda Guru
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
-                                    <i class="ti ti-clipboard-check me-2"></i>Absensi
-                                </a>
-                            </div>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('komponen_nilai.index') }}" class="nav-link {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Komponen Penilaian</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('mata_pelajaran.guru') }}" class="nav-link {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Mata Pelajaran</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('rencana_pembelajaran.index') }}" class="nav-link {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Rencana Pembelajaran</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('agenda_kelas.index') }}" class="nav-link {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Agenda Kelas</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Agenda Guru</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Absensi</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                         @endif
 
                         @php
-                            // Cek apakah guru adalah guru piket
                             $isGuruPiket = false;
-                            if ($isGuru && auth()->user()->guru) {
-                                // Cek dari hari_piket di tabel guru
-                                $hariPiket = auth()->user()->guru->hari_piket ?? [];
-                                $isGuruPiket = !empty($hariPiket);
-                                
-                                // Atau cek dari role
-                                if (!$isGuruPiket) {
-                                    $isGuruPiket = auth()->user()->hasRole('Guru Piket');
-                                }
+                            if ($isGuru && $user->guru) {
+                                $hariPiket = $user->guru->hari_piket ?? [];
+                                $isGuruPiket = !empty($hariPiket) || $user->hasRole('Guru Piket');
                             }
                         @endphp
-
                         @if($isGuruPiket)
-                        <!-- Piket KBM (Guru Piket only) -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->is('jadwal-kbm*') || request()->routeIs('agenda_guru.*') || request()->routeIs('absensi.*') || request()->routeIs('piket.pelanggaran.*') ? 'active' : '' }}" href="#navbar-piket" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-shield-check"></i>
-                                </span>
-                                <span class="nav-link-title">Piket KBM</span>
+                        <li class="nav-item has-treeview {{ request()->is('jadwal-kbm*') || request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->is('jadwal-kbm*') || request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-shield-alt"></i>
+                                <p>
+                                    Piket KBM
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
                             </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}" href="{{ url('/jadwal-kbm') }}">
-                                    <i class="ti ti-calendar-time me-2"></i>Jadwal Mengajar
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}" href="{{ route('agenda_guru.index') }}">
-                                    <i class="ti ti-user-circle me-2"></i>Absensi Guru
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
-                                    <i class="ti ti-clipboard-check me-2"></i>Absensi Siswa
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('piket.pelanggaran.*') ? 'active' : '' }}" href="{{ route('piket.pelanggaran.index') }}">
-                                    <i class="ti ti-alert-triangle me-2"></i>Pelanggaran
-                                </a>
-                            </div>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ url('/jadwal-kbm') }}" class="nav-link {{ request()->is('jadwal-kbm*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Jadwal Mengajar</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Absensi Guru</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Absensi Siswa</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('piket.pelanggaran.index') }}" class="nav-link {{ request()->routeIs('piket.pelanggaran.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Pelanggaran</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                         @endif
 
-                        <!-- Akademik -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['jam_belajar.*', 'agenda_kelas.*', 'absensi.*']) ? 'active' : '' }}" href="#navbar-akademik" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-book"></i>
-                                </span>
-                                <span class="nav-link-title">Akademik</span>
+                        <li class="nav-item has-treeview {{ request()->routeIs(['jam_belajar.*','agenda_kelas.*','absensi.*','nilai.index','rekap_nilai.*']) ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs(['jam_belajar.*','agenda_kelas.*','absensi.*','nilai.index','rekap_nilai.*']) ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-school"></i>
+                                <p>
+                                    Akademik
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
                             </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item {{ request()->routeIs('jam_belajar.*') ? 'active' : '' }}" href="{{ route('jam_belajar.index') }}">
-                                    <i class="ti ti-clock me-2"></i>Jam Belajar
-                                </a>
-                                <a class="dropdown-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}" href="{{ url('/jadwal-kbm') }}">
-                                    <i class="ti ti-calendar-month me-2"></i>Jadwal KBM
-                                </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('jam_belajar.index') }}" class="nav-link {{ request()->routeIs('jam_belajar.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Jam Belajar</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ url('/jadwal-kbm') }}" class="nav-link {{ request()->is('jadwal-kbm*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Jadwal KBM</p>
+                                    </a>
+                                </li>
                                 @unless($isGuru)
-                                <a class="dropdown-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}" href="{{ route('agenda_kelas.index') }}">
-                                    <i class="ti ti-calendar-event me-2"></i>Agenda Kelas
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}" href="{{ route('absensi.index') }}">
-                                    <i class="ti ti-clipboard-check me-2"></i>Absensi
-                                </a>
+                                <li class="nav-item">
+                                    <a href="{{ route('agenda_kelas.index') }}" class="nav-link {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Agenda Kelas</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Absensi</p>
+                                    </a>
+                                </li>
                                 @endunless
-                                <a class="dropdown-item {{ request()->routeIs('nilai.index') ? 'active' : '' }}" href="{{ route('nilai.index') }}">
-                                    <i class="ti ti-report-analytics me-2"></i>Nilai
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}" href="{{ route('rekap_nilai.index') }}">
-                                    <i class="ti ti-chart-bar me-2"></i>Rekap Nilai
-                                </a>
-                            </div>
+                                <li class="nav-item">
+                                    <a href="{{ route('nilai.index') }}" class="nav-link {{ request()->routeIs('nilai.index') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Nilai</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Rekap Nilai</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
 
-                        <!-- Wali Kelas (Only for Teachers who are homeroom teachers) -->
                         @php
                             $isWaliKelas = false;
                             $kelasBindaan = null;
-                            if ($isGuru && auth()->user()->guru) {
-                                $guruId = auth()->user()->guru->id;
-                                $kelasBindaan = DB::table('kelas')
-                                    ->where('wali_kelas_id', $guruId)
-                                    ->first();
+                            if ($isGuru && $user->guru) {
+                                $guruId = $user->guru->id;
+                                $kelasBindaan = DB::table('kelas')->where('wali_kelas_id', $guruId)->first();
                                 $isWaliKelas = !is_null($kelasBindaan);
                             }
                         @endphp
-
                         @if($isWaliKelas)
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs('wali_kelas.*') ? 'active' : '' }}" href="#navbar-walikelas" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-school"></i>
-                                </span>
-                                <span class="nav-link-title">Wali Kelas</span>
+                        <li class="nav-item has-treeview {{ request()->routeIs('wali_kelas.*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('wali_kelas.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-school"></i>
+                                <p>
+                                    Wali Kelas
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
                             </a>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-header">
-                                    <span class="badge bg-primary">{{ $kelasBindaan->nama_kelas ?? '-' }}</span>
-                                </div>
-                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.index') ? 'active' : '' }}" href="{{ route('wali_kelas.index') }}">
-                                    <i class="ti ti-dashboard me-2"></i>Dashboard
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.siswa') ? 'active' : '' }}" href="{{ route('wali_kelas.siswa') }}">
-                                    <i class="ti ti-users me-2"></i>Data Siswa
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.absensi') ? 'active' : '' }}" href="{{ route('wali_kelas.absensi') }}">
-                                    <i class="ti ti-calendar-check me-2"></i>Absensi Kelas
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.laporan_guru') ? 'active' : '' }}" href="{{ route('wali_kelas.laporan_guru') }}">
-                                    <i class="ti ti-message-report me-2"></i>Laporan Guru
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('wali_kelas.nilai') ? 'active' : '' }}" href="{{ route('wali_kelas.nilai') }}">
-                                    <i class="ti ti-chart-bar me-2"></i>Nilai Siswa
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('rekap_nilai.*') && request()->boolean('wali_kelas') ? 'active' : '' }}" href="{{ route('rekap_nilai.index', ['wali_kelas' => 1, 'kelas_id' => $kelasBindaan->id]) }}">
-                                    <i class="ti ti-report-analytics me-2"></i>Rekap Nilai
-                                </a>
-                            </div>
-                        </li>
-                        @endif
-
-                        @php
-                            $isGuruBk = $user->hasRole('Guru BK');
-                            $kelasBinaanBk = collect();
-
-                            if ($isGuruBk && $user->guru_id) {
-                                $kelasBinaanBk = DB::table('kelas')
-                                    ->where('guru_bk_id', $user->guru_id)
-                                    ->select('id', 'nama_kelas')
-                                    ->orderBy('nama_kelas')
-                                    ->get();
-                            }
-                        @endphp
-
-                        @if($isGuruBk)
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs('guru_bk_layanan.*') ? 'active' : '' }}" href="#navbar-guru-bk" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-mood-smile"></i>
-                                </span>
-                                <span class="nav-link-title">Guru BK</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-header">Pilihan Kelas Binaan</div>
-                                @forelse($kelasBinaanBk as $kelasBk)
-                                    <a class="dropdown-item {{ request()->routeIs('guru_bk_layanan.*') && (int) request()->route('kelas')?->id === (int) $kelasBk->id ? 'active' : '' }}" href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelasBk->id]) }}">
-                                        <i class="ti ti-building me-2"></i>{{ $kelasBk->nama_kelas }}
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('wali_kelas.index') }}" class="nav-link {{ request()->routeIs('wali_kelas.index') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Dashboard</p>
                                     </a>
-                                @empty
-                                    <span class="dropdown-item text-muted">
-                                        <i class="ti ti-info-circle me-2"></i>Belum ada kelas binaan
-                                    </span>
-                                @endforelse
-                            </div>
-                        </li>
-                        @endif
-                        
-                        <!-- Data Master (Only for Admin, Kepala Sekolah, and Wakil Kepala Sekolah) -->
-                        @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']))
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#navbar-master" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-database"></i>
-                                </span>
-                                <span class="nav-link-title">Data Master</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item {{ request()->routeIs('sekolah.*') ? 'active' : '' }}" href="{{ route('sekolah.index') }}">
-                                    <i class="ti ti-building-bank me-2"></i>Data Sekolah
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('kepala_sekolah.index') }}">
-                                    <i class="ti ti-id-badge me-2"></i>Kepala Sekolah
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('wakil_kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('wakil_kepala_sekolah.index') }}">
-                                    <i class="ti ti-user-shield me-2"></i>Wakil Kepala Sekolah
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('guru_bk.*') ? 'active' : '' }}" href="{{ route('guru_bk.index') }}">
-                                    <i class="ti ti-mood-smile me-2"></i>Guru BK
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('guru.*') ? 'active' : '' }}" href="{{ route('guru.index') }}">
-                                    <i class="ti ti-users me-2"></i>Guru
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('pembina.*') ? 'active' : '' }}" href="{{ route('pembina.index') }}">
-                                    <i class="ti ti-user-star me-2"></i>Pembina
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}" href="{{ route('guru_piket.index') }}">
-                                    <i class="ti ti-shield-check me-2"></i>Guru Piket
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
-                                    <i class="ti ti-lock me-2"></i>Akun Pengguna
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('siswa.*') ? 'active' : '' }}" href="{{ route('siswa.index') }}">
-                                    <i class="ti ti-school me-2"></i>Siswa
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}">
-                                    <i class="ti ti-building me-2"></i>Kelas
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}">
-                                    <i class="ti ti-books me-2"></i>Mata Pelajaran
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}" href="{{ route('tugas_guru.index') }}">
-                                    <i class="ti ti-user-check me-2"></i>Tugas Guru
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}" href="{{ route('kegiatan.index') }}">
-                                    <i class="ti ti-activity me-2"></i>Kegiatan
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('jenis_pelanggaran.*') ? 'active' : '' }}" href="{{ route('jenis_pelanggaran.index') }}">
-                                    <i class="ti ti-alert-octagon me-2"></i>Jenis Pelanggaran
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}" href="{{ route('ekstrakurikuler.index') }}">
-                                    <i class="ti ti-flag-3 me-2"></i>Ekstrakurikuler
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}" href="{{ route('asc_timetable.index') }}">
-                                    <i class="ti ti-table me-2"></i>ASC Time Table
-                                </a>
-                            </div>
-                        </li>
-                        @endif
-                        
-                        <!-- Pengaturan -->
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs('tahun_ajaran.index', 'setting.tahun_ajaran*', 'setting.semester*', 'profile.edit') ? 'active' : '' }}" href="#navbar-setting" data-bs-toggle="dropdown" role="button" aria-expanded="false">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <i class="ti ti-settings"></i>
-                                </span>
-                                <span class="nav-link-title">Pengaturan</span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}" href="{{ route('profile.edit') }}">
-                                    <i class="ti ti-user me-2"></i>Profile
-                                </a>
-                                @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']))
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}" href="{{ route('tahun_ajaran.index') }}">
-                                    <i class="ti ti-layout-dashboard me-2"></i>Dashboard Pengaturan
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('setting.tahun_ajaran*') ? 'active' : '' }}" href="{{ route('setting.tahun_ajaran') }}">
-                                    <i class="ti ti-calendar me-2"></i>Tahun Ajaran
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('setting.semester*') ? 'active' : '' }}" href="{{ route('setting.semester') }}">
-                                    <i class="ti ti-adjustments me-2"></i>Semester
-                                </a>
-                                <a class="dropdown-item {{ request()->routeIs('setting.header*') ? 'active' : '' }}" href="{{ route('setting.header') }}">
-                                    <i class="ti ti-layout-sidebar me-2"></i>Edit Header
-                                </a>
-                                @endif
-                                <!-- Update disabled: menu disembunyikan -->
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </aside>
-        
-        <!-- Main Wrapper -->
-        <div class="page-wrapper">
-            <!-- Minimal Header - User dropdown only -->
-            <div class="container-xl pt-3 pb-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    @if(request()->routeIs('home'))
-                    <button id="toggleSidebarBtn" type="button" class="btn btn-outline-secondary btn-sm" aria-label="Sembunyikan menu navbar" title="Sembunyikan/Tampilkan Navbar">
-                        <i id="toggleSidebarIcon" class="ti ti-layout-sidebar-left-collapse"></i>
-                    </button>
-                    @else
-                    <div></div>
-                    @endif
-                    <!-- User Menu -->
-                    <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                            @php
-                                $userName = auth()->user()->name ?? 'User';
-                                $userPhoto = null;
-                                
-                                // Check user's foto field first (from profile update)
-                                if(auth()->user()->foto) {
-                                    $photoPath = storage_path('app/public/' . auth()->user()->foto);
-                                    if(file_exists($photoPath)) {
-                                        $userPhoto = asset('storage/' . auth()->user()->foto);
-                                    }
-                                }
-                                
-                                // Fallback: check guru foto if user is a guru
-                                if(!$userPhoto && auth()->user()->guru_id) {
-                                    $guru = \App\Models\Guru::find(auth()->user()->guru_id);
-                                    if($guru && $guru->foto) {
-                                        $guruPhotoPath = public_path('uploads/foto_guru/' . $guru->foto);
-                                        if(file_exists($guruPhotoPath)) {
-                                            $userPhoto = asset('uploads/foto_guru/' . $guru->foto);
-                                        }
-                                    }
-                                }
-                                
-                                // Final fallback: generate avatar from initials
-                                if(!$userPhoto) {
-                                    $userPhoto = 'https://ui-avatars.com/api/?name=' . urlencode($userName) . '&background=1e3a5f&color=fff&size=128';
-                                }
-                            @endphp
-                            <span class="avatar avatar-sm rounded-circle me-2" style="background-image: url({{ $userPhoto }})"></span>
-                            <div class="d-none d-sm-block text-dark">
-                                <div class="fw-medium">{{ $userName }}</div>
-                                <div class="small text-muted">{{ auth()->user()->role->role_name ?? 'User' }}</div>
-                            </div>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-end shadow-sm">
-                            <div class="dropdown-item-text">
-                                <div class="d-flex align-items-center">
-                                    <span class="avatar avatar-md rounded-circle me-3" style="background-image: url({{ $userPhoto }})"></span>
-                                    <div>
-                                        <div class="fw-bold">{{ auth()->user()->name }}</div>
-                                        <div class="small text-muted">{{ auth()->user()->email }}</div>
-                                        <div class="small text-muted">{{ auth()->user()->role->role_name ?? 'User' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="dropdown-divider"></div>
-                            <a href="{{ route('profile.edit') }}" class="dropdown-item">
-                                <i class="ti ti-user me-2"></i>Profile
-                            </a>
-                            @if(auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']))
-                            <a href="{{ route('tahun_ajaran.index') }}" class="dropdown-item">
-                                <i class="ti ti-settings me-2"></i>Pengaturan
-                            </a>
-                            @endif
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                <i class="ti ti-logout me-2"></i>Keluar
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Page Content -->
-            <div class="page-body">
-                <div class="container-xl">
-                    @yield('content')
-                </div>
-            </div>
-            
-            <!-- Footer -->
-            <footer class="footer footer-transparent d-print-none">
-                <div class="container-xl">
-                    <div class="row text-center align-items-center">
-                        <div class="col-12">
-                            <ul class="list-inline mb-0">
-                                <li class="list-inline-item">
-                                    &copy; {{ date('Y') }} <a href="." class="link-secondary">Absensi Digital</a> - Sistem Manajemen Sekolah
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('wali_kelas.siswa') }}" class="nav-link {{ request()->routeIs('wali_kelas.siswa') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Data Siswa</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('wali_kelas.absensi') }}" class="nav-link {{ request()->routeIs('wali_kelas.absensi') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Absensi Kelas</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('wali_kelas.laporan_guru') }}" class="nav-link {{ request()->routeIs('wali_kelas.laporan_guru') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Laporan Guru</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('wali_kelas.nilai') }}" class="nav-link {{ request()->routeIs('wali_kelas.nilai') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Nilai Siswa</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('rekap_nilai.index', ['wali_kelas' => 1, 'kelas_id' => $kelasBindaan->id]) }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') && request()->boolean('wali_kelas') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Rekap Nilai</p>
+                                    </a>
                                 </li>
                             </ul>
+                        </li>
+                        @endif
+
+                        @if($user->hasRole('Guru BK'))
+                        <li class="nav-item has-treeview {{ request()->routeIs('guru_bk_layanan.*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('guru_bk_layanan.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-user-graduate"></i>
+                                <p>
+                                    Guru BK
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                @forelse($kelasBinaanBk as $kelasBk)
+                                <li class="nav-item">
+                                    <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelasBk->id]) }}" class="nav-link {{ request()->routeIs('guru_bk_layanan.*') && (int) request()->route('kelas')?->id === (int) $kelasBk->id ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ $kelasBk->nama_kelas }}</p>
+                                    </a>
+                                </li>
+                                @empty
+                                <li class="nav-item">
+                                    <a class="nav-link text-muted">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Belum ada kelas binaan</p>
+                                    </a>
+                                </li>
+                                @endforelse
+                            </ul>
+                        </li>
+                        @endif
+
+                        @if($user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']))
+                        <li class="nav-item has-treeview {{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekstrakurikuler.*','asc_timetable.*']) ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekstrakurikuler.*','asc_timetable.*']) ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-database"></i>
+                                <p>
+                                    Data Master
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('sekolah.*') ? 'active' : '' }}" href="{{ route('sekolah.index') }}"><i class="far fa-circle nav-icon"></i><p>Data Sekolah</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('kepala_sekolah.index') }}"><i class="far fa-circle nav-icon"></i><p>Kepala Sekolah</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('wakil_kepala_sekolah.*') ? 'active' : '' }}" href="{{ route('wakil_kepala_sekolah.index') }}"><i class="far fa-circle nav-icon"></i><p>Wakil Kepala Sekolah</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('guru_bk.*') ? 'active' : '' }}" href="{{ route('guru_bk.index') }}"><i class="far fa-circle nav-icon"></i><p>Guru BK</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('guru.*') ? 'active' : '' }}" href="{{ route('guru.index') }}"><i class="far fa-circle nav-icon"></i><p>Guru</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('pembina.*') ? 'active' : '' }}" href="{{ route('pembina.index') }}"><i class="far fa-circle nav-icon"></i><p>Pembina</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}" href="{{ route('guru_piket.index') }}"><i class="far fa-circle nav-icon"></i><p>Guru Piket</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}"><i class="far fa-circle nav-icon"></i><p>Akun Pengguna</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('siswa.*') ? 'active' : '' }}" href="{{ route('siswa.index') }}"><i class="far fa-circle nav-icon"></i><p>Siswa</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}"><i class="far fa-circle nav-icon"></i><p>Kelas</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'active' : '' }}" href="{{ route('mata_pelajaran.index') }}"><i class="far fa-circle nav-icon"></i><p>Mata Pelajaran</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}" href="{{ route('tugas_guru.index') }}"><i class="far fa-circle nav-icon"></i><p>Tugas Guru</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}" href="{{ route('kegiatan.index') }}"><i class="far fa-circle nav-icon"></i><p>Kegiatan</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('jenis_pelanggaran.*') ? 'active' : '' }}" href="{{ route('jenis_pelanggaran.index') }}"><i class="far fa-circle nav-icon"></i><p>Jenis Pelanggaran</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}" href="{{ route('ekstrakurikuler.index') }}"><i class="far fa-circle nav-icon"></i><p>Ekstrakurikuler</p></a></li>
+                                <li class="nav-item"><a class="nav-link {{ request()->routeIs('asc_timetable.*') ? 'active' : '' }}" href="{{ route('asc_timetable.index') }}"><i class="far fa-circle nav-icon"></i><p>ASC Time Table</p></a></li>
+                            </ul>
+                        </li>
+                        @endif
+
+                        <li class="nav-item has-treeview {{ request()->routeIs(['tahun_ajaran.index','setting.tahun_ajaran*','setting.semester*','setting.header*','profile.edit']) ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs(['tahun_ajaran.index','setting.tahun_ajaran*','setting.semester*','setting.header*','profile.edit']) ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-cogs"></i>
+                                <p>
+                                    Pengaturan
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item"><a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Profile</p></a></li>
+                                @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
+                                <li class="nav-item"><a href="{{ route('tahun_ajaran.index') }}" class="nav-link {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Dashboard Pengaturan</p></a></li>
+                                <li class="nav-item"><a href="{{ route('setting.tahun_ajaran') }}" class="nav-link {{ request()->routeIs('setting.tahun_ajaran*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Tahun Ajaran</p></a></li>
+                                <li class="nav-item"><a href="{{ route('setting.semester') }}" class="nav-link {{ request()->routeIs('setting.semester*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Semester</p></a></li>
+                                <li class="nav-item"><a href="{{ route('setting.header') }}" class="nav-link {{ request()->routeIs('setting.header*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Edit Header</p></a></li>
+                                @endif
+                            </ul>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1>@yield('title', 'Dashboard')</h1>
                         </div>
                     </div>
                 </div>
-            </footer>
-        </div>
-        
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
-        @else
-        <!-- Guest Layout -->
-        <div class="page-wrapper">
-            <div class="page-body">
-                <div class="container-xl">
+            </section>
+
+            <section class="content">
+                <div class="container-fluid">
                     @yield('content')
                 </div>
+            </section>
+        </div>
+
+        <footer class="main-footer">
+            <div class="float-right d-none d-sm-inline">
+                Absensi Digital
             </div>
+            <strong>&copy; {{ date('Y') }} <a href=".">Absensi Digital</a>.</strong> Sistem Manajemen Sekolah.
+        </footer>
+
+        <aside class="control-sidebar control-sidebar-dark"></aside>
+
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+        @else
+        <div class="content-wrapper">
+            <section class="content">
+                <div class="container-fluid">
+                    @yield('content')
+                </div>
+            </section>
         </div>
         @endauth
     </div>
-    
-    <!-- jQuery (required for Summernote) -->
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Tabler JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
-    <!-- Mobile Navigation Enhancement -->
-    <script src="{{ asset('js/mobile-nav.js') }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const storageKey = 'simadis_sidebar_hidden';
-            const toggleButton = document.getElementById('toggleSidebarBtn');
-            const toggleIcon = document.getElementById('toggleSidebarIcon');
-
-            if (!toggleButton || !toggleIcon) {
-                return;
-            }
-
-            const applySidebarState = function (isHidden) {
-                document.body.classList.toggle('sidebar-hidden', isHidden);
-                toggleIcon.className = isHidden
-                    ? 'ti ti-layout-sidebar-left-expand'
-                    : 'ti ti-layout-sidebar-left-collapse';
-                toggleButton.setAttribute(
-                    'aria-label',
-                    isHidden ? 'Tampilkan menu navbar' : 'Sembunyikan menu navbar'
-                );
-                toggleButton.setAttribute(
-                    'title',
-                    isHidden ? 'Tampilkan Navbar' : 'Sembunyikan Navbar'
-                );
-            };
-
-            const isSavedHidden = localStorage.getItem(storageKey) === '1';
-            applySidebarState(isSavedHidden);
-
-            toggleButton.addEventListener('click', function () {
-                const isCurrentlyHidden = document.body.classList.contains('sidebar-hidden');
-                const nextState = !isCurrentlyHidden;
-
-                applySidebarState(nextState);
-                localStorage.setItem(storageKey, nextState ? '1' : '0');
-            });
-        });
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/3.2.0/js/adminlte.min.js"></script>
     @stack('js')
 </body>
 </html>

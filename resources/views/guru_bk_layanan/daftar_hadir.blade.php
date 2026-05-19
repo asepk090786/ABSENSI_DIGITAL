@@ -8,7 +8,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Daftar Hadir Layanan BK - {{ $kelas->nama_kelas }}</h3>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#printPreviewModalDaftarHadir" id="btnOpenPrintPreviewDaftarHadir" data-print-url="{{ route('guru_bk_layanan.daftar_hadir.print', ['kelas' => $kelas->id, 'tanggal' => $selectedTanggal]) }}">
+                        <button type="button" class="btn btn-dark btn-sm" data-toggle="modal" data-target="#printPreviewModalDaftarHadir" id="btnOpenPrintPreviewDaftarHadir" data-print-url="{{ route('guru_bk_layanan.daftar_hadir.print', ['kelas' => $kelas->id, 'tanggal' => $selectedTanggal]) }}">
                             <i class="ti ti-printer"></i> Print Output
                         </button>
                         <a href="{{ route('guru_bk_layanan.layanan', ['kelas' => $kelas->id]) }}" class="btn btn-primary btn-sm">
@@ -97,13 +97,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Preview Print Daftar Hadir Layanan BK</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 75vh;">
                 <iframe id="printPreviewFrameDaftarHadir" src="" style="width:100%;height:100%;border:0;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" id="btnPrintFromPreviewDaftarHadir">
                     <i class="ti ti-printer me-1"></i>Print
                 </button>

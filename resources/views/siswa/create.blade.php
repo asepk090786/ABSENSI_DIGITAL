@@ -2,6 +2,8 @@
 
 @section('title','Tambah Siswa')
 
+@php($canManageClassPositions = auth()->check() && auth()->user()->hasAnyRole(['Admin', 'Wali Kelas']))
+
 @section('content')
 <div class="row">
     <div class="col-md-10 mx-auto">
@@ -59,6 +61,18 @@
                             </select>
                             @error('kelas_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+                        @if($canManageClassPositions)
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Jabatan Kelas</label>
+                                <select name="jabatan_kelas" class="form-select @error('jabatan_kelas') is-invalid @enderror">
+                                    <option value="">Tidak ada</option>
+                                    <option value="ketua" {{ old('jabatan_kelas') == 'ketua' ? 'selected' : '' }}>Ketua Kelas</option>
+                                    <option value="wakil" {{ old('jabatan_kelas') == 'wakil' ? 'selected' : '' }}>Wakil Ketua Kelas</option>
+                                    <option value="sekretaris" {{ old('jabatan_kelas') == 'sekretaris' ? 'selected' : '' }}>Sekretaris Kelas</option>
+                                </select>
+                                @error('jabatan_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                        @endif
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Email <span class="text-danger">*</span></label>
                             <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}" required>

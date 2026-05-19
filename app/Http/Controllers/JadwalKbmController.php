@@ -12,9 +12,20 @@ use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\TugasGuru;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class JadwalKbmController extends Controller
 {
+    protected function authorizeJadwalKbmManagement()
+    {
+        $user = auth()->user();
+        if ($user && $user->hasAnyRole(['Siswa','Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket'])) {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Hanya pengelola pusat yang dapat mengatur jadwal.');
+        }
+
+        return null;
+    }
+
     /**
      * Display jadwal KBM index
      */
@@ -32,6 +43,10 @@ class JadwalKbmController extends Controller
      */
     public function createByKelas($kelasId)
     {
+        if ($redirect = $this->authorizeJadwalKbmManagement()) {
+            return $redirect;
+        }
+
         $kelas = Kelas::with('waliKelas')->findOrFail($kelasId);
         $guruList = Guru::with('user')->orderBy('nama')->get();
         $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
@@ -317,7 +332,7 @@ class JadwalKbmController extends Controller
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
         
-        $query = JadwalKbm::where('guru_id', $guruId);
+        $query = JadwalKbm::where('guru_id', $guru->id);
         
         if ($tahunAjaranAktif) {
             $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
@@ -509,15 +524,43 @@ class JadwalKbmController extends Controller
     }
     public function store(Request $request)
     {
+        if ($redirect = $this->authorizeJadwalKbmManagement()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'jadwal' => 'required|array',
+        ]);
+
+        $jadwalItems = collect($request->input('jadwal', []))->filter(function ($item) {
+            return isset($item['hari'], $item['jam_ke'], $item['jam_belajar_id'])
+                && (!empty($item['guru_id']) || !empty($item['mata_pelajaran_id']));
+        })->map(function ($item) {
+            return [
+                'guru_id' => $item['guru_id'] ?? null,
+                'mata_pelajaran_id' => $item['mata_pelajaran_id'] ?? null,
+                'jam_belajar_id' => $item['jam_belajar_id'] ?? null,
+                'hari' => $item['hari'] ?? null,
+                'jam_ke' => $item['jam_ke'] ?? null,
+            ];
+        })->values()->all();
+
+        if (empty($jadwalItems)) {
+            return redirect()->back()->withInput()->with('error', 'Silakan isi minimal satu jadwal KBM sebelum menyimpan.');
+        }
+
+        $validator = Validator::make(['jadwal' => $jadwalItems], [
             'jadwal.*.guru_id' => 'required|exists:guru,id',
             'jadwal.*.mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'jadwal.*.jam_belajar_id' => 'required|exists:jam_belajar,id',
             'jadwal.*.hari' => 'required|string',
             'jadwal.*.jam_ke' => 'required|integer',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
@@ -529,7 +572,7 @@ class JadwalKbmController extends Controller
         try {
             // Validate tugas guru for each entry
             $warnings = [];
-            foreach ($validated['jadwal'] as $index => $item) {
+            foreach ($jadwalItems as $index => $item) {
                 $hasTugas = TugasGuru::where('guru_id', $item['guru_id'])
                     ->where('mata_pelajaran_id', $item['mata_pelajaran_id'])
                     ->where('tingkat_kelas', $kelas->tingkat_kelas)
@@ -549,12 +592,12 @@ class JadwalKbmController extends Controller
             
             // Delete existing jadwal for this kelas in this semester
             JadwalKbm::where('kelas_id', $validated['kelas_id'])
-                ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
-                ->where('semester_id', $semesterAktif?->id)
+                ->where('tahun_ajaran_id', optional($tahunAjaranAktif)->id)
+                ->where('semester_id', optional($semesterAktif)->id)
                 ->delete();
 
             // Insert new jadwal
-            foreach ($validated['jadwal'] as $item) {
+            foreach ($jadwalItems as $item) {
                 JadwalKbm::create([
                     'kelas_id' => $validated['kelas_id'],
                     'guru_id' => $item['guru_id'],
@@ -562,13 +605,13 @@ class JadwalKbmController extends Controller
                     'jam_belajar_id' => $item['jam_belajar_id'],
                     'hari' => $item['hari'],
                     'jam_ke' => $item['jam_ke'],
-                    'tahun_ajaran_id' => $tahunAjaranAktif?->id,
-                    'semester_id' => $semesterAktif?->id,
+                    'tahun_ajaran_id' => optional($tahunAjaranAktif)->id,
+                    'semester_id' => optional($semesterAktif)->id,
                 ]);
             }
             
             // Auto-generate/update Tugas Guru from jadwal
-            $uniqueAssignments = collect($validated['jadwal'])
+            $uniqueAssignments = collect($jadwalItems)
                 ->unique(function ($item) {
                     return $item['guru_id'] . '-' . $item['mata_pelajaran_id'];
                 });
@@ -609,6 +652,10 @@ class JadwalKbmController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($redirect = $this->authorizeJadwalKbmManagement()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
@@ -649,6 +696,10 @@ class JadwalKbmController extends Controller
      */
     public function destroy($id)
     {
+        if ($redirect = $this->authorizeJadwalKbmManagement()) {
+            return $redirect;
+        }
+
         $jadwal = JadwalKbm::findOrFail($id);
         $jadwal->delete();
 
@@ -665,8 +716,8 @@ class JadwalKbmController extends Controller
             $semesterAktif = Semester::where('is_active', true)->first();
             
             $jadwal = JadwalKbm::where('kelas_id', $kelasId)
-                ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
-                ->where('semester_id', $semesterAktif?->id)
+                ->where('tahun_ajaran_id', optional($tahunAjaranAktif)->id)
+                ->where('semester_id', optional($semesterAktif)->id)
                 ->with(['guru', 'mataPelajaran', 'jamBelajar'])
                 ->orderBySchedule()
                 ->get();
@@ -707,8 +758,8 @@ class JadwalKbmController extends Controller
         $konflik = JadwalKbm::where('guru_id', $request->guru_id)
             ->where('hari', $request->hari)
             ->where('jam_ke', $request->jam_ke)
-            ->where('tahun_ajaran_id', $tahunAjaranAktif?->id)
-            ->where('semester_id', $semesterAktif?->id)
+            ->where('tahun_ajaran_id', optional($tahunAjaranAktif)->id)
+            ->where('semester_id', optional($semesterAktif)->id)
             ->when($request->kelas_id, function($query, $kelasId) {
                 return $query->where('kelas_id', '!=', $kelasId);
             })
@@ -726,6 +777,10 @@ class JadwalKbmController extends Controller
      */
     public function destroyAll()
     {
+        if ($redirect = $this->authorizeJadwalKbmManagement()) {
+            return $redirect;
+        }
+
         try {
             DB::statement('SET FOREIGN_KEY_CHECKS=0');
             DB::table('jadwal_kbm')->truncate();
@@ -744,6 +799,10 @@ class JadwalKbmController extends Controller
      */
     public function updateHeader(Request $request)
     {
+        if ($redirect = $this->authorizeJadwalKbmManagement()) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'nama_sekolah' => 'required|string|max:255',
             'alamat_jalan' => 'nullable|string|max:255',

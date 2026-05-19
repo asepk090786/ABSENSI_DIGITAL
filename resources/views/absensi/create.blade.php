@@ -159,7 +159,7 @@
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                     @endif
 
@@ -167,7 +167,7 @@
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <strong><i class="ti ti-alert-triangle me-2"></i>Perhatian:</strong>
                         {{ session('warning') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                     @endif
 
@@ -213,7 +213,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="kelas_id" class="form-label">Kelas <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('kelas_id') is-invalid @enderror" 
+                                    <select class="form-control @error('kelas_id') is-invalid @enderror" 
                                             id="kelas_id" name="kelas_id" required
                                             {{ $lockQuickAccessField ? 'disabled' : '' }}>
                                         <option value="">Pilih Kelas</option>
@@ -242,7 +242,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="guru_id" class="form-label">Guru <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('guru_id') is-invalid @enderror" 
+                                    <select class="form-control @error('guru_id') is-invalid @enderror" 
                                             id="guru_id" name="guru_id" required>
                                         <option value="">Pilih Guru</option>
                                         @foreach($guruList as $guru)
@@ -260,7 +260,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="jam_belajar_id" class="form-label">Jam Belajar <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('jam_belajar_id') is-invalid @enderror" 
+                                    <select class="form-control @error('jam_belajar_id') is-invalid @enderror" 
                                             id="jam_belajar_id" name="jam_belajar_id" required
                                             {{ $lockQuickAccessField ? 'disabled' : '' }}>
                                         <option value="">Pilih Jam Belajar</option>
@@ -433,7 +433,7 @@
                             if (!isGuruPiket) {
                                 statusHadirCell =
                                     '<td class="text-center">' +
-                                        '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
+                                        '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
                                     '</td>';
                             }
 
@@ -445,16 +445,16 @@
                                 '<td class="text-center">' + (siswa.jenis_kelamin || '-') + '</td>' +
                                 statusHadirCell +
                                 '<td class="text-center">' +
-                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="terlambat" data-siswa-id="' + siswa.id + '">' +
+                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="terlambat" data-siswa-id="' + siswa.id + '">' +
                                 '</td>' +
                                 '<td class="text-center">' +
-                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="sakit" data-siswa-id="' + siswa.id + '">' +
+                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="sakit" data-siswa-id="' + siswa.id + '">' +
                                 '</td>' +
                                 '<td class="text-center">' +
-                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="izin" data-siswa-id="' + siswa.id + '">' +
+                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="izin" data-siswa-id="' + siswa.id + '">' +
                                 '</td>' +
                                 '<td class="text-center">' +
-                                    '<input class="form-check-input status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="alpa" data-siswa-id="' + siswa.id + '">' +
+                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="alpa" data-siswa-id="' + siswa.id + '">' +
                                 '</td>' +
                                 '<td>' +
                                     '<input type="text" name="keterangan_siswa[' + siswa.id + ']" class="form-control form-control-sm" placeholder="Keterangan (opsional)">' +

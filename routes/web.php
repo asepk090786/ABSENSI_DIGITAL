@@ -88,6 +88,7 @@ Route::middleware(['auth'])->group(function(){
     Route::get('absensi/laporan-siswa/print', ['App\Http\Controllers\AbsensiController', 'printLaporanSiswa'])->name('absensi.laporan-siswa.print');
     Route::get('absensi/laporan-siswa/export', ['App\Http\Controllers\AbsensiController', 'exportLaporanSiswa'])->name('absensi.laporan-siswa.export');
     Route::get('absensi/laporan-guru/print', ['App\Http\Controllers\AbsensiController', 'printLaporanGuru'])->name('absensi.laporan-guru.print');
+    Route::get('absensi/guru/print', ['App\Http\Controllers\AbsensiController', 'printGuruRekap'])->name('absensi.guru.print');
     Route::get('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'index'])->name('piket.pelanggaran.index');
     Route::post('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'store'])->name('piket.pelanggaran.store');
     Route::get('absensi/bk-monitoring/export', ['App\Http\Controllers\AbsensiController', 'exportBkMonitoring'])->name('absensi.bk-monitoring.export');

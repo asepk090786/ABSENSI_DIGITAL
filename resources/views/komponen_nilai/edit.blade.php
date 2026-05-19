@@ -68,13 +68,13 @@
                         <!-- 1. Capaian Pembelajaran -->
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cpSection">
+                                <button class="accordion-button" type="button" data-toggle="collapse" data-target="#cpSection">
                                     <i class="ti ti-target me-2"></i>
                                     <strong>1. Capaian Pembelajaran (CP)</strong>
                                     <small class="text-muted ms-2">Target kompetensi akhir pada fase</small>
                                 </button>
                             </h2>
-                            <div id="cpSection" class="accordion-collapse collapse show" data-bs-parent="#learningAccordion">
+                            <div id="cpSection" class="accordion-collapse collapse show" data-parent="#learningAccordion">
                                 <div class="accordion-body">
                                     <small class="text-muted d-block mb-3">
                                         <strong>Catatan:</strong> Target kompetensi akhir pada fase (misalnya Fase E & F di SMA). Bersifat umum dan menyeluruh, menjadi acuan utama pembelajaran.
@@ -90,13 +90,13 @@
                         <!-- 2. Tujuan Pembelajaran -->
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tpSection">
+                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#tpSection">
                                     <i class="ti ti-target me-2"></i>
                                     <strong>2. Tujuan Pembelajaran (TP)</strong>
                                     <small class="text-muted ms-2">Turunan spesifik dari CP</small>
                                 </button>
                             </h2>
-                            <div id="tpSection" class="accordion-collapse collapse" data-bs-parent="#learningAccordion">
+                            <div id="tpSection" class="accordion-collapse collapse" data-parent="#learningAccordion">
                                 <div class="accordion-body">
                                     <small class="text-muted d-block mb-3">
                                         <strong>Catatan:</strong> Turunan langsung dari CP, lebih spesifik, operasional, dan terukur. Menjadi sasaran pembelajaran harian/per pertemuan yang mendorong berpikir kritis, reflektif, dan bermakna.
@@ -112,13 +112,13 @@
                         <!-- 3. Alur Tujuan Pembelajaran -->
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#atpSection">
+                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#atpSection">
                                     <i class="ti ti-arrows-shuffle me-2"></i>
                                     <strong>3. Alur Tujuan Pembelajaran (ATP)</strong>
                                     <small class="text-muted ms-2">Rangkaian TP yang progresif</small>
                                 </button>
                             </h2>
-                            <div id="atpSection" class="accordion-collapse collapse" data-bs-parent="#learningAccordion">
+                            <div id="atpSection" class="accordion-collapse collapse" data-parent="#learningAccordion">
                                 <div class="accordion-body">
                                     <small class="text-muted d-block mb-3">
                                         <strong>Catatan:</strong> Rangkaian TP yang logis, berkesinambungan, dan progresif. Menunjukkan kedalaman pemahaman, bukan sekadar urutan materi.
@@ -134,13 +134,13 @@
                         <!-- 4. Indikator / Kriteria Ketercapaian -->
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kkSection">
+                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#kkSection">
                                     <i class="ti ti-checks me-2"></i>
                                     <strong>4. Indikator / Kriteria Ketercapaian (KKTP)</strong>
                                     <small class="text-muted ms-2">Ukuran pencapaian TP</small>
                                 </button>
                             </h2>
-                            <div id="kkSection" class="accordion-collapse collapse" data-bs-parent="#learningAccordion">
+                            <div id="kkSection" class="accordion-collapse collapse" data-parent="#learningAccordion">
                                 <div class="accordion-body">
                                     <small class="text-muted d-block mb-3">
                                         <strong>Catatan:</strong> Kriteria Ketercapaian Tujuan Pembelajaran (KKTP). Ukuran apakah TP sudah tercapai, menekankan pemahaman konsep, transfer pengetahuan, dan refleksi.

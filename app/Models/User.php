@@ -62,6 +62,26 @@ class User extends Authenticatable
         return $this->belongsTo(Siswa::class);
     }
 
+    public function getClassPosition(): ?string
+    {
+        if (! $this->siswa) {
+            return null;
+        }
+
+        $position = data_get($this->siswa, 'jabatan_kelas') ?? data_get($this->siswa, 'jabatan');
+
+        if (! is_string($position) || trim($position) === '') {
+            return null;
+        }
+
+        return mb_strtolower(trim($position));
+    }
+
+    public function hasClassPosition(): bool
+    {
+        return in_array($this->getClassPosition(), ['ketua', 'wakil', 'sekretaris'], true);
+    }
+
     public function roleNames(): array
     {
         $names = collect();

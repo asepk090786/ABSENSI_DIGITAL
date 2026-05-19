@@ -20,7 +20,7 @@
                         <a href="{{ route('agenda_kelas.create', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="btn btn-warning btn-sm">
                             <i class="ti ti-notes"></i> Tambah Kegiatan
                         </a>
-                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal">
+                        <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#filterModal">
                             <i class="ti ti-calendar"></i> Filter Bulan
                         </button>
                         <a href="{{ route('agenda_guru.export', ['bulan' => $bulan, 'tahun' => $tahunFilter]) }}" class="btn btn-info btn-sm">
@@ -29,8 +29,8 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    @if(session('success'))<div class="alert alert-success alert-dismissible fade show"><i class="ti ti-check me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
-                    @if(session('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="ti ti-alert-circle me-2"></i>{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
+                    @if(session('success'))<div class="alert alert-success alert-dismissible fade show"><i class="ti ti-check me-2"></i>{{ session('success') }}<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button></div>@endif
+                    @if(session('error'))<div class="alert alert-danger alert-dismissible fade show"><i class="ti ti-alert-circle me-2"></i>{{ session('error') }}<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button></div>@endif
 
                     <!-- Selected Month/Year Display -->
                     <div class="mb-3">
@@ -158,7 +158,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Pilih Bulan dan Tahun</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="{{ route('agenda_guru.index') }}" method="GET">
                 <div class="modal-body">
@@ -187,7 +187,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Tampilkan</button>
                 </div>
             </form>

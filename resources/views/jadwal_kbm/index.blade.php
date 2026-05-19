@@ -29,14 +29,14 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -50,7 +50,7 @@
                                 @endforeach
                             </ul>
                         @endif
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -64,12 +64,12 @@
                     </li>
                     @endif
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="perkelas-tab" data-bs-toggle="tab" data-bs-target="#perkelas" type="button" role="tab">
+                        <button class="nav-link active" id="perkelas-tab" data-toggle="tab" data-target="#perkelas" type="button" role="tab">
                             <i class="ti ti-school me-2"></i>Jadwal Per Kelas
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="perguru-tab" data-bs-toggle="tab" data-bs-target="#perguru" type="button" role="tab">
+                        <button class="nav-link" id="perguru-tab" data-toggle="tab" data-target="#perguru" type="button" role="tab">
                             <i class="ti ti-user me-2"></i>Jadwal Per Guru
                         </button>
                     </li>
@@ -106,11 +106,11 @@
                                             </small>
                                         </p>
                                         <div class="btn-list">
-                                            @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
+                                            @unless(auth()->user()->hasAnyRole(['Siswa','Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
                                             <a href="{{ route('jadwal-kbm.create-by-kelas', $kelas->id) }}" class="btn btn-primary btn-sm">
                                                 <i class="ti ti-calendar-event me-1"></i>Atur Jadwal
                                             </a>
-                                            @endif
+                                            @endunless
                                             <button type="button" class="btn btn-info btn-sm" onclick="viewJadwal({{ $kelas->id }}, '{{ $kelas->nama_kelas }}')">
                                                 <i class="ti ti-eye me-1"></i>Lihat
                                             </button>
@@ -136,7 +136,7 @@
                                                 NIP: {{ $guru->nip ?? '-' }}
                                             </small>
                                         </p>
-                                        <a href="{{ route('jadwal-kbm.show-by-guru', $guru->id) }}" class="btn btn-info btn-sm">
+                                        <a href="{{ route('jadwal-kbm.show-by-guru', ['guru' => $guru->id]) }}" class="btn btn-info btn-sm">
                                             <i class="ti ti-calendar me-1"></i>Lihat Jadwal
                                         </a>
                                     </div>
@@ -157,7 +157,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Jadwal KBM - <span id="namaKelas"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div id="jadwalContent" class="table-responsive">

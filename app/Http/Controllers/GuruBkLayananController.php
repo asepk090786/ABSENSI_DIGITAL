@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AbsensiKelas;
+use App\Models\AgendaKelas;
 use App\Models\Kelas;
 use App\Models\KepalaSekolah;
 use App\Models\JenisPelanggaran;
@@ -10,7 +11,9 @@ use App\Models\LayananBk;
 use App\Models\LaporanSiswaGuru;
 use App\Models\PembinaanBk;
 use App\Models\Sekolah;
+use App\Models\Semester;
 use App\Models\Siswa;
+use App\Models\TahunAjaran;
 use App\Models\TindakLanjutBk;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -35,7 +38,39 @@ class GuruBkLayananController extends Controller
     {
         $this->authorizeKelasBinaan($kelas);
 
-        return view('guru_bk_layanan.menu', compact('kelas'));
+        $tahunAjaran = TahunAjaran::where('is_active', true)->first();
+        $semester = Semester::where('is_active', true)->first();
+
+        $absensiQuery = AbsensiKelas::where('kelas_id', $kelas->id);
+        $agendaQuery = AgendaKelas::where('kelas_id', $kelas->id);
+
+        if ($tahunAjaran) {
+            $absensiQuery->where('tahun_ajaran_id', $tahunAjaran->id);
+            $agendaQuery->where('tahun_ajaran_id', $tahunAjaran->id);
+        }
+        if ($semester) {
+            $absensiQuery->where('semester_id', $semester->id);
+            $agendaQuery->where('semester_id', $semester->id);
+        }
+
+        $stats = (object) [
+            'total_siswa' => Siswa::where('kelas_id', $kelas->id)->count(),
+            'absensi_count' => $absensiQuery->count(),
+            'agenda_count' => $agendaQuery->count(),
+            'laporan_wali_kelas_count' => LaporanSiswaGuru::where('kelas_id', $kelas->id)
+                ->whereNull('absensi_kelas_id')
+                ->count(),
+            'last_absensi_date' => AbsensiKelas::where('kelas_id', $kelas->id)
+                ->when($tahunAjaran, fn($query) => $query->where('tahun_ajaran_id', $tahunAjaran->id))
+                ->when($semester, fn($query) => $query->where('semester_id', $semester->id))
+                ->max('tanggal'),
+            'last_agenda_date' => AgendaKelas::where('kelas_id', $kelas->id)
+                ->when($tahunAjaran, fn($query) => $query->where('tahun_ajaran_id', $tahunAjaran->id))
+                ->when($semester, fn($query) => $query->where('semester_id', $semester->id))
+                ->max('tanggal'),
+        ];
+
+        return view('guru_bk_layanan.menu', compact('kelas', 'stats'));
     }
 
     public function layanan(Kelas $kelas)

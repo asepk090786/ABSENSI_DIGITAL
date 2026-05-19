@@ -15,6 +15,7 @@
     @php
         $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruBk = $isGuruBk ?? auth()->user()->hasRole('Guru BK');
+        $isSiswaWithoutClassPosition = auth()->user()->hasRole('Siswa') && ! auth()->user()->hasClassPosition();
     @endphp
 
         @if($kelasQuickAccess->isNotEmpty() && !($isGuruPiket ?? false))
@@ -107,6 +108,7 @@
                                         <i class="ti ti-user me-1"></i>{{ $kelas->waliKelas->nama }}
                                         @endif
                                     </p>
+                                    @unless($isSiswaWithoutClassPosition)
                                     <a href="{{ route('absensi.create', ['kelas_id' => $kelas->id]) }}" 
                                        class="btn btn-sm w-100" 
                                        style="background-color: {{ $btnColor }} !important; 
@@ -124,6 +126,7 @@
                                             Absen Kelas Ini
                                         @endif
                                     </a>
+                                    @endunless
                                 </div>
                             </div>
                         </div>
@@ -256,11 +259,13 @@
                                 <i class="ti ti-search me-1"></i>Tampilkan
                             </button>
                         </div>
+                        @unless($isSiswaWithoutClassPosition)
                         <div class="col-auto">
                             <a href="{{ route('absensi.create') }}" class="btn btn-success">
                                 <i class="ti ti-plus me-1"></i>Tambah Absensi
                             </a>
                         </div>
+                        @endunless
                         @if($isAdminOrKepala)
                         <div class="col-auto">
                             <a href="{{ route('absensi.generate.form') }}" class="btn btn-primary">
@@ -367,9 +372,16 @@
                         @endif
                     </h3>
                     @if(!($isAdminOrKepala || ($isGuruPiket ?? false)))
-                        <a href="{{ route('absensi.create') }}" class="btn btn-primary">
-                            <i class="ti ti-plus"></i> Tambah Absensi
-                        </a>
+                        <div class="d-flex gap-2">
+                            <a href="{{ route('absensi.guru.print') }}" target="_blank" class="btn btn-success">
+                                <i class="ti ti-file-text me-1"></i> Cetak Rekap Absensi
+                            </a>
+                            @unless($isSiswaWithoutClassPosition)
+                            <a href="{{ route('absensi.create') }}" class="btn btn-primary">
+                                <i class="ti ti-plus"></i> Tambah Absensi
+                            </a>
+                            @endunless
+                        </div>
                     @endif
                 </div>
                 <div class="card-body">
@@ -440,6 +452,7 @@
                                                 </span>
                                             </td>
                                             <td>
+                                                @unless($isSiswaWithoutClassPosition)
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('absensi.show', $item->id) }}" class="btn btn-sm btn-info">
                                                         <i class="ti ti-eye"></i>
@@ -455,6 +468,7 @@
                                                         </button>
                                                     </form>
                                                 </div>
+                                                @endunless
                                             </td>
                                         </tr>
                                     @endforeach

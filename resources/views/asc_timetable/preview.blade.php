@@ -44,7 +44,7 @@
                     </div>
                 </div>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
@@ -175,29 +175,29 @@
     <!-- Tabs -->
     <div class="card">
         <div class="card-header">
-            <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+            <ul class="nav nav-tabs card-header-tabs" data-toggle="tabs">
                 <li class="nav-item">
-                    <a href="#periods" class="nav-link active" data-bs-toggle="tab">
+                    <a href="#periods" class="nav-link active" data-toggle="tab">
                         <i class="ti ti-clock me-2"></i>Jam Belajar
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#subjects" class="nav-link" data-bs-toggle="tab">
+                    <a href="#subjects" class="nav-link" data-toggle="tab">
                         <i class="ti ti-book me-2"></i>Mata Pelajaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#teachers" class="nav-link" data-bs-toggle="tab">
+                    <a href="#teachers" class="nav-link" data-toggle="tab">
                         <i class="ti ti-user me-2"></i>Guru
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#classes" class="nav-link" data-bs-toggle="tab">
+                    <a href="#classes" class="nav-link" data-toggle="tab">
                         <i class="ti ti-building me-2"></i>Kelas
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#lessons" class="nav-link" data-bs-toggle="tab">
+                    <a href="#lessons" class="nav-link" data-toggle="tab">
                         <i class="ti ti-calendar me-2"></i>Jadwal KBM (Sample)
                     </a>
                 </li>

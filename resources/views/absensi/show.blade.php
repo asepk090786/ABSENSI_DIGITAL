@@ -107,8 +107,8 @@
                                             <button
                                                 type="button"
                                                 class="btn btn-sm btn-outline-danger btn-lapor-siswa"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalLaporanSiswa"
+                                                data-toggle="modal"
+                                                data-target="#modalLaporanSiswa"
                                                 data-siswa-id="{{ $abs->siswa->id ?? '' }}"
                                                 data-siswa-nama="{{ $abs->siswa->nama ?? '-' }}"
                                             >
@@ -143,7 +143,7 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Laporan ke Wali Kelas & Guru BK</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="siswa_id" id="lapor_siswa_id">
@@ -157,7 +157,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="ti ti-send me-1"></i>Kirim Laporan
                     </button>
