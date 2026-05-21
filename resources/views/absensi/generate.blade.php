@@ -90,7 +90,14 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Status Kelas (Opsional)</label>
-                                <input type="text" name="status_kelas" class="form-control" value="{{ old('status_kelas') }}" placeholder="Contoh: Normal / Kondusif">
+                                <select name="status_kelas" class="form-select">
+                                    <option value="">-- Pilih Status Kelas (opsional) --</option>
+                                    <option value="Sangat Kondusif" {{ old('status_kelas') === 'Sangat Kondusif' ? 'selected' : '' }}>Sangat Kondusif</option>
+                                    <option value="Kondusif" {{ old('status_kelas') === 'Kondusif' ? 'selected' : '' }}>Kondusif</option>
+                                    <option value="Normal" {{ old('status_kelas') === 'Normal' ? 'selected' : '' }}>Normal</option>
+                                    <option value="Kurang Kondusif" {{ old('status_kelas') === 'Kurang Kondusif' ? 'selected' : '' }}>Kurang Kondusif</option>
+                                    <option value="Tidak Kondusif" {{ old('status_kelas') === 'Tidak Kondusif' ? 'selected' : '' }}>Tidak Kondusif</option>
+                                </select>
                             </div>
 
                             <div class="col-md-12">

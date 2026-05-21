@@ -18,6 +18,7 @@ use App\Models\LaporanSiswaGuru;
 use App\Exports\AbsensiBkMonitoringExport;
 use App\Exports\AbsensiLaporanSiswaHarianExport;
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -32,6 +33,11 @@ class AbsensiController extends Controller
         if (empty($selectedTanggal)) {
             $selectedTanggal = Carbon::today()->format('Y-m-d');
         }
+
+        // Additional filters
+        $filterKelasId = $request->get('kelas_id');
+        $filterGuruId = $request->get('guru_id');
+        $filterQuery = $request->get('q');
 
         if (! $tahun || ! $semester) {
             $items = collect();
@@ -87,6 +93,41 @@ class AbsensiController extends Controller
         // Filter by guru_id if user is a teacher (not admin or kepala sekolah)
         if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk) {
             $query->where('guru_id', $user->guru_id);
+        }
+
+        // If user is a student, restrict to their kelas only and default filter
+        $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
+        if ($user->hasRole('Siswa')) {
+            $siswa = $user->siswa;
+            if ($siswa && !empty($siswa->kelas_id)) {
+                $query->where('kelas_id', $siswa->kelas_id);
+                $kelasQuickAccess = Kelas::where('id', $siswa->kelas_id)->get();
+                // default the filter to the siswa's kelas so the select shows correctly
+                $filterKelasId = $siswa->kelas_id;
+            } else {
+                // No kelas assigned, return empty
+                $query->whereRaw('1 = 0');
+                $kelasQuickAccess = collect();
+            }
+        }
+
+        // Apply filters from UI (kelas, guru, search)
+        if (!empty($filterKelasId)) {
+            $query->where('kelas_id', $filterKelasId);
+        }
+
+        if (!empty($filterGuruId)) {
+            $query->where('guru_id', $filterGuruId);
+        }
+
+        if (!empty($filterQuery)) {
+            $query->where(function ($q) use ($filterQuery) {
+                $q->whereHas('kelas', function ($qq) use ($filterQuery) {
+                    $qq->where('nama_kelas', 'like', '%' . $filterQuery . '%');
+                })->orWhereHas('guru', function ($qq) use ($filterQuery) {
+                    $qq->where('nama', 'like', '%' . $filterQuery . '%');
+                });
+            });
         }
         
         $items = $query->orderBy('tanggal', 'desc')->get();
@@ -162,7 +203,11 @@ class AbsensiController extends Controller
             }
         }
         
-        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian'));
+        // Provide kelas/guru lists for filter selects
+        $kelasList = Kelas::orderBy('nama_kelas')->get();
+        $guruList = Guru::orderBy('nama')->get();
+
+        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer'));
     }
 
     public function exportBkMonitoring(Request $request)
@@ -189,25 +234,94 @@ class AbsensiController extends Controller
     public function printLaporanSiswa(Request $request)
     {
         $user = auth()->user();
-        if (! $user || ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
-            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin dan Kepala Sekolah.');
+        if (! $user) {
+            abort(403, 'Akses ditolak. Silakan login.');
+        }
+
+        // Allow Admin/Kepala Sekolah and Siswa with class position to print student recap
+        $canAdminPrint = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
+        if (! $canAdminPrint && ! $isSiswaOfficer) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah atau siswa dengan jabatan kelas.');
         }
 
         $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
         $kelasId = $request->get('kelas_id');
+        $period = $request->get('period', 'daily'); // daily, weekly, monthly
+
+        // If the user is a siswa officer, force kelasId to their kelas
+        if ($isSiswaOfficer) {
+            $kelasId = $user->siswa->kelas_id ?? $kelasId;
+        }
+
+        // Compute date range based on period or explicit range passed from UI
+        $rangeStart = $request->get('range_start');
+        $rangeEnd = $request->get('range_end');
+
+        if ($rangeStart && $rangeEnd) {
+            $startDate = Carbon::parse($rangeStart)->format('Y-m-d');
+            $endDate = Carbon::parse($rangeEnd)->format('Y-m-d');
+        } else {
+            $startDate = $selectedTanggal;
+            $endDate = $selectedTanggal;
+            if ($period === 'weekly') {
+                $dt = Carbon::parse($selectedTanggal);
+                $startDate = $dt->startOfWeek()->format('Y-m-d');
+                $endDate = $dt->endOfWeek()->format('Y-m-d');
+            } elseif ($period === 'monthly') {
+                $dt = Carbon::parse($selectedTanggal);
+                $startDate = $dt->startOfMonth()->format('Y-m-d');
+                $endDate = $dt->endOfMonth()->format('Y-m-d');
+            }
+        }
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
-        $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester);
+        $jamColumns = [];
+        if ($period === 'daily') {
+            // build per-jam matrix if kelas specified
+            $perJam = $this->getDailyStudentReportRowsPerJam($selectedTanggal, $kelasId, $tahun, $semester);
+            if (is_array($perJam) && isset($perJam['rows'])) {
+                $laporanRows = $perJam['rows'];
+                $jamColumns = $perJam['jamColumns'];
+            } else {
+                $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester);
+            }
+        } else {
+            $laporanRows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester);
+        }
 
-        $summary = [
-            'hadir' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'hadir')->count(),
-            'terlambat' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['terlambat', 'telat'], true))->count(),
-            'izin' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['izin', 'ijin'], true))->count(),
-            'sakit' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'sakit')->count(),
-            'alpha' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true))->count(),
-            'total' => $laporanRows->count(),
-        ];
+        // Support two shapes of $laporanRows:
+        // - daily rows: each row has 'status'
+        // - aggregated range rows: each row has 'hadir_count','terlambat_count', etc.
+        if ($laporanRows->isEmpty()) {
+            $summary = ['hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0, 'total' => 0];
+        } else {
+            $first = $laporanRows->first();
+            if (isset($first->status)) {
+                $summary = [
+                    'hadir' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'hadir')->count(),
+                    'terlambat' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['terlambat', 'telat'], true))->count(),
+                    'izin' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['izin', 'ijin'], true))->count(),
+                    'sakit' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'sakit')->count(),
+                    'alpha' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true))->count(),
+                    'total' => $laporanRows->count(),
+                ];
+            } elseif (isset($first->hadir_count) || isset($first->hadir)) {
+                // aggregated per-student counts
+                $summary = [
+                    'hadir' => (int) $laporanRows->sum(fn ($r) => (int) ($r->hadir_count ?? $r->hadir ?? 0)),
+                    'terlambat' => (int) $laporanRows->sum(fn ($r) => (int) ($r->terlambat_count ?? $r->terlambat ?? 0)),
+                    'izin' => (int) $laporanRows->sum(fn ($r) => (int) ($r->izin_count ?? $r->izin ?? 0)),
+                    'sakit' => (int) $laporanRows->sum(fn ($r) => (int) ($r->sakit_count ?? $r->sakit ?? 0)),
+                    'alpha' => (int) $laporanRows->sum(fn ($r) => (int) ($r->alfa_count ?? $r->alfa ?? 0)),
+                    'total' => (int) $laporanRows->sum(fn ($r) => (int) ($r->total_days ?? 0)),
+                ];
+            } else {
+                // Unknown shape, attempt best-effort by counting any non-empty properties
+                $summary = ['hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0, 'total' => $laporanRows->count()];
+            }
+        }
 
         $sekolah = DB::table('sekolah')->first();
         $kelasLabel = null;
@@ -222,11 +336,20 @@ class AbsensiController extends Controller
             'kelasLabel',
             'tahun',
             'semester',
-            'sekolah'
+            'sekolah',
+            'period',
+            'startDate',
+            'endDate',
+            'jamColumns'
         ));
-        $pdf->setPaper('a4', 'landscape');
+        $pdf->setPaper('a4', 'portrait');
 
-        return $pdf->stream('Laporan-Kehadiran-Siswa-' . $selectedTanggal . '.pdf');
+        $fileLabel = $selectedTanggal;
+        if (!empty($period) && $period !== 'daily') {
+            $fileLabel = $startDate . '_to_' . $endDate;
+        }
+
+        return $pdf->stream('Laporan-Kehadiran-Siswa-' . $fileLabel . '.pdf');
     }
 
     public function exportLaporanSiswa(Request $request)
@@ -546,9 +669,42 @@ class AbsensiController extends Controller
             $kelas = Kelas::find($siswa->kelas_id);
             $kelasList = $kelas ? collect([$kelas]) : collect();
             $selectedKelasId = $kelas->id ?? null;
-            $guruList = $kelas && $kelas->waliKelas ? collect([$kelas->waliKelas]) : Guru::orderBy('nama')->get();
-            $jamBelajarList = JamBelajar::orderBy('urutan')->get();
-            $jadwalList = collect();
+                // Get all teachers who have schedule for this class in current year/semester
+                $guruList = DB::table('jadwal_kbm')
+                    ->join('guru', 'jadwal_kbm.guru_id', '=', 'guru.id')
+                    ->where('jadwal_kbm.kelas_id', $selectedKelasId)
+                    ->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('jadwal_kbm.semester_id', $semester->id)
+                    ->select('guru.id', 'guru.nama', 'guru.kode_guru')
+                    ->distinct()
+                    ->orderBy('guru.nama')
+                    ->get();
+
+                // Build jadwal for this class to populate jamBelajarList based on selected date
+                $hariEnglish = Carbon::parse($selectedDate)->format('l');
+                $hariQuery = [
+                    'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                ][$hariEnglish] ?? $hariEnglish;
+
+                $jadwalForKelas = JadwalKbm::with('jamBelajar')
+                    ->where('kelas_id', $selectedKelasId)
+                    ->where('hari', $hariQuery)
+                    ->where('tahun_ajaran_id', $tahunAjaran->id)
+                    ->where('semester_id', $semester->id)
+                    ->orderBy('jam_ke')
+                    ->get();
+
+                $multiSlotJadwal = $jadwalForKelas;
+
+                $scheduledJamIds = $jadwalForKelas->pluck('jam_belajar_id')->unique();
+                if ($scheduledJamIds->isNotEmpty()) {
+                    $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
+                } else {
+                    $jamBelajarList = JamBelajar::orderBy('urutan')->get();
+                }
+
+                $jadwalList = $jadwalForKelas;
         } else {
             // Admin, kepala sekolah, atau guru piket dapat input absensi lintas kelas
             $kelasList = Kelas::orderBy('nama_kelas')->get();
@@ -865,10 +1021,12 @@ class AbsensiController extends Controller
             }
         }
 
+        $applyAll = $request->has('apply_to_all_guru');
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
-            'guru_id' => 'required|exists:guru,id',
-            'jam_belajar_id' => 'required|exists:jam_belajar,id',
+            'guru_id' => [Rule::requiredIf(!$applyAll), 'nullable', 'exists:guru,id'],
+            'jam_belajar_id' => [Rule::requiredIf(!$applyAll), 'nullable', 'exists:jam_belajar,id'],
             'tanggal' => 'required|date',
             'status_kelas' => 'nullable|string|max:100',
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
@@ -957,8 +1115,32 @@ class AbsensiController extends Controller
             $hariEnglish = Carbon::parse($validated['tanggal'])->format('l');
             $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
 
-            if ($isAdminOrKepala || $isGuruPiket || $isGuruBk) {
-                $targetJamIds = collect([$validated['jam_belajar_id']]);
+            // Build target entries: each entry contains 'jam_id' and 'guru_id' to create AbsensiKelas records
+            $targetEntries = collect();
+
+            if ($applyAll) {
+                // Find all jadwal entries for the class on that day (may include different guru per jam)
+                $jadwalEntries = JadwalKbm::where('kelas_id', $validated['kelas_id'])
+                    ->where('hari', $hariQuery)
+                    ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
+                    ->where('semester_id', $validated['semester_id'])
+                    ->get();
+
+                if ($jadwalEntries->isNotEmpty()) {
+                    foreach ($jadwalEntries as $je) {
+                        $targetEntries->push((object)[
+                            'jam_id' => $je->jam_belajar_id,
+                            'guru_id' => $je->guru_id,
+                        ]);
+                    }
+                    // unique by jam_id and guru_id
+                    $targetEntries = $targetEntries->unique(fn($x) => $x->jam_id . ':' . ($x->guru_id ?? ''));
+                } else {
+                    // fallback to single entry with provided jam and guru (if any)
+                    $targetEntries->push((object)['jam_id' => $validated['jam_belajar_id'], 'guru_id' => $validated['guru_id'] ?? null]);
+                }
+            } elseif ($isAdminOrKepala || $isGuruPiket || $isGuruBk) {
+                $targetEntries->push((object)['jam_id' => $validated['jam_belajar_id'], 'guru_id' => $validated['guru_id'] ?? null]);
             } elseif ($user->guru_id) {
                 $jadwalJamIds = JadwalKbm::where('guru_id', $validated['guru_id'])
                     ->where('kelas_id', $validated['kelas_id'])
@@ -968,12 +1150,12 @@ class AbsensiController extends Controller
                     ->pluck('jam_belajar_id')
                     ->unique();
 
-                $targetJamIds = $jadwalJamIds
-                    ->push($validated['jam_belajar_id'])
-                    ->unique()
-                    ->values();
+                $jadwalJamIds = $jadwalJamIds->push($validated['jam_belajar_id'])->unique()->values();
+                foreach ($jadwalJamIds as $jid) {
+                    $targetEntries->push((object)['jam_id' => $jid, 'guru_id' => $validated['guru_id']]);
+                }
             } else {
-                $targetJamIds = collect([$validated['jam_belajar_id']]);
+                $targetEntries->push((object)['jam_id' => $validated['jam_belajar_id'], 'guru_id' => $validated['guru_id'] ?? null]);
             }
 
             $createdAbsensi = [];
@@ -981,9 +1163,13 @@ class AbsensiController extends Controller
             $firstExistingAbsensi = null;
             $savedAbsensiSiswaCount = 0;
 
-            foreach ($targetJamIds as $jamId) {
+            $appliedJamIds = [];
+            foreach ($targetEntries as $entry) {
+                $jamId = $entry->jam_id;
+                $entryGuruId = $entry->guru_id ?? $validated['guru_id'] ?? null;
+
                 $existing = AbsensiKelas::where('kelas_id', $validated['kelas_id'])
-                    ->where('guru_id', $validated['guru_id'])
+                    ->where('guru_id', $entryGuruId)
                     ->where('jam_belajar_id', $jamId)
                     ->whereDate('tanggal', $validated['tanggal'])
                     ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
@@ -996,9 +1182,12 @@ class AbsensiController extends Controller
                     continue;
                 }
 
-                $absensi = AbsensiKelas::create(array_merge($validated, [
+                $toCreate = array_merge($validated, [
                     'jam_belajar_id' => $jamId,
-                ]));
+                    'guru_id' => $entryGuruId,
+                ]);
+
+                $absensi = AbsensiKelas::create($toCreate);
 
                 foreach ($absensiSiswa as $siswaId => $status) {
                     $normalizedStatus = $this->normalizeAttendanceStatus($status);
@@ -1017,18 +1206,19 @@ class AbsensiController extends Controller
                 $this->updateAgendaGuruAttendanceNote($absensi);
 
                 $createdAbsensi[] = $absensi;
+                $appliedJamIds[] = $jamId;
             }
 
             DB::commit();
 
-            $jamBelajarLabels = JamBelajar::whereIn('id', $targetJamIds)
+            $jamBelajarLabels = JamBelajar::whereIn('id', array_values(array_unique($appliedJamIds)))
                 ->orderBy('urutan')
                 ->get()
                 ->map(function ($jam) {
                     return 'Jam ke-' . $jam->urutan;
                 })->implode(', ');
 
-            $skippedLabels = JamBelajar::whereIn('id', $skippedJamIds)
+            $skippedLabels = JamBelajar::whereIn('id', array_values(array_unique($skippedJamIds)))
                 ->orderBy('urutan')
                 ->get()
                 ->map(function ($jam) {
@@ -1038,7 +1228,7 @@ class AbsensiController extends Controller
             $successMessage = !empty($createdAbsensi)
                 ? 'Absensi kelas berhasil disimpan untuk ' . $savedAbsensiSiswaCount . ' siswa.'
                 : 'Absensi sudah tersedia untuk jadwal ini.';
-            if ($targetJamIds->count() > 1) {
+            if (!empty($appliedJamIds) && count(array_values(array_unique($appliedJamIds))) > 1) {
                 $successMessage .= ' Diterapkan ke: ' . $jamBelajarLabels . '.';
             }
             if (!empty($skippedJamIds)) {
@@ -1171,6 +1361,7 @@ class AbsensiController extends Controller
     {
         try {
             $kelasId = $request->get('kelas_id');
+            $tanggal = $request->get('tanggal');
             
             if (!$kelasId) {
                 return response()->json([
@@ -1185,9 +1376,33 @@ class AbsensiController extends Controller
                 ->select('id', 'nis', 'nisn', 'nama', 'jenis_kelamin')
                 ->get();
 
+            $existing = [];
+            if ($tanggal) {
+                // find existing absensi_kelas for this kelas and tanggal
+                $absensiKelas = AbsensiKelas::with(['absensiSiswa', 'jamBelajar', 'guru'])
+                    ->where('kelas_id', $kelasId)
+                    ->whereDate('tanggal', $tanggal)
+                    ->get();
+
+                foreach ($absensiKelas as $ak) {
+                    $jamId = $ak->jam_belajar_id;
+                    $existing[$jamId] = [
+                        'absensi_kelas_id' => $ak->id,
+                        'guru_id' => $ak->guru_id,
+                        'guru_name' => $ak->guru->nama ?? null,
+                        'jam_urutan' => $ak->jamBelajar->urutan ?? null,
+                        'statuses' => [],
+                    ];
+                    foreach ($ak->absensiSiswa as $asw) {
+                        $existing[$jamId]['statuses'][$asw->siswa_id] = $asw->status;
+                    }
+                }
+            }
+
             return response()->json([
                 'siswa' => $siswa,
-                'count' => $siswa->count()
+                'count' => $siswa->count(),
+                'existing_absensi' => $existing,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -1297,12 +1512,46 @@ class AbsensiController extends Controller
 
     private function getDailyStudentReportRows(string $selectedTanggal, $kelasId, $tahun, $semester)
     {
+        // If kelasId provided, attempt to limit to jadwal_kbm (jam) that apply to that class on the selected date
+        $scheduledJamIds = null;
+        if ($kelasId) {
+            try {
+                $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
+                $hariMap = [
+                    'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                ];
+                $hariQuery = $hariMap[$hariEnglish] ?? $hariEnglish;
+
+                $tahunCond = $tahun ? $tahun->id : null;
+                $semesterCond = $semester ? $semester->id : null;
+
+                $scheduledJamIds = JadwalKbm::query()
+                    ->where('kelas_id', $kelasId)
+                    ->where('hari', $hariQuery)
+                    ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
+                    ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
+                    ->pluck('jam_belajar_id')
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (empty($scheduledJamIds)) {
+                    $scheduledJamIds = null; // fallback: don't filter
+                }
+            } catch (\Throwable $e) {
+                $scheduledJamIds = null;
+            }
+        }
         $dailySubQuery = DB::table('absensi_siswa as abs_s')
             ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
             ->leftJoin('siswa as s', 'abs_s.siswa_id', '=', 's.id')
             ->leftJoin('kelas as k', 'abs_k.kelas_id', '=', 'k.id')
             ->leftJoin('guru as g', 'abs_k.guru_id', '=', 'g.id')
             ->whereDate('abs_k.tanggal', $selectedTanggal)
+            ->when($scheduledJamIds, function ($q) use ($scheduledJamIds) {
+                $q->whereIn('abs_k.jam_belajar_id', $scheduledJamIds);
+            })
             ->when($kelasId, function ($query) use ($kelasId) {
                 $query->where('abs_k.kelas_id', $kelasId);
             })
@@ -1366,6 +1615,93 @@ class AbsensiController extends Controller
             ->get();
     }
 
+    private function getDailyStudentReportRowsPerJam(string $selectedTanggal, $kelasId, $tahun, $semester)
+    {
+        if (!$kelasId) {
+            return null;
+        }
+
+        // determine scheduled jam ids for the kelas on that day
+        try {
+            $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
+            $hariMap = [
+                'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+            ];
+            $hariQuery = $hariMap[$hariEnglish] ?? $hariEnglish;
+
+            $tahunCond = $tahun ? $tahun->id : null;
+            $semesterCond = $semester ? $semester->id : null;
+
+            $scheduledJamIds = JadwalKbm::query()
+                ->where('kelas_id', $kelasId)
+                ->where('hari', $hariQuery)
+                ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
+                ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
+                ->orderBy('jam_ke')
+                ->pluck('jam_belajar_id')
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            $scheduledJamIds = [];
+        }
+
+        if (empty($scheduledJamIds)) {
+            return null; // fallback to default daily row builder
+        }
+
+        // fetch jam details
+        $jamRows = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get()->keyBy('id');
+
+        // fetch students in class
+        $students = DB::table('siswa')->where('kelas_id', $kelasId)->where('status_aktif', 1)->orderBy('nama')->get();
+        if ($students->isEmpty()) {
+            return ['rows' => collect(), 'jamColumns' => []];
+        }
+
+        // fetch absensi entries for that date, class and scheduled jams
+        $absensi = DB::table('absensi_siswa as asw')
+            ->join('absensi_kelas as ak', 'asw.absensi_kelas_id', '=', 'ak.id')
+            ->whereDate('ak.tanggal', $selectedTanggal)
+            ->where('ak.kelas_id', $kelasId)
+            ->whereIn('ak.jam_belajar_id', $scheduledJamIds)
+            ->select('asw.siswa_id', 'ak.jam_belajar_id', 'asw.status', 'asw.keterangan')
+            ->get();
+
+        // map absensi by siswa_id and jam_id
+        $map = [];
+        foreach ($absensi as $a) {
+            $status = $this->normalizeAttendanceStatus($a->status) ?? null;
+            $map[$a->siswa_id][$a->jam_belajar_id] = $status;
+        }
+
+        $rows = collect();
+        foreach ($students as $s) {
+            $statuses = [];
+            foreach ($scheduledJamIds as $jid) {
+                $statuses[$jid] = $map[$s->id][$jid] ?? '-';
+            }
+            $rows->push((object)[
+                'siswa_id' => $s->id,
+                'nama_siswa' => $s->nama,
+                'nama_kelas' => DB::table('kelas')->where('id', $kelasId)->value('nama_kelas') ?? '-',
+                'nis' => $s->nis,
+                'nisn' => $s->nisn,
+                'statuses' => $statuses,
+            ]);
+        }
+
+        // build jamColumns array with id and label
+        $jamColumns = array_map(function($jid) use ($jamRows) {
+            $jb = $jamRows[$jid] ?? null;
+            $label = $jb ? ('Jam ke-' . ($jb->urutan ?? '?') . ' (' . ($jb->jam_mulai ?? '') . ' - ' . ($jb->jam_selesai ?? '') . ')') : ('Jam ' . $jid);
+            return ['id' => $jid, 'label' => $label];
+        }, $scheduledJamIds);
+
+        return ['rows' => $rows, 'jamColumns' => $jamColumns];
+    }
+
     private function getDailyAttendanceSummaryPerClass($kelasIds, int $tahunAjaranId, int $semesterId, string $selectedTanggal)
     {
         $dailySubQuery = DB::table('absensi_siswa as abs_s')
@@ -1402,6 +1738,147 @@ class AbsensiController extends Controller
             )
             ->groupBy('daily_siswa.kelas_id')
             ->get();
+    }
+
+    private function getRangeStudentReportRows(string $startDate, string $endDate, $kelasId, $tahun, $semester)
+    {
+        // If kelasId provided, return aggregated rows for all students in the class
+        if ($kelasId) {
+            $tahunCond = $tahun ? $tahun->id : null;
+            $semesterCond = $semester ? $semester->id : null;
+
+            // count distinct dates (days with absensi_kelas records) in range for the class
+            $distinctDates = DB::table('absensi_kelas')
+                ->whereBetween(DB::raw('DATE(tanggal)'), [$startDate, $endDate])
+                ->when($kelasId, fn($q) => $q->where('kelas_id', $kelasId))
+                ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
+                ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
+                ->select(DB::raw('DATE(tanggal) as d'))
+                ->distinct()
+                ->pluck('d')
+                ->count();
+
+            // aggregate attendance counts per siswa
+            $attendance = DB::table('absensi_siswa as abs_s')
+                ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
+                ->whereBetween(DB::raw('DATE(abs_k.tanggal)'), [$startDate, $endDate])
+                ->when($kelasId, fn($q) => $q->where('abs_k.kelas_id', $kelasId))
+                ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
+                ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
+                ->select(
+                    'abs_s.siswa_id',
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alfa_count")
+                )
+                ->groupBy('abs_s.siswa_id')
+                ->get()
+                ->keyBy('siswa_id');
+
+            // get all active students in kelas
+            $students = DB::table('siswa')
+                ->where('kelas_id', $kelasId)
+                ->where('status_aktif', 1)
+                ->select('id','nama','nis','nisn')
+                ->orderBy('nama')
+                ->get();
+
+            $kelasName = DB::table('kelas')->where('id', $kelasId)->value('nama_kelas');
+
+            $rows = collect();
+            foreach ($students as $s) {
+                $att = $attendance->get($s->id);
+                $hadir = $att->hadir_count ?? 0;
+                $terlambat = $att->terlambat_count ?? 0;
+                $sakit = $att->sakit_count ?? 0;
+                $izin = $att->izin_count ?? 0;
+                $alfa = $att->alfa_count ?? 0;
+
+                $rows->push((object) [
+                    'siswa_id' => $s->id,
+                    'nama_siswa' => $s->nama,
+                    'nama_kelas' => $kelasName ?? '-',
+                    'nis' => $s->nis,
+                    'nisn' => $s->nisn,
+                    'hadir_count' => (int) $hadir,
+                    'terlambat_count' => (int) $terlambat,
+                    'sakit_count' => (int) $sakit,
+                    'izin_count' => (int) $izin,
+                    'alfa_count' => (int) $alfa,
+                    'total_days' => (int) max(1, $distinctDates),
+                ]);
+            }
+
+            return $rows;
+        }
+
+        // Fallback: if no kelasId, aggregate attendance across all classes (per student)
+        $tahunCond = $tahun ? $tahun->id : null;
+        $semesterCond = $semester ? $semester->id : null;
+
+        // count distinct dates in range
+        $distinctDatesAll = DB::table('absensi_kelas')
+            ->whereBetween(DB::raw('DATE(tanggal)'), [$startDate, $endDate])
+            ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
+            ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
+            ->select(DB::raw('DATE(tanggal) as d'))
+            ->distinct()
+            ->pluck('d')
+            ->count();
+
+        $attendanceAll = DB::table('absensi_siswa as abs_s')
+            ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
+            ->whereBetween(DB::raw('DATE(abs_k.tanggal)'), [$startDate, $endDate])
+            ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
+            ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
+            ->select(
+                'abs_s.siswa_id',
+                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir_count"),
+                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
+                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
+                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
+                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alfa_count")
+            )
+            ->groupBy('abs_s.siswa_id')
+            ->get()
+            ->keyBy('siswa_id');
+
+        // get all active students
+        $studentsAll = DB::table('siswa')
+            ->where('status_aktif', 1)
+            ->select('id','nama','nis','nisn','kelas_id')
+            ->orderBy('nama')
+            ->get();
+
+        $kelasMap = DB::table('kelas')->select('id','nama_kelas')->get()->keyBy('id')->map(fn($r) => $r->nama_kelas)->toArray();
+
+        $rowsAll = collect();
+        foreach ($studentsAll as $s) {
+            $att = $attendanceAll->get($s->id);
+            $hadir = $att->hadir_count ?? 0;
+            $terlambat = $att->terlambat_count ?? 0;
+            $sakit = $att->sakit_count ?? 0;
+            $izin = $att->izin_count ?? 0;
+            $alfa = $att->alfa_count ?? 0;
+
+            $rowsAll->push((object) [
+                'siswa_id' => $s->id,
+                'nama_siswa' => $s->nama,
+                'nama_kelas' => $kelasMap[$s->kelas_id] ?? '-',
+                'nis' => $s->nis,
+                'nisn' => $s->nisn,
+                'hadir_count' => (int) $hadir,
+                'terlambat_count' => (int) $terlambat,
+                'sakit_count' => (int) $sakit,
+                'izin_count' => (int) $izin,
+                'alfa_count' => (int) $alfa,
+                'total_days' => (int) max(1, $distinctDatesAll),
+            ]);
+        }
+
+        return $rowsAll;
     }
 
     /**

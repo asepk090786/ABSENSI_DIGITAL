@@ -125,9 +125,14 @@
                             <div class="col-md-12">
                                 <div class="mb-3">
                                     <label for="status_kelas" class="form-label">Status Kelas</label>
-                                    <input type="text" class="form-control @error('status_kelas') is-invalid @enderror" 
-                                           id="status_kelas" name="status_kelas" value="{{ old('status_kelas', $absensi->status_kelas) }}" 
-                                           placeholder="Contoh: Normal, Kondusif, dll">
+                                    <select class="form-control @error('status_kelas') is-invalid @enderror" id="status_kelas" name="status_kelas">
+                                        <option value="">-- Pilih Status Kelas (opsional) --</option>
+                                        <option value="Sangat Kondusif" {{ old('status_kelas', $absensi->status_kelas) === 'Sangat Kondusif' ? 'selected' : '' }}>Sangat Kondusif</option>
+                                        <option value="Kondusif" {{ old('status_kelas', $absensi->status_kelas) === 'Kondusif' ? 'selected' : '' }}>Kondusif</option>
+                                        <option value="Normal" {{ old('status_kelas', $absensi->status_kelas) === 'Normal' ? 'selected' : '' }}>Normal</option>
+                                        <option value="Kurang Kondusif" {{ old('status_kelas', $absensi->status_kelas) === 'Kurang Kondusif' ? 'selected' : '' }}>Kurang Kondusif</option>
+                                        <option value="Tidak Kondusif" {{ old('status_kelas', $absensi->status_kelas) === 'Tidak Kondusif' ? 'selected' : '' }}>Tidak Kondusif</option>
+                                    </select>
                                     @error('status_kelas')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

@@ -38,6 +38,25 @@ class AgendaKelasController extends Controller
         $query = AgendaKelas::where('tahun_ajaran_id', $tahun->id)
             ->where('semester_id', $semester->id);
         
+        // If logged-in user is a student, restrict to their kelas only
+        $user = auth()->user();
+        $studentKelasId = null;
+        if ($user->hasRole('Siswa')) {
+            $siswa = $user->siswa;
+            if ($siswa && !empty($siswa->kelas_id)) {
+                $studentKelasId = $siswa->kelas_id;
+                $query->where('kelas_id', $studentKelasId);
+                // prepare quick access for student's class
+                $kelasQuickAccess = DB::table('kelas')
+                    ->where('id', $studentKelasId)
+                    ->select('id', 'nama_kelas')
+                    ->get();
+            } else {
+                $query->whereRaw('1 = 0');
+                $kelasQuickAccess = collect();
+            }
+        }
+
         if ($guru) {
             // Jika ada guru yang login, hanya tampilkan agenda guru tersebut
             $query->where('guru_id', $guru->id);
@@ -53,10 +72,13 @@ class AgendaKelasController extends Controller
         $items = $query->orderBy('tanggal','desc')
             ->get();
         
-        // Get daftar guru untuk quick access (hanya guru yang memiliki jadwal KBM)
+        // Get daftar guru untuk quick access (hanya guru yang mengajar di kelas siswa jika siswa login)
         $guruQuickAccess = DB::table('jadwal_kbm')
             ->join('guru', 'jadwal_kbm.guru_id', '=', 'guru.id')
             ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id ?? 0)
+            ->when($studentKelasId, function ($query) use ($studentKelasId) {
+                $query->where('jadwal_kbm.kelas_id', $studentKelasId);
+            })
             ->select('guru.id', 'guru.nama', 'guru.kode_guru')
             ->distinct()
             ->orderBy('guru.nama')
@@ -72,6 +94,9 @@ class AgendaKelasController extends Controller
                 ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
                 ->leftJoin('guru as wali', 'kelas.wali_kelas_id', '=', 'wali.id')
                 ->where('jadwal_kbm.guru_id', $activeGuruId)
+                ->when($studentKelasId, function ($query) use ($studentKelasId) {
+                    $query->where('jadwal_kbm.kelas_id', $studentKelasId);
+                })
                 ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id ?? 0)
                 ->select('kelas.id', 'kelas.nama_kelas', 'wali.nama as wali_nama')
                 ->distinct()
@@ -126,6 +151,18 @@ class AgendaKelasController extends Controller
             if (! $guru) {
                 $guru = DB::table('guru')->where('id', $kelasModel->wali_kelas_id)->first();
             }
+            // Ensure selectedKelasId defaults to student's class when not provided
+            $selectedKelasId = $request->get('kelas_id', $kelasModel->id);
+            // Get all teachers who have schedule for this class in current year/semester
+            $guruList = DB::table('jadwal_kbm')
+                ->join('guru', 'jadwal_kbm.guru_id', '=', 'guru.id')
+                ->where('jadwal_kbm.kelas_id', $kelasModel->id)
+                ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+                ->where('jadwal_kbm.semester_id', $semester->id)
+                ->select('guru.id', 'guru.nama')
+                ->distinct()
+                ->orderBy('guru.nama')
+                ->get();
         } else {
             $kelas = DB::table('jadwal_kbm')
                 ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
@@ -138,25 +175,48 @@ class AgendaKelasController extends Controller
                 ->get();
         }
 
-        // Get jadwal aktif guru untuk dipakai filter jam berdasarkan hari
-        $jadwalItems = DB::table('jadwal_kbm')
-            ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
-            ->where('jadwal_kbm.guru_id', $guru->id)
-            ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
-            ->where('jadwal_kbm.semester_id', $semester->id)
-            ->select(
-                'jadwal_kbm.kelas_id',
-                'jadwal_kbm.jam_belajar_id',
-                'jadwal_kbm.hari',
-                'jadwal_kbm.jam_ke',
-                'jam_belajar.urutan',
-                'jam_belajar.jam_mulai',
-                'jam_belajar.jam_selesai',
-                'jam_belajar.jenis'
-            )
-            ->orderBy('jadwal_kbm.kelas_id')
-            ->orderBy('jadwal_kbm.jam_ke')
-            ->get();
+        // Get jadwal aktif untuk dipakai filter jam berdasarkan hari
+        if ($isSiswaOfficer) {
+            // For students, get all jadwal for the student's class (may include multiple teachers)
+            $jadwalItems = DB::table('jadwal_kbm')
+                ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
+                ->where('jadwal_kbm.kelas_id', $kelasModel->id)
+                ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+                ->where('jadwal_kbm.semester_id', $semester->id)
+                ->select(
+                    'jadwal_kbm.guru_id',
+                    'jadwal_kbm.kelas_id',
+                    'jadwal_kbm.jam_belajar_id',
+                    'jadwal_kbm.hari',
+                    'jadwal_kbm.jam_ke',
+                    'jam_belajar.urutan',
+                    'jam_belajar.jam_mulai',
+                    'jam_belajar.jam_selesai',
+                    'jam_belajar.jenis'
+                )
+                ->orderBy('jadwal_kbm.kelas_id')
+                ->orderBy('jadwal_kbm.jam_ke')
+                ->get();
+        } else {
+            $jadwalItems = DB::table('jadwal_kbm')
+                ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
+                ->where('jadwal_kbm.guru_id', $guru->id)
+                ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+                ->where('jadwal_kbm.semester_id', $semester->id)
+                ->select(
+                    'jadwal_kbm.kelas_id',
+                    'jadwal_kbm.jam_belajar_id',
+                    'jadwal_kbm.hari',
+                    'jadwal_kbm.jam_ke',
+                    'jam_belajar.urutan',
+                    'jam_belajar.jam_mulai',
+                    'jam_belajar.jam_selesai',
+                    'jam_belajar.jenis'
+                )
+                ->orderBy('jadwal_kbm.kelas_id')
+                ->orderBy('jadwal_kbm.jam_ke')
+                ->get();
+        }
 
         $jadwalByKelas = [];
         foreach ($jadwalItems as $item) {
@@ -167,6 +227,7 @@ class AgendaKelasController extends Controller
             }
 
             $jadwalByKelas[$kelasId][] = [
+                'guru_id' => (int) ($item->guru_id ?? 0),
                 'jam_belajar_id' => (int) $item->jam_belajar_id,
                 'hari' => $item->hari,
                 'jam_ke' => (int) $item->jam_ke,
@@ -179,10 +240,14 @@ class AgendaKelasController extends Controller
         }
         
         // Get all guru for reference (if needed for other features)
-        $guruList = DB::table('guru')->get();
+        if (!isset($guruList)) {
+            $guruList = DB::table('guru')->get();
+        }
 
-        // Get kelas_id dari query parameter (dari quick access)
-        $selectedKelasId = $request->get('kelas_id');
+        // Get kelas_id dari query parameter (dari quick access) if not already set (e.g., student default)
+        if (empty($selectedKelasId)) {
+            $selectedKelasId = $request->get('kelas_id');
+        }
         $selectedDate = $request->get('tanggal', now()->format('Y-m-d'));
         $selectedJamBelajarId = old('jam_belajar_id');
         $selectedJenisKegiatan = old('jenis_kegiatan', $request->get('jenis_kegiatan', 'kbm'));
@@ -198,7 +263,21 @@ class AgendaKelasController extends Controller
                 $selectedJamBelajarId = $jadwalHariTerpilih->first()['jam_belajar_id'];
             }
         }
-        
+        // Build jamBelajarList for the selected class (use jadwalByKelas if available)
+        if (!empty($selectedKelasId) && isset($jadwalByKelas[(string) $selectedKelasId])) {
+            $scheduledJamIds = collect($jadwalByKelas[(string) $selectedKelasId])->pluck('jam_belajar_id')->unique()->values()->toArray();
+            if (!empty($scheduledJamIds)) {
+                $jamBelajarList = DB::table('jam_belajar')
+                    ->whereIn('id', $scheduledJamIds)
+                    ->orderBy('urutan')
+                    ->get();
+            } else {
+                $jamBelajarList = DB::table('jam_belajar')->orderBy('urutan')->get();
+            }
+        } else {
+            $jamBelajarList = DB::table('jam_belajar')->orderBy('urutan')->get();
+        }
+
         return view('agenda_kelas.create', compact(
             'kelas',
             'guru',
@@ -208,7 +287,8 @@ class AgendaKelasController extends Controller
             'selectedDate',
             'selectedHari',
             'selectedJamBelajarId',
-            'jadwalByKelas'
+            'jadwalByKelas',
+            'jamBelajarList'
         ));
     }
 
@@ -311,15 +391,20 @@ class AgendaKelasController extends Controller
         $data['semester_id'] = $semester->id;
 
         if ($data['jenis_kegiatan'] === 'kbm' && $applyToAllJam) {
-            // Cari semua jam KBM untuk kelas yang sama dengan guru yang login
-            $allJamForKelas = DB::table('jadwal_kbm')
-                ->where('guru_id', $guru->id)
+            // Determine effective guru id: prefer submitted guru_id, fallback to logged-in guru (if any)
+            $effectiveGuruId = $data['guru_id'] ?? ($guru->id ?? null);
+            // Cari semua jam KBM untuk kelas yang sama — if effectiveGuruId is present, limit to that guru
+            $allJamQuery = DB::table('jadwal_kbm')
                 ->where('kelas_id', $data['kelas_id'])
                 ->where('hari', $hariAgenda)
                 ->where('tahun_ajaran_id', $tahun->id)
-                ->where('semester_id', $semester->id)
-                ->pluck('jam_belajar_id')
-                ->toArray();
+                ->where('semester_id', $semester->id);
+
+            if (!empty($effectiveGuruId)) {
+                $allJamQuery->where('guru_id', $effectiveGuruId);
+            }
+
+            $allJamForKelas = $allJamQuery->pluck('jam_belajar_id')->toArray();
 
             // Buat agenda untuk semua jam KBM
             $createdCount = 0;
@@ -383,9 +468,18 @@ class AgendaKelasController extends Controller
         $isPrivilegedViewer = $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']);
         
         if (!$isPrivilegedViewer) {
-            if (!$guruLogin || (int) $agenda->guru_id !== (int) $guruLogin->id) {
-                return redirect()->route('agenda_kelas.index')
-                    ->with('error', 'Anda tidak memiliki akses untuk agenda ini.');
+            // Allow students to view agenda for their own class
+            if ($user->hasRole('Siswa')) {
+                $siswa = $user->siswa;
+                if (! $siswa || (int) $agenda->kelas_id !== (int) ($siswa->kelas_id ?? 0)) {
+                    return redirect()->route('agenda_kelas.index')
+                        ->with('error', 'Anda tidak memiliki akses untuk agenda ini.');
+                }
+            } else {
+                if (!$guruLogin || (int) $agenda->guru_id !== (int) $guruLogin->id) {
+                    return redirect()->route('agenda_kelas.index')
+                        ->with('error', 'Anda tidak memiliki akses untuk agenda ini.');
+                }
             }
         }
 

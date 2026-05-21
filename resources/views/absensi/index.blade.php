@@ -372,15 +372,32 @@
                         @endif
                     </h3>
                     @if(!($isAdminOrKepala || ($isGuruPiket ?? false)))
-                        <div class="d-flex gap-2">
-                            <a href="{{ route('absensi.guru.print') }}" target="_blank" class="btn btn-success">
-                                <i class="ti ti-file-text me-1"></i> Cetak Rekap Absensi
-                            </a>
-                            @unless($isSiswaWithoutClassPosition)
-                            <a href="{{ route('absensi.create') }}" class="btn btn-primary">
-                                <i class="ti ti-plus"></i> Tambah Absensi
-                            </a>
-                            @endunless
+                        <div class="d-flex align-items-center">
+                            @php $currentUser = auth()->user(); @endphp
+                            <div class="d-flex align-items-center gap-2 me-3">
+                                <label class="mb-0">Periode:</label>
+                                <select id="print_period" class="form-select form-select-sm" style="width:140px;">
+                                    <option value="daily">Harian</option>
+                                    <option value="weekly">Mingguan</option>
+                                    <option value="monthly">Bulanan</option>
+                                </select>
+
+                                <div id="print_time_container" style="min-width:220px;">
+                                    <input type="date" id="print_tanggal" class="form-control form-control-sm" style="width:150px;" value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}">
+                                </div>
+                            </div>
+
+                            <div class="ms-auto d-flex align-items-center gap-2">
+                                <button id="btn_print_rekap" class="btn btn-success btn-sm">
+                                    <i class="ti ti-file-text me-1"></i> Cetak Rekap Absensi
+                                </button>
+
+                                @unless($isSiswaWithoutClassPosition)
+                                <a href="{{ route('absensi.create') }}" class="btn btn-primary btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah Absensi
+                                </a>
+                                @endunless
+                            </div>
                         </div>
                     @endif
                 </div>
@@ -390,6 +407,41 @@
                             <i class="ti ti-info-circle"></i> Belum ada data absensi.
                         </div>
                     @else
+                        <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
+                            <div class="col-12 col-md-3">
+                                <label class="form-label mb-1">Tanggal</label>
+                                <input type="date" name="tanggal" class="form-control" value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}">
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label mb-1">Kelas</label>
+                                <select name="kelas_id" class="form-select" {{ ($isSiswaOfficer ?? false) ? 'disabled' : '' }}>
+                                    <option value="">Semua Kelas</option>
+                                    @foreach($kelasList ?? collect() as $k)
+                                        <option value="{{ $k->id }}" {{ (isset($filterKelasId) && $filterKelasId == $k->id) ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                                    @endforeach
+                                </select>
+                                @if($isSiswaOfficer ?? false)
+                                    <input type="hidden" name="kelas_id" value="{{ $filterKelasId }}">
+                                @endif
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label mb-1">Guru</label>
+                                <select name="guru_id" class="form-select">
+                                    <option value="">Semua Guru</option>
+                                    @foreach($guruList ?? collect() as $g)
+                                        <option value="{{ $g->id }}" {{ (isset($filterGuruId) && $filterGuruId == $g->id) ? 'selected' : '' }}>{{ $g->nama }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label mb-1">Cari</label>
+                                <div class="d-flex gap-2">
+                                    <input type="text" name="q" class="form-control" placeholder="Cari kelas atau guru..." value="{{ $filterQuery ?? '' }}">
+                                    <button class="btn btn-primary">Tampilkan</button>
+                                </div>
+                            </div>
+                        </form>
+
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
                                 <thead>
@@ -476,6 +528,169 @@
                             </table>
                         </div>
                     @endif
+
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function(){
+                        var periodSelect = document.getElementById('print_period');
+                        var container = document.getElementById('print_time_container');
+                        var initialDate = document.getElementById('print_tanggal').value || new Date().toISOString().slice(0,10);
+                        var user = {!! json_encode(auth()->user()->hasRole('Siswa') ? ['siswa'=>true,'kelas_id'=>auth()->user()->siswa->kelas_id ?? null] : ['siswa'=>false]) !!};
+
+                        function isoDate(d) {
+                            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+                        }
+
+                        function formatDDMM(d) {
+                            return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+                        }
+
+                        function getMonday(d) {
+                            var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                            var day = date.getDay();
+                            var diff = (day + 6) % 7; // days since Monday
+                            date.setDate(date.getDate() - diff);
+                            return date;
+                        }
+
+                        function renderDaily(dateVal) {
+                            container.innerHTML = '<input type="date" id="print_tanggal" class="form-control form-control-sm" style="width:150px;" value="'+dateVal+'">';
+                        }
+
+                        function renderWeekly(dateVal) {
+                            var d = new Date(dateVal);
+                            var year = d.getFullYear();
+                            var month = d.getMonth();
+                            var firstOfMonth = new Date(year, month, 1);
+                            var lastOfMonth = new Date(year, month + 1, 0);
+
+                            var weekStarts = [];
+                            for (var day = 1; day <= lastOfMonth.getDate(); day++) {
+                                var cur = new Date(year, month, day);
+                                var monday = getMonday(cur);
+                                var key = isoDate(monday);
+                                if (!weekStarts.includes(key)) weekStarts.push(key);
+                            }
+
+                            var sel = document.createElement('select');
+                            sel.id = 'print_week';
+                            sel.className = 'form-select form-select-sm';
+                            sel.style.width = '220px';
+
+                            weekStarts.forEach(function(ws, idx){
+                                var wsDate = new Date(ws);
+                                var weDate = new Date(wsDate);
+                                weDate.setDate(wsDate.getDate() + 6);
+                                // intersect with month
+                                var startLabel = new Date(Math.max(wsDate, firstOfMonth));
+                                var endLabel = new Date(Math.min(weDate, lastOfMonth));
+                                var label = 'Minggu ke ' + (idx+1) + ' (' + formatDDMM(startLabel) + ' - ' + formatDDMM(endLabel) + ')';
+                                var opt = document.createElement('option');
+                                opt.value = isoDate(wsDate);
+                                opt.text = label;
+                                sel.appendChild(opt);
+                            });
+
+                            container.innerHTML = '';
+                            container.appendChild(sel);
+                        }
+
+                        function renderMonthly(dateVal) {
+                            var d = new Date(dateVal);
+                            var currentYear = d.getFullYear();
+                            var startYear = currentYear - 1;
+                            var endYear = currentYear + 0;
+
+                            var sel = document.createElement('select');
+                            sel.id = 'print_month';
+                            sel.className = 'form-select form-select-sm';
+                            sel.style.width = '220px';
+
+                            for (var y = startYear; y <= endYear; y++) {
+                                for (var m = 0; m < 12; m++) {
+                                    var opt = document.createElement('option');
+                                    var dval = new Date(y, m, 1);
+                                    opt.value = isoDate(dval);
+                                    opt.text = dval.toLocaleString('default', { month: 'long' }) + ' ' + y;
+                                    // preselect if same month/year as dateVal
+                                    if (y === d.getFullYear() && m === d.getMonth()) opt.selected = true;
+                                    sel.appendChild(opt);
+                                }
+                            }
+
+                            container.innerHTML = '';
+                            container.appendChild(sel);
+                        }
+
+                        function renderTimeControl(period, dateVal) {
+                            if (!dateVal) dateVal = initialDate;
+                            if (period === 'daily') renderDaily(dateVal);
+                            else if (period === 'weekly') renderWeekly(dateVal);
+                            else if (period === 'monthly') renderMonthly(dateVal);
+                        }
+
+                        // initial render
+                        renderTimeControl(periodSelect.value, initialDate);
+
+                        // change handlers
+                        periodSelect.addEventListener('change', function(){
+                            var curDate = document.querySelector('#print_tanggal') ? document.querySelector('#print_tanggal').value : initialDate;
+                            renderTimeControl(this.value, curDate);
+                        });
+
+                        // when date input changes while in daily mode, update stored value
+                        document.addEventListener('change', function(e){
+                            if (e.target && e.target.id === 'print_tanggal' && periodSelect.value === 'weekly') {
+                                // re-render weekly based on new date
+                                renderTimeControl('weekly', e.target.value);
+                            }
+                        });
+
+                        var btn = document.getElementById('btn_print_rekap');
+                        if (!btn) return;
+                        btn.addEventListener('click', function(e){
+                            e.preventDefault();
+                            var period = document.getElementById('print_period').value;
+                            var tanggal = '';
+                            if (period === 'daily') {
+                                tanggal = (document.getElementById('print_tanggal') || {value: initialDate}).value;
+                            } else if (period === 'weekly') {
+                                var sel = document.getElementById('print_week');
+                                tanggal = sel ? sel.value : initialDate;
+                            } else if (period === 'monthly') {
+                                var msel = document.getElementById('print_month');
+                                tanggal = msel ? msel.value : initialDate;
+                            }
+
+                            var url = '';
+                            // compute explicit range_start and range_end to avoid backend ambiguity
+                            var rangeStart = '';
+                            var rangeEnd = '';
+                            if (period === 'daily') {
+                                rangeStart = tanggal;
+                                rangeEnd = tanggal;
+                            } else if (period === 'weekly') {
+                                // tanggal holds the monday start-of-week value
+                                var s = new Date(tanggal + 'T00:00:00');
+                                var e = new Date(s);
+                                e.setDate(s.getDate() + 6);
+                                rangeStart = s.toISOString().slice(0,10);
+                                rangeEnd = e.toISOString().slice(0,10);
+                            } else if (period === 'monthly') {
+                                var s = new Date(tanggal + 'T00:00:00');
+                                var e = new Date(s.getFullYear(), s.getMonth()+1, 0);
+                                rangeStart = s.toISOString().slice(0,10);
+                                rangeEnd = e.toISOString().slice(0,10);
+                            }
+
+                            if (user.siswa) {
+                                url = '{{ route('absensi.laporan-siswa.print') }}' + '?tanggal=' + encodeURIComponent(tanggal) + '&period=' + encodeURIComponent(period) + '&kelas_id=' + encodeURIComponent(user.kelas_id) + '&range_start=' + encodeURIComponent(rangeStart) + '&range_end=' + encodeURIComponent(rangeEnd);
+                            } else {
+                                url = '{{ route('absensi.guru.print') }}' + '?tanggal=' + encodeURIComponent(tanggal) + '&period=' + encodeURIComponent(period) + '&range_start=' + encodeURIComponent(rangeStart) + '&range_end=' + encodeURIComponent(rangeEnd);
+                            }
+                            window.open(url, '_blank');
+                        });
+                    });
+                    </script>
                 </div>
             </div>
         </div>

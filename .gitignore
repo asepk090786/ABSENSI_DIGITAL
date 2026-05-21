@@ -38,3 +38,11 @@ composer.lock
 # Misc
 .DS_Store
 Thumbs.db
+
+# Local development / production ignore
+/assign_guru_piket.php
+/public/.user.ini
+/public/js/
+/resources/views/layouts/backup/
+/database/absene.sql
+/template/
