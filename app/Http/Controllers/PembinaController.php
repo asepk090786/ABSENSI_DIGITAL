@@ -5,34 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Guru;
 use App\Models\Role;
 use App\Models\User;
+use App\Traits\GuruRoleTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class PembinaController extends Controller
 {
+    use GuruRoleTrait;
+
     public function index()
     {
-        $pembina = Guru::with('user')->whereHas('user', function($query) {
-            $query->whereHas('roles', function($q) {
-                $q->where('role_name', 'Pembina');
-            })->orWhereHas('role', function($q) {
-                $q->where('role_name', 'Pembina');
-            });
-        })->orderBy('created_at', 'desc')->get();
+        $pembina = $this->queryGuruByRole('Pembina')
+            ->orderBy('created_at', 'desc')->get();
         
         return view('pembina.index', compact('pembina'));
     }
 
     public function create()
     {
-        $pembinaIds = Guru::whereHas('user', function($query) {
-            $query->whereHas('roles', function($q) {
-                $q->where('role_name', 'Pembina');
-            })->orWhereHas('role', function($q) {
-                $q->where('role_name', 'Pembina');
-            });
-        })->pluck('id');
+        $pembinaIds = $this->getGuruIdsByRole('Pembina');
 
         $guru = Guru::with('user')
             ->whereNotIn('id', $pembinaIds)
@@ -66,19 +58,11 @@ class PembinaController extends Controller
             $validated['foto'] = $request->file('foto')->store('guru', 'public');
         }
 
-        $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
-        unset($validated['status']);
+        $validated = $this->convertStatusToIsActive($validated);
 
         if ($request->filled('guru_id')) {
             $guru = Guru::findOrFail($validated['guru_id']);
-            $guruData = array_intersect_key($validated, array_flip([
-                'nama',
-                'nip',
-                'alamat',
-                'telepon',
-                'email',
-                'foto',
-            ]));
+            $guruData = $this->filterGuruUpdateData($validated);
 
             if (! empty($guruData)) {
                 $guru->update($guruData);
@@ -93,7 +77,7 @@ class PembinaController extends Controller
                         'email' => $guru->email,
                         'is_active' => $validated['is_active'],
                     ]);
-                    $user->roles()->syncWithoutDetaching([$pembinaRole->id]);
+                    $this->syncUserRole($user, 'Pembina');
                 } else {
                     if (empty($guru->email)) {
                         return redirect()->back()
@@ -111,7 +95,7 @@ class PembinaController extends Controller
                         'guru_id' => $guru->id,
                         'is_active' => $validated['is_active'],
                     ]);
-                    $user->roles()->syncWithoutDetaching([$pembinaRole->id]);
+                    $this->syncUserRole($user, 'Pembina');
                 }
             }
 
@@ -138,7 +122,7 @@ class PembinaController extends Controller
                 'guru_id' => $guru->id,
                 'is_active' => $validated['is_active'],
             ]);
-            $user->roles()->syncWithoutDetaching([$pembinaRole->id]);
+            $this->syncUserRole($user, 'Pembina');
         }
 
         return redirect()->route('pembina.index')->with('success', 'Data Pembina berhasil ditambahkan.');
@@ -179,8 +163,7 @@ class PembinaController extends Controller
             $validated['foto'] = $request->file('foto')->store('guru', 'public');
         }
 
-        $validated['is_active'] = $validated['status'] === 'Aktif' ? 1 : 0;
-        unset($validated['status']);
+        $validated = $this->convertStatusToIsActive($validated);
 
         $pembina->update($validated);
 
@@ -191,10 +174,7 @@ class PembinaController extends Controller
                 'email' => $validated['email'] ?? $user->email,
                 'is_active' => $validated['is_active'],
             ]);
-            $pembinaRole = Role::where('role_name', 'Pembina')->first();
-            if ($pembinaRole) {
-                $user->roles()->syncWithoutDetaching([$pembinaRole->id]);
-            }
+            $this->syncUserRole($user, 'Pembina');
         } else {
             $pembinaRole = Role::where('role_name', 'Pembina')->first();
             if ($pembinaRole) {
@@ -214,7 +194,7 @@ class PembinaController extends Controller
                     'guru_id' => $pembina->id,
                     'is_active' => $validated['is_active'],
                 ]);
-                $user->roles()->syncWithoutDetaching([$pembinaRole->id]);
+                $this->syncUserRole($user, 'Pembina');
             }
         }
 
@@ -231,10 +211,7 @@ class PembinaController extends Controller
 
         $user = User::where('guru_id', $pembina->id)->first();
         if ($user) {
-            $pembinaRole = Role::where('role_name', 'Pembina')->first();
-            if ($pembinaRole) {
-                $user->roles()->detach($pembinaRole->id);
-            }
+            $this->detachUserRole($user, 'Pembina');
         }
 
         return redirect()->route('pembina.index')->with('success', 'Data Pembina berhasil dihapus.');
