@@ -284,6 +284,7 @@ Route::middleware(['auth'])->group(function(){
         
         Route::get('/setting/header', [SettingController::class, 'header'])->name('setting.header');
         Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
+        Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
     });
     
     // Profile routes

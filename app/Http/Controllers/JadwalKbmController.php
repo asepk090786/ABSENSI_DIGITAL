@@ -10,6 +10,7 @@ use App\Models\MataPelajaran;
 use App\Models\JamBelajar;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
+use App\Models\Sekolah;
 use App\Models\TugasGuru;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -329,6 +330,12 @@ class JadwalKbmController extends Controller
     public function showByGuru($guruId)
     {
         $guru = Guru::findOrFail($guruId);
+        $sekolah = Sekolah::first();
+
+        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            return view('jadwal_kbm.show_by_guru_maintenance', compact('guru'));
+        }
+
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
         

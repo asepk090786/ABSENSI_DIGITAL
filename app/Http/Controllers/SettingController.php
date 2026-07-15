@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TahunAjaran;
 use App\Models\Semester;
+use App\Models\Sekolah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,8 +15,9 @@ class SettingController extends Controller
         $tahuns = TahunAjaran::all();
         $active_tahun = TahunAjaran::where('is_active', 1)->first();
         $active_semester = $active_tahun ? Semester::where('tahun_ajaran_id', $active_tahun->id)->where('is_active', 1)->first() : null;
+        $sekolah = Sekolah::first();
 
-        return view('setting.index', compact('tahuns', 'active_tahun', 'active_semester'));
+        return view('setting.index', compact('tahuns', 'active_tahun', 'active_semester', 'sekolah'));
     }
 
     public function tahunAjaran()
@@ -177,6 +179,27 @@ class SettingController extends Controller
         } catch (\Throwable $e) {
             return back()->withErrors('Tidak dapat menghapus: masih ada data terkait.');
         }
+    }
+
+    public function updateJadwalVisibility(Request $request)
+    {
+        $validated = $request->validate([
+            'tampilkan_jadwal' => 'required|boolean',
+        ]);
+
+        $sekolah = Sekolah::first();
+        if (! $sekolah) {
+            $sekolah = new Sekolah();
+            $sekolah->nama_sekolah = config('app.name', 'SEKOLAH');
+            $sekolah->alamat = '-';
+            $sekolah->kota = '-';
+            $sekolah->provinsi = '-';
+        }
+
+        $sekolah->tampilkan_jadwal = $validated['tampilkan_jadwal'];
+        $sekolah->save();
+
+        return back()->with('success', 'Pengaturan tampilan jadwal berhasil disimpan.');
     }
 
     public function header()

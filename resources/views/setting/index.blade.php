@@ -38,4 +38,36 @@
             </div>
         </div>
     </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header border-0 pt-3 pb-2">
+                    <strong>Pengaturan Tampilan Jadwal</strong>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('setting.jadwal_visibility.update') }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="tampilkan_jadwal" value="0">
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="tampilkan_jadwal" name="tampilkan_jadwal" value="1" {{ optional($sekolah)->tampilkan_jadwal !== false ? 'checked' : '' }}>
+                            <label class="form-check-label" for="tampilkan_jadwal">Tampilkan jadwal pada akun guru</label>
+                        </div>
+
+                        @error('tampilkan_jadwal')
+                            <div class="text-danger small mb-3">{{ $message }}</div>
+                        @enderror
+
+                        <p class="text-muted small">
+                            Jika dinonaktifkan, preview jadwal di akun guru akan diganti dengan informasi bahwa jadwal masih dalam proses perbaikan.
+                        </p>
+
+                        <button type="submit" class="btn btn-primary btn-sm">Simpan pengaturan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
