@@ -62,8 +62,9 @@
 
                         <div class="mb-3">
                             <label for="jadwal_maintenance_message" class="form-label">Pesan notifikasi (ditampilkan saat jadwal dinonaktifkan)</label>
-                            <textarea class="form-control" id="jadwal_maintenance_message" name="jadwal_maintenance_message" rows="3">{{ old('jadwal_maintenance_message', optional($sekolah)->jadwal_maintenance_message) }}</textarea>
-                            <div class="form-text">Anda dapat memasukkan teks sederhana atau HTML singkat untuk menampilkan informasi tambahan kepada guru.</div>
+                            <input type="hidden" id="jadwal_maintenance_message" name="jadwal_maintenance_message" value="{{ old('jadwal_maintenance_message', optional($sekolah)->jadwal_maintenance_message) }}">
+                            <div id="jadwal_editor" style="min-height:120px;">{!! old('jadwal_maintenance_message', optional($sekolah)->jadwal_maintenance_message) !!}</div>
+                            <div class="form-text">Anda dapat memasukkan teks biasa, menempel dari Word, atau menggunakan editor untuk menambahkan HTML sederhana.</div>
                         </div>
 
                         <p class="text-muted small">
@@ -77,3 +78,40 @@
         </div>
     </div>
 @endsection
+
+@push('styles')
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+@endpush
+
+@push('scripts')
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var toolbarOptions = [
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'header': 1 }, { 'header': 2 }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'clean']
+            ];
+
+            var quill = new Quill('#jadwal_editor', {
+                modules: { toolbar: toolbarOptions, clipboard: { matchVisual: false } },
+                theme: 'snow'
+            });
+
+            // set initial content from hidden input (already set via server-rendered HTML)
+            var hidden = document.getElementById('jadwal_maintenance_message');
+            if (hidden && hidden.value) {
+                try { quill.root.innerHTML = hidden.value; } catch(e) {}
+            }
+
+            // on form submit, copy html to hidden input
+            var form = document.querySelector('form[action="{{ route('setting.jadwal_visibility.update') }}"]');
+            if (form) {
+                form.addEventListener('submit', function() {
+                    hidden.value = quill.root.innerHTML;
+                });
+            }
+        });
+    </script>
+@endpush

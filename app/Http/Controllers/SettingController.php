@@ -198,7 +198,37 @@ class SettingController extends Controller
         }
 
         $sekolah->tampilkan_jadwal = $validated['tampilkan_jadwal'];
-        $sekolah->jadwal_maintenance_message = $validated['jadwal_maintenance_message'] ?? null;
+        // Sanitasi sederhana untuk menghindari script injection
+        $rawMessage = $validated['jadwal_maintenance_message'] ?? null;
+        if ($rawMessage) {
+            // Hapus tag <script> dan <iframe> beserta isinya
+            $msg = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $rawMessage);
+            $msg = preg_replace('#<iframe(.*?)>(.*?)</iframe>#is', '', $msg);
+
+            // Hapus atribut event handler seperti onclick, onerror, dsb.
+            $msg = preg_replace('/\s+on[a-zA-Z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $msg);
+
+            // Hapus href/src yang menggunakan javascript:
+            $msg = preg_replace_callback('/(href|src)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', function($m) {
+                $attr = $m[0];
+                // ambil value
+                $parts = explode('=', $attr, 2);
+                if (count($parts) < 2) return '';
+                $name = $parts[0];
+                $val = trim($parts[1]);
+                $valUnquoted = trim($val, " \t\n\r\0\x0B\'\"");
+                if (preg_match('/^javascript:/i', $valUnquoted)) {
+                    return '';
+                }
+                return ' ' . $name . '=' . $val;
+            }, $msg);
+
+            // Trim panjang konten untuk keamanan
+            $msg = substr($msg, 0, 2000);
+            $sekolah->jadwal_maintenance_message = $msg;
+        } else {
+            $sekolah->jadwal_maintenance_message = null;
+        }
         $sekolah->save();
 
         return back()->with('success', 'Pengaturan tampilan jadwal berhasil disimpan.');
