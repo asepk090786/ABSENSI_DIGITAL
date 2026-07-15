@@ -371,6 +371,11 @@ class JadwalKbmController extends Controller
     public function showKeseluruhan(Request $request)
     {
         $viewType = $request->get('view', 'full'); // 'full' atau 'compact'
+        $sekolah = Sekolah::first();
+
+        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            return view('jadwal_kbm.keseluruhan_maintenance');
+        }
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
         
