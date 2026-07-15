@@ -79,11 +79,11 @@
     </div>
 @endsection
 
-@push('styles')
+@push('css')
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 @endpush
 
-@push('scripts')
+@push('js')
     <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -102,7 +102,7 @@
             // set initial content from hidden input (already set via server-rendered HTML)
             var hidden = document.getElementById('jadwal_maintenance_message');
             if (hidden && hidden.value) {
-                try { quill.root.innerHTML = hidden.value; } catch(e) {}
+                try { quill.clipboard.dangerouslyPasteHTML(hidden.value); } catch(e) {}
             }
 
             // on form submit, copy html to hidden input
