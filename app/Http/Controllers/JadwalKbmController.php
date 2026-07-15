@@ -32,10 +32,15 @@ class JadwalKbmController extends Controller
      */
     public function index()
     {
+        $sekolah = Sekolah::first();
+        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            return view('jadwal_kbm.keseluruhan_maintenance');
+        }
+
         $kelasList = Kelas::with('waliKelas')->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
         $guruList = Guru::orderBy('nama')->get();
         $sekolah = \App\Models\Sekolah::first();
-        
+
         return view('jadwal_kbm.index', compact('kelasList', 'guruList', 'sekolah'));
     }
 
@@ -109,6 +114,11 @@ class JadwalKbmController extends Controller
      */
     public function printByKelas($kelasId)
     {
+        $sekolah = Sekolah::first();
+        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            return view('jadwal_kbm.keseluruhan_maintenance');
+        }
+
         $kelas = Kelas::findOrFail($kelasId);
         $sekolah = \App\Models\Sekolah::first();
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -156,6 +166,11 @@ class JadwalKbmController extends Controller
     {
         $paperSize = request()->get('paper_size', 'a4'); // Default A4
         
+        $sekolah = Sekolah::first();
+        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            return redirect()->back()->with('error', 'Jadwal sedang dinonaktifkan oleh administrator.');
+        }
+
         $kelas = Kelas::findOrFail($kelasId);
         $sekolah = \App\Models\Sekolah::first();
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -252,6 +267,11 @@ class JadwalKbmController extends Controller
     {
         $paperSize = request()->get('paper_size', 'a4');
         
+        $sekolah = Sekolah::first();
+        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            return redirect()->back()->with('error', 'Jadwal sedang dinonaktifkan oleh administrator.');
+        }
+
         $guru = Guru::findOrFail($guruId);
         $sekolah = \App\Models\Sekolah::first();
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -744,6 +764,10 @@ class JadwalKbmController extends Controller
     public function getJadwalByKelas($kelasId)
     {
         try {
+            $sekolah = Sekolah::first();
+            if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+                return response()->json(['error' => 'Jadwal sedang dinonaktifkan oleh administrator.'], 403);
+            }
             $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
             $semesterAktif = Semester::where('is_active', true)->first();
             
