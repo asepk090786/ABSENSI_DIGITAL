@@ -2,13 +2,21 @@
 /.env
 /.env.*
 .phpunit.result.cache
-composer.lock
 /vendor/
 
-# Cache & build artifacts
-/bootstrap/cache/*.php
+# Node and frontend
+/node_modules/
+/public/vendor/
 /public/hot
 /public/storage
+/public/js/
+
+# Build artifacts
+/bootstrap/cache/*.php
+/android_app/app/build/
+/android_app/.gradle/
+/simadis_mobile/build/
+/simadis_mobile/android/.gradle/
 
 # Storage runtime files
 /storage/*.key
@@ -34,6 +42,10 @@ composer.lock
 # Logs
 *.log
 
+# SQL dumps and local config
+*.sql
+/android_app/local.properties
+/simadis_mobile/.metadata
 
 # Misc
 .DS_Store
@@ -42,7 +54,4 @@ Thumbs.db
 # Local development / production ignore
 /assign_guru_piket.php
 /public/.user.ini
-/public/js/
 /resources/views/layouts/backup/
-/database/absene.sql
-/template/
