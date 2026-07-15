@@ -217,6 +217,52 @@ class SiswaController extends Controller
         return redirect()->route('siswa.index')->with('success', 'Data siswa berhasil dihapus.');
     }
 
+    /**
+     * Delete multiple siswa at once
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array',
+            'siswa_ids.*' => 'required|integer|exists:siswa,id'
+        ]);
+
+        try {
+            $count = 0;
+            foreach ($validated['siswa_ids'] as $id) {
+                $siswa = Siswa::find($id);
+                if (! $siswa) continue;
+
+                // Check permissions for Wali Kelas
+                $this->ensureWaliKelasCanEditSiswa($siswa);
+
+                if ($siswa->user) {
+                    $siswa->user->delete();
+                }
+                $siswa->delete();
+                $count++;
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$count} data siswa.",
+                    'count' => $count
+                ]);
+            }
+
+            return redirect()->route('siswa.index')->with('success', "Berhasil menghapus {$count} data siswa.");
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus data siswa: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->route('siswa.index')->with('error', 'Gagal menghapus data siswa: ' . $e->getMessage());
+        }
+    }
+
     public function export()
     {
         return Excel::download(new SiswaExport, 'data_siswa_' . date('Ymd_His') . '.xlsx');

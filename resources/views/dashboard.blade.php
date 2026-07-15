@@ -7,14 +7,14 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-chart">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <div class="row g-2">
                         <div class="col-12 col-md-6 text-start">
                             <h5 class="card-category">Total Shipments</h5>
                             <h2 class="card-title">Performance</h2>
                         </div>
                         <div class="col-12 col-md-6 d-flex justify-content-md-end justify-content-start">
-                            <div class="btn-group btn-group-toggle w-100 w-md-auto flex-wrap" data-toggle="buttons">
+                            <div class="btn-group btn-group-toggle w-100 w-md-auto flex-wrap" data-bs-toggle="buttons">
                             <label class="btn btn-sm btn-primary btn-simple active flex-grow-1 flex-md-grow-0" id="0">
                                 <input type="radio" name="options" checked>
                                 <span class="d-none d-md-inline">Accounts</span>
@@ -52,8 +52,8 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-1">Menu Cepat</h5>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h5 class="card-title fw-semibold mb-1">Menu Cepat</h5>
                     <p class="card-category">Akses cepat ke fitur admin</p>
                 </div>
                 <div class="card-body">
@@ -112,7 +112,7 @@
     <div class="row">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card card-chart">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="card-category">Total Shipments</h5>
                     <h3 class="card-title"><i class="ti ti-bell text-primary"></i> 763,215</h3>
                 </div>
@@ -125,7 +125,7 @@
         </div>
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card card-chart">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="card-category">Daily Sales</h5>
                     <h3 class="card-title"><i class="ti ti-truck-delivery text-info"></i> 3,500€</h3>
                 </div>
@@ -138,7 +138,7 @@
         </div>
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card card-chart">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="card-category">Completed Tasks</h5>
                     <h3 class="card-title"><i class="ti ti-send text-success"></i> 12,100K</h3>
                 </div>
@@ -153,14 +153,14 @@
     <div class="row">
         <div class="col-12 col-lg-6">
             <div class="card card-tasks">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
                             <h6 class="title d-inline">Tasks(5)</h6>
                             <p class="card-category d-inline ms-2">today</p>
                         </div>
                         <div class="dropdown">
-                            <button type="button" class="btn btn-link dropdown-toggle btn-icon" data-toggle="dropdown">
+                            <button type="button" class="btn btn-link dropdown-toggle btn-icon" data-bs-toggle="dropdown">
                                 <i class="ti ti-settings"></i>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
@@ -309,7 +309,7 @@
         </div>
         <div class="col-lg-6 col-md-12">
             <div class="card ">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h4 class="card-title">Simple Table</h4>
                 </div>
                 <div class="card-body">

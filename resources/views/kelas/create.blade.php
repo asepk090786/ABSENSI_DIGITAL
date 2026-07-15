@@ -7,7 +7,7 @@
     <div class="col-md-10 mx-auto">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Tambah Kelas</h4>
+                <h4 class="card-title fw-semibold m-0">Tambah Kelas</h4>
                 <a href="{{ route('kelas.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
@@ -19,13 +19,13 @@
                         <strong>Informasi:</strong> Data yang bertanda <span class="text-danger">*</span> wajib diisi.
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama Kelas <span class="text-danger">*</span></label>
                         <input type="text" name="nama_kelas" class="form-control @error('nama_kelas') is-invalid @enderror" value="{{ old('nama_kelas') }}" required>
                         @error('nama_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Tingkatan Kelas <span class="text-danger">*</span></label>
                         <select name="tingkat_kelas" class="form-select @error('tingkat_kelas') is-invalid @enderror" required>
                             <option value="">-- Pilih Tingkatan --</option>
@@ -51,7 +51,7 @@
                         @error('tingkat_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Jurusan</label>
                         <select name="jurusan" class="form-select @error('jurusan') is-invalid @enderror">
                             <option value="">-- Pilih Jurusan --</option>
@@ -64,12 +64,12 @@
                         @error('jurusan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Wali Kelas</label>
                         <select name="wali_kelas_id" class="form-select @error('wali_kelas_id') is-invalid @enderror">
                             <option value="">Pilih Wali Kelas</option>
                             @foreach($guruList as $guru)
-                                <option value="{{ $guru->id }}" {{ old('wali_kelas_id')==$guru->id ? 'selected' : '' }}>{{ $guru->user->name ?? $guru->nama }}</option>
+                                <option value="{{ $guru->id }}" {{ old('wali_kelas_id')==$guru->id ? 'selected' : '' }}>{{ $guru->nama }}</option>
                             @endforeach
                         </select>
                         @error('wali_kelas_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

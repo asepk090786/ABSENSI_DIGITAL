@@ -9,7 +9,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title mb-1">
+                        <h4 class="card-title fw-semibold mb-1">
                             <i class="ti ti-users me-2"></i>Data Siswa
                         </h4>
                         <p class="text-muted mb-0">Kelas: <strong>{{ $kelasBinaan->nama_kelas ?? '-' }}</strong></p>
@@ -25,7 +25,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th width="5%">No</th>
@@ -59,7 +59,7 @@
                             </table>
                         </div>
 
-                        <div class="mt-3">
+                        <div class="mt-2">
                             <p class="text-muted mb-0">
                                 <strong>Total Siswa:</strong> {{ $siswa->count() }} siswa
                             </p>

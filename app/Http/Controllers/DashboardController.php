@@ -20,7 +20,7 @@ class DashboardController extends Controller
         $siswa = \Illuminate\Support\Facades\Schema::hasTable('siswa') ? DB::table('siswa')->count() : 0;
         $kelas = \Illuminate\Support\Facades\Schema::hasTable('kelas') ? DB::table('kelas')->count() : 0;
         $tahun = DB::table('tahun_ajaran')->where('is_active',1)->first();
-        $semester = DB::table('semester')->where('is_active',1)->first();
+        $semester = $tahun ? DB::table('semester')->where('tahun_ajaran_id', $tahun->id)->where('is_active',1)->first() : null;
         $tahunAjaran = $tahun ? $tahun->nama_tahun : null;
         $semestrName = $semester ? $semester->nama_semester : null;
         $absensi = 0;
@@ -41,10 +41,38 @@ class DashboardController extends Controller
             $rekapKehadiranSiswaPerKelas = collect();
             $rekapKehadiranGuruHarian = collect();
             $tanggalHariIni = now()->toDateString();
+
+            $filterTanggal = request('filter_tanggal');
+            $filterMinggu = request('filter_minggu');
+            $filterBulan = request('filter_bulan');
+
+            $tanggalMulai = null;
+            $tanggalSelesai = null;
+            $labelPeriode = 'Hari Ini';
+            $periodeTanggal = $tanggalHariIni;
+
+            if ($filterTanggal) {
+                $tanggalMulai = $tanggalSelesai = $filterTanggal;
+                $periodeTanggal = $filterTanggal;
+                $labelPeriode = \Carbon\Carbon::parse($filterTanggal)->format('d M Y');
+            } elseif ($filterMinggu) {
+                [$year, $week] = explode('-W', $filterMinggu);
+                $tanggalMulai = \Carbon\Carbon::now()->setISODate($year, (int) $week)->startOfWeek()->toDateString();
+                $tanggalSelesai = \Carbon\Carbon::now()->setISODate($year, (int) $week)->endOfWeek()->toDateString();
+                $periodeTanggal = $tanggalMulai;
+                $labelPeriode = "Minggu ke-$week, $year";
+            } elseif ($filterBulan) {
+                [$year, $month] = explode('-', $filterBulan);
+                $tanggalMulai = "$year-$month-01";
+                $tanggalSelesai = \Carbon\Carbon::create($year, $month)->endOfMonth()->toDateString();
+                $periodeTanggal = $tanggalMulai;
+                $labelPeriode = \Carbon\Carbon::create($year, $month)->format('M Y');
+            }
+
             $kelasLaporanOptions = collect();
 
             $statistikKehadiranSiswaHarian = (object) [
-                'tanggal' => $tanggalHariIni,
+                'tanggal' => $periodeTanggal,
                 'total_entri' => 0,
                 'hadir' => 0,
                 'terlambat' => 0,
@@ -55,7 +83,7 @@ class DashboardController extends Controller
             ];
 
             $statistikKehadiranGuruHarian = (object) [
-                'tanggal' => $tanggalHariIni,
+                'tanggal' => $periodeTanggal,
                 'total_entri' => 0,
                 'hadir' => 0,
                 'izin' => 0,
@@ -140,7 +168,11 @@ class DashboardController extends Controller
 
                 $statSiswaQuery = DB::query()
                     ->fromSub($dailySiswaSubQuery, 'daily_siswa')
-                    ->whereDate('daily_siswa.tanggal', $tanggalHariIni)
+                    ->when($tanggalMulai && $tanggalSelesai, function ($q) use ($tanggalMulai, $tanggalSelesai) {
+                        $q->whereBetween('daily_siswa.tanggal', [$tanggalMulai, $tanggalSelesai]);
+                    }, function ($q) use ($tanggalHariIni) {
+                        $q->whereDate('daily_siswa.tanggal', $tanggalHariIni);
+                    })
                     ->select(
                         DB::raw('COUNT(*) as total_entri'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
@@ -153,6 +185,9 @@ class DashboardController extends Controller
                 $rekapSiswaPerKelasQuery = DB::query()
                     ->fromSub($dailySiswaSubQuery, 'daily_siswa')
                     ->join('kelas as k', 'daily_siswa.kelas_id', '=', 'k.id')
+                    ->when($tanggalMulai && $tanggalSelesai, function ($q) use ($tanggalMulai, $tanggalSelesai) {
+                        $q->whereBetween('daily_siswa.tanggal', [$tanggalMulai, $tanggalSelesai]);
+                    })
                     ->select(
                         'k.id as kelas_id',
                         'k.nama_kelas',
@@ -172,7 +207,7 @@ class DashboardController extends Controller
                     $totalSiswaEnt = (int) ($statSiswaRaw->total_entri ?? 0);
                     $hadirSiswa = (int) ($statSiswaRaw->hadir ?? 0);
                     $statistikKehadiranSiswaHarian = (object) [
-                        'tanggal' => $tanggalHariIni,
+                        'tanggal' => $periodeTanggal,
                         'total_entri' => $totalSiswaEnt,
                         'hadir' => $hadirSiswa,
                         'terlambat' => (int) ($statSiswaRaw->terlambat ?? 0),
@@ -191,7 +226,11 @@ class DashboardController extends Controller
                 \Illuminate\Support\Facades\Schema::hasTable('guru')
             ) {
                 $statGuruQuery = DB::table('absensi_guru as ag')
-                    ->whereDate('ag.tanggal', $tanggalHariIni)
+                    ->when($tanggalMulai && $tanggalSelesai, function ($q) use ($tanggalMulai, $tanggalSelesai) {
+                        $q->whereBetween('ag.tanggal', [$tanggalMulai, $tanggalSelesai]);
+                    }, function ($q) use ($tanggalHariIni) {
+                        $q->whereDate('ag.tanggal', $tanggalHariIni);
+                    })
                     ->select(
                         DB::raw('COUNT(ag.id) as total_entri'),
                         DB::raw("SUM(CASE WHEN ag.status = 'hadir' THEN 1 ELSE 0 END) as hadir"),
@@ -201,6 +240,9 @@ class DashboardController extends Controller
                     );
 
                 $rekapGuruHarianQuery = DB::table('absensi_guru as ag')
+                    ->when($tanggalMulai && $tanggalSelesai, function ($q) use ($tanggalMulai, $tanggalSelesai) {
+                        $q->whereBetween('ag.tanggal', [$tanggalMulai, $tanggalSelesai]);
+                    })
                     ->select(
                         'ag.tanggal',
                         DB::raw('COUNT(ag.id) as total_entri'),
@@ -240,7 +282,7 @@ class DashboardController extends Controller
                     $totalGuruEnt = (int) ($statGuruRaw->total_entri ?? 0);
                     $hadirGuru = (int) ($statGuruRaw->hadir ?? 0);
                     $statistikKehadiranGuruHarian = (object) [
-                        'tanggal' => $tanggalHariIni,
+                        'tanggal' => $periodeTanggal,
                         'total_entri' => $totalGuruEnt,
                         'hadir' => $hadirGuru,
                         'izin' => (int) ($statGuruRaw->izin ?? 0),
@@ -265,7 +307,11 @@ class DashboardController extends Controller
                 'rekapKehadiranGuruHarian',
                 'statistikKehadiranSiswaHarian',
                 'statistikKehadiranGuruHarian',
-                'kelasLaporanOptions'
+                'kelasLaporanOptions',
+                'labelPeriode',
+                'filterTanggal',
+                'filterMinggu',
+                'filterBulan'
             ));
         } elseif ($isGuruPanel) {
             // Data khusus untuk dashboard guru

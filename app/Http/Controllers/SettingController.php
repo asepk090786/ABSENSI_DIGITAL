@@ -65,6 +65,11 @@ class SettingController extends Controller
         DB::table('tahun_ajaran')->update(['is_active' => 0]);
         $tahunAjaran->update(['is_active' => 1]);
 
+        // Ensure semester state stays consistent when switching active year.
+        DB::table('semester')
+            ->where('tahun_ajaran_id', '!=', $tahunAjaran->id)
+            ->update(['is_active' => 0]);
+
         return back()->with('success', 'Tahun ajaran ' . $tahunAjaran->nama_tahun . ' diaktifkan');
     }
 
@@ -208,6 +213,11 @@ class SettingController extends Controller
             
             if (!$sekolah) {
                 $sekolah = new \App\Models\Sekolah();
+                // Set required fields untuk record baru
+                $sekolah->nama_sekolah = config('app.name', 'SEKOLAH');
+                $sekolah->kota = 'Banten';
+                $sekolah->provinsi = 'Banten';
+                $sekolah->alamat = '-';
             }
 
             $sekolah->header_html = $validated['header_html'] ?? null;

@@ -7,9 +7,9 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">Detail Absensi Kelas</h3>
+                        <h3 class="card-title fw-semibold m-0">Detail Absensi Kelas</h3>
                         <div>
                             <a href="{{ route('absensi.edit', $absensi->id) }}" class="btn btn-warning">
                                 <i class="ti ti-edit me-1"></i> Edit
@@ -66,7 +66,7 @@
 
                     @if($absensi->absensiSiswa->isNotEmpty())
                     <hr>
-                    <h5 class="mb-3">Daftar Absensi Siswa</h5>
+                    <h5 class="mb-2">Daftar Absensi Siswa</h5>
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped">
                             <thead class="table-light">
@@ -96,7 +96,7 @@
                                         @elseif($statusKey === 'izin' || $statusKey === 'ijin')
                                             <span class="badge bg-info">Izin</span>
                                         @elseif(in_array($statusKey, ['alpha', 'alpa', 'alfa', 'absen'], true))
-                                            <span class="badge bg-danger">Alpha</span>
+                                            <span class="badge bg-danger">Alpa</span>
                                         @else
                                             <span class="badge bg-secondary">{{ $abs->status }}</span>
                                         @endif
@@ -107,8 +107,8 @@
                                             <button
                                                 type="button"
                                                 class="btn btn-sm btn-outline-danger btn-lapor-siswa"
-                                                data-toggle="modal"
-                                                data-target="#modalLaporanSiswa"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalLaporanSiswa"
                                                 data-siswa-id="{{ $abs->siswa->id ?? '' }}"
                                                 data-siswa-nama="{{ $abs->siswa->nama ?? '-' }}"
                                             >
@@ -143,21 +143,21 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Laporan ke Wali Kelas & Guru BK</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="siswa_id" id="lapor_siswa_id">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama Siswa</label>
                         <input type="text" id="lapor_siswa_nama" class="form-control" readonly>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Permasalahan <span class="text-danger">*</span></label>
                         <textarea name="deskripsi_permasalahan" class="form-control" rows="4" required placeholder="Tuliskan permasalahan yang ditemukan pada siswa..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="ti ti-send me-1"></i>Kirim Laporan
                     </button>

@@ -128,7 +128,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">
+                <h4 class="card-title fw-semibold m-0">
                     <i class="ti ti-file-pdf me-2"></i>Export PDF - Agenda Mengajar Guru
                 </h4>
                 <div class="btn-group">

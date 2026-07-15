@@ -6,10 +6,10 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Atur Jadwal KBM - {{ $kelas->nama_kelas }}</h4>
+                        <h4 class="card-title fw-semibold m-0">Atur Jadwal KBM - {{ $kelas->nama_kelas }}</h4>
                         <p class="text-muted mb-0 mt-1">
                             <small>
                                 <i class="ti ti-user me-1"></i>Wali Kelas: {{ $kelas->waliKelas->nama ?? '-' }} | 
@@ -21,7 +21,7 @@
                         </p>
                     </div>
                     <div class="col-auto d-flex gap-2">
-                        <a href="{{ route('jadwal-kbm.print', $kelas->id) }}" class="btn btn-info btn-sm" target="_blank">
+                        <a href="{{ route('jadwal-kbm.print', $kelas->id) }}" class="btn btn-sm btn-info btn-modern" target="_blank">
                             <i class="ti ti-printer me-1"></i>Print Jadwal
                         </a>
                         <a href="{{ route('jadwal-kbm.index') }}" class="btn btn-secondary btn-sm">
@@ -34,7 +34,7 @@
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -48,7 +48,7 @@
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -63,8 +63,8 @@
                         <strong>Petunjuk:</strong> Pilih guru dan mata pelajaran untuk setiap jam KBM. Sistem akan memvalidasi apakah guru tersedia di waktu yang dipilih.
                     </div>
 
-                    <!-- Tabs untuk setiap hari -->
-                    <ul class="nav nav-tabs mb-3" id="hariTab" role="tablist">
+                    
+                    <ul class="nav nav-tabs mb-2" id="hariTab" role="tablist">
                         @php
                             $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
                         @endphp
@@ -72,8 +72,8 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link {{ $index === 0 ? 'active' : '' }}" 
                                     id="{{ strtolower($hari) }}-tab" 
-                                    data-toggle="tab" 
-                                    data-target="#{{ strtolower($hari) }}" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#{{ strtolower($hari) }}" 
                                     type="button" 
                                     role="tab">
                                 {{ $hari }}
@@ -108,7 +108,7 @@
                                                 <th width="30%">Mata Pelajaran</th>
                                                 <th width="30%">Guru Pengajar</th>
                                                 <th width="5%">
-                                                    <button type="button" class="btn btn-sm btn-success" onclick="copyFromPrevious('{{ strtolower($hari) }}')">
+                                                    <button type="button" class="btn btn-sm btn-success btn-modern" onclick="copyFromPrevious('{{ strtolower($hari) }}')">
                                                         <i class="ti ti-copy"></i>
                                                     </button>
                                                 </th>

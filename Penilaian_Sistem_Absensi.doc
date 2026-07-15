@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Penilaian Sistem Absensi Sekolah</title>
+</head>
+<body>
+<h1>Penilaian Sistem Absensi Sekolah</h1>
+<p>Berikut ini adalah hasil penilaian sistem absensi sekolah beserta saran dan kritik bagi perbaikan.</p>
+<h2>Penilaian</h2>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+<thead>
+<tr>
+<th>No</th>
+<th>Aspek Penilaian</th>
+<th>Indikator</th>
+<th>Nilai</th>
+<th>Keterangan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Fungsionalitas sistem</td>
+<td>Sistem mencatat absensi guru, siswa, dan staf</td>
+<td>4</td>
+<td>Fitur utama ada, namun beberapa jenis laporan belum lengkap.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Sistem menyediakan input, edit, hapus data absensi</td>
+<td>4</td>
+<td>Ada fungsi edit/hapus, tetapi validasi saat edit perlu lebih kuat.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Sistem menghasilkan laporan kehadiran yang dibutuhkan</td>
+<td>3</td>
+<td>Laporan dasar tersedia, tapi laporan khusus (izin, keterlambatan) kurang konsisten.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Kesesuaian proses bisnis</td>
+<td>Alur absensi mengikuti jadwal pelajaran dan hari efektif</td>
+<td>3</td>
+<td>Sebagian besar sesuai, namun sinkronisasi jadwal belum sempurna.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Mendukung presensi masuk, pulang, dan izin</td>
+<td>3</td>
+<td>Presensi masuk ada, fitur izin dan pulang masih perlu penguatan.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Integrasi dengan daftar kelas dan jadwal guru</td>
+<td>3</td>
+<td>Data kelas/jadwal belum selalu ter-update otomatis.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Keandalan sistem</td>
+<td>Sistem berjalan tanpa error signifikan</td>
+<td>3</td>
+<td>Terdapat error occasional terutama saat input massal.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Data tidak hilang saat refresh atau logout</td>
+<td>4</td>
+<td>Umumnya stabil, beberapa kasus reload memerlukan pengecekan.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Mendukung akses multi-pengguna simultan</td>
+<td>3</td>
+<td>Belum jelas diuji beban nyata di banyak pengguna.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Kemudahan penggunaan</td>
+<td>Antarmuka mudah dipahami oleh guru/admin</td>
+<td>4</td>
+<td>Cukup intuitif, namun ada istilah yang perlu disederhanakan.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Proses input absensi sederhana dan logis</td>
+<td>4</td>
+<td>Form input jelas, tetapi beberapa langkah masih bisa dipangkas.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Menu dan navigasi konsisten</td>
+<td>4</td>
+<td>Struktur menu sudah baik, perlu konsistensi label pada semua halaman.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Efisiensi sistem</td>
+<td>Waktu pengisian absensi lebih cepat dari manual</td>
+<td>4</td>
+<td>Efisien, terutama untuk input harian.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Mengurangi duplikasi kerja dan pencatatan ganda</td>
+<td>4</td>
+<td>Sudah membantu, walau data duplikat masih kadang muncul.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Data dapat dicari dan difilter dengan cepat</td>
+<td>3</td>
+<td>Fitur pencarian ada, performa filter perlu optimasi.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Validasi input</td>
+<td>Pemeriksaan format NIS/NIP/nama sebelum menyimpan</td>
+<td>3</td>
+<td>Validasi dasar ada, tapi format masih sering terlewat.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Menolak tanggal/jam atau kode kelas tidak valid</td>
+<td>3</td>
+<td>Beberapa nilai invalid masih bisa tersimpan.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Mencegah data absensi duplikat</td>
+<td>3</td>
+<td>Duplikasi masih bisa terjadi, perlu logika unik yang lebih tegas.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Keamanan akses</td>
+<td>Login dengan username/password</td>
+<td>4</td>
+<td>Autentikasi dasar tersedia.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Hak akses dibatasi berdasarkan peran</td>
+<td>3</td>
+<td>Peran ada, namun kontrol granuler dan proteksi halaman belum optimal.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Mencatat aktivitas pengguna (audit log)</td>
+<td>2</td>
+<td>Audit log minim, pencatatan aktivitas perlu ditingkatkan.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Integrasi data</td>
+<td>Data absensi konsisten di semua laporan</td>
+<td>3</td>
+<td>Ada inkonsistensi pada beberapa laporan gabungan.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Sinkron dengan data master siswa, guru, jadwal</td>
+<td>3</td>
+<td>Sinkronisasi dasar ada, perubahan data belum selalu terpropagasi.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Perubahan data terupdate di modul lain</td>
+<td>3</td>
+<td>Terkadang perubahan tidak langsung terlihat di modul terkait.</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Respons sistem</td>
+<td>Halaman terbuka dalam waktu wajar</td>
+<td>4</td>
+<td>Respon umumnya cepat, kecuali laporan berat.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Umpan balik saat input berhasil atau gagal</td>
+<td>4</td>
+<td>Notifikasi ada, namun pesan kesalahan bisa lebih jelas.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Tidak ada delay signifikan saat menyimpan/memuat</td>
+<td>3</td>
+<td>Terdapat delay saat memuat laporan besar atau data banyak.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Kelayakan keseluruhan</td>
+<td>Layak dipakai operasional sekolah sehari-hari</td>
+<td>4</td>
+<td>Layak dipakai, dengan perbaikan minor pada beberapa aspek.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Mendukung kebutuhan laporan rutin dan monitoring</td>
+<td>3</td>
+<td>Laporan dasar mendukung, namun laporan lanjutan perlu ditambah.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Pemeliharaan dan perbaikan masih memungkinkan</td>
+<td>4</td>
+<td>Sistem cukup terstruktur, namun dokumentasi pemeliharaan perlu dilengkapi.</td>
+</tr>
+</tbody>
+</table>
+<h2>Ringkasan</h2>
+<ul>
+<li>Nilai rata-rata: sekitar 3.5–4, artinya sistem sudah layak namun masih memerlukan perbaikan.</li>
+<li>Poin penting untuk ditingkatkan: validasi input dan pencegahan duplikasi; kontrol hak akses dan audit log; sinkronisasi data antar modul; laporan khusus dan performa filter.</li>
+</ul>
+<h2>Saran Perbaikan</h2>
+<ol>
+<li>Tambahkan validasi lebih ketat untuk NIS/NIP, tanggal/jam, dan kode kelas.</li>
+<li>Perkuat otorisasi per peran dan tambahkan audit log aktivitas pengguna.</li>
+<li>Uji integrasi data antara absensi, jadwal, dan data master secara menyeluruh.</li>
+<li>Tambahkan laporan khusus (izin, keterlambatan, rekap per periode).</li>
+<li>Perbaiki user interface untuk memperjelas pesan error dan navigasi.</li>
+</ol>
+</body>
+</html>

@@ -7,7 +7,7 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Struktur Kurikulum</h4>
+                <h4 class="card-title fw-semibold m-0">Struktur Kurikulum</h4>
                 <a href="{{ route('jadwal-kbm.index') }}" class="btn btn-secondary btn-sm">
                     <i class="ti ti-arrow-left me-1"></i>Kembali ke Jadwal KBM
                 </a>
@@ -16,14 +16,14 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -32,7 +32,7 @@
                     Pilih tingkat dan jurusan, lalu tentukan mata pelajaran yang berlaku. Pengaturan ini menjadi dasar jadwal per kelas dan guru.
                 </div>
 
-                <div class="row g-3 mb-3 align-items-end">
+                <div class="row g-2 mb-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Tingkat</label>
                         <form method="GET" action="{{ route('kurikulum.index') }}" id="filterForm">
@@ -79,7 +79,7 @@
                     </div>
 
                     <div class="col-md-3 d-flex gap-2 justify-content-end">
-                        <a class="btn btn-success btn-sm" href="{{ route('kurikulum.export', ['tingkat' => $selectedTingkat, 'jurusan' => $selectedJurusan]) }}">
+                        <a class="btn btn-sm btn-success btn-modern" href="{{ route('kurikulum.export', ['tingkat' => $selectedTingkat, 'jurusan' => $selectedJurusan]) }}">
                             <i class="ti ti-download me-1"></i>Export
                         </a>
                         <form method="POST" action="{{ route('kurikulum.import') }}" enctype="multipart/form-data" class="d-flex gap-1">
@@ -87,7 +87,7 @@
                             <input type="hidden" name="tingkat" value="{{ $selectedTingkat }}">
                             <input type="hidden" name="jurusan" value="{{ $selectedJurusan }}">
                             <input type="file" name="file" class="form-control form-control-sm" accept=".xlsx,.xls,.csv" required>
-                            <button type="submit" class="btn btn-info btn-sm">
+                            <button type="submit" class="btn btn-sm btn-info btn-modern">
                                 <i class="ti ti-upload me-1"></i>Import
                             </button>
                         </form>
@@ -96,9 +96,9 @@
 
                 <hr class="my-4">
 
-                <h5 class="mb-3">Tabel Kurikulum per Tingkat</h5>
+                <h5 class="mb-2">Tabel Kurikulum per Tingkat</h5>
                 @forelse($kurikulumByTingkat as $tingkat => $items)
-                <div class="card mb-3">
+                <div class="card mb-2">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
                             <strong>Tingkat {{ $tingkat }}</strong>

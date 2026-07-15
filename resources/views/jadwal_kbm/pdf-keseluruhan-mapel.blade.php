@@ -102,7 +102,11 @@
         }
 
         tbody tr:nth-child(odd) {
-            background: #f9fafb;
+            background: #ffffff;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #ffffff;
         }
 
         .jam-col {
@@ -145,6 +149,22 @@
         .kelas-12 {
             background: #dcfce7;
         }
+        
+        /* Highlighting untuk current user */
+        .current-user-jadwal {
+            background-color: #86efac !important;
+            font-weight: bold;
+            border: 1px solid #22c55e;
+        }
+        
+        /* Override semua background table menjadi white */
+        tbody td {
+            background-color: #ffffff !important;
+        }
+        
+        tbody td.current-user-jadwal {
+            background-color: #86efac !important;
+        }
 
         .footer-note {
             margin-top: 4px;
@@ -162,7 +182,7 @@
                 <p>{{ $sekolah->alamat_jalan ?? '' }} @if($sekolah->telepon) | Telp: {{ $sekolah->telepon }} @endif</p>
             @endif
             <div class="meta">
-                Jadwal Keseluruhan KBM - Kode Mapel | {{ $tahunAjaranAktif->nama ?? 'Tahun Ajaran' }} {{ $semesterAktif ? ' - ' . $semesterAktif->nama : '' }} | Kertas: {{ strtoupper($paperSize) }} Landscape
+                Jadwal Keseluruhan KBM - Kode Mapel | {{ $tahunAjaranAktif->nama_tahun ?? 'Tahun Ajaran' }} {{ $semesterAktif ? ' - ' . $semesterAktif->nama_semester : '' }} | Kertas: {{ strtoupper($paperSize) }} Landscape
             </div>
         </div>
 
@@ -225,8 +245,16 @@
                                                 preg_match('/^(\d+)/', $kelas->nama_kelas, $matches);
                                                 $tingkatKelas = intval($matches[1] ?? 0);
                                                 $kelasClass = 'kelas-' . $tingkatKelas;
+                                                
+                                                // Check if this is current user's jadwal
+                                                $isCurrentUserJadwal = false;
+                                                $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
+                                                if ($jadwalJam && $jadwalJam->guru && isset($currentUserGuruKode)) {
+                                                    $isCurrentUserJadwal = $jadwalJam->guru->kode_guru === $currentUserGuruKode;
+                                                }
+                                                $currentUserClass = $isCurrentUserJadwal ? 'current-user-jadwal' : '';
                                             @endphp
-                                            <td class="kelas-col {{ $kelasClass }}">
+                                            <td class="kelas-col {{ $kelasClass }} {{ $currentUserClass }}">
                                                 @php
                                                     $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                                     if ($jamBelajarEntry && $jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {

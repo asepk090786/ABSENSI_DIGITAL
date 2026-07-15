@@ -9,7 +9,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title mb-1">
+                        <h4 class="card-title fw-semibold mb-1">
                             <i class="ti ti-calendar-check me-2"></i>Absensi Kelas
                         </h4>
                         <p class="text-muted mb-0">Kelas: <strong>{{ $kelasBinaan->nama_kelas ?? '-' }}</strong></p>
@@ -55,7 +55,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th width="5%">No</th>
@@ -65,7 +65,7 @@
                                         <th>Hadir</th>
                                         <th>Sakit</th>
                                         <th>Izin</th>
-                                        <th>Alpha</th>
+                                        <th>Alpa</th>
                                     </tr>
                                 </thead>
                                 <tbody>

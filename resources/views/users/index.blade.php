@@ -115,7 +115,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a data-toggle="collapse" href="#laravel-examples" aria-expanded="true">
+                                    <a data-bs-toggle="collapse" href="#laravel-examples" aria-expanded="true">
                                         <i class="fab fa-laravel" ></i>
                                         <span class="nav-link-text" >{{ __('Laravel Examples') }}</span>
                                         <b class="caret mt-1"></b>
@@ -197,7 +197,7 @@
                             </div>
                             <a class="navbar-brand" href="#">{{ $page ?? __('Dashboard') }}</a>
                         </div>
-                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navigation" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
                             <span class="navbar-toggler-bar navbar-kebab"></span>
                             <span class="navbar-toggler-bar navbar-kebab"></span>
                             <span class="navbar-toggler-bar navbar-kebab"></span>
@@ -205,12 +205,12 @@
                         <div class="collapse navbar-collapse" id="navigation">
                             <ul class="navbar-nav ml-auto">
                                 <li class="search-bar input-group">
-                                    <button class="btn btn-link" id="search-button" data-toggle="modal" data-target="#searchModal"><i class="tim-icons icon-zoom-split"></i>
+                                    <button class="btn btn-link" id="search-button" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="tim-icons icon-zoom-split"></i>
                                         <span class="d-lg-none d-md-block">{{ __('Search') }}</span>
                                     </button>
                                 </li>
                                 <li class="dropdown nav-item">
-                                    <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                                    <a href="#" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
                                         <div class="notification d-none d-lg-block d-xl-block"></div>
                                         <i class="tim-icons icon-sound-wave"></i>
                                         <p class="d-lg-none"> {{ __('Notifications') }} </p>
@@ -234,7 +234,7 @@
                                     </ul>
                                 </li>
                                 <li class="dropdown nav-item">
-                                    <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                                    <a href="#" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
                                         <div class="photo">
                                             <img src="{{ asset('white') }}/img/anime3.png" alt="{{ __('Profile Photo') }}">
                                         </div>
@@ -264,7 +264,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="{{ __('SEARCH') }}">
-                                <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('Close') }}">
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}">
                                     <i class="tim-icons icon-simple-remove"></i>
                               </button>
                             </div>
@@ -277,7 +277,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="SEARCH">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <i class="tim-icons icon-simple-remove"></i>
           </button>
         </div>
@@ -319,7 +319,7 @@
                                     <td>25/02/2020 09:11</td>
                                     <td class="text-right">
                                                                                         <div class="dropdown">
-                                                <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     <i class="fas fa-ellipsis-v"></i>
                                                 </a>
                                                 <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
@@ -334,7 +334,7 @@
                 
             </div>
             
-            <div class="card-footer py-4">
+            <div class="card-footer py-3">
                 
                 <nav class="d-flex justify-content-end" aria-label="...">
                     
@@ -386,7 +386,7 @@
             @csrf
             <div class="fixed-plugin">
         <div class="dropdown show-dropdown">
-            <a href="#" data-toggle="dropdown">
+            <a href="#" data-bs-toggle="dropdown">
             <i class="fa fa-cog fa-2x"> </i>
             </a>
             <ul class="dropdown-menu">

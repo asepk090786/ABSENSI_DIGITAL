@@ -7,7 +7,7 @@
   <div class="col-md-8">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="card-title mb-0">{{ $semester->nama_semester }}</h4>
+        <h4 class="card-title fw-semibold m-0">{{ $semester->nama_semester }}</h4>
         <a href="{{ route('setting.semester.edit', $semester->id) }}" class="btn btn-warning btn-sm">Edit</a>
       </div>
       <div class="card-body">

@@ -15,7 +15,7 @@
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
-                            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         </div>
                     @endif
 
@@ -25,7 +25,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -64,7 +64,7 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('pembina.show', $item->id) }}" class="btn btn-sm btn-info">
+                                                    <a href="{{ route('pembina.show', $item->id) }}" class="btn btn-sm btn-info btn-modern">
                                                         <i class="ti ti-eye"></i>
                                                     </a>
                                                     <a href="{{ route('pembina.edit', $item->id) }}" class="btn btn-sm btn-warning">

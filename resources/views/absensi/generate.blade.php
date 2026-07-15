@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Generate Absensi Siswa</h3>
+                    <h3 class="card-title fw-semibold m-0">Generate Absensi Siswa</h3>
                     <a href="{{ route('absensi.index') }}" class="btn btn-secondary">
                         <i class="ti ti-arrow-left me-1"></i> Kembali
                     </a>

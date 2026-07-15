@@ -7,16 +7,16 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Daftar Akun Pengguna</h4>
+                <h4 class="card-title fw-semibold m-0">Daftar Akun Pengguna</h4>
                 @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
                 <div class="btn-group" role="group">
                     <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
                         <i class="ti ti-plus"></i> Tambah Akun
                     </a>
-                    <a href="{{ route('users.export') }}" class="btn btn-success btn-sm" title="Export ke Excel">
+                    <a href="{{ route('users.export') }}" class="btn btn-sm btn-success btn-modern" title="Export ke Excel">
                         <i class="ti ti-download"></i> Export
                     </a>
-                    <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#importModal" title="Import dari Excel">
+                    <button class="btn btn-sm btn-info btn-modern" data-bs-toggle="modal" data-bs-target="#importModal" title="Import dari Excel">
                         <i class="ti ti-upload"></i> Import
                     </button>
                     <button type="button" class="btn btn-danger btn-sm" id="bulkDeleteBtn" style="display: none;">
@@ -26,7 +26,7 @@
                 @endif
             </div>
             <div class="card-body">
-                <form method="GET" action="" class="mb-3">
+                <form method="GET" action="" class="mb-2">
                     <div class="input-group">
                         <input type="text" name="search" class="form-control" placeholder="Cari nama, username, email, atau peran..." value="{{ request('search') }}">
                         <button class="btn btn-primary" type="submit">Cari</button>
@@ -38,7 +38,7 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -50,7 +50,7 @@
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -69,7 +69,7 @@
                 @endphp
 
                 @if($users->count() > 0)
-                    <!-- TABEL 1: STAFF & GURU -->
+                    
                     @if($staffUsers->count() > 0)
                         <div class="card mb-4">
                             <div class="card-header bg-primary text-white">
@@ -145,7 +145,7 @@
                         </div>
                     @endif
 
-                    <!-- TABEL 2: SISWA -->
+                    
                     @if($siswaUsers->count() > 0)
                         <div class="card mb-4">
                             <div class="card-header bg-success text-white">
@@ -224,7 +224,7 @@
                     </div>
                 @endif
 
-                <div class="mt-3">
+                <div class="mt-2">
                     {{ $users->links() }}
                 </div>
             </div>
@@ -232,18 +232,18 @@
     </div>
 </div>
 
-<!-- Import Modal -->
+
 <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="importModalLabel">Import Akun Pengguna dari Excel</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="{{ route('users.import') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">File Excel <span class="text-danger">*</span></label>
                         <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,.xls" required>
                         @error('file')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -253,7 +253,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Upload & Import</button>
                 </div>
             </form>
@@ -261,13 +261,13 @@
     </div>
 </div>
 
-<!-- Bulk Delete Modal -->
+
 <div class="modal fade" id="bulkDeleteModal" tabindex="-1" role="dialog" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="bulkDeleteModalLabel">Hapus Akun Terpilih</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <form id="bulkDeleteForm" method="POST">
                 @csrf
@@ -277,7 +277,7 @@
                     <div id="selectedUsersList" style="max-height: 300px; overflow-y: auto;"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-danger">Hapus Sekarang</button>
                 </div>
             </form>

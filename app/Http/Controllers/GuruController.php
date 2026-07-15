@@ -58,6 +58,7 @@ class GuruController extends Controller
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'nip' => 'nullable|string|max:50|unique:guru,nip',
+            'pangkat_golongan' => 'nullable|string|max:100',
             'email' => 'required|email|max:150|unique:guru,email',
             'telepon' => 'nullable|string|max:30',
             'alamat' => 'nullable|string',
@@ -71,6 +72,7 @@ class GuruController extends Controller
         $guru = Guru::create([
             'nama' => $validated['nama'],
             'nip' => $validated['nip'],
+            'pangkat_golongan' => $validated['pangkat_golongan'] ?? null,
             'email' => $validated['email'],
             'telepon' => $validated['telepon'],
             'alamat' => $validated['alamat'],
@@ -105,6 +107,7 @@ class GuruController extends Controller
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'nip' => 'nullable|string|max:50|unique:guru,nip,' . $guru->id,
+            'pangkat_golongan' => 'nullable|string|max:100',
             'kode_guru' => 'nullable|string|max:50|unique:guru,kode_guru,' . $guru->id,
             'username' => 'nullable|string|max:50|unique:guru,username,' . $guru->id,
             'password' => 'nullable|string|min:4|confirmed',
@@ -297,30 +300,53 @@ class GuruController extends Controller
         return Excel::download(new GuruExport, 'data_guru_' . date('Ymd_His') . '.xlsx');
     }
 
-    public function templateDownload()
+    public function templateDownload(Request $request)
     {
-        return Excel::download(new \App\Exports\GuruTemplateExport, 'template_import_guru.xlsx');
+        $mode = $request->query('mode', 'create');
+        $fileName = $mode === 'update' ? 'template_update_guru.xlsx' : 'template_import_guru.xlsx';
+
+        return Excel::download(new \App\Exports\GuruTemplateExport($mode), $fileName);
     }
 
     public function import(Request $request)
     {
         $request->validate([
             'file' => 'required|mimes:xlsx,xls|max:2048',
+            'mode' => 'nullable|in:create,update',
         ]);
 
         try {
-            $import = new GuruImport();
+            $mode = $request->input('mode', 'create');
+            $import = new GuruImport($mode);
             Excel::import($import, $request->file('file'));
 
             $errors = $import->getErrors();
-            
+            $created = $import->getCreatedCount();
+            $updated = $import->getUpdatedCount();
+
             if (count($errors) > 0) {
                 return redirect()->route('guru.index')
-                    ->with('warning', 'Import selesai dengan beberapa error.')
+                    ->with('warning', $mode === 'update'
+                        ? "Proses update selesai. {$updated} diperbarui, dengan " . count($errors) . ' error.'
+                        : "Import selesai. {$created} dibuat, {$updated} diperbarui, dengan " . count($errors) . ' error.')
                     ->with('import_errors', $errors);
             }
 
-            return redirect()->route('guru.index')->with('success', 'Data guru berhasil diimport.');
+            $message = $mode === 'update'
+                ? 'Data guru berhasil diupdate.'
+                : 'Data guru berhasil diimport.';
+
+            if ($mode !== 'update' && $created > 0 && $updated > 0) {
+                $message = "Import selesai. {$created} data baru dibuat, {$updated} data diperbarui.";
+            } elseif ($mode !== 'update' && $updated > 0) {
+                $message = "{$updated} data guru berhasil diperbarui.";
+            } elseif ($mode !== 'update' && $created > 0) {
+                $message = "{$created} data guru berhasil ditambahkan.";
+            } elseif ($mode === 'update' && $updated > 0) {
+                $message = "{$updated} data guru berhasil diperbarui.";
+            }
+
+            return redirect()->route('guru.index')->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->route('guru.index')->with('error', 'Gagal import: ' . $e->getMessage());
         }

@@ -5,7 +5,7 @@
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -13,7 +13,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Pembinaan BK - {{ $kelas->nama_kelas }}</h3>
+                    <h3 class="card-title fw-semibold m-0">Pembinaan BK - {{ $kelas->nama_kelas }}</h3>
                     <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelas->id]) }}" class="btn btn-secondary btn-sm">
                         <i class="ti ti-arrow-left"></i> Kembali ke Menu
                     </a>
@@ -138,7 +138,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-3">
+                        <div class="mt-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-device-floppy me-1"></i>Simpan Pembinaan BK
                             </button>
@@ -149,17 +149,17 @@
         </div>
     </div>
 
-    <div class="row mt-3">
+    <div class="row mt-2">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Riwayat Pembinaan BK</h3>
-                    <button type="button" class="btn btn-dark btn-sm" id="btnOpenPrintPreviewPembinaan" data-print-url="{{ route('guru_bk_layanan.pembinaan.print', ['kelas' => $kelas->id, 'filter_siswa_id' => $selectedSiswaId, 'tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}" data-toggle="modal" data-target="#printPreviewModalPembinaan">
+                    <h3 class="card-title fw-semibold m-0">Riwayat Pembinaan BK</h3>
+                    <button type="button" class="btn btn-dark btn-sm" id="btnOpenPrintPreviewPembinaan" data-print-url="{{ route('guru_bk_layanan.pembinaan.print', ['kelas' => $kelas->id, 'filter_siswa_id' => $selectedSiswaId, 'tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}" data-bs-toggle="modal" data-bs-target="#printPreviewModalPembinaan">
                         <i class="ti ti-printer"></i> Print Laporan
                     </button>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('guru_bk_layanan.pembinaan', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end mb-3">
+                    <form method="GET" action="{{ route('guru_bk_layanan.pembinaan', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end mb-2">
                         <div class="col-md-4">
                             <label class="form-label mb-1">Filter Siswa</label>
                             <select name="filter_siswa_id" class="form-select">
@@ -189,7 +189,7 @@
                         <div class="alert alert-light border mb-0">Belum ada data pembinaan BK.</div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>
@@ -242,13 +242,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Preview Print Laporan Pembinaan BK</h5>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 75vh;">
                 <iframe id="printPreviewFramePembinaan" src="" style="width:100%;height:100%;border:0;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" id="btnPrintFromPreviewPembinaan">
                     <i class="ti ti-printer me-1"></i>Print
                 </button>

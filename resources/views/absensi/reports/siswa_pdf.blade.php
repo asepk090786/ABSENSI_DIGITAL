@@ -48,7 +48,7 @@
                     <th style="width:6%" class="center">Hadir</th>
                     <th style="width:6%" class="center">Sakit</th>
                     <th style="width:6%" class="center">Izin</th>
-                    <th style="width:6%" class="center">Alfa</th>
+                    <th style="width:6%" class="center">Alpa</th>
                 @endif
                 <th style="width:8%" class="center">Total Absen</th>
                 <th style="width:12%" class="center">% Kehadiran</th>
@@ -140,7 +140,7 @@
                     $totalTerlambat = $laporanRows->where('status','Terlambat')->count();
                     $totalSakit = $laporanRows->where('status','Sakit')->count();
                     $totalIzin = $laporanRows->where('status','Izin')->count();
-                    $totalAlfa = $laporanRows->where('status','Absen')->count();
+                    $totalAlpa = $laporanRows->where('status','Absen')->count();
                     $totalStudents = $laporanRows->count();
                     $totalNotPresent = $totalStudents - $totalHadir;
                     $attendancePercent = $totalStudents ? round(($totalHadir / $totalStudents) * 100, 1) : 0;
@@ -153,7 +153,7 @@
                     <td class="center">{{ $totalHadir }}</td>
                     <td class="center">{{ $totalSakit }}</td>
                     <td class="center">{{ $totalIzin }}</td>
-                    <td class="center">{{ $totalAlfa }}</td>
+                    <td class="center">{{ $totalAlpa }}</td>
                     <td></td>
                 </tr>
                 <tr>
@@ -198,7 +198,7 @@
                 <th style="width:8%" class="center">Hadir</th>
                 <th style="width:8%" class="center">Sakit</th>
                 <th style="width:8%" class="center">Izin</th>
-                <th style="width:8%" class="center">Alfa</th>
+                <th style="width:8%" class="center">Alpa</th>
                 <th style="width:10%" class="center">{{ $period === 'monthly' ? 'Total Hari Efektif' : ' ' }}</th>
                 <th style="width:12%" class="center">Persentase Kehadiran</th>
             </tr>
@@ -266,16 +266,16 @@
                     $sumHadir = $laporanRows->sum(fn($r) => (int) ($r->hadir_count ?? $r->hadir ?? 0));
                     $sumSakit = $laporanRows->sum(fn($r) => (int) ($r->sakit_count ?? $r->sakit ?? 0));
                     $sumIzin = $laporanRows->sum(fn($r) => (int) ($r->izin_count ?? $r->izin ?? 0));
-                    $sumAlfa = $laporanRows->sum(fn($r) => (int) ($r->alfa_count ?? $r->alfa ?? 0));
-                    $sumTotalSessions = $sumHadir + $sumSakit + $sumIzin + $sumAlfa;
+                    $sumAlpa = $laporanRows->sum(fn($r) => (int) ($r->alfa_count ?? $r->alfa ?? 0));
+                    $sumTotalSessions = $sumHadir + $sumSakit + $sumIzin + $sumAlpa;
                 } else {
                     $totalStudents = $grouped->count();
-                    $sumHadir = 0; $sumSakit = 0; $sumIzin = 0; $sumAlfa = 0; $sumTotalSessions = 0;
+                    $sumHadir = 0; $sumSakit = 0; $sumIzin = 0; $sumAlpa = 0; $sumTotalSessions = 0;
                     foreach($grouped as $g) {
                         $sumHadir += $g->where('status','Hadir')->count();
                         $sumSakit += $g->where('status','Sakit')->count();
                         $sumIzin += $g->where('status','Izin')->count();
-                        $sumAlfa += $g->where('status','Absen')->count();
+                        $sumAlpa += $g->where('status','Absen')->count();
                         $sumTotalSessions += $g->count();
                     }
                 }
@@ -290,7 +290,7 @@
                 <td class="center">{{ $sumHadir }}</td>
                 <td class="center">{{ $sumSakit }}</td>
                 <td class="center">{{ $sumIzin }}</td>
-                <td class="center">{{ $sumAlfa }}</td>
+                <td class="center">{{ $sumAlpa }}</td>
                 @if($period === 'monthly')
                     <td class="center">{{ $totalDays }}</td>
                     <td class="center">{{ $overallPercent }}%</td>

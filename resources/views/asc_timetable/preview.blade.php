@@ -11,8 +11,8 @@
                 <div class="text-muted mt-1">Periksa data dan pilih kategori yang akan diimport</div>
             </div>
             <div class="col-auto ms-auto">
-                <div class="btn-list">
-                    <a href="{{ route('asc_timetable.index') }}" class="btn btn-outline-secondary">
+                <div >
+                    <a href="{{ route('asc_timetable.index') }}" class="btn btn-outline-secondary btn-modern">
                         <i class="ti ti-x me-2"></i>Batal
                     </a>
                 </div>
@@ -20,11 +20,11 @@
         </div>
     </div>
 
-    <!-- Import Selection Form -->
+    
     <form action="{{ route('asc_timetable.confirm_import') }}" method="POST" id="importForm">
         @csrf
         
-        <!-- Duplicate Warning -->
+        
         @if(collect($preview['teachers'])->whereIn('status', ['exists_kode', 'exists_nama'])->count() > 0)
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <div class="d-flex">
@@ -44,13 +44,13 @@
                     </div>
                 </div>
             </div>
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
-        <!-- Selection Checkboxes -->
-        <div class="card mb-3">
-            <div class="card-header">
+        
+        <div class="card mb-2">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">
                     <i class="ti ti-checkbox me-2"></i>Pilih Data yang Akan Diimport
                 </h3>
@@ -58,7 +58,7 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="form-check form-switch mb-3">
+                        <div class="form-check form-switch mb-2">
                             <input class="form-check-input" type="checkbox" id="check_all" checked>
                             <label class="form-check-label" for="check_all">
                                 <strong>Pilih Semua</strong>
@@ -122,8 +122,8 @@
             </div>
         </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-3">
+    
+    <div class="row mb-2">
         <div class="col-md-2">
             <div class="card">
                 <div class="card-body p-3 text-center">
@@ -172,32 +172,32 @@
         </div>
     </div>
 
-    <!-- Tabs -->
+    
     <div class="card">
-        <div class="card-header">
-            <ul class="nav nav-tabs card-header-tabs" data-toggle="tabs">
+        <div class="card-header border-0 pt-3 pb-2">
+            <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
                 <li class="nav-item">
-                    <a href="#periods" class="nav-link active" data-toggle="tab">
+                    <a href="#periods" class="nav-link active" data-bs-toggle="tab">
                         <i class="ti ti-clock me-2"></i>Jam Belajar
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#subjects" class="nav-link" data-toggle="tab">
+                    <a href="#subjects" class="nav-link" data-bs-toggle="tab">
                         <i class="ti ti-book me-2"></i>Mata Pelajaran
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#teachers" class="nav-link" data-toggle="tab">
+                    <a href="#teachers" class="nav-link" data-bs-toggle="tab">
                         <i class="ti ti-user me-2"></i>Guru
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#classes" class="nav-link" data-toggle="tab">
+                    <a href="#classes" class="nav-link" data-bs-toggle="tab">
                         <i class="ti ti-building me-2"></i>Kelas
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#lessons" class="nav-link" data-toggle="tab">
+                    <a href="#lessons" class="nav-link" data-bs-toggle="tab">
                         <i class="ti ti-calendar me-2"></i>Jadwal KBM (Sample)
                     </a>
                 </li>
@@ -205,7 +205,7 @@
         </div>
         <div class="card-body">
             <div class="tab-content">
-                <!-- Periods Tab -->
+                
                 <div class="tab-pane active show" id="periods">
                     <div class="table-responsive">
                         <table class="table table-vcenter table-hover">
@@ -237,7 +237,7 @@
                     </div>
                 </div>
 
-                <!-- Subjects Tab -->
+                
                 <div class="tab-pane" id="subjects">
                     <div class="table-responsive">
                         <table class="table table-vcenter table-hover">
@@ -271,7 +271,7 @@
                     </div>
                 </div>
 
-                <!-- Teachers Tab -->
+                
                 <div class="tab-pane" id="teachers">
                     <div class="table-responsive">
                         <table class="table table-vcenter table-hover">
@@ -333,7 +333,7 @@
                     </div>
                 </div>
 
-                <!-- Classes Tab -->
+                
                 <div class="tab-pane" id="classes">
                     <div class="table-responsive">
                         <table class="table table-vcenter table-hover">
@@ -369,7 +369,7 @@
                     </div>
                 </div>
 
-                <!-- Lessons Tab -->
+                
                 <div class="tab-pane" id="lessons">
                     @php
                         $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
@@ -385,7 +385,7 @@
                         }
                     @endphp
                     @foreach($dayNames as $dayName)
-                        <h4 class="mt-4 mb-3">{{ $dayName }}</h4>
+                        <h4 class="mt-4 mb-2">{{ $dayName }}</h4>
                         <div class="table-responsive">
                             <table class="table table-bordered table-sm" style="font-size: 11px;">
                                 <thead>
@@ -425,7 +425,7 @@
             </div>
         </div>
 
-        <!-- Action Buttons (Bottom) -->
+        
         <div class="row mt-4 mb-4">
             <div class="col text-center">
                 <a href="{{ route('asc_timetable.index') }}" class="btn btn-outline-secondary btn-lg me-2">

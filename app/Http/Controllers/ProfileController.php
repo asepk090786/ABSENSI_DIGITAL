@@ -69,6 +69,20 @@ class ProfileController extends Controller
     }
 
     /**
+     * Show the usage guide
+     */
+    public function panduan()
+    {
+        $user = Auth::user();
+        $roles = explode(',', $user->roles ?? '');
+        
+        return view('profile.panduan', [
+            'user' => $user,
+            'roles' => $roles,
+        ]);
+    }
+
+    /**
      * Update the user's password
      */
     public function updatePassword(Request $request)

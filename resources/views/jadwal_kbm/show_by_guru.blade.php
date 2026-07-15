@@ -6,15 +6,15 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Jadwal Mengajar - {{ $guru->nama }}</h4>
+                        <h4 class="card-title fw-semibold m-0">Jadwal Mengajar - {{ $guru->nama }}</h4>
                         <p class="text-muted mb-0 mt-1">
                             <small>
                                 <i class="ti ti-id me-1"></i>NIP: {{ $guru->nip ?? '-' }}
                                 @if($tahunAjaranAktif && $semesterAktif)
-                                | <i class="ti ti-calendar ms-2 me-1"></i>{{ $tahunAjaranAktif->nama }} - {{ $semesterAktif->nama }}
+                                | <i class="ti ti-calendar ms-2 me-1"></i>{{ $tahunAjaranAktif->nama_tahun }} - {{ $semesterAktif->nama_semester }}
                                 @endif
                             </small>
                         </p>
@@ -23,11 +23,11 @@
                         <a href="{{ route('jadwal-kbm.index') }}" class="btn btn-secondary btn-sm">
                             <i class="ti ti-arrow-left me-1"></i>Kembali
                         </a>
-                        <button onclick="window.print()" class="btn btn-info btn-sm">
+                        <button onclick="window.print()" class="btn btn-sm btn-info btn-modern">
                             <i class="ti ti-printer me-1"></i>Cetak
                         </button>
                         <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                            <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="ti ti-download me-1"></i>Download PDF
                             </button>
                             <ul class="dropdown-menu">
@@ -63,7 +63,7 @@
                         
                         @if($jadwalHari->isNotEmpty())
                         <div class="mb-4">
-                            <h5 class="border-bottom pb-2 mb-3">
+                            <h5 class="border-bottom pb-2 mb-2">
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
@@ -92,7 +92,7 @@
                                                 </small>
                                             </td>
                                             <td>
-                                                <span class="badge bg-primary">{{ $jadwal->kelas->nama_kelas }}</span>
+                                                <span class="badge bg-primary text-white">{{ $jadwal->kelas->nama_kelas }}</span>
                                                 @if($jadwal->kelas->tingkat_kelas)
                                                 <small class="text-muted ms-2">Tingkat: {{ $jadwal->kelas->tingkat_kelas }}</small>
                                                 @endif
@@ -109,14 +109,14 @@
                         @endif
                     @endforeach
 
-                    <!-- Tugas Guru (Assignment Info) -->
+                    
                     @if($tugasGuru->isNotEmpty())
                     <div class="card bg-light mt-4 mb-4">
                         <div class="card-body">
                             <h5 class="card-title">
                                 <i class="ti ti-clipboard-check me-2"></i>Tugas Mengajar Guru
                             </h5>
-                            <p class="text-muted mb-3">
+                            <p class="text-muted mb-2">
                                 <small>Daftar mata pelajaran yang ditugaskan kepada guru ini</small>
                             </p>
                             <div class="table-responsive">
@@ -140,19 +140,19 @@
                                                 <br><small class="text-muted">{{ $tugas->mataPelajaran->kode_mapel }}</small>
                                                 @endif
                                             </td>
-                                            <td><span class="badge bg-info">{{ $tugas->tingkat_kelas }}</span></td>
+                                            <td><span class="badge bg-info text-white">{{ $tugas->tingkat_kelas }}</span></td>
                                             <td>
                                                 @if($tugas->kelas)
-                                                    <span class="badge bg-primary">{{ $tugas->kelas->nama_kelas }}</span>
+                                                    <span class="badge bg-primary text-white">{{ $tugas->kelas->nama_kelas }}</span>
                                                 @else
                                                     <span class="text-muted">Semua kelas tingkat {{ $tugas->tingkat_kelas }}</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 @if($tugas->is_active)
-                                                    <span class="badge bg-success">Aktif</span>
+                                                    <span class="badge bg-success text-white">Aktif</span>
                                                 @else
-                                                    <span class="badge bg-secondary">Tidak Aktif</span>
+                                                    <span class="badge bg-secondary text-white">Tidak Aktif</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -164,7 +164,7 @@
                     </div>
                     @endif
 
-                    <!-- Summary -->
+                    
                     <div class="alert alert-light mt-4">
                         <div class="row">
                             <div class="col-md-4">
@@ -188,12 +188,12 @@
 </div>
 
 @if(!$jadwalGuru->isEmpty())
-<!-- Tabel Ringkasan Mingguan -->
+
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Ringkasan Jadwal Mingguan</h5>
+            <div class="card-header border-0 pt-3 pb-2">
+                <h5 class="card-title fw-semibold m-0">Ringkasan Jadwal Mingguan</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -313,7 +313,7 @@
             page-break-inside: avoid;
         }
         
-        .mb-3 {
+        .mb-2 {
             margin-bottom: 1px !important;
         }
         

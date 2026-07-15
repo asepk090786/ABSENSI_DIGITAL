@@ -21,21 +21,21 @@
         @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="ti ti-check me-2"></i>{{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
         @if(session('warning'))
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
         @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="ti ti-circle-x me-2"></i>{{ session('error') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         
@@ -48,30 +48,30 @@
                 <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
 
-        <!-- Tab Navigation -->
-        <ul class="nav nav-tabs mb-3" role="tablist">
+        
+        <ul class="nav nav-tabs mb-2" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="capaian-tab" data-toggle="tab" data-target="#capaian-pane" type="button" role="tab">
+                <button class="nav-link active" id="capaian-tab" data-bs-toggle="tab" data-bs-target="#capaian-pane" type="button" role="tab">
                     <i class="ti ti-book me-2"></i>Capaian Pembelajaran
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="komponen-tab" data-toggle="tab" data-target="#komponen-pane" type="button" role="tab">
+                <button class="nav-link" id="komponen-tab" data-bs-toggle="tab" data-bs-target="#komponen-pane" type="button" role="tab">
                     <i class="ti ti-checklist-2 me-2"></i>Komponen Penilaian
                 </button>
             </li>
         </ul>
 
-        <!-- Tab Content -->
+        
         <div class="tab-content">
-            <!-- TAB 1: CAPAIAN PEMBELAJARAN -->
+            
             <div class="tab-pane fade show active" id="capaian-pane" role="tabpanel">
-                <div class="card mb-3">
-                    <div class="card-header">
+                <div class="card mb-2">
+                    <div class="card-header border-0 pt-3 pb-2">
                         <h3 class="card-title">
                             <i class="ti ti-plus me-2"></i>Tambah Capaian Pembelajaran
                         </h3>
@@ -79,7 +79,7 @@
                     <div class="card-body">
                         <form method="POST" action="{{ route('capaian_pembelajaran.store') }}">
                             @csrf
-                            <div class="row g-3 mb-3">
+                            <div class="row g-2 mb-2">
                                 <div class="col-md-6">
                                     <label class="form-label">Nama Capaian Pembelajaran <span class="text-danger">*</span></label>
                                     <input type="text" name="nama_capaian_pembelajaran" class="form-control @error('nama_capaian_pembelajaran') is-invalid @enderror" value="{{ old('nama_capaian_pembelajaran') }}" required maxlength="191" placeholder="Contoh: Menganalisis dan mengevaluasi fenomena sosial">
@@ -142,15 +142,15 @@
 
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">Daftar Capaian Pembelajaran</h3>
+                        <h3 class="card-title fw-semibold m-0">Daftar Capaian Pembelajaran</h3>
                         <div class="btn-group" role="group">
-                            <a href="{{ route('capaian_pembelajaran.export') }}" class="btn btn-sm btn-info" title="Download data CP">
+                            <a href="{{ route('capaian_pembelajaran.export') }}" class="btn btn-sm btn-info btn-modern" title="Download data CP">
                                 <i class="ti ti-download me-1"></i>Export
                             </a>
-                            <a href="{{ route('capaian_pembelajaran.template') }}" class="btn btn-sm btn-secondary" title="Download template">
+                            <a href="{{ route('capaian_pembelajaran.template') }}" class="btn btn-sm btn-secondary btn-modern" title="Download template">
                                 <i class="ti ti-file-download me-1"></i>Template
                             </a>
-                            <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#importCapaianModal" title="Upload file CP">
+                            <button type="button" class="btn btn-sm btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#importCapaianModal" title="Upload file CP">
                                 <i class="ti ti-upload me-1"></i>Import
                             </button>
                         </div>
@@ -177,7 +177,7 @@
                                             <td><small>{{ Str::limit($cp->deskripsi, 50) }}</small></td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
-                                                    <button type="button" class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editCapaianModal{{ $cp->id }}" title="Edit">
+                                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editCapaianModal{{ $cp->id }}" title="Edit">
                                                         <i class="ti ti-edit"></i>
                                                     </button>
                                                     <form action="{{ route('capaian_pembelajaran.destroy', $cp->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus capaian ini?')">
@@ -190,7 +190,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                        <!-- Edit Modal -->
+                                        
                                         <div class="modal modal-blur fade" id="editCapaianModal{{ $cp->id }}" tabindex="-1" role="dialog">
                                             <div class="modal-dialog modal-dialog-centered" role="document">
                                                 <div class="modal-content">
@@ -199,14 +199,14 @@
                                                         @method('PUT')
                                                         <div class="modal-header">
                                                             <h5 class="modal-title">Edit Capaian Pembelajaran</h5>
-                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <div class="mb-3">
+                                                            <div class="mb-2">
                                                                 <label class="form-label">Nama</label>
                                                                 <input type="text" name="nama_capaian_pembelajaran" class="form-control" value="{{ $cp->nama_capaian_pembelajaran }}" required maxlength="191">
                                                             </div>
-                                                            <div class="mb-3">
+                                                            <div class="mb-2">
                                                                 <label class="form-label">Fase</label>
                                                                 <select name="fase" class="form-select">
                                                                     <option value="">-- Pilih Fase --</option>
@@ -218,25 +218,25 @@
                                                                     <option value="F" {{ $cp->fase == 'F' ? 'selected' : '' }}>Fase F</option>
                                                                 </select>
                                                             </div>
-                                                            <div class="mb-3">
+                                                            <div class="mb-2">
                                                                 <label class="form-label">Deskripsi</label>
                                                                 <textarea name="deskripsi" class="form-control" rows="3">{{ $cp->deskripsi }}</textarea>
                                                             </div>
-                                                            <div class="mb-3">
+                                                            <div class="mb-2">
                                                                 <label class="form-label">Tujuan Pembelajaran (TP)</label>
                                                                 <textarea name="tujuan_pembelajaran" class="form-control" rows="3">{{ $cp->tujuan_pembelajaran }}</textarea>
                                                             </div>
-                                                            <div class="mb-3">
+                                                            <div class="mb-2">
                                                                 <label class="form-label">Alur Tujuan Pembelajaran (ATP)</label>
                                                                 <textarea name="alur_tujuan_pembelajaran" class="form-control" rows="3">{{ $cp->alur_tujuan_pembelajaran }}</textarea>
                                                             </div>
-                                                            <div class="mb-3">
+                                                            <div class="mb-2">
                                                                 <label class="form-label">Indikator / Kriteria Ketercapaian (KKTP)</label>
                                                                 <textarea name="indikator_kriteria" class="form-control" rows="3">{{ $cp->indikator_kriteria }}</textarea>
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                                             <button type="submit" class="btn btn-primary">Update</button>
                                                         </div>
                                                     </form>
@@ -255,7 +255,7 @@
                     </div>
                 </div>
                 
-                <!-- Import Capaian Pembelajaran Modal -->
+                
                 <div class="modal modal-blur fade" id="importCapaianModal" tabindex="-1" role="dialog">
                     <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
@@ -263,7 +263,7 @@
                                 @csrf
                                 <div class="modal-header">
                                     <h5 class="modal-title">Import Capaian Pembelajaran</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="alert alert-info">
@@ -271,7 +271,7 @@
                                         <strong>Panduan:</strong> Upload file Excel (xlsx, xls, atau csv) berisi data Capaian Pembelajaran. 
                                         <a href="{{ route('capaian_pembelajaran.template') }}">Download template</a> untuk melihat format.
                                     </div>
-                                    <div class="mb-3">
+                                    <div class="mb-2">
                                         <label class="form-label">Pilih File <span class="text-danger">*</span></label>
                                         <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,.xls,.csv" required>
                                         @error('file')
@@ -280,7 +280,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="ti ti-upload me-1"></i>Upload
                                     </button>
@@ -291,17 +291,17 @@
                 </div>
             </div>
 
-            <!-- TAB 2: KOMPONEN PENILAIAN -->
+            
             <div class="tab-pane fade" id="komponen-pane" role="tabpanel">
-                <div class="card mb-3">
-                    <div class="card-header">
+                <div class="card mb-2">
+                    <div class="card-header border-0 pt-3 pb-2">
                         <h3 class="card-title">Tambah Komponen Penilaian</h3>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ route('komponen_nilai.store') }}">
                             @csrf
-                            <!-- Pilih Capaian Pembelajaran -->
-                            <div class="row g-3 mb-4">
+                            
+                            <div class="row g-2 mb-4">
                                 <div class="col-md-12">
                                     <label class="form-label">Capaian Pembelajaran (Opsional)</label>
                                     <select name="capaian_pembelajaran_id" class="form-select @error('capaian_pembelajaran_id') is-invalid @enderror">
@@ -318,8 +318,8 @@
                                 </div>
                             </div>
 
-                            <!-- Informasi Dasar -->
-                            <div class="row g-3 mb-4">
+                            
+                            <div class="row g-2 mb-4">
                                 <div class="col-md-6">
                                     <label class="form-label">Nama Komponen <span class="text-danger">*</span></label>
                                     <input type="text" name="nama_komponen" class="form-control @error('nama_komponen') is-invalid @enderror" value="{{ old('nama_komponen') }}" required>
@@ -345,15 +345,15 @@
 
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">Daftar Komponen</h3>
+                        <h3 class="card-title fw-semibold m-0">Daftar Komponen</h3>
                         <div class="btn-group" role="group">
-                            <a href="{{ route('komponen_nilai.export') }}" class="btn btn-sm btn-info" title="Download data Komponen">
+                            <a href="{{ route('komponen_nilai.export') }}" class="btn btn-sm btn-info btn-modern" title="Download data Komponen">
                                 <i class="ti ti-download me-1"></i>Export
                             </a>
-                            <a href="{{ route('komponen_nilai.template') }}" class="btn btn-sm btn-secondary" title="Download template">
+                            <a href="{{ route('komponen_nilai.template') }}" class="btn btn-sm btn-secondary btn-modern" title="Download template">
                                 <i class="ti ti-file-download me-1"></i>Template
                             </a>
-                            <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#importKomponenModal" title="Upload file Komponen">
+                            <button type="button" class="btn btn-sm btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#importKomponenModal" title="Upload file Komponen">
                                 <i class="ti ti-upload me-1"></i>Import
                             </button>
                         </div>
@@ -411,7 +411,7 @@
                     </div>
                 </div>
                 
-                <!-- Import Komponen Penilaian Modal -->
+                
                 <div class="modal modal-blur fade" id="importKomponenModal" tabindex="-1" role="dialog">
                     <div class="modal-dialog modal-dialog-centered" role="document">
                         <div class="modal-content">
@@ -419,7 +419,7 @@
                                 @csrf
                                 <div class="modal-header">
                                     <h5 class="modal-title">Import Komponen Penilaian</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="alert alert-info">
@@ -427,7 +427,7 @@
                                         <strong>Panduan:</strong> Upload file Excel (xlsx, xls, atau csv) berisi data Komponen Penilaian. 
                                         <a href="{{ route('komponen_nilai.template') }}">Download template</a> untuk melihat format.
                                     </div>
-                                    <div class="mb-3">
+                                    <div class="mb-2">
                                         <label class="form-label">Pilih File <span class="text-danger">*</span></label>
                                         <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,.xls,.csv" required>
                                         @error('file')
@@ -436,7 +436,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                     <button type="submit" class="btn btn-primary">
                                         <i class="ti ti-upload me-1"></i>Upload
                                     </button>

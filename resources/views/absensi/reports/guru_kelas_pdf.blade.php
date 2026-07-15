@@ -43,7 +43,7 @@
         <span><b>Total Terlambat:</b> {{ $summary['total_terlambat'] }}</span>
         <span><b>Total Sakit:</b> {{ $summary['total_sakit'] }}</span>
         <span><b>Total Izin:</b> {{ $summary['total_izin'] }}</span>
-        <span><b>Total Alpha:</b> {{ $summary['total_alpha'] }}</span>
+        <span><b>Total Alpa:</b> {{ $summary['total_alpha'] }}</span>
         <span><b>Jumlah Data Siswa:</b> {{ $summary['total_siswa'] }}</span>
     </div>
 
@@ -60,7 +60,7 @@
                 <th width="80">Terlambat</th>
                 <th width="80">Sakit</th>
                 <th width="80">Izin</th>
-                <th width="80">Alpha</th>
+                <th width="80">Alpa</th>
                 <th width="90">Total Siswa</th>
             </tr>
         </thead>

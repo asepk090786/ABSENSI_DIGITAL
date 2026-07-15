@@ -22,12 +22,12 @@
                     $isSiswaWithoutClassPosition = auth()->user()->hasRole('Siswa') && ! auth()->user()->hasClassPosition();
                 @endphp
                 @unless($isSiswaWithoutClassPosition)
-                <div class="btn-list">
-                    <a href="#" class="btn btn-outline-primary d-none d-sm-inline-block" data-toggle="modal" data-target="#modalImportNilai">
+                <div >
+                    <a href="#" class="btn btn-outline-primary d-none d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modalImportNilai">
                         <i class="ti ti-file-import"></i>
                         Import Excel
                     </a>
-                    <a href="#" class="btn btn-primary d-none d-sm-inline-block" data-toggle="modal" data-target="#modalTambahNilai">
+                    <a href="#" class="btn btn-primary d-none d-sm-inline-block" data-bs-toggle="modal" data-bs-target="#modalTambahNilai">
                         <i class="ti ti-plus"></i>
                         Tambah Nilai
                     </a>
@@ -43,7 +43,7 @@
         @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="ti ti-check me-2"></i>{{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
         @if(session('warning') && session('import_errors'))
@@ -54,13 +54,13 @@
                     <li>{{ $err }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
         @endif
 
         @if(request()->get('debug') === '1')
-        <div class="card mb-3">
-            <div class="card-header">
+        <div class="card mb-2">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">Debug Rencana Pembelajaran (Guru Login)</h3>
             </div>
             <div class="card-body">
@@ -100,8 +100,8 @@
         @endif
 
         @if(!($isAdminOrKepala ?? false) && isset($quickMenus) && $quickMenus->count())
-        <div class="card mb-3">
-            <div class="card-header">
+        <div class="card mb-2">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">Menu Cepat Penilaian</h3>
                 <div class="card-actions">
                     @if($kelasId || $mapelId)
@@ -114,7 +114,7 @@
             <div class="card-body">
                 <div class="d-flex flex-wrap gap-2">
                     @foreach($quickMenus as $menu)
-                        <a href="{{ route('nilai.index', ['kelas_id' => $menu->kelas_id, 'mapel_id' => $menu->mata_pelajaran_id]) }}" class="btn btn-outline-primary">
+                        <a href="{{ route('nilai.index', ['kelas_id' => $menu->kelas_id, 'mapel_id' => $menu->mata_pelajaran_id]) }}" class="btn btn-outline-primary btn-modern">
                             {{ $menu->kelas->nama_kelas ?? 'Kelas' }} - {{ $menu->mataPelajaran->nama_mapel ?? 'Mapel' }}
                         </a>
                     @endforeach
@@ -131,8 +131,8 @@
         @endif
 
         @if($isAdminOrKepala ?? false)
-        <div class="card mb-3">
-            <div class="card-header">
+        <div class="card mb-2">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">Lihat Nilai (Sederhana)</h3>
             </div>
             <div class="card-body">
@@ -165,7 +165,7 @@
                         </button>
                     </div>
                     <div class="col-auto">
-                        <a href="{{ route('nilai.index') }}" class="btn btn-outline-secondary">Reset</a>
+                        <a href="{{ route('nilai.index') }}" class="btn btn-outline-secondary btn-modern">Reset</a>
                     </div>
                 </form>
             </div>
@@ -173,12 +173,12 @@
         @endif
 
         @if($isAdminOrKepala ?? false)
-        <div class="card mb-3">
-            <div class="card-header">
+        <div class="card mb-2">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">Rekap Nilai Diinput Guru</h3>
             </div>
             <div class="card-body">
-                <form method="GET" action="{{ route('nilai.index') }}" class="row g-2 align-items-end mb-3">
+                <form method="GET" action="{{ route('nilai.index') }}" class="row g-2 align-items-end mb-2">
                     @if($kelasId)
                         <input type="hidden" name="kelas_id" value="{{ $kelasId }}">
                     @endif
@@ -239,8 +239,8 @@
             </div>
         </div>
 
-        <div class="card mb-3">
-            <div class="card-header">
+        <div class="card mb-2">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">Daftar Nilai Sudah Diinput Guru</h3>
                 <div class="card-actions text-muted small">
                     Maksimal 300 data terbaru
@@ -288,7 +288,7 @@
         @endif
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h3 class="card-title">Data Nilai Harian</h3>
                 @if($kelasId || $mapelId)
                     <div class="text-muted ms-3">
@@ -365,7 +365,7 @@
                         </p>
                         @unless($isSiswaWithoutClassPosition)
                         <div class="empty-action">
-                            <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#modalTambahNilai">
+                            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahNilai">
                                 <i class="ti ti-plus"></i>
                                 Tambah Nilai Pertama
                             </a>
@@ -383,8 +383,8 @@
             </div>
         </div>
 
-        <!-- Info Card -->
-        <div class="row mt-3">
+        
+        <div class="row mt-2">
             <div class="col-md-12">
                 <div class="card card-sm">
                     <div class="card-body">
@@ -407,22 +407,22 @@
     </div>
 </div>
 
-<!-- Modal Tambah Nilai -->
+
 <div class="modal fade" id="modalTambahNilai" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Tambah Nilai Harian</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ route('nilai.store') }}" id="nilaiForm">
                     @csrf
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Tanggal</label>
                         <input type="date" class="form-control" name="tanggal" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Kelas</label>
                         <select class="form-select" name="kelas_id" id="nilaiKelasSelect" required @if(empty($kelasOptions) || $kelasOptions->isEmpty()) disabled @endif>
                             <option value="">Pilih Kelas...</option>
@@ -434,7 +434,7 @@
                             <small class="text-muted d-block mt-1">Tidak ada kelas sesuai jadwal Anda.</small>
                         @endif
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Mata Pelajaran</label>
                         <select class="form-select" name="mapel_id" id="nilaiMapelSelect" required @if(empty($mapelOptions) || $mapelOptions->isEmpty()) disabled @endif>
                             <option value="">Pilih Mata Pelajaran...</option>
@@ -443,14 +443,14 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Rencana Pembelajaran</label>
                         <select class="form-select" name="rencana_pembelajaran_id" id="nilaiRencanaSelect" required @if(empty($kelasOptions) || $kelasOptions->isEmpty()) disabled @endif>
                             <option value="">Pilih Rencana...</option>
                         </select>
                         <small class="text-muted d-block mt-1">Rencana diambil dari data guru sesuai mata pelajaran.</small>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Komponen Penilaian</label>
                         <select class="form-select" name="komponen_id">
                             <option value="">Pilih Komponen...</option>
@@ -462,25 +462,25 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary" form="nilaiForm">Simpan</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Import Nilai -->
+
 <div class="modal fade" id="modalImportNilai" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Import Nilai Harian (Excel)</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ route('nilai.import') }}" enctype="multipart/form-data" id="nilaiImportForm">
                     @csrf
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <a
                             href="{{ $kelasId ? route('nilai.template', ['kelas_id' => $kelasId]) : '#' }}"
                             data-template-base="{{ route('nilai.template') }}"
@@ -494,11 +494,11 @@
                             <small class="text-muted d-block mt-1">Pilih Menu Cepat Penilaian dulu untuk menentukan kelas.</small>
                         @endif
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Tanggal</label>
                         <input type="date" class="form-control" name="tanggal" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Kelas</label>
                         <select class="form-select" name="kelas_id" id="nilaiImportKelasSelect" required>
                             <option value="">Pilih Kelas...</option>
@@ -507,7 +507,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Mata Pelajaran</label>
                         <select class="form-select" name="mapel_id" id="nilaiImportMapelSelect" required>
                             <option value="">Pilih Mata Pelajaran...</option>
@@ -516,21 +516,21 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Rencana Pembelajaran</label>
                         <select class="form-select" name="rencana_pembelajaran_id" id="nilaiImportRencanaSelect" required>
                             <option value="">Pilih Rencana...</option>
                         </select>
                         <small class="text-muted d-block mt-1">Kolom wajib: nis/nisn dan nilai.</small>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">File Excel</label>
                         <input type="file" class="form-control" name="file" accept=".xlsx,.xls" required>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary" form="nilaiImportForm">Import</button>
             </div>
         </div>
@@ -554,7 +554,7 @@
 
     // Initialize tooltips
     // Initialize Bootstrap 4 tooltips
-    $('[data-toggle="tooltip"]').tooltip();
+    $('[data-bs-toggle="tooltip"]').tooltip();
 
     const nilaiKelasSelect = document.getElementById('nilaiKelasSelect');
     const nilaiMapelSelect = document.getElementById('nilaiMapelSelect');

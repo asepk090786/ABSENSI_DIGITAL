@@ -6,10 +6,10 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Rekap Nilai</h4>
+                        <h4 class="card-title fw-semibold m-0">Rekap Nilai</h4>
                         @if($tahunAjaranActive && $semesterActive)
                             <p class="text-muted mb-0 small">
                                 {{ $tahunAjaranActive->tahun_ajaran }} - {{ $semesterActive->nama_semester }}
@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div class="card-body">
-                <!-- Filter Form -->
+                
                 @php
                     $isSiswa = auth()->user()->hasRole('Siswa');
                     $siswaKelas = optional(auth()->user()->siswa)->kelas_id ? ($kelasOptions->first() ?? null) : null;
@@ -29,7 +29,7 @@
                         <input type="hidden" name="wali_kelas" value="1">
                     @endif
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-2">
                             <label class="form-label">Kelas <span class="text-danger">*</span></label>
                             @if($isSiswa && $siswaKelas)
                                 <input type="text" class="form-control" value="{{ $siswaKelas->nama_kelas }}" readonly>
@@ -45,7 +45,7 @@
                                 </select>
                             @endif
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-2">
                             <label class="form-label">Mata Pelajaran <span class="text-danger">*</span></label>
                             <select name="mapel_id" id="mapelSelect" class="form-select" required>
                                 <option value="">Pilih Mata Pelajaran</option>
@@ -56,7 +56,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-2">
                             <label class="form-label">Komponen Penilaian</label>
                             <select name="komponen_id" class="form-select">
                                 <option value="">Semua Komponen</option>
@@ -83,8 +83,8 @@
                 </form>
 
                 @if($rekapData)
-                    <!-- Header Summary -->
-                    <div class="alert alert-info mb-3">
+                    
+                    <div class="alert alert-info mb-2">
                         <div class="row">
                             <div class="col-md-4">
                                 <strong>Kelas:</strong> {{ $selectedKelas->nama_kelas }}
@@ -98,8 +98,8 @@
                         </div>
                     </div>
 
-                    <!-- Statistics Cards -->
-                    <div class="row mb-3">
+                    
+                    <div class="row mb-2">
                         <div class="col-md-3">
                             <div class="card bg-primary text-white">
                                 <div class="card-body">
@@ -134,7 +134,7 @@
                         </div>
                     </div>
 
-                    <!-- Data Table -->
+                    
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead class="table-light">

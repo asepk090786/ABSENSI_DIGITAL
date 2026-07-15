@@ -9,18 +9,18 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Data Kelas</h4>
+                        <h4 class="card-title fw-semibold m-0">Data Kelas</h4>
                     </div>
                     <div class="col-auto">
                         @unless($isStudentWithoutClassPosition)
-                            <div class="btn-list">
-                                <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImport">
+                            <div >
+                                <button type="button" class="btn btn-sm btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#modalImport">
                                     <i class="ti ti-upload me-1"></i>Import Excel
                                 </button>
-                                <a href="{{ route('kelas.export') }}" class="btn btn-info btn-sm">
+                                <a href="{{ route('kelas.export') }}" class="btn btn-sm btn-info btn-modern">
                                     <i class="ti ti-download me-1"></i>Export Excel
                                 </a>
                                 <a href="{{ route('kelas.create') }}" class="btn btn-primary btn-sm">
@@ -35,21 +35,21 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('warning'))
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-triangle me-2"></i>{{ session('warning') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         @if(session('import_errors'))
                             <hr>
                             <strong>Detail Error:</strong>
@@ -63,7 +63,7 @@
                 @endif
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-vcenter table-hover table-tabler">
                         <thead>
                             <tr>
                                 <th>No</th>
@@ -84,7 +84,7 @@
                                 <td><span class="badge bg-blue-lt">{{ $it->siswa_count }}</span></td>
                                 <td>
                                     @unless($isStudentWithoutClassPosition)
-                                        <div class="btn-list">
+                                        <div >
                                             <a href="{{ route('kelas.edit', $it->id) }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="ti ti-edit"></i>
                                             </a>
@@ -115,7 +115,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Import Data Kelas dari Excel</h5>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <form action="{{ route('kelas.import') }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -131,7 +131,7 @@
                         </ol>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <a href="{{ route('kelas.template') }}" class="btn btn-outline-primary btn-sm">
                             <i class="ti ti-download me-1"></i>Download Template Excel
                         </a>
@@ -139,14 +139,14 @@
 
                     <hr>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">File Excel <span class="text-danger">*</span></label>
                         <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
                         <small class="form-hint">Format: .xlsx atau .xls, maksimal 2MB</small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="ti ti-upload me-1"></i>Upload & Import
                     </button>

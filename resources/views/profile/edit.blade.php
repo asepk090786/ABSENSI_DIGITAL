@@ -3,16 +3,16 @@
 @section('content')
     <div class="row">
         <div class="col-md-4">
-            <!-- Photo Card -->
+            
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="title">Foto Profile</h5>
                 </div>
                 <div class="card-body text-center">
                     @php
                         $defaultAvatar = auth()->user()->jenis_kelamin === 'P' ? asset('images/default-avatar-female.svg') : asset('images/default-avatar-male.svg');
                     @endphp
-                    <div class="mb-3">
+                    <div class="mb-2">
                         @if(auth()->user()->foto)
                             <img src="{{ asset('storage/' . auth()->user()->foto) }}" 
                                  alt="Profile Photo" 
@@ -33,10 +33,10 @@
                 </div>
             </div>
 
-            <!-- Info Card -->
+            
             <div class="card">
                 <div class="card-body">
-                    <h6 class="mb-3"><i class="ti ti-info-circle me-2"></i>Informasi Akun</h6>
+                    <h6 class="mb-2"><i class="ti ti-info-circle me-2"></i>Informasi Akun</h6>
                     <div class="mb-2">
                         <small class="text-muted">NIP:</small>
                         <div>{{ auth()->user()->nip ?? '-' }}</div>
@@ -58,9 +58,9 @@
         </div>
 
         <div class="col-md-8">
-            <!-- Edit Profile Form -->
+            
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="title">{{ __('Edit Profile') }}</h5>
                 </div>
                 <form method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" autocomplete="off">
@@ -130,9 +130,9 @@
                 </form>
             </div>
 
-            <!-- Change Password Form -->
+            
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="title">{{ __('Password') }}</h5>
                 </div>
                 <form method="post" action="{{ route('profile.password') }}" autocomplete="off">

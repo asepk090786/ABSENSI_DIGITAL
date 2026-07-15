@@ -9,6 +9,8 @@
         transform: translateY(-5px);
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
     }
+    /* Ensure badge numbers are white on this page */
+    .table-tabler .badge, .card .badge { color: #fff !important; }
 </style>
 
 <div class="container-fluid">
@@ -19,12 +21,12 @@
     @endphp
 
         @if($kelasQuickAccess->isNotEmpty() && !($isGuruPiket ?? false))
-    <!-- Menu Akses Cepat -->
+    
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header bg-primary-subtle">
-                    <h5 class="card-title mb-0">
+                    <h5 class="card-title fw-semibold m-0">
                         <i class="ti ti-clock-play me-2"></i>
                         @if($isAdminOrKepala)
                             Menu Akses Cepat - Absensi Kelas Aktif
@@ -99,11 +101,11 @@
                                                 margin-bottom: 0.5rem;">
                                         {{ $tingkatLabel }}
                                     </div>
-                                    <div class="mb-3">
+                                    <div class="mb-2">
                                         <i class="ti ti-school" style="font-size: 48px; color: {{ $iconColor }} !important;"></i>
                                     </div>
                                     <h5 class="card-title mb-2">{{ $kelas->nama_kelas }}</h5>
-                                    <p class="text-muted small mb-3">
+                                    <p class="text-muted small mb-2">
                                         @if($kelas->waliKelas)
                                         <i class="ti ti-user me-1"></i>{{ $kelas->waliKelas->nama }}
                                         @endif
@@ -142,12 +144,12 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-1">Monitoring Siswa Kelas Binaan BK</h5>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h5 class="card-title fw-semibold mb-1">Monitoring Siswa Kelas Binaan BK</h5>
                     <p class="card-category mb-0">Menampilkan siswa terlambat dan tidak masuk dari kelas binaan pada tanggal dipilih</p>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
+                    <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-2">
                         <div class="col-12 col-md-4 col-lg-3">
                             <label for="tanggal-bk" class="form-label mb-1">Tanggal Kehadiran</label>
                             <input
@@ -179,7 +181,7 @@
                         })->count();
                     @endphp
 
-                    <div class="d-flex flex-wrap gap-2 mb-3">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
                         <span class="badge" style="background:#f59e0b;color:#fff;">Total Terlambat: {{ $totalTerlambatBk }}</span>
                         <span class="badge bg-danger">Total Tidak Masuk: {{ $totalTidakMasukBk }}</span>
                     </div>
@@ -190,7 +192,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -238,12 +240,12 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-1">Rekap Absensi Siswa per Kelas</h5>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h5 class="card-title fw-semibold mb-1">Rekap Absensi Siswa per Kelas</h5>
                     <p class="card-category mb-0">Statistik siswa dihitung per hari (status dominan harian per siswa), bukan per jam mata pelajaran</p>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
+                    <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-2">
                         <div class="col-12 col-md-4 col-lg-3">
                             <label for="tanggal" class="form-label mb-1">Tanggal Kehadiran</label>
                             <input
@@ -276,7 +278,7 @@
                     </form>
 
                     @if($isAdminOrKepala)
-                    <form method="POST" action="{{ route('absensi.destroy-by-date') }}" class="row g-2 align-items-end mb-3" onsubmit="return confirm('Yakin ingin menghapus semua data absensi pada tanggal yang dipilih? Tindakan ini tidak dapat dibatalkan.');">
+                    <form method="POST" action="{{ route('absensi.destroy-by-date') }}" class="row g-2 align-items-end mb-2" onsubmit="return confirm('Yakin ingin menghapus semua data absensi pada tanggal yang dipilih? Tindakan ini tidak dapat dibatalkan.');">
                         @csrf
                         @method('DELETE')
                         <div class="col-12 col-md-4 col-lg-3">
@@ -303,15 +305,15 @@
                         $totalTerlambatHarian = ($rekapPerKelas ?? collect())->sum('total_terlambat');
                         $totalSakitHarian = ($rekapPerKelas ?? collect())->sum('total_sakit');
                         $totalIzinHarian = ($rekapPerKelas ?? collect())->sum('total_izin');
-                        $totalAlphaHarian = ($rekapPerKelas ?? collect())->sum('total_alpha');
+                        $totalAlpaHarian = ($rekapPerKelas ?? collect())->sum('total_alpha');
                     @endphp
 
-                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <div class="d-flex flex-wrap gap-2 mb-2">
                         <span class="badge bg-success">Total Hadir: {{ $totalHadirHarian }}</span>
                         <span class="badge" style="background:#f59e0b;color:#fff;">Total Terlambat: {{ $totalTerlambatHarian }}</span>
-                        <span class="badge bg-warning text-dark">Total Sakit: {{ $totalSakitHarian }}</span>
-                        <span class="badge bg-info text-dark">Total Izin: {{ $totalIzinHarian }}</span>
-                        <span class="badge bg-danger">Total Alpha: {{ $totalAlphaHarian }}</span>
+                        <span class="badge bg-danger">Total Sakit: {{ $totalSakitHarian }}</span>
+                        <span class="badge bg-info">Total Izin: {{ $totalIzinHarian }}</span>
+                        <span class="badge bg-danger">Total Alpa: {{ $totalAlpaHarian }}</span>
                     </div>
 
                     @if(($rekapPerKelas ?? collect())->isEmpty())
@@ -320,18 +322,18 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
                                         <th>Kelas</th>
                                         <th>Wali Kelas</th>
                                         <th>Pertemuan</th>
-                                        <th>Hadir (Tanggal Dipilih)</th>
-                                        <th>Terlambat (Tanggal Dipilih)</th>
-                                        <th>Sakit (Tanggal Dipilih)</th>
-                                        <th>Izin (Tanggal Dipilih)</th>
-                                        <th>Alpha (Tanggal Dipilih)</th>
+                                        <th>Hadir</th>
+                                        <th>Terlambat</th>
+                                        <th>Sakit</th>
+                                        <th>Izin</th>
+                                        <th>Alpa</th>
                                         <th>Total Data Siswa</th>
                                     </tr>
                                 </thead>
@@ -344,8 +346,8 @@
                                             <td><span class="badge bg-primary">{{ $rekap->total_pertemuan }}</span></td>
                                             <td><span class="badge bg-success">{{ $rekap->total_hadir }}</span></td>
                                             <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $rekap->total_terlambat }}</span></td>
-                                            <td><span class="badge bg-warning text-dark">{{ $rekap->total_sakit }}</span></td>
-                                            <td><span class="badge bg-info text-dark">{{ $rekap->total_izin }}</span></td>
+                                            <td><span class="badge bg-danger">{{ $rekap->total_sakit }}</span></td>
+                                            <td><span class="badge bg-info">{{ $rekap->total_izin }}</span></td>
                                             <td><span class="badge bg-danger">{{ $rekap->total_alpha }}</span></td>
                                             <td><span class="badge bg-secondary">{{ $rekap->total_data_siswa }}</span></td>
                                         </tr>
@@ -388,7 +390,7 @@
                             </div>
 
                             <div class="ms-auto d-flex align-items-center gap-2">
-                                <button id="btn_print_rekap" class="btn btn-success btn-sm">
+                                <button id="btn_print_rekap" class="btn btn-sm btn-success btn-modern">
                                     <i class="ti ti-file-text me-1"></i> Cetak Rekap Absensi
                                 </button>
 
@@ -407,7 +409,7 @@
                             <i class="ti ti-info-circle"></i> Belum ada data absensi.
                         </div>
                     @else
-                        <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-3">
+                        <form method="GET" action="{{ route('absensi.index') }}" class="row g-2 align-items-end mb-2">
                             <div class="col-12 col-md-3">
                                 <label class="form-label mb-1">Tanggal</label>
                                 <input type="date" name="tanggal" class="form-control" value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}">
@@ -443,7 +445,7 @@
                         </form>
 
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -495,8 +497,8 @@
                                             <td>{{ $item->semester->nama_semester ?? '-' }}</td>
                                             <td><span class="badge bg-success">{{ $hadirCount }}</span></td>
                                             <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $terlambatCount }}</span></td>
-                                            <td><span class="badge bg-warning text-dark">{{ $sakitCount }}</span></td>
-                                            <td><span class="badge bg-info text-dark">{{ $izinCount }}</span></td>
+                                            <td><span class="badge bg-danger">{{ $sakitCount }}</span></td>
+                                            <td><span class="badge bg-info">{{ $izinCount }}</span></td>
                                             <td><span class="badge bg-danger">{{ $alpaCount }}</span></td>
                                             <td>
                                                 <span class="badge bg-info">
@@ -506,7 +508,7 @@
                                             <td>
                                                 @unless($isSiswaWithoutClassPosition)
                                                 <div class="btn-group" role="group">
-                                                    <a href="{{ route('absensi.show', $item->id) }}" class="btn btn-sm btn-info">
+                                                    <a href="{{ route('absensi.show', $item->id) }}" class="btn btn-sm btn-info btn-modern">
                                                         <i class="ti ti-eye"></i>
                                                     </a>
                                                     <a href="{{ route('absensi.edit', $item->id) }}" class="btn btn-sm btn-warning">

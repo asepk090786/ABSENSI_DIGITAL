@@ -72,6 +72,12 @@
             </a>
         </li>
         <li>
+            <a href="{{ url('/pengaturan-jam') }}" class="menu-item {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}">
+                <i class="material-icons">settings</i>
+                <span>Pengaturan Jam</span>
+            </a>
+        </li>
+        <li>
             <a href="{{ url('/jadwal-kbm') }}" class="menu-item {{ request()->is('jadwal-kbm*') ? 'active' : '' }}">
                 <i class="material-icons">calendar_month</i>
                 <span>Jadwal KBM</span>

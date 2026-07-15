@@ -5,7 +5,7 @@
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -16,15 +16,15 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-1">Input Pelanggaran & Point (Guru BK)</h5>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h5 class="card-title fw-semibold mb-1">Input Pelanggaran & Point (Guru BK)</h5>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('guru_bk_layanan.kartu_kendali.store', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end">
@@ -82,17 +82,17 @@
         </div>
     </div>
 
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Kartu Kendali Pelanggaran - {{ $kelas->nama_kelas }}</h3>
+                    <h3 class="card-title fw-semibold m-0">Kartu Kendali Pelanggaran - {{ $kelas->nama_kelas }}</h3>
                     <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelas->id]) }}" class="btn btn-secondary btn-sm">
                         <i class="ti ti-arrow-left"></i> Kembali ke Menu
                     </a>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('guru_bk_layanan.kartu_kendali', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end mb-3">
+                    <form method="GET" action="{{ route('guru_bk_layanan.kartu_kendali', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end mb-2">
                         <div class="col-md-4">
                             <label class="form-label mb-1">Siswa</label>
                             <select name="siswa_id" class="form-select">
@@ -116,7 +116,7 @@
                         </div>
                     </form>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <a href="{{ route('guru_bk_layanan.kartu_kendali.print', ['kelas' => $kelas->id, 'siswa_id' => $selectedSiswaId, 'tanggal_mulai' => $tanggalMulai, 'tanggal_selesai' => $tanggalSelesai]) }}" target="_blank" class="btn btn-dark btn-sm">
                             <i class="ti ti-printer me-1"></i>Print Kartu Kendali
                         </a>

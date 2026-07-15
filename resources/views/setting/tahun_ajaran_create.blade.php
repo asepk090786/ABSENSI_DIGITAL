@@ -7,7 +7,7 @@
 
     <form method="POST" action="{{ route('setting.tahun_ajaran.store') }}">
         @csrf
-        <div class="mb-3">
+        <div class="mb-2">
             <label>Nama Tahun (e.g., 2025/2026)</label>
             <input name="nama_tahun" class="form-control" value="{{ old('nama_tahun') }}" required>
             @error('nama_tahun')<div class="text-danger">{{ $message }}</div>@enderror

@@ -7,12 +7,12 @@
   <div class="col-md-8">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="card-title mb-0">{{ $tahunAjaran->nama_tahun }}</h4>
+        <h4 class="card-title fw-semibold m-0">{{ $tahunAjaran->nama_tahun }}</h4>
         <a href="{{ route('setting.tahun_ajaran.edit', $tahunAjaran->id) }}" class="btn btn-warning btn-sm">Edit</a>
       </div>
       <div class="card-body">
         <p>Status: @if($tahunAjaran->is_active)<span class="badge bg-success">Aktif</span>@else<span class="badge bg-secondary">Tidak Aktif</span>@endif</p>
-        <h5 class="mt-3">Semester</h5>
+        <h5 class="mt-2">Semester</h5>
         <ul class="list-group">
           @forelse($semesters as $s)
             <li class="list-group-item d-flex justify-content-between align-items-center">

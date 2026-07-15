@@ -3,7 +3,7 @@
 @section('title','Edit Jam KBM')
 
 @section('content')
-<div class="row mb-3">
+<div class="row mb-2">
     <div class="col-12">
         <a href="{{ route('jam_belajar.index') }}" class="btn btn-light">
             <i class="ti ti-arrow-left me-2"></i>Kembali
@@ -15,7 +15,7 @@
     <div class="col-lg-6 mx-auto">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-light">
-                <h4 class="card-title mb-0">
+                <h4 class="card-title fw-semibold m-0">
                     <i class="ti ti-clock-edit me-2"></i>Edit Jam KBM
                 </h4>
             </div>
@@ -23,7 +23,7 @@
                 <form method="POST" action="{{ route('jam_belajar.update', $item->id) }}">
                     @csrf
                     @method('PUT')
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Hari <span class="text-danger">*</span></label>
                         <select name="hari" class="form-select" required>
                             <option value="">-- Pilih Hari --</option>
@@ -34,7 +34,7 @@
                         @error('hari')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Jam Ke (Nomor Urut) <span class="text-danger">*</span></label>
                         <input type="number" name="urutan" class="form-control" value="{{ old('urutan', $item->urutan) }}" min="1" required>
                         <small class="text-muted">Jam ke-1, Jam ke-2, dst</small>
@@ -43,7 +43,7 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label">Jam Mulai <span class="text-danger">*</span></label>
                                 <input type="time" name="jam_mulai" class="form-control" value="{{ old('jam_mulai', $item->jam_mulai) }}" required>
                                 <small class="text-muted">Format: HH:MM</small>
@@ -51,7 +51,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label">Jam Selesai <span class="text-danger">*</span></label>
                                 <input type="time" name="jam_selesai" class="form-control" value="{{ old('jam_selesai', $item->jam_selesai) }}" required>
                                 <small class="text-muted">Format: HH:MM</small>
@@ -60,7 +60,7 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Jenis Kegiatan <span class="text-danger">*</span></label>
                         <select name="jenis" class="form-select" required>
                             <option value="">-- Pilih Jenis Kegiatan --</option>

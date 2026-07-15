@@ -9,7 +9,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title mb-0">
+                        <h4 class="card-title fw-semibold m-0">
                             <i class="ti ti-user-check me-2"></i>Absensi Guru
                         </h4>
                     </div>
@@ -18,14 +18,14 @@
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show">
                             <i class="ti ti-check me-2"></i>{{ session('success') }}
-                            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         </div>
                     @endif
 
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show">
                             <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         </div>
                     @endif
 
@@ -39,7 +39,7 @@
                         </div>
                     @endif
 
-                    <form method="GET" action="{{ route('agenda_guru.index') }}" class="row g-2 align-items-end mb-3">
+                    <form method="GET" action="{{ route('agenda_guru.index') }}" class="row g-2 align-items-end mb-2">
                         <div class="col-12 col-md-4 col-lg-3">
                             <label class="form-label">Tanggal</label>
                             <input type="date" class="form-control" name="tanggal" value="{{ $selectedTanggal }}">
@@ -51,7 +51,7 @@
                         </div>
                     </form>
 
-                    <div class="row mb-3 g-2">
+                    <div class="row mb-2 g-2">
                         <div class="col-12 col-md-6 col-lg">
                             <div class="card card-sm border-primary">
                                 <div class="card-body">
@@ -98,14 +98,14 @@
                         @csrf
                         <input type="hidden" name="tanggal" value="{{ $selectedTanggal }}">
 
-                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                             <div class="form-check form-switch m-0">
                                 <input class="form-check-input" type="checkbox" id="checkAllHadir" onclick="handleCheckAllHadir(this)">
                                 <label class="form-check-label" for="checkAllHadir">Ceklis hadir semua</label>
                             </div>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-danger" id="checkAllTidakHadir" onclick="applyBulkStatus('tidak_hadir'); document.getElementById('checkAllHadir').checked = false;">Tidak hadir semua</button>
-                                <button type="button" class="btn btn-outline-secondary" id="clearAllStatus" onclick="applyBulkStatus(''); document.getElementById('checkAllHadir').checked = false;">Kosongkan semua</button>
+                                <button type="button" class="btn btn-outline-danger btn-modern" id="checkAllTidakHadir" onclick="applyBulkStatus('tidak_hadir'); document.getElementById('checkAllHadir').checked = false;">Tidak hadir semua</button>
+                                <button type="button" class="btn btn-outline-secondary btn-modern" id="clearAllStatus" onclick="applyBulkStatus(''); document.getElementById('checkAllHadir').checked = false;">Kosongkan semua</button>
                             </div>
                         </div>
 

@@ -4,7 +4,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card card-plain">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     Google Maps
                 </div>
                 <div class="card-body">
@@ -16,7 +16,7 @@
 @endsection
 
 @push('js')
-    <!-- Place this tag in your head or just before your close body tag. -->
+    
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>
     <script>
         $(document).ready(function() {

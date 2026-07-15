@@ -14,20 +14,29 @@
                 <small class="text-muted">Kelola jadwal pembelajaran setiap harinya</small>
             </div>
             @unless($isSiswa)
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('jam_belajar.create') }}" class="btn btn-primary">
                     <i class="ti ti-plus me-2"></i>Tambah Jam KBM
                 </a>
-                <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#insertModal">
+                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#insertModal">
                     <i class="ti ti-plus me-2"></i>Sisipkan Waktu
                 </button>
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#copyPatternModal">
+                    <i class="ti ti-copy me-2"></i>Copy Pola
+                </button>
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#savePatternModal">
+                    <i class="ti ti-device-floppy me-2"></i>Simpan Pola
+                </button>
+                <a href="{{ route('jam_belajar.patterns') }}" class="btn btn-purple">
+                    <i class="ti ti-layout-grid me-2"></i>Kelola Pola
+                </a>
                 <a href="{{ route('jam_belajar.export') }}" class="btn btn-success">
                     <i class="ti ti-download me-2"></i>Export Excel
                 </a>
                 <a href="{{ route('jam_belajar.template') }}" class="btn btn-info">
                     <i class="ti ti-file-spreadsheet me-2"></i>Download Template
                 </a>
-                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#importModal">
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#importModal">
                     <i class="ti ti-upload me-2"></i>Import Excel
                 </button>
                 <form action="{{ route('jam_belajar.destroy_all') }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA pengaturan jam KBM? Tindakan ini tidak dapat dibatalkan.')">
@@ -46,7 +55,7 @@
 @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show">
         <i class="ti ti-check me-2"></i>{{ session('success') }}
-        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
     </div>
 @endif
 
@@ -61,7 +70,7 @@
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
-        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
     </div>
 @endif
 
@@ -73,18 +82,18 @@
                 <li>{{ $error }}</li>
             @endforeach
         </ul>
-        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
     </div>
 @endif
 
-<!-- Daily Schedule Grid -->
+
 <div class="row g-3">
     @foreach($days as $day)
         @php $daySchedules = $groupedByDay->get($day, collect()); @endphp
         <div class="col-lg-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
+                    <h5 class="card-title fw-semibold m-0">
                         <i class="ti ti-calendar me-2"></i>{{ $day }}
                     </h5>
                 </div>
@@ -138,7 +147,7 @@
                             </table>
                         </div>
                     @else
-                        <div class="text-center py-4 text-muted">
+                        <div class="text-center py-3 text-muted">
                             <i class="ti ti-calendar-off" style="font-size: 2rem; opacity: 0.5;"></i>
                             <p class="mt-2">Belum ada jadwal untuk hari ini</p>
                         </div>
@@ -149,12 +158,12 @@
     @endforeach
 </div>
 
-<!-- Summary -->
+
 <div class="row mt-4">
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="fw-bold mb-3"><i class="ti ti-info-circle me-2"></i>Informasi Jadwal</h6>
+                <h6 class="fw-bold mb-2"><i class="ti ti-info-circle me-2"></i>Informasi Jadwal</h6>
                 <div class="row">
                     <div class="col-md-4">
                         <small class="text-muted d-block">Total Jam KBM</small>
@@ -174,11 +183,11 @@
     </div>
 </div>
 
-<!-- Import Modal -->
+
 <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="ti ti-file-upload me-2"></i>Import Jadwal Jam KBM
@@ -187,7 +196,7 @@
             <form id="importForm" action="{{ route('jam_belajar.import') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">File Excel <span class="text-danger">*</span></label>
                         <input type="file" class="form-control" name="file" accept=".xlsx,.xls,.csv" required>
                         <small class="text-muted d-block mt-2">
@@ -197,7 +206,7 @@
                             <i class="ti ti-alert-triangle"></i> Pastikan struktur file sesuai dengan template yang disediakan
                         </small>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Opsi Import</label>
                         <select name="replace" class="form-select">
                             <option value="0">Tambahkan ke data lama</option>
@@ -218,7 +227,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="ti ti-upload me-1"></i>Import Jadwal
                     </button>
@@ -228,11 +237,11 @@
     </div>
     </div>
 
-    <!-- Insert Slot Modal -->
+    
     <div class="modal fade" id="insertModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-plus me-2"></i>Sisipkan Waktu/Jam Baru
@@ -241,7 +250,7 @@
                 <form action="{{ route('jam_belajar.insert_slot') }}" method="POST">
                     @csrf
                     <div class="modal-body">
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Hari</label>
                             <select name="hari" class="form-select" required>
                                 <option value="">- Pilih Hari -</option>
@@ -270,7 +279,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="row g-3 mt-1">
+                        <div class="row g-2 mt-1">
                             <div class="col-md-6">
                                 <label class="form-label">Mulai</label>
                                 <input type="time" name="jam_mulai" class="form-control" required>
@@ -282,7 +291,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-plus me-1"></i>Sisipkan
                         </button>
@@ -290,5 +299,107 @@
                 </form>
             </div>
         </div>
-</div>
+    </div>
+
+    <!-- Modal Copy Pattern -->
+    <div class="modal fade" id="copyPatternModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ti ti-copy me-2"></i>Copy Pola Jam
+                    </h5>
+                </div>
+                <form action="{{ route('jam_belajar.copy_pattern') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Sumber Pola Dari Hari <span class="text-danger">*</span></label>
+                            <select name="from_day" class="form-select" required>
+                                <option value="">- Pilih Hari -</option>
+                                @foreach($days as $day)
+                                    <option value="{{ $day }}">{{ $day }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted d-block mt-1">Pilih hari yang pola jamnya akan di-copy</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Terapkan Ke Hari <span class="text-danger">*</span></label>
+                            <div class="row">
+                                @foreach($days as $day)
+                                <div class="col-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="to_days[]" value="{{ $day }}" id="day_{{ $day }}">
+                                        <label class="form-check-label" for="day_{{ $day }}">{{ $day }}</label>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            <small class="text-muted d-block">Pilih satu atau lebih hari untuk diterapkan pola</small>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="replace" id="replaceCheckbox" value="1">
+                                <label class="form-check-label" for="replaceCheckbox">
+                                    <strong>Hapus jam yang sudah ada</strong>
+                                </label>
+                            </div>
+                            <small class="text-muted d-block">Jika dicentang, jam yang sudah ada di hari tujuan akan dihapus terlebih dahulu</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-copy me-1"></i>Copy Pola
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Save as Pattern -->
+    <div class="modal fade" id="savePatternModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ti ti-device-floppy me-2"></i>Simpan Pola Jam
+                    </h5>
+                </div>
+                <form action="{{ route('jam_belajar.save_as_pattern') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ambil Dari Hari <span class="text-danger">*</span></label>
+                            <select name="source_day" class="form-select" required>
+                                <option value="">- Pilih Hari -</option>
+                                @foreach($days as $day)
+                                    <option value="{{ $day }}">{{ $day }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted d-block mt-1">Pilih hari yang pola jamnya akan disimpan sebagai template</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nama Pola <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_pola" class="form-control" placeholder="Contoh: Pola Hari Kerja Normal" required maxlength="100">
+                            <small class="text-muted d-block mt-1">Beri nama yang deskriptif untuk pola ini</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Deskripsi (Opsional)</label>
+                            <textarea name="deskripsi" class="form-control" rows="3" placeholder="Tambahkan catatan tentang pola ini..." maxlength="500"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy me-1"></i>Simpan Pola
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection

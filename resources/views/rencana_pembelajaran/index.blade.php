@@ -8,24 +8,24 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
                         @if($isLanding)
-                            <h4 class="card-title mb-0">Rencana Pembelajaran</h4>
+                            <h4 class="card-title fw-semibold m-0">Rencana Pembelajaran</h4>
                         @else
-                            <h4 class="card-title mb-0">
+                            <h4 class="card-title fw-semibold m-0">
                                 Rencana Pembelajaran - {{ $mataPelajaran->nama_mapel }} (Tingkat {{ $tingkat }})
                             </h4>
                         @endif
                     </div>
                     @if(!$isLanding)
                     <div class="col-auto">
-                        <div class="btn-list">
+                        <div >
                             <a href="{{ route('rencana_pembelajaran.template') }}" class="btn btn-outline-info btn-sm" title="Download Template">
                                 <i class="ti ti-file-word me-1"></i>Template
                             </a>
-                            <a href="{{ route('rencana_pembelajaran.import_form', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-info btn-sm" title="Import dari Word">
+                            <a href="{{ route('rencana_pembelajaran.import_form', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-sm btn-info btn-modern" title="Import dari Word">
                                 <i class="ti ti-file-word me-1"></i>Import Word
                             </a>
                             <a href="{{ route('rencana_pembelajaran.create', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-primary btn-sm">
@@ -43,7 +43,7 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -52,7 +52,7 @@
                         <i class="ti ti-info-circle me-2"></i>Pilih mata pelajaran dan tingkat untuk melihat atau membuat rencana pembelajaran Anda.
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-vcenter table-hover table-tabler">
                             <thead>
                                 <tr>
                                     <th>No</th>
@@ -86,7 +86,7 @@
                         </table>
                     </div>
                 @else
-                    <div class="row mb-3">
+                    <div class="row mb-2">
                         <div class="col-md-6">
                             <div class="input-group">
                                 <label class="input-group-text">Sortir</label>
@@ -108,7 +108,7 @@
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-vcenter table-hover table-tabler">
                             <thead>
                                 <tr>
                                     <th style="width: 30px;">
@@ -160,7 +160,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="btn-list">
+                                        <div >
                                             <a href="{{ route('rencana_pembelajaran.show', $item->id) }}" class="btn btn-sm btn-outline-info" title="Lihat">
                                                 <i class="ti ti-eye"></i>
                                             </a>

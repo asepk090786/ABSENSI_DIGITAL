@@ -6,7 +6,7 @@
             @csrf
 
             <div class="card card-login card-white">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <img src="{{ asset('white') }}/img/card-primary.png" alt="">
                     <h1 class="card-title">{{ _('Reset password') }}</h1>
                 </div>
@@ -43,7 +43,7 @@
                         </div>
                 </div>
                 <div class="card-footer">
-                    <button type="submit" class="btn btn-primary btn-lg btn-block mb-3">{{ _('Reset Password') }}</button>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block mb-2">{{ _('Reset Password') }}</button>
                 </div>
             </div>
         </form>

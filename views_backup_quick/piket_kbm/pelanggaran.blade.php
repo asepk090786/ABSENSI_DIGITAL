@@ -1,0 +1,154 @@
+@extends('layouts.app')
+
+@section('title', 'Pelanggaran Siswa')
+
+@section('content')
+<div class="container-fluid">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+        </div>
+    @endif
+
+    <div class="card mb-3">
+        <div class="card-header">
+            <h3 class="card-title mb-0">Pelanggaran - Menu Cepat Kelas Aktif</h3>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ route('piket.pelanggaran.index') }}" class="row g-2 align-items-end mb-3">
+                <div class="col-12 col-md-3">
+                    <label class="form-label">Tanggal</label>
+                    <input type="date" class="form-control" name="tanggal" value="{{ $selectedTanggal }}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary"><i class="ti ti-search me-1"></i>Tampilkan</button>
+                </div>
+            </form>
+
+            <div class="d-flex flex-wrap gap-2">
+                @forelse($kelasAktif as $kelas)
+                    <a href="{{ route('piket.pelanggaran.index', ['kelas_id' => $kelas->id, 'tanggal' => $selectedTanggal]) }}" class="btn {{ (string) $kelasId === (string) $kelas->id ? 'btn-primary' : 'btn-outline-primary' }} btn-sm">
+                        {{ $kelas->nama_kelas }}
+                    </a>
+                @empty
+                    <span class="text-muted">Belum ada kelas aktif.</span>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    @if($kelasId)
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Input Absensi + Pelanggaran Siswa</h3>
+                <small class="text-muted">
+                    @if($jamKeSatu)
+                        Jam ke-1: {{ $jamKeSatu->jam_mulai }} | Perkiraan keterlambatan saat ini: {{ $lateMinutesPreview }} menit
+                    @else
+                        Jam ke-1 belum diatur
+                    @endif
+                </small>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ route('piket.pelanggaran.store') }}">
+                    @csrf
+                    <input type="hidden" name="kelas_id" value="{{ $kelasId }}">
+                    <input type="hidden" name="tanggal" value="{{ $selectedTanggal }}">
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="align-middle">No</th>
+                                    <th rowspan="2" class="align-middle">NIS</th>
+                                    <th rowspan="2" class="align-middle">Nama Siswa</th>
+                                    <th colspan="5" class="text-center">Status Absensi</th>
+                                    <th>Pelanggaran</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                                <tr>
+                                    <th class="text-center">Hadir</th>
+                                    <th class="text-center">Terlambat</th>
+                                    <th class="text-center">Sakit</th>
+                                    <th class="text-center">Izin</th>
+                                    <th class="text-center">Alpa</th>
+                                    <th class="text-center">Point</th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($siswaList as $index => $siswa)
+                                    @php
+                                        $existing = $existingBySiswa->get($siswa->id);
+                                        $selectedStatus = strtolower((string) old('status.' . $siswa->id, $existing->status_absensi ?? 'hadir'));
+                                        if (in_array($selectedStatus, ['alpha', 'absen'], true)) {
+                                            $selectedStatus = 'alpa';
+                                        }
+                                        if ($selectedStatus === '') {
+                                            $selectedStatus = 'hadir';
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $siswa->nis ?: '-' }}</td>
+                                        <td>{{ $siswa->nama }}</td>
+                                        <td class="text-center align-middle">
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="hadir" {{ $selectedStatus === 'hadir' ? 'checked' : '' }} required>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="terlambat" {{ $selectedStatus === 'terlambat' ? 'checked' : '' }}>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="sakit" {{ $selectedStatus === 'sakit' ? 'checked' : '' }}>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="izin" {{ $selectedStatus === 'izin' ? 'checked' : '' }}>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="alpa" {{ $selectedStatus === 'alpa' ? 'checked' : '' }}>
+                                        </td>
+                                        <td>
+                                            <input type="number" min="0" max="1000" class="form-control form-control-sm" name="point[{{ $siswa->id }}]" value="{{ old('point.' . $siswa->id, $existing->poin_pelanggaran ?? 0) }}" placeholder="0">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm" name="pelanggaran[{{ $siswa->id }}]" value="{{ old('pelanggaran.' . $siswa->id, $existing->deskripsi_pelanggaran ?? '') }}" placeholder="Contoh: Terlambat masuk kelas">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm" name="keterangan[{{ $siswa->id }}]" value="{{ old('keterangan.' . $siswa->id) }}" placeholder="Opsional">
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="11" class="text-center text-muted">Tidak ada siswa di kelas ini.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if($siswaList->isNotEmpty())
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy me-1"></i>Simpan
+                        </button>
+                    </div>
+                    @endif
+                </form>
+            </div>
+        </div>
+    @endif
+</div>
+@endsection

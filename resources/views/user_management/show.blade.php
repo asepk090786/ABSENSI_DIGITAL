@@ -7,7 +7,7 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Detail Pengguna</h4>
+                <h4 class="card-title fw-semibold m-0">Detail Pengguna</h4>
                 <a href="{{ route('users.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
@@ -37,7 +37,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-3 d-flex gap-2">
+                <div class="mt-2 d-flex gap-2">
                     <form action="{{ route('users.activate', $user->id) }}" method="POST">
                         @csrf
                         @method('PATCH')

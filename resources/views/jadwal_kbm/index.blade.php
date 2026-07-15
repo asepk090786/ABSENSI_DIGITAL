@@ -6,10 +6,10 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Jadwal Kegiatan Belajar Mengajar (KBM)</h4>
+                        <h4 class="card-title fw-semibold m-0">Jadwal Kegiatan Belajar Mengajar (KBM)</h4>
                     </div>
                     @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
                     <div class="col-auto">
@@ -25,18 +25,18 @@
                 </div>
             </div>
             <div class="card-body">
-                <!-- Success/Error Messages -->
+                
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -50,11 +50,11 @@
                                 @endforeach
                             </ul>
                         @endif
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
-                <!-- Tab Navigation -->
+                
                 <ul class="nav nav-tabs mb-4" id="jadwalTab" role="tablist">
                     @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
                     <li class="nav-item" role="presentation">
@@ -64,12 +64,12 @@
                     </li>
                     @endif
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="perkelas-tab" data-toggle="tab" data-target="#perkelas" type="button" role="tab">
+                        <button class="nav-link active" id="perkelas-tab" data-bs-toggle="tab" data-bs-target="#perkelas" type="button" role="tab">
                             <i class="ti ti-school me-2"></i>Jadwal Per Kelas
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="perguru-tab" data-toggle="tab" data-target="#perguru" type="button" role="tab">
+                        <button class="nav-link" id="perguru-tab" data-bs-toggle="tab" data-bs-target="#perguru" type="button" role="tab">
                             <i class="ti ti-user me-2"></i>Jadwal Per Guru
                         </button>
                     </li>
@@ -80,13 +80,13 @@
                     </li>
                 </ul>
 
-                <!-- Tab Content -->
+                
                 <div class="tab-content" id="jadwalTabContent">
-                    <!-- Tab Jadwal Per Kelas -->
+                    
                     <div class="tab-pane fade show active" id="perkelas" role="tabpanel">
                         <div class="row">
                             @foreach($kelasList as $kelas)
-                            <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="col-md-6 col-lg-4 mb-2">
                                 <div class="card border">
                                     <div class="card-body">
                                         <h5 class="card-title">{{ $kelas->nama_kelas }}</h5>
@@ -96,7 +96,7 @@
                                                 Wali Kelas: {{ $kelas->waliKelas->nama ?? '-' }}
                                             </small>
                                         </p>
-                                        <p class="text-muted mb-3">
+                                        <p class="text-muted mb-2">
                                             <small>
                                                 <i class="ti ti-layer me-1"></i>
                                                 Tingkat: {{ $kelas->tingkat_kelas ?? '-' }}
@@ -105,13 +105,13 @@
                                                 @endif
                                             </small>
                                         </p>
-                                        <div class="btn-list">
+                                        <div >
                                             @unless(auth()->user()->hasAnyRole(['Siswa','Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
                                             <a href="{{ route('jadwal-kbm.create-by-kelas', $kelas->id) }}" class="btn btn-primary btn-sm">
                                                 <i class="ti ti-calendar-event me-1"></i>Atur Jadwal
                                             </a>
                                             @endunless
-                                            <button type="button" class="btn btn-info btn-sm" onclick="viewJadwal({{ $kelas->id }}, '{{ $kelas->nama_kelas }}')">
+                                            <button type="button" class="btn btn-sm btn-info btn-modern" onclick="viewJadwal({{ $kelas->id }}, '{{ $kelas->nama_kelas }}')">
                                                 <i class="ti ti-eye me-1"></i>Lihat
                                             </button>
                                         </div>
@@ -122,11 +122,11 @@
                         </div>
                     </div>
 
-                    <!-- Tab Jadwal Per Guru -->
+                    
                     <div class="tab-pane fade" id="perguru" role="tabpanel">
                         <div class="row">
                             @foreach($guruList as $guru)
-                            <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="col-md-6 col-lg-4 mb-2">
                                 <div class="card border">
                                     <div class="card-body">
                                         <h5 class="card-title">{{ $guru->nama }}</h5>
@@ -136,7 +136,7 @@
                                                 NIP: {{ $guru->nip ?? '-' }}
                                             </small>
                                         </p>
-                                        <a href="{{ route('jadwal-kbm.show-by-guru', ['guru' => $guru->id]) }}" class="btn btn-info btn-sm">
+                                        <a href="{{ route('jadwal-kbm.show-by-guru', ['guru' => $guru->id]) }}" class="btn btn-sm btn-info btn-modern">
                                             <i class="ti ti-calendar me-1"></i>Lihat Jadwal
                                         </a>
                                     </div>
@@ -151,17 +151,17 @@
     </div>
 </div>
 
-<!-- Modal View Jadwal -->
+
 <div class="modal fade" id="modalViewJadwal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Jadwal KBM - <span id="namaKelas"></span></h5>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
                 <div id="jadwalContent" class="table-responsive">
-                    <!-- Jadwal will be loaded here -->
+                    
                 </div>
             </div>
         </div>

@@ -103,11 +103,11 @@
         }
         
         tbody tr:nth-child(odd) {
-            background-color: #f9fafb;
+            background-color: #ffffff;
         }
         
         tbody tr:nth-child(even) {
-            background-color: #fff;
+            background-color: #ffffff;
         }
         
         .jam-col {
@@ -134,6 +134,22 @@
             border-radius: 2px;
             font-size: 6px;
             font-weight: bold;
+        }
+        
+        /* Highlighting untuk current user */
+        .current-user-jadwal {
+            background-color: #86efac !important;
+            font-weight: bold;
+            border: 1px solid #22c55e;
+        }
+        
+        /* Override semua background table menjadi white */
+        tbody td {
+            background-color: #ffffff !important;
+        }
+        
+        tbody td.current-user-jadwal {
+            background-color: #86efac !important;
         }
         
         @media print {
@@ -163,7 +179,7 @@
                 <h2>Jadwal KBM</h2>
             @endif
             @if($tahunAjaranAktif && $semesterAktif)
-                <p>{{ $tahunAjaranAktif->nama }} - {{ $semesterAktif->nama }}</p>
+                <p>{{ $tahunAjaranAktif->nama_tahun }} - {{ $semesterAktif->nama_semester }}</p>
             @endif
         </div>
 
@@ -177,11 +193,12 @@
                 $kelasJadwal = $jadwalHari->groupBy('kelas_id')->map(function($items) {
                     return $items->first()->kelas;
                 })->unique('id')->sortBy(function($kelas) {
-                    // Extract tingkat kelas (10, 11, 12)
-                    preg_match('/^(\d+)/', $kelas->nama_kelas, $matches);
+                    // Parse kelas name untuk sorting: 12.C4 -> [12, C, 4]
+                    preg_match('/(\d+)\.([A-Z]+)(\d*)/', $kelas->nama_kelas, $matches);
                     $tingkat = intval($matches[1] ?? 0);
-                    // Sort by tingkat ascending (10, 11, 12)
-                    return $tingkat;
+                    $jurusan = $matches[2] ?? '';
+                    $nomor = intval($matches[3] ?? 0);
+                    return sprintf("%02d%s%02d", $tingkat, $jurusan, $nomor);
                 });
             @endphp
 
@@ -227,8 +244,16 @@
                                     preg_match('/^(\d+)/', $kelas->nama_kelas, $matches);
                                     $tingkatKelas = intval($matches[1] ?? 0);
                                     $kelasClass = 'kelas-' . $tingkatKelas;
+                                    
+                                    // Check if this is current user's jadwal
+                                    $isCurrentUserJadwal = false;
+                                    $jadwalJam = $jadwalHari->where('jam_ke', $jam)->where('kelas_id', $kelas->id)->first();
+                                    if ($jadwalJam && $jadwalJam->guru && isset($currentUserGuruKode)) {
+                                        $isCurrentUserJadwal = $jadwalJam->guru->kode_guru === $currentUserGuruKode;
+                                    }
+                                    $currentUserClass = $isCurrentUserJadwal ? 'current-user-jadwal' : '';
                                 @endphp
-                                <td class="kelas-col {{ $kelasClass }}">
+                                <td class="kelas-col {{ $kelasClass }} {{ $currentUserClass }}">
                                     @php
                                         $jamBelajarEntry = $jamBelajarHari->where('urutan', $jam)->first();
                                         if ($jamBelajarEntry && $jamBelajarEntry->jenis && $jamBelajarEntry->jenis !== 'KBM') {

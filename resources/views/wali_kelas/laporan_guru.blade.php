@@ -8,7 +8,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Laporan Guru - {{ $kelasBinaan->nama_kelas ?? '-' }}</h3>
+                    <h3 class="card-title fw-semibold m-0">Laporan Guru - {{ $kelasBinaan->nama_kelas ?? '-' }}</h3>
                     <a href="{{ route('wali_kelas.index') }}" class="btn btn-secondary btn-sm">
                         <i class="ti ti-arrow-left"></i> Kembali
                     </a>
@@ -54,7 +54,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>

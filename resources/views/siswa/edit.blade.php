@@ -11,7 +11,7 @@
     <div class="col-md-10 mx-auto">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Edit Siswa</h4>
+                <h4 class="card-title fw-semibold m-0">Edit Siswa</h4>
                 <a href="{{ $backRoute }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
@@ -24,28 +24,28 @@
                         <strong>Informasi:</strong> Perubahan akan memperbarui data siswa dan akun login terkait. Kosongkan password jika tidak ingin mengubah.
                     </div>
 
-                    <h5 class="mb-3">Data Pribadi</h5>
+                    <h5 class="mb-2">Data Pribadi</h5>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">NIS <span class="text-danger">*</span></label>
                             <input type="text" name="nis" class="form-control @error('nis') is-invalid @enderror" value="{{ old('nis', $siswa->nis) }}" required>
                             @error('nis')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">NISN <span class="text-danger">*</span></label>
                             <input type="text" name="nisn" class="form-control @error('nisn') is-invalid @enderror" value="{{ old('nisn', $siswa->nisn) }}" required>
                             @error('nisn')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama <span class="text-danger">*</span></label>
                         <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama', $siswa->nama) }}" required>
                         @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-2">
                             <label class="form-label">Jenis Kelamin <span class="text-danger">*</span></label>
                             <select name="jenis_kelamin" class="form-select @error('jenis_kelamin') is-invalid @enderror" required>
                                 <option value="">Pilih</option>
@@ -54,7 +54,7 @@
                             </select>
                             @error('jenis_kelamin')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-2">
                             <label class="form-label">Kelas <span class="text-danger">*</span></label>
                             <select name="kelas_id" class="form-select @error('kelas_id') is-invalid @enderror" required>
                                 <option value="">Pilih Kelas</option>
@@ -65,7 +65,7 @@
                             @error('kelas_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         @if($canManageClassPositions)
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-4 mb-2">
                                 <label class="form-label">Jabatan Kelas</label>
                                 <select name="jabatan_kelas" class="form-select @error('jabatan_kelas') is-invalid @enderror">
                                     <option value="">Tidak ada</option>
@@ -76,7 +76,7 @@
                                 @error('jabatan_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         @endif
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-2">
                             <label class="form-label">Email <span class="text-danger">*</span></label>
                             <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $siswa->user->email ?? $siswa->email) }}" required>
                             @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -85,9 +85,9 @@
 
                     <hr class="my-4">
 
-                    <h5 class="mb-3">Data Akun Login</h5>
+                    <h5 class="mb-2">Data Akun Login</h5>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Username <span class="text-danger">*</span></label>
                             <input type="text" name="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username', $siswa->user->username ?? '') }}" required>
                             <small class="form-hint">Username untuk login ke sistem</small>
@@ -96,13 +96,13 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Password Baru</label>
                             <input type="password" name="password" class="form-control @error('password') is-invalid @enderror">
                             <small class="form-hint">Isi hanya jika ingin mengganti password (minimal 6 karakter)</small>
                             @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Konfirmasi Password</label>
                             <input type="password" name="password_confirmation" class="form-control">
                         </div>

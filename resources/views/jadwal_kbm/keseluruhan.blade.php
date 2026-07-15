@@ -6,14 +6,14 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Jadwal Keseluruhan (KBM)</h4>
+                        <h4 class="card-title fw-semibold m-0">Jadwal Keseluruhan (KBM)</h4>
                         <p class="text-muted mb-0 mt-1">
                             <small>
                                 @if($tahunAjaranAktif && $semesterAktif)
-                                <i class="ti ti-calendar me-1"></i>{{ $tahunAjaranAktif->nama }} - {{ $semesterAktif->nama }}
+                                <i class="ti ti-calendar me-1"></i>{{ $tahunAjaranAktif->nama_tahun }} - {{ $semesterAktif->nama_semester }}
                                 @endif
                             </small>
                         </p>
@@ -65,7 +65,7 @@
                             <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (Folio)
                         </a>
                         @endif
-                        <button onclick="window.print()" class="btn btn-info btn-sm">
+                        <button onclick="window.print()" class="btn btn-sm btn-info btn-modern">
                             <i class="ti ti-printer me-1"></i>Cetak
                         </button>
                     </div>
@@ -79,7 +79,7 @@
                     </div>
                 @else
                     @if($viewType === 'full')
-                        <!-- TAMPILAN LENGKAP -->
+                        
                         @foreach($hariList as $hari)
                         @php
                             $jadwalHari = $jadwalKeseluruhan->get($hari, collect());
@@ -103,7 +103,7 @@
                         
                         @if($jadwalHari->isNotEmpty() || $jamBelajarHari->isNotEmpty())
                         <div class="mb-5">
-                            <h5 class="border-bottom pb-2 mb-3">
+                            <h5 class="border-bottom pb-2 mb-2">
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
@@ -178,7 +178,7 @@
                         @endif
                     @endforeach
                     @elseif($viewType === 'compact')
-                        <!-- TAMPILAN KOMPAK (HANYA KODE MAPEL) -->
+                        
                         <div class="compact-grid">
                         @foreach($hariList as $hari)
                         @php
@@ -202,7 +202,7 @@
                         
                         @if($jadwalHari->isNotEmpty() || $jamBelajarHari->isNotEmpty())
                         <div class="mb-5 compact-card">
-                            <h5 class="border-bottom pb-2 mb-3">
+                            <h5 class="border-bottom pb-2 mb-2">
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
@@ -275,7 +275,7 @@
                         @endforeach
                         </div>
                     @elseif($viewType === 'kode')
-                        <!-- TAMPILAN JADWAL KODE GURU -->
+                        
                         @foreach($hariList as $hari)
                         @php
                             $jadwalHari = $jadwalKeseluruhan->get($hari, collect());
@@ -298,7 +298,7 @@
                         
                         @if($jadwalHari->isNotEmpty() || $jamBelajarHari->isNotEmpty())
                         <div class="mb-5">
-                            <h5 class="border-bottom pb-2 mb-3">
+                            <h5 class="border-bottom pb-2 mb-2">
                                 <i class="ti ti-calendar me-2"></i>{{ $hari }}
                             </h5>
                             <div class="table-responsive">
@@ -548,7 +548,7 @@
             page-break-after: auto;
         }
         
-        .mb-3 {
+        .mb-2 {
             margin-bottom: 0.5px !important;
         }
         
@@ -666,11 +666,11 @@
         }
         
         .table tbody tr:nth-child(odd) {
-            background-color: #f9fafb !important;
+            background-color: #ffffff !important;
         }
         
         .table tbody tr:nth-child(even) {
-            background-color: #fff !important;
+            background-color: #ffffff !important;
         }
         
         .table-responsive {
@@ -739,6 +739,27 @@
         .ti {
             display: none !important;
         }
+        
+        /* Highlighting untuk jadwal current user di print */
+        .bg-success-subtle {
+            background-color: #dcfce7 !important;
+        }
+    }
+    
+    /* Highlighting untuk jadwal current user - screen view */
+    .bg-success-subtle {
+        background-color: #dcfce7 !important;
+        border: 2px solid #22c55e !important;
+        font-weight: bold;
+    }
+    
+    /* Override semua background table menjadi white */
+    .table tbody td {
+        background-color: #ffffff !important;
+    }
+    
+    .table tbody td.bg-success-subtle {
+        background-color: #dcfce7 !important;
     }
 </style>
 @endpush

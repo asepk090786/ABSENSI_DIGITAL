@@ -20,8 +20,10 @@ Route::get('/', function(){
     return redirect()->route('home');
 });
 
-Route::get('login',[AuthController::class,'showLogin'])->name('login');
-Route::post('login',[AuthController::class,'login'])->name('login.post');
+Route::middleware('guest')->group(function () {
+    Route::get('login',[AuthController::class,'showLogin'])->name('login');
+    Route::post('login',[AuthController::class,'login'])->name('login.post');
+});
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
@@ -48,6 +50,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('guru-import', ['App\Http\Controllers\GuruController', 'import'])->name('guru.import');
     
     Route::resource('siswa','App\Http\Controllers\SiswaController');
+    Route::post('siswa/bulk-delete', ['App\Http\Controllers\SiswaController', 'bulkDelete'])->name('siswa.bulk-delete');
     Route::get('siswa-export', ['App\Http\Controllers\SiswaController', 'export'])->name('siswa.export');
     Route::get('siswa-template', ['App\Http\Controllers\SiswaController', 'templateDownload'])->name('siswa.template');
     Route::post('siswa-import', ['App\Http\Controllers\SiswaController', 'import'])->name('siswa.import');
@@ -163,6 +166,11 @@ Route::middleware(['auth'])->group(function(){
     // Keep old jam_belajar routes for backward compatibility
     Route::resource('jam_belajar', JamBelajarController::class)->except(['show']);
     Route::post('jam-belajar/insert-slot', [JamBelajarController::class, 'insertSlot'])->name('jam_belajar.insert_slot');
+    Route::post('jam-belajar/copy-pattern', [JamBelajarController::class, 'copyPattern'])->name('jam_belajar.copy_pattern');
+    Route::post('jam-belajar/save-as-pattern', [JamBelajarController::class, 'saveAsPattern'])->name('jam_belajar.save_as_pattern');
+    Route::post('jam-belajar/apply-pattern', [JamBelajarController::class, 'applyPattern'])->name('jam_belajar.apply_pattern');
+    Route::get('jam-belajar/patterns', [JamBelajarController::class, 'patterns'])->name('jam_belajar.patterns');
+    Route::delete('jam-belajar/patterns/{pola}', [JamBelajarController::class, 'deletePattern'])->name('jam_belajar.delete_pattern');
     Route::get('jam-belajar-export', [JamBelajarController::class, 'export'])->name('jam_belajar.export');
     Route::get('jam-belajar-template', [JamBelajarController::class, 'templateDownload'])->name('jam_belajar.template');
     Route::post('jam-belajar-import', [JamBelajarController::class, 'import'])->name('jam_belajar.import');
@@ -209,6 +217,8 @@ Route::middleware(['auth'])->group(function(){
         Route::get('kelas-binaan/{kelas}/tindak-lanjut/{tindakLanjut}/print', [App\Http\Controllers\GuruBkLayananController::class, 'printTindakLanjut'])->name('tindak_lanjut.print');
         Route::get('kelas-binaan/{kelas}/tindak-lanjut/{tindakLanjut}/pdf', [App\Http\Controllers\GuruBkLayananController::class, 'pdfTindakLanjut'])->name('tindak_lanjut.pdf');
     });
+    Route::post('guru_piket/generate', ['App\Http\Controllers\GuruPiketController', 'generate'])->name('guru_piket.generate');
+    Route::post('guru_piket/bulk-destroy', ['App\Http\Controllers\GuruPiketController', 'bulkDestroy'])->name('guru_piket.bulk_destroy');
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
     Route::resource('pembina', 'App\Http\Controllers\PembinaController');
     Route::get('mata-pelajaran/guru', ['App\Http\Controllers\MataPelajaranController', 'guruIndex'])->name('mata_pelajaran.guru');
@@ -220,6 +230,9 @@ Route::middleware(['auth'])->group(function(){
     // Tugas Guru routes
     Route::get('tugas-guru/get-kelas-by-tingkat', ['App\Http\Controllers\TugasGuruController', 'getKelasByTingkat'])->name('tugas_guru.get_kelas_by_tingkat');
     Route::get('tugas-guru/guru/{guru}', ['App\Http\Controllers\TugasGuruController', 'showByGuru'])->name('tugas_guru.show_by_guru');
+    Route::get('tugas-guru/beban-kerja/export-excel', ['App\Http\Controllers\TugasGuruController', 'exportBebanKerjaExcel'])->name('tugas_guru.beban_kerja.export_excel');
+    Route::get('tugas-guru/beban-kerja/export-pdf', ['App\Http\Controllers\TugasGuruController', 'exportBebanKerjaPdf'])->name('tugas_guru.beban_kerja.export_pdf');
+    Route::get('tugas-guru/beban-kerja/print', ['App\Http\Controllers\TugasGuruController', 'printBebanKerja'])->name('tugas_guru.beban_kerja.print');
     Route::resource('tugas_guru', 'App\Http\Controllers\TugasGuruController');
     
     // Rencana Pembelajaran routes - custom routes BEFORE resource to avoid conflicts
@@ -275,6 +288,7 @@ Route::middleware(['auth'])->group(function(){
     
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/panduan', [ProfileController::class, 'panduan'])->name('profile.panduan');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
 });

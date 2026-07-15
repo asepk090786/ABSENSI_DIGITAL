@@ -4,7 +4,7 @@
 <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header border-0 pt-3 pb-2">
           <h5 class="title">100 Awesome Nucleo Icons</h5>
           <p class="category">Handcrafted by our friends from
             <a href="https://nucleoapp.com/?ref=1712">NucleoApp</a>

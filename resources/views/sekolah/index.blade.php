@@ -20,7 +20,7 @@
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
-                            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         </div>
                     @endif
 
@@ -28,9 +28,9 @@
                         <div class="row">
                             <div class="col-md-3 text-center">
                                 @if($sekolah->logo)
-                                    <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" class="img-fluid rounded mb-3" style="max-height: 200px;">
+                                    <img src="{{ asset('storage/' . $sekolah->logo) }}" alt="Logo Sekolah" class="img-fluid rounded mb-2" style="max-height: 200px;">
                                 @else
-                                    <div class="bg-light rounded p-4 mb-3">
+                                    <div class="bg-light rounded p-4 mb-2">
                                         <i class="ti ti-school" style="font-size: 100px; color: #ddd;"></i>
                                     </div>
                                 @endif
@@ -106,7 +106,7 @@
                                         </tr>
                                     </tbody>
                                 </table>
-                                <div class="mt-3">
+                                <div class="mt-2">
                                     <a href="{{ route('sekolah.edit', $sekolah->id) }}" class="btn btn-warning">
                                         <i class="ti ti-edit"></i> Edit Data
                                     </a>

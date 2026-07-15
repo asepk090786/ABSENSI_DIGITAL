@@ -18,7 +18,7 @@
 
 <div class="card">
     <div class="card-body">
-        <div class="alert alert-info mb-3">
+        <div class="alert alert-info mb-2">
             Fitur update otomatis dari GitHub saat ini dinonaktifkan untuk menjaga stabilitas selama pengembangan.
         </div>
         <button class="btn btn-secondary" type="button" disabled>

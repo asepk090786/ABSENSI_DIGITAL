@@ -221,5 +221,190 @@ class JamBelajarController extends Controller
             return back()->withErrors(['error' => 'Gagal mengimport file: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Copy jam dari satu hari ke hari lain
+     */
+    public function copyPattern(Request $request)
+    {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
+        $request->validate([
+            'from_day' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'to_days' => 'required|array|min:1',
+            'to_days.*' => 'string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'replace' => 'boolean' // true = replace existing, false = skip if exists
+        ]);
+
+        $fromDay = $request->input('from_day');
+        $toDays = $request->input('to_days');
+        $replace = $request->input('replace', false);
+
+        // Get jam from source day
+        $sourceJams = JamBelajar::where('hari', $fromDay)
+            ->orderBy('urutan')
+            ->get();
+
+        if ($sourceJams->isEmpty()) {
+            return back()->with('error', "Tidak ada jam belajar untuk hari $fromDay");
+        }
+
+        DB::transaction(function() use ($sourceJams, $toDays, $replace) {
+            foreach ($toDays as $toDay) {
+                if ($replace) {
+                    // Delete existing jams for this day
+                    JamBelajar::where('hari', $toDay)->delete();
+                }
+
+                // Copy jams from source day
+                foreach ($sourceJams as $sourceJam) {
+                    $exists = JamBelajar::where('hari', $toDay)
+                        ->where('urutan', $sourceJam->urutan)
+                        ->exists();
+
+                    if (!$exists) {
+                        JamBelajar::create([
+                            'hari' => $toDay,
+                            'urutan' => $sourceJam->urutan,
+                            'jam_mulai' => $sourceJam->jam_mulai,
+                            'jam_selesai' => $sourceJam->jam_selesai,
+                            'jenis' => $sourceJam->jenis,
+                        ]);
+                    }
+                }
+            }
+        });
+
+        $daysList = implode(', ', $toDays);
+        return back()->with('success', "Pola dari $fromDay berhasil di-copy ke: $daysList");
+    }
+
+    /**
+     * Save jam pattern sebagai template
+     */
+    public function saveAsPattern(Request $request)
+    {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
+        $request->validate([
+            'source_day' => 'required|string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'nama_pola' => 'required|string|unique:jam_belajar_pola,nama_pola|max:100',
+            'deskripsi' => 'nullable|string|max:500',
+        ]);
+
+        $sourceDay = $request->input('source_day');
+        $namaPola = $request->input('nama_pola');
+        $deskripsi = $request->input('deskripsi');
+
+        // Get jam data from source day
+        $jamData = JamBelajar::where('hari', $sourceDay)
+            ->orderBy('urutan')
+            ->get()
+            ->map(function($jam) {
+                return [
+                    'urutan' => $jam->urutan,
+                    'jam_mulai' => $jam->jam_mulai,
+                    'jam_selesai' => $jam->jam_selesai,
+                    'jenis' => $jam->jenis,
+                ];
+            })
+            ->toArray();
+
+        if (empty($jamData)) {
+            return back()->with('error', "Tidak ada jam belajar untuk hari $sourceDay");
+        }
+
+        \App\Models\JamBelajarPola::create([
+            'nama_pola' => $namaPola,
+            'deskripsi' => $deskripsi,
+            'jam_data' => $jamData,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', "Pola '$namaPola' berhasil disimpan");
+    }
+
+    /**
+     * Apply saved pattern ke hari tertentu
+     */
+    public function applyPattern(Request $request)
+    {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
+        $request->validate([
+            'pola_id' => 'required|exists:jam_belajar_pola,id',
+            'to_days' => 'required|array|min:1',
+            'to_days.*' => 'string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'replace' => 'boolean'
+        ]);
+
+        $pola = \App\Models\JamBelajarPola::find($request->input('pola_id'));
+        $toDays = $request->input('to_days');
+        $replace = $request->input('replace', false);
+        $jamData = $pola->jam_data;
+
+        DB::transaction(function() use ($jamData, $toDays, $replace) {
+            foreach ($toDays as $toDay) {
+                if ($replace) {
+                    JamBelajar::where('hari', $toDay)->delete();
+                }
+
+                foreach ($jamData as $jam) {
+                    $exists = JamBelajar::where('hari', $toDay)
+                        ->where('urutan', $jam['urutan'])
+                        ->exists();
+
+                    if (!$exists) {
+                        JamBelajar::create([
+                            'hari' => $toDay,
+                            'urutan' => $jam['urutan'],
+                            'jam_mulai' => $jam['jam_mulai'],
+                            'jam_selesai' => $jam['jam_selesai'],
+                            'jenis' => $jam['jenis'],
+                        ]);
+                    }
+                }
+            }
+        });
+
+        $daysList = implode(', ', $toDays);
+        return back()->with('success', "Pola '{$pola->nama_pola}' berhasil diterapkan ke: $daysList");
+    }
+
+    /**
+     * Show patterns management page
+     */
+    public function patterns()
+    {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
+        $polas = \App\Models\JamBelajarPola::orderBy('nama_pola')->get();
+        $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        
+        return view('jam_belajar.patterns', compact('polas', 'days'));
+    }
+
+    /**
+     * Delete pattern
+     */
+    public function deletePattern(\App\Models\JamBelajarPola $pola)
+    {
+        if ($redirect = $this->authorizeJamBelajarManagement()) {
+            return $redirect;
+        }
+
+        $namaPola = $pola->nama_pola;
+        $pola->delete();
+
+        return back()->with('success', "Pola '$namaPola' berhasil dihapus");
+    }
 }
 

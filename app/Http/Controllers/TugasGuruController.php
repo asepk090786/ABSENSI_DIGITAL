@@ -7,6 +7,12 @@ use App\Models\TugasGuru;
 use App\Models\Guru;
 use App\Models\MataPelajaran;
 use App\Models\Kelas;
+use App\Models\JadwalKbm;
+use App\Models\TahunAjaran;
+use App\Models\Semester;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ArrayExport;
+use PDF;
 
 class TugasGuruController extends Controller
 {
@@ -16,6 +22,7 @@ class TugasGuruController extends Controller
     public function index()
     {
         $items = TugasGuru::with(['guru.user', 'mataPelajaran', 'kelas'])
+            ->whereHas('guru')
             ->orderBy('tingkat_kelas')
             ->orderBy('guru_id')
             ->orderBy('mata_pelajaran_id')
@@ -35,7 +42,286 @@ class TugasGuruController extends Controller
             ->orderBy('nama')
             ->get();
         
-        return view('tugas_guru.index', compact('items', 'itemsByTingkat', 'guruList'));
+        // Get active tahun ajaran & semester
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+        
+        // Beban Kerja: Data untuk tabel beban kerja guru
+        $guruBebanKerja = Guru::with(['user', 'tugasGuru.kelas', 'tugasGuru.mataPelajaran'])
+            ->whereHas('tugasGuru', function($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('nama')
+            ->get();
+        
+        // Get kelas yang sebenarnya ada di jadwal KBM
+        $jadwalKelasList = JadwalKbm::select('kelas_id');
+        if ($tahunAjaranAktif) {
+            $jadwalKelasList->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $jadwalKelasList->where('semester_id', $semesterAktif->id);
+        }
+        $jadwalKelasIds = $jadwalKelasList->distinct()->pluck('kelas_id')->filter()->toArray();
+        
+        if (!empty($jadwalKelasIds)) {
+            $kelasList = Kelas::whereIn('id', $jadwalKelasIds)->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        } else {
+            $kelasList = Kelas::orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        }
+        
+        // Hitung jumlah jam KBM per guru per kelas per mata pelajaran
+        $jadwalKbmJumlah = $this->buildJadwalKbmJumlah($guruBebanKerja, $tahunAjaranAktif, $semesterAktif);
+        $totalJamPerGuru = $this->buildTotalJamPerGuru($guruBebanKerja, $tahunAjaranAktif, $semesterAktif);
+        $totalJamPerKelas = [];
+        
+        // Initialize total jam per kelas
+        foreach ($kelasList as $kelas) {
+            $totalJamPerKelas[$kelas->id] = 0;
+        }
+        
+        // Hitung total jam per kelas
+        foreach ($kelasList as $kelas) {
+            $query = JadwalKbm::where('kelas_id', $kelas->id);
+            
+            if ($tahunAjaranAktif) {
+                $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+            }
+            if ($semesterAktif) {
+                $query->where('semester_id', $semesterAktif->id);
+            }
+            
+            $totalJamPerKelas[$kelas->id] = $query->count();
+        }
+        
+        return view('tugas_guru.index', compact('items', 'itemsByTingkat', 'guruList', 'guruBebanKerja', 'kelasList', 'jadwalKbmJumlah', 'totalJamPerGuru', 'totalJamPerKelas'));
+    }
+
+    /**
+     * Build jadwal KBM counts by guru, mapel, and kelas for active term
+     */
+    private function buildJadwalKbmJumlah($guruBebanKerja, $tahunAjaranAktif, $semesterAktif)
+    {
+        $jadwalKbmJumlah = [];
+
+        foreach ($guruBebanKerja as $guru) {
+            $tasksByMapel = $guru->tugasGuru->groupBy('mata_pelajaran_id');
+
+            foreach ($tasksByMapel as $mapelId => $tasks) {
+                $hasGeneralTask = $tasks->contains(function ($task) {
+                    return $task->kelas_id === null;
+                });
+
+                if ($hasGeneralTask) {
+                    $query = JadwalKbm::where('guru_id', $guru->id)
+                        ->where('mata_pelajaran_id', $mapelId);
+
+                    if ($tahunAjaranAktif) {
+                        $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+                    }
+                    if ($semesterAktif) {
+                        $query->where('semester_id', $semesterAktif->id);
+                    }
+
+                    $counts = $query->select('kelas_id')
+                        ->selectRaw('count(*) as jumlah')
+                        ->groupBy('kelas_id')
+                        ->pluck('jumlah', 'kelas_id')
+                        ->toArray();
+
+                    foreach ($counts as $kelasId => $jumlahJam) {
+                        $key = $guru->id . '_' . $mapelId . '_' . ($kelasId ?? 'all');
+                        $jadwalKbmJumlah[$key] = $jumlahJam;
+                    }
+
+                    continue;
+                }
+
+                foreach ($tasks as $tugas) {
+                    $query = JadwalKbm::where('guru_id', $guru->id)
+                        ->where('mata_pelajaran_id', $tugas->mata_pelajaran_id);
+
+                    if ($tugas->kelas_id) {
+                        $query->where('kelas_id', $tugas->kelas_id);
+                    }
+                    if ($tahunAjaranAktif) {
+                        $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+                    }
+                    if ($semesterAktif) {
+                        $query->where('semester_id', $semesterAktif->id);
+                    }
+
+                    $jumlahJam = $query->count();
+                    $key = $guru->id . '_' . $tugas->mata_pelajaran_id . '_' . ($tugas->kelas_id ?? 'all');
+                    $jadwalKbmJumlah[$key] = $jumlahJam;
+                }
+            }
+        }
+
+        return $jadwalKbmJumlah;
+    }
+
+    /**
+     * Build total jam KBM per guru for active term
+     */
+    private function buildTotalJamPerGuru($guruBebanKerja, $tahunAjaranAktif, $semesterAktif)
+    {
+        $totalJamPerGuru = [];
+
+        foreach ($guruBebanKerja as $guru) {
+            $query = JadwalKbm::where('guru_id', $guru->id);
+
+            if ($tahunAjaranAktif) {
+                $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+            }
+            if ($semesterAktif) {
+                $query->where('semester_id', $semesterAktif->id);
+            }
+
+            $totalJamPerGuru[$guru->id] = $query->count();
+        }
+
+        return $totalJamPerGuru;
+    }
+
+    /**
+     * Export beban kerja to Excel
+     */
+    public function exportBebanKerjaExcel()
+    {
+        // Reuse logic from index to compute dataset
+        $guruBebanKerja = Guru::with(['user', 'tugasGuru.kelas', 'tugasGuru.mataPelajaran'])
+            ->whereHas('tugasGuru', function($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('nama')
+            ->get();
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+
+        $jadwalKelasList = JadwalKbm::select('kelas_id');
+        if ($tahunAjaranAktif) $jadwalKelasList->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        if ($semesterAktif) $jadwalKelasList->where('semester_id', $semesterAktif->id);
+        $jadwalKelasIds = $jadwalKelasList->distinct()->pluck('kelas_id')->filter()->toArray();
+
+        if (!empty($jadwalKelasIds)) {
+            $kelasList = Kelas::whereIn('id', $jadwalKelasIds)->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        } else {
+            $kelasList = Kelas::orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        }
+
+        $jadwalKbmJumlah = $this->buildJadwalKbmJumlah($guruBebanKerja, $tahunAjaranAktif, $semesterAktif);
+
+        // Prepare header
+        $header = ['NO','NAMA GURU','GOL/RUANG','MATA PELAJARAN'];
+        foreach ($kelasList as $kelas) {
+            $header[] = $kelas->nama_kelas;
+        }
+        $header[] = 'JUMLAH JAM KBM';
+
+        $rows = [];
+        $no = 0;
+        foreach ($guruBebanKerja as $guru) {
+            $guruMapels = $guru->tugasGuru->groupBy('mata_pelajaran_id');
+            foreach ($guruMapels as $mapelId => $tugasPerMapel) {
+                $no++;
+                $mapel = $tugasPerMapel->first()->mataPelajaran;
+                $row = [];
+                $row[] = $no;
+                $row[] = $guru->user->name ?? $guru->nama;
+                $row[] = ($guru->golongan ?? '-') . ' / ' . ($guru->ruang ?? '-');
+                $row[] = $mapel->nama_mapel ?? '-';
+                $sumJam = 0;
+                foreach ($kelasList as $kelas) {
+                    $jumlahJam = 0;
+                    $hasSpesificTask = $tugasPerMapel->contains(function($task) use ($kelas) {
+                        return $task->kelas_id === $kelas->id;
+                    });
+                    if ($hasSpesificTask) {
+                        $key = $guru->id . '_' . $mapel->id . '_' . $kelas->id;
+                        $jumlahJam = $jadwalKbmJumlah[$key] ?? 0;
+                    } else {
+                        $hasGeneralTask = $tugasPerMapel->contains(function($task) { return $task->kelas_id === null; });
+                        if ($hasGeneralTask) {
+                            $key = $guru->id . '_' . $mapel->id . '_' . $kelas->id;
+                            $jumlahJam = $jadwalKbmJumlah[$key] ?? 0;
+                        }
+                    }
+                    $row[] = $jumlahJam;
+                    $sumJam += $jumlahJam;
+                }
+                $row[] = $sumJam;
+                $rows[] = $row;
+            }
+        }
+
+        $export = new ArrayExport($rows, $header);
+        return Excel::download($export, 'beban_kerja_guru.xlsx');
+    }
+
+    /**
+     * Export beban kerja to PDF
+     */
+    public function exportBebanKerjaPdf()
+    {
+        // reuse same data building as Excel
+        $guruBebanKerja = Guru::with(['user', 'tugasGuru.kelas', 'tugasGuru.mataPelajaran'])
+            ->whereHas('tugasGuru', function($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('nama')
+            ->get();
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+
+        $jadwalKelasList = JadwalKbm::select('kelas_id');
+        if ($tahunAjaranAktif) $jadwalKelasList->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        if ($semesterAktif) $jadwalKelasList->where('semester_id', $semesterAktif->id);
+        $jadwalKelasIds = $jadwalKelasList->distinct()->pluck('kelas_id')->filter()->toArray();
+
+        if (!empty($jadwalKelasIds)) {
+            $kelasList = Kelas::whereIn('id', $jadwalKelasIds)->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        } else {
+            $kelasList = Kelas::orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        }
+
+        $jadwalKbmJumlah = $this->buildJadwalKbmJumlah($guruBebanKerja, $tahunAjaranAktif, $semesterAktif);
+
+        $pdf = PDF::loadView('tugas_guru.pdf_beban_kerja', compact('guruBebanKerja','kelasList','jadwalKbmJumlah'));
+        return $pdf->download('beban_kerja_guru.pdf');
+    }
+
+    /**
+     * Print view for beban kerja
+     */
+    public function printBebanKerja()
+    {
+        $guruBebanKerja = Guru::with(['user', 'tugasGuru.kelas', 'tugasGuru.mataPelajaran'])
+            ->whereHas('tugasGuru', function($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('nama')
+            ->get();
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+
+        $jadwalKelasList = JadwalKbm::select('kelas_id');
+        if ($tahunAjaranAktif) $jadwalKelasList->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        if ($semesterAktif) $jadwalKelasList->where('semester_id', $semesterAktif->id);
+        $jadwalKelasIds = $jadwalKelasList->distinct()->pluck('kelas_id')->filter()->toArray();
+
+        if (!empty($jadwalKelasIds)) {
+            $kelasList = Kelas::whereIn('id', $jadwalKelasIds)->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        } else {
+            $kelasList = Kelas::orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
+        }
+
+        $jadwalKbmJumlah = $this->buildJadwalKbmJumlah($guruBebanKerja, $tahunAjaranAktif, $semesterAktif);
+
+        return view('tugas_guru.print_beban_kerja', compact('guruBebanKerja','kelasList','jadwalKbmJumlah'));
     }
 
     /**

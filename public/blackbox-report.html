@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Blackbox Testing - SIMADIS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: #f7f9fb;
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #ffffff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            border-radius: 12px;
+        }
+        h1, h2, h3 {
+            color: #1f3753;
+            margin-top: 1.5rem;
+        }
+        h1 {
+            margin-bottom: 0.25rem;
+        }
+        p {
+            margin-bottom: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        th, td {
+            padding: 12px 14px;
+            border: 1px solid #dfe3e8;
+            text-align: left;
+        }
+        th {
+            background: #3b7dd8;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: #f5f8fc;
+        }
+        .status-pass {
+            color: #1a7e34;
+            font-weight: 700;
+        }
+        .note {
+            background: #eef4ff;
+            border-left: 4px solid #3b7dd8;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .summary-card {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            background: #f1f5ff;
+            border: 1px solid #d2d9f5;
+        }
+        .summary-card strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #344563;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Laporan Hasil Blackbox Testing</h1>
+        <p>Dokumen ini menampilkan hasil pengujian blackbox untuk aplikasi <strong>SIMADIS</strong>, berdasarkan tes otomatis yang tersedia pada repository dan eksekusi lokal.</p>
+
+        <div class="summary">
+            <div class="summary-card">
+                <strong>Jumlah tes</strong>
+                5
+            </div>
+            <div class="summary-card">
+                <strong>Total assertions</strong>
+                11
+            </div>
+            <div class="summary-card">
+                <strong>Status keseluruhan</strong>
+                <span class="status-pass">OK</span>
+            </div>
+            <div class="summary-card">
+                <strong>Jumlah route terdaftar</strong>
+                324
+            </div>
+        </div>
+
+        <h2>1. Metodologi</h2>
+        <p>Pengujian dilakukan secara blackbox terhadap aplikasi Laravel, dengan fokus pada endpoint HTTP dan kontrol akses. Pelaksanaan dilakukan menggunakan tools berikut:</p>
+        <ul>
+            <li>PHPUnit: <code>./vendor/bin/phpunit --testdox</code></li>
+            <li>Laravel Artisan untuk memeriksa rute: <code>php artisan route:list</code></li>
+        </ul>
+
+        <h2>2. Ringkasan Hasil</h2>
+        <p>Semua tes yang tersedia berhasil dijalankan dengan status <strong>OK</strong>. Namun, cakupan tes hanya mencakup beberapa fungsi dasar dan tidak mewakili keseluruhan fitur aplikasi.</p>
+
+        <h2>3. Hasil Pengujian Per Indikator</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Indikator</th>
+                    <th>Skenario</th>
+                    <th>Ekspektasi</th>
+                    <th>Hasil</th>
+                    <th>Status</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Halaman login publik</td>
+                    <td><code>GET /login</code></td>
+                    <td>200</td>
+                    <td>200</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Halaman login dapat diakses.</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Redirect guest ke halaman terlindungi</td>
+                    <td><code>GET /home</code></td>
+                    <td>302</td>
+                    <td>302</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Guest dialihkan ke login.</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Redirect guest ke <code>jam_belajar</code></td>
+                    <td><code>GET /jam_belajar</code></td>
+                    <td>302</td>
+                    <td>302</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Akses terlindungi dengan benar.</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>Redirect guest ke <code>agenda_kelas</code></td>
+                    <td><code>GET /agenda_kelas</code></td>
+                    <td>302</td>
+                    <td>302</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Akses terlindungi dengan benar.</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>Redirect guest ke <code>setting</code></td>
+                    <td><code>GET /setting</code></td>
+                    <td>302</td>
+                    <td>302</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Akses terlindungi dengan benar.</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>Akses <code>/home</code> terautentikasi</td>
+                    <td><code>GET /home</code> dengan user login</td>
+                    <td>200</td>
+                    <td>200</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>User login dapat membuka dashboard.</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>Akses <code>/jam_belajar</code> terautentikasi</td>
+                    <td><code>GET /jam_belajar</code> dengan user login</td>
+                    <td>200</td>
+                    <td>200</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Halaman tersedia untuk user biasa.</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>Akses <code>/agenda_kelas</code> terautentikasi</td>
+                    <td><code>GET /agenda_kelas</code> dengan user login</td>
+                    <td>200</td>
+                    <td>200</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>Halaman tersedia untuk user biasa.</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>Kontrol akses <code>/setting</code> untuk user biasa</td>
+                    <td><code>GET /setting</code> dengan user login</td>
+                    <td>403</td>
+                    <td>403</td>
+                    <td class="status-pass">Lulus</td>
+                    <td>User non-admin/kepala sekolah ditolak.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>4. Tes yang Dijalankan</h2>
+        <p>Pengujian otomatis meliputi dua berkas:</p>
+        <ul>
+            <li><strong>tests/Feature/ExampleTest.php</strong> - memeriksa root route <code>/</code>.</li>
+            <li><strong>tests/Feature/PagesSmokeTest.php</strong> - memeriksa akses halaman login, redirect guest, dan kontrol akses halaman terautentikasi.</li>
+        </ul>
+
+        <h2>5. Temuan Penting</h2>
+        <div class="note">
+            <p>Walaupun semua tes yang ada lulus, cakupan pengujian saat ini sangat terbatas. Banyak modul utama belum diuji secara otomatis, termasuk:</p>
+            <ul>
+                <li>Manajemen <strong>guru</strong>, <strong>siswa</strong>, dan <strong>kelas</strong></li>
+                <li>Fitur <strong>absensi</strong> CRUD lengkap</li>
+                <li>Import/Export Excel</li>
+                <li>Laporan PDF dan cetak</li>
+                <li>Manajemen <strong>nilai</strong>, <strong>capaian pembelajaran</strong>, dan <strong>komponen nilai</strong></li>
+                <li>Jadwal KBM dan rencana pembelajaran</li>
+                <li>Manajemen user, bulk action, dan role-based access</li>
+            </ul>
+        </div>
+
+        <h2>6. Rekomendasi</h2>
+        <ol>
+            <li>Tambah indikator blackbox untuk autentikasi, CRUD data master, import/export, dan laporan absensi.</li>
+            <li>Perluas pengujian kontrol akses role untuk admin, kepala sekolah, guru, dan siswa.</li>
+            <li>Tambahkan pengujian validasi input, upload file, dan error handling.</li>
+            <li>Gunakan hasil ini sebagai bukti dalam tesis bahwa tes smoke dasar sudah ada tetapi cakupan masih perlu diperluas.</li>
+        </ol>
+
+        <h2>7. Catatan Tambahan</h2>
+        <p>Pengujian ini dijalankan pada lingkungan lokal dengan dependensi Laravel yang sudah terpasang, dan hasil ini hanya mewakili hasil tes otomatis yang sudah tersedia, bukan keseluruhan pemeriksaan manual aplikasi.</p>
+    </div>
+</body>
+</html>

@@ -1,14 +1,18 @@
-@extends('layouts.app', ['pageSlug' => 'dashboard-kepala'])
+@extends('layouts.app')
 
 @section('title','Dashboard Kepala Sekolah')
 
 @section('content')
-<div class="alert alert-info">Selamat datang di Dashboard <b>Kepala Sekolah</b>. Anda dapat memantau statistik sekolah, absensi, dan laporan di sini.</div>
-<div class="row">
+<div class="welcome-banner">
+    <h3><i class="ti ti-user-star me-2"></i>Dashboard Kepala Sekolah</h3>
+    <p>Pantau statistik sekolah, absensi, dan laporan dari panel ini.</p>
+</div>
+
+<div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-1">Printout Laporan Kehadiran</h5>
+                <h5 class="card-title"><i class="ti ti-printer me-2 text-primary"></i>Printout Laporan Kehadiran</h5>
             </div>
             <div class="card-body">
                 @php

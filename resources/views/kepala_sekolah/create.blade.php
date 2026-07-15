@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h3 class="card-title">{{ isset($kepalaSekolah) ? 'Edit' : 'Tambah' }} Data Kepala Sekolah</h3>
                 </div>
                 <div class="card-body">
@@ -17,7 +17,7 @@
 
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Nama <span class="text-danger">*</span></label>
                                     <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama', $kepalaSekolah->nama ?? '') }}" required>
                                     @error('nama')
@@ -27,7 +27,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">NIP</label>
                                     <input type="text" name="nip" class="form-control @error('nip') is-invalid @enderror" value="{{ old('nip', $kepalaSekolah->nip ?? '') }}">
                                     @error('nip')
@@ -37,7 +37,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Guru</label>
                                     <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
                                         <option value="">Pilih Guru (Opsional)</option>
@@ -54,7 +54,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Pangkat/Golongan</label>
                                     <input type="text" name="pangkat_golongan" class="form-control @error('pangkat_golongan') is-invalid @enderror" value="{{ old('pangkat_golongan', $kepalaSekolah->pangkat_golongan ?? '') }}" placeholder="Contoh: IV/a">
                                     @error('pangkat_golongan')
@@ -64,7 +64,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Tanggal Mulai Jabatan <span class="text-danger">*</span></label>
                                     <input type="date" name="tanggal_mulai_jabatan" class="form-control @error('tanggal_mulai_jabatan') is-invalid @enderror" value="{{ old('tanggal_mulai_jabatan', isset($kepalaSekolah) ? $kepalaSekolah->tanggal_mulai_jabatan->format('Y-m-d') : '') }}" required>
                                     @error('tanggal_mulai_jabatan')
@@ -74,7 +74,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Tanggal Selesai Jabatan</label>
                                     <input type="date" name="tanggal_selesai_jabatan" class="form-control @error('tanggal_selesai_jabatan') is-invalid @enderror" value="{{ old('tanggal_selesai_jabatan', isset($kepalaSekolah) && $kepalaSekolah->tanggal_selesai_jabatan ? $kepalaSekolah->tanggal_selesai_jabatan->format('Y-m-d') : '') }}">
                                     @error('tanggal_selesai_jabatan')
@@ -84,7 +84,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Status <span class="text-danger">*</span></label>
                                     <select name="status" class="form-select @error('status') is-invalid @enderror" required>
                                         <option value="">Pilih Status</option>
@@ -98,7 +98,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Foto</label>
                                     <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror" accept="image/*">
                                     @error('foto')
@@ -111,7 +111,7 @@
                             </div>
 
                             <div class="col-12">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Alamat</label>
                                     <textarea name="alamat" class="form-control @error('alamat') is-invalid @enderror" rows="3">{{ old('alamat', $kepalaSekolah->alamat ?? '') }}</textarea>
                                     @error('alamat')
@@ -121,7 +121,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Telepon</label>
                                     <input type="text" name="telepon" class="form-control @error('telepon') is-invalid @enderror" value="{{ old('telepon', $kepalaSekolah->telepon ?? '') }}">
                                     @error('telepon')
@@ -131,7 +131,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label">Email</label>
                                     <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $kepalaSekolah->email ?? '') }}">
                                     @error('email')
@@ -141,7 +141,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-3">
+                        <div class="mt-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-device-floppy"></i> Simpan
                             </button>

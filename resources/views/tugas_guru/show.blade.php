@@ -72,7 +72,7 @@
                     </div>
 
                     @if($tugas_guru->keterangan)
-                    <div class="row mt-3">
+                    <div class="row mt-2">
                         <div class="col-12">
                             <div class="card bg-light">
                                 <div class="card-body">
@@ -84,7 +84,7 @@
                     </div>
                     @endif
 
-                    <div class="row mt-3">
+                    <div class="row mt-2">
                         <div class="col-12">
                             <table class="table table-sm">
                                 <tr>

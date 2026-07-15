@@ -5,7 +5,7 @@
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -16,15 +16,15 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Menu Cepat Kelas Binaan - Tindak Lanjut BK</h3>
+                    <h3 class="card-title fw-semibold m-0">Menu Cepat Kelas Binaan - Tindak Lanjut BK</h3>
                     <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelas->id]) }}" class="btn btn-secondary btn-sm">
                         <i class="ti ti-arrow-left"></i> Kembali ke Menu
                     </a>
@@ -46,7 +46,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Ringkasan Siswa - {{ $kelas->nama_kelas }}</h3>
+                    <h3 class="card-title fw-semibold m-0">Ringkasan Siswa - {{ $kelas->nama_kelas }}</h3>
                 </div>
                 <div class="card-body">
                     @if(($ringkasanSiswa ?? collect())->isEmpty())
@@ -122,18 +122,18 @@
         </div>
     </div>
 
-    <div class="row mt-3" id="formTindakLanjutCard">
+    <div class="row mt-2" id="formTindakLanjutCard">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Format Rencana Tindak Lanjut</h3>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h3 class="card-title fw-semibold m-0">Format Rencana Tindak Lanjut</h3>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('guru_bk_layanan.tindak_lanjut.store', ['kelas' => $kelas->id]) }}">
                         @csrf
                         <input type="hidden" name="siswa_id" id="siswa_id" value="{{ old('siswa_id', $selectedSiswaId) }}">
 
-                        <div class="row g-3 mb-3">
+                        <div class="row g-2 mb-2">
                             <div class="col-md-6">
                                 <label class="form-label">Nama Siswa</label>
                                 <input type="text" class="form-control" id="nama_siswa_display" value="{{ old('nama_siswa_display', $selectedSiswa->nama ?? '') }}" readonly>
@@ -160,7 +160,7 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive mb-3">
+                        <div class="table-responsive mb-2">
                             <table class="table table-bordered">
                                 <thead class="table-light">
                                     <tr>
@@ -206,11 +206,11 @@
         </div>
     </div>
 
-    <div class="row mt-3">
+    <div class="row mt-2">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Riwayat Rencana Tindak Lanjut</h3>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h3 class="card-title fw-semibold m-0">Riwayat Rencana Tindak Lanjut</h3>
                 </div>
                 <div class="card-body">
                     @if(($tindakLanjutItems ?? collect())->isEmpty())

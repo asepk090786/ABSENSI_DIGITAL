@@ -7,23 +7,23 @@
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Tambah Ekstrakurikuler</h4>
+                <h4 class="card-title fw-semibold m-0">Tambah Ekstrakurikuler</h4>
                 <a href="{{ route('ekstrakurikuler.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('ekstrakurikuler.store') }}">
                     @csrf
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama Ekstrakurikuler <span class="text-danger">*</span></label>
                         <input type="text" name="nama_ekskul" class="form-control @error('nama_ekskul') is-invalid @enderror" value="{{ old('nama_ekskul') }}" required>
                         @error('nama_ekskul')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Deskripsi</label>
                         <textarea name="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" rows="3">{{ old('deskripsi') }}</textarea>
                         @error('deskripsi')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama Pembina <span class="text-danger">*</span></label>
                         <select name="pembina_id" class="form-select @error('pembina_id') is-invalid @enderror" required>
                             <option value="">-- Pilih Pembina --</option>

@@ -7,7 +7,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Semester @if($active_tahun)({{ $active_tahun->nama_tahun }})@endif</h4>
+                <h4 class="card-title fw-semibold m-0">Semester @if($active_tahun)({{ $active_tahun->nama_tahun }})@endif</h4>
                 <a href="{{ route('setting.semester.create') }}" class="btn btn-primary btn-sm">Tambah</a>
             </div>
             <div class="card-body">

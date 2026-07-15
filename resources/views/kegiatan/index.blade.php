@@ -6,13 +6,13 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Data Kegiatan Sekolah</h4>
+                        <h4 class="card-title fw-semibold m-0">Data Kegiatan Sekolah</h4>
                     </div>
                     <div class="col-auto">
-                        <div class="btn-list">
+                        <div >
                             <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm me-2">
                                 <i class="ti ti-arrow-left me-1"></i>Back
                             </a>
@@ -27,19 +27,19 @@
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <i class="ti ti-check me-2"></i>{{ session('success') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-vcenter table-hover table-tabler">
                         <thead>
                             <tr>
                                 <th>No</th>
@@ -59,7 +59,7 @@
                                 <td>{{ $it->kode_kegiatan ?? '-' }}</td>
                                 <td>{{ $it->kategori ?? '-' }}</td>
                                 <td>
-                                    <div class="btn-list">
+                                    <div >
                                         <a href="{{ route('kegiatan.edit', $it->id) }}" class="btn btn-sm btn-outline-primary">
                                             <i class="ti ti-edit"></i>
                                         </a>

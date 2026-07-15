@@ -30,13 +30,13 @@
                 <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">Kelas</label>
                                 <div class="alert alert-light border text-dark">{{ $kelas->nama_kelas ?? '-' }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">Guru Pengajar</label>
                                 <div class="alert alert-light border text-dark">{{ $guru->nama }}</div>
                             </div>
@@ -45,7 +45,7 @@
 
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">Tanggal</label>
                                 <div class="alert alert-light border text-dark">
                                     {{ \Carbon\Carbon::parse($agenda->tanggal)->locale('id')->translatedFormat('d/m/Y (l)') }}
@@ -53,7 +53,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">Jam KBM</label>
                                 <div class="alert alert-light border text-dark">
                                     {{ $jamBelajar->jam_mulai ?? '-' }} - {{ $jamBelajar->jam_selesai ?? '-' }} 
@@ -67,7 +67,7 @@
 
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">Jenis Kegiatan</label>
                                 <div class="alert alert-light border text-dark">
                                     {{ ($agenda->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri' ? 'Pengembangan Diri' : 'KBM' }}
@@ -76,7 +76,7 @@
                         </div>
                         @if(($agenda->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri')
                         <div class="col-md-6">
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">Nama Kegiatan</label>
                                 <div class="alert alert-light border text-dark">{{ $agenda->nama_kegiatan ?? '-' }}</div>
                             </div>
@@ -85,7 +85,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label fw-bold">Kegiatan/Materi</label>
                             <div class="alert alert-light border text-dark" style="min-height: 100px; word-break: break-word;">
                                 {!! $agenda->kegiatan ?? '-' !!}
@@ -96,7 +96,7 @@
                     <hr>
 
                     <div class="mb-4">
-                        <h5 class="mb-3">
+                        <h5 class="mb-2">
                             <i class="ti ti-clipboard-list me-2"></i>Template Agenda Pembelajaran
                         </h5>
                         
@@ -104,32 +104,32 @@
                             @csrf
                             <input type="hidden" name="agenda_id" value="{{ $agenda->id }}">
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">A. Tujuan Pembelajaran</label>
                                 <textarea class="form-control tiny-editor" name="tujuan_pembelajaran">{{ old('tujuan_pembelajaran', $agenda->tujuan_pembelajaran ?? '') }}</textarea>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">B. Strategi/Metode Pembelajaran</label>
                                 <textarea class="form-control tiny-editor" name="strategi_pembelajaran">{{ old('strategi_pembelajaran', $agenda->strategi_pembelajaran ?? '') }}</textarea>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">C. Media/Alat Pembelajaran</label>
                                 <textarea class="form-control tiny-editor" name="media_pembelajaran">{{ old('media_pembelajaran', $agenda->media_pembelajaran ?? '') }}</textarea>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">D. Sumber Belajar</label>
                                 <textarea class="form-control tiny-editor" name="sumber_belajar">{{ old('sumber_belajar', $agenda->sumber_belajar ?? '') }}</textarea>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">E. Penilaian</label>
                                 <textarea class="form-control tiny-editor" name="penilaian">{{ old('penilaian', $agenda->penilaian ?? '') }}</textarea>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <label class="form-label fw-bold">F. Catatan Tambahan</label>
                                 <textarea class="form-control tiny-editor" name="catatan_tambahan">{{ old('catatan_tambahan', $agenda->catatan_tambahan ?? '') }}</textarea>
                             </div>
@@ -156,27 +156,27 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <h6 class="fw-bold text-primary">Tujuan Pembelajaran</h6>
                         <small class="text-muted">Apa yang ingin dicapai siswa setelah mengikuti pembelajaran ini?</small>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <h6 class="fw-bold text-primary">Strategi Pembelajaran</h6>
                         <small class="text-muted">Contoh: Ceramah interaktif, diskusi kelompok, pembelajaran berbasis proyek, dll.</small>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <h6 class="fw-bold text-primary">Media Pembelajaran</h6>
                         <small class="text-muted">Contoh: Proyektor, whiteboard, video, aplikasi, modul cetak, dll.</small>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <h6 class="fw-bold text-primary">Sumber Belajar</h6>
                         <small class="text-muted">Referensi yang digunakan: buku paket, LKS, artikel, website edukatif, dll.</small>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <h6 class="fw-bold text-primary">Penilaian</h6>
                         <small class="text-muted">Cara mengukur pencapaian: tes tulis, unjuk kerja, portofolio, dll.</small>
                     </div>

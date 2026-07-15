@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-12 col-lg-8 offset-lg-2">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h4 class="card-title">
                         <i class="ti ti-plus me-2"></i>Tambah Agenda Mengajar Guru
                     </h4>
@@ -21,14 +21,14 @@
                                     <li>{{ $error }}</li>
                                 @endforeach
                             </ul>
-                            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         </div>
                     @endif
 
                     <form action="{{ route('agenda_guru.store') }}" method="POST">
                         @csrf
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Tanggal <span class="text-danger">*</span></label>
                             <input type="date" class="form-control @error('tanggal') is-invalid @enderror" 
                                    name="tanggal" value="{{ old('tanggal', $selectedTanggal) }}" required>
@@ -37,7 +37,7 @@
                             @enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Jam Pelajaran <span class="text-danger">*</span></label>
                             <select class="form-select @error('jam_belajar_id') is-invalid @enderror" name="jam_belajar_id" required>
                                 <option value="">-- Pilih Jam Pelajaran --</option>
@@ -55,7 +55,7 @@
                             @enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Kegiatan / Materi Ajar <span class="text-danger">*</span></label>
                             <textarea class="form-control @error('kegiatan') is-invalid @enderror" 
                                       name="kegiatan" rows="5" placeholder="Tuliskan kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan') }}</textarea>
@@ -69,7 +69,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-check me-2"></i>Simpan
                             </button>
-                            <a href="{{ route('agenda_guru.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('agenda_guru.index') }}" class="btn btn-outline-secondary btn-modern">
                                 <i class="ti ti-x me-2"></i>Batal
                             </a>
                         </div>

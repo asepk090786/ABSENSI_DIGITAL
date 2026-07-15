@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <h4 class="card-title">Tambah Rencana Pembelajaran</h4>
             </div>
             <div class="card-body">
@@ -16,12 +16,12 @@
                     <input type="hidden" name="mata_pelajaran_id" value="{{ $mataPelajaran->id }}">
 
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Mata Pelajaran <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" value="{{ $mataPelajaran->nama_mapel }}" disabled>
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Kelas <span class="text-danger">*</span></label>
                             <div class="@error('kelas_ids') is-invalid @enderror">
                                 @forelse($kelas as $k)
@@ -42,7 +42,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Judul <span class="text-danger">*</span></label>
                             <input type="text" name="judul" class="form-control @error('judul') is-invalid @enderror" value="{{ old('judul') }}" required>
                             @error('judul')
@@ -50,7 +50,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Deskripsi</label>
                             <textarea name="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" rows="3">{{ old('deskripsi') }}</textarea>
                             @error('deskripsi')
@@ -58,7 +58,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Tujuan Pembelajaran</label>
                             <textarea name="tujuan" class="form-control @error('tujuan') is-invalid @enderror" rows="3">{{ old('tujuan') }}</textarea>
                             @error('tujuan')
@@ -66,7 +66,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Metode Pembelajaran</label>
                             <textarea name="metode" class="form-control @error('metode') is-invalid @enderror" rows="2">{{ old('metode') }}</textarea>
                             @error('metode')
@@ -74,7 +74,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Media Pembelajaran</label>
                             <textarea name="media" class="form-control @error('media') is-invalid @enderror" rows="2">{{ old('media') }}</textarea>
                             @error('media')
@@ -82,7 +82,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Sumber Belajar</label>
                             <textarea name="sumber" class="form-control @error('sumber') is-invalid @enderror" rows="2">{{ old('sumber') }}</textarea>
                             @error('sumber')
@@ -90,7 +90,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Penilaian</label>
                             <textarea name="penilaian" class="form-control @error('penilaian') is-invalid @enderror" rows="2">{{ old('penilaian') }}</textarea>
                             @error('penilaian')
@@ -98,7 +98,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Komponen Penilaian</label>
                             <div class="@error('komponen_nilai_ids') is-invalid @enderror">
                                 @forelse($komponenNilai as $komponen)
@@ -122,7 +122,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Status <span class="text-danger">*</span></label>
                             <select name="status" class="form-select @error('status') is-invalid @enderror" required>
                                 <option value="draft" {{ old('status') === 'draft' ? 'selected' : '' }}>Draft</option>

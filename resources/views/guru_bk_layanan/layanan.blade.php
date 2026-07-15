@@ -2,24 +2,24 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('success') }}
-                    <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                 </div>
             @endif
         </div>
     </div>
 
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Data Absensi Kelas - {{ $kelas->nama_kelas }}</h3>
+                    <h3 class="card-title fw-semibold m-0">Data Absensi Kelas - {{ $kelas->nama_kelas }}</h3>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-dark btn-sm" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-toggle="modal" data-target="#printPreviewModalLayanan" id="btnOpenPrintPreviewLayanan">
+                        <button type="button" class="btn btn-dark btn-sm" data-print-url="{{ route('guru_bk_layanan.layanan.print', ['kelas' => $kelas->id]) }}" data-bs-toggle="modal" data-bs-target="#printPreviewModalLayanan" id="btnOpenPrintPreviewLayanan">
                             <i class="ti ti-printer"></i> Print Output
                         </button>
                         <form method="GET" action="{{ route('guru_bk_layanan.layanan', ['kelas' => $kelas->id]) }}" class="d-flex gap-2">
@@ -40,7 +40,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -89,20 +89,20 @@
     <div class="row">
         <div class="col-lg-5">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Menu Layanan: Isi Layanan Guru BK</h3>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h3 class="card-title fw-semibold m-0">Menu Layanan: Isi Layanan Guru BK</h3>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('guru_bk_layanan.layanan.store', ['kelas' => $kelas->id]) }}" method="POST">
                         @csrf
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Tanggal <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal" class="form-control @error('tanggal') is-invalid @enderror" value="{{ old('tanggal', now()->format('Y-m-d')) }}" required>
                             @error('tanggal')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Siswa (Opsional)</label>
                             <select name="siswa_id" class="form-select @error('siswa_id') is-invalid @enderror">
                                 <option value="">-- Layanan Kelas / Umum --</option>
@@ -113,25 +113,25 @@
                             @error('siswa_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Jenis Layanan <span class="text-danger">*</span></label>
                             <input type="text" name="jenis_layanan" class="form-control @error('jenis_layanan') is-invalid @enderror" value="{{ old('jenis_layanan') }}" placeholder="Contoh: Konseling Individu" required>
                             @error('jenis_layanan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Deskripsi Layanan <span class="text-danger">*</span></label>
                             <textarea name="deskripsi_layanan" rows="3" class="form-control @error('deskripsi_layanan') is-invalid @enderror" required>{{ old('deskripsi_layanan') }}</textarea>
                             @error('deskripsi_layanan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Hasil Layanan</label>
                             <textarea name="hasil_layanan" rows="2" class="form-control @error('hasil_layanan') is-invalid @enderror">{{ old('hasil_layanan') }}</textarea>
                             @error('hasil_layanan')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Rencana Tindak Lanjut</label>
                             <textarea name="rencana_tindak_lanjut" rows="2" class="form-control @error('rencana_tindak_lanjut') is-invalid @enderror">{{ old('rencana_tindak_lanjut') }}</textarea>
                             @error('rencana_tindak_lanjut')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -147,15 +147,15 @@
 
         <div class="col-lg-7">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title mb-0">Riwayat Layanan BK</h3>
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h3 class="card-title fw-semibold m-0">Riwayat Layanan BK</h3>
                 </div>
                 <div class="card-body">
                     @if($layananItems->isEmpty())
                         <div class="alert alert-light border mb-0">Belum ada data layanan BK.</div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>
@@ -188,13 +188,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Preview Print Layanan BK</h5>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 75vh;">
                 <iframe id="printPreviewFrameLayanan" src="" style="width:100%;height:100%;border:0;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" id="btnPrintFromPreviewLayanan">
                     <i class="ti ti-printer me-1"></i>Print
                 </button>

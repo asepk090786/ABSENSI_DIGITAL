@@ -1,0 +1,294 @@
+@extends('layouts.app')
+
+@section('title','Jam Belajar')
+
+@section('content')
+@php
+    $isSiswa = auth()->user()->hasRole('Siswa');
+@endphp
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-0">Pengaturan Jam KBM</h2>
+                <small class="text-muted">Kelola jadwal pembelajaran setiap harinya</small>
+            </div>
+            @unless($isSiswa)
+            <div class="d-flex gap-2">
+                <a href="{{ route('jam_belajar.create') }}" class="btn btn-primary">
+                    <i class="ti ti-plus me-2"></i>Tambah Jam KBM
+                </a>
+                <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#insertModal">
+                    <i class="ti ti-plus me-2"></i>Sisipkan Waktu
+                </button>
+                <a href="{{ route('jam_belajar.export') }}" class="btn btn-success">
+                    <i class="ti ti-download me-2"></i>Export Excel
+                </a>
+                <a href="{{ route('jam_belajar.template') }}" class="btn btn-info">
+                    <i class="ti ti-file-spreadsheet me-2"></i>Download Template
+                </a>
+                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#importModal">
+                    <i class="ti ti-upload me-2"></i>Import Excel
+                </button>
+                <form action="{{ route('jam_belajar.destroy_all') }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus SEMUA pengaturan jam KBM? Tindakan ini tidak dapat dibatalkan.')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="ti ti-trash me-2"></i>Hapus Semua
+                    </button>
+                </form>
+            </div>
+            @endunless
+        </div>
+    </div>
+</div>
+
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="ti ti-check me-2"></i>{{ session('success') }}
+        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+    </div>
+@endif
+
+@if(session('warning') && session('import_errors'))
+    <div class="alert alert-warning alert-dismissible fade show">
+        <i class="ti ti-alert-triangle me-2"></i>
+        @if(session('successCount'))
+            <strong>{{ session('successCount') }} data berhasil diimport, namun ada kesalahan:</strong><br>
+        @endif
+        <ul class="mb-0">
+            @foreach(session('import_errors') as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="ti ti-alert-circle me-2"></i>
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+    </div>
+@endif
+
+<!-- Daily Schedule Grid -->
+<div class="row g-3">
+    @foreach($days as $day)
+        @php $daySchedules = $groupedByDay->get($day, collect()); @endphp
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-calendar me-2"></i>{{ $day }}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if($daySchedules->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th style="width: 10%;">Jam Ke</th>
+                                        <th style="width: 20%;">Mulai</th>
+                                        <th style="width: 20%;">Selesai</th>
+                                        <th style="width: 20%;">Jenis</th>
+                                        <th style="width: 30%;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($daySchedules->sortBy('urutan') as $schedule)
+                                        <tr>
+                                            <td class="fw-bold">{{ $schedule->urutan }}</td>
+                                            <td>{{ $schedule->jam_mulai }}</td>
+                                            <td>{{ $schedule->jam_selesai }}</td>
+                                            <td>
+                                                @php
+                                                    $kegiatan = \App\Models\Kegiatan::where('nama_kegiatan', $schedule->jenis)->first();
+                                                @endphp
+                                                <span class="badge bg-info">{{ $schedule->jenis }}</span>
+                                                @if($kegiatan)
+                                                    <span class="badge bg-secondary">{{ $kegiatan->kode_kegiatan }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @unless($isSiswa)
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ route('jam_belajar.edit', $schedule->id) }}" class="btn btn-warning">
+                                                        <i class="ti ti-edit"></i> Edit
+                                                    </a>
+                                                    <form action="{{ route('jam_belajar.destroy', $schedule->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus jadwal ini?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <i class="ti ti-trash"></i> Hapus
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                                @endunless
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center py-4 text-muted">
+                            <i class="ti ti-calendar-off" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <p class="mt-2">Belum ada jadwal untuk hari ini</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>
+
+<!-- Summary -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="ti ti-info-circle me-2"></i>Informasi Jadwal</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Total Jam KBM</small>
+                        <h4 class="fw-bold">{{ $groupedByDay->flatten()->count() }} Sesi</h4>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Hari Aktif</small>
+                        <h4 class="fw-bold">{{ $groupedByDay->count() }} Hari</h4>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">Rata-rata Sesi/Hari</small>
+                        <h4 class="fw-bold">{{ $groupedByDay->count() > 0 ? round($groupedByDay->flatten()->count() / $groupedByDay->count(), 1) : 0 }} Sesi</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ti ti-file-upload me-2"></i>Import Jadwal Jam KBM
+                </h5>
+            </div>
+            <form id="importForm" action="{{ route('jam_belajar.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">File Excel <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" name="file" accept=".xlsx,.xls,.csv" required>
+                        <small class="text-muted d-block mt-2">
+                            <i class="ti ti-info-circle"></i> Format yang didukung: Excel (.xlsx, .xls) atau CSV
+                        </small>
+                        <small class="text-muted d-block">
+                            <i class="ti ti-alert-triangle"></i> Pastikan struktur file sesuai dengan template yang disediakan
+                        </small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Opsi Import</label>
+                        <select name="replace" class="form-select">
+                            <option value="0">Tambahkan ke data lama</option>
+                            <option value="1">Update data lama dengan yang terbaru</option>
+                        </select>
+                        <small class="text-muted">Pilih <b>Replace</b> jika ingin menghapus semua data jam KBM sebelum import.</small>
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        <small>
+                            <strong>Cara menggunakan:</strong>
+                            <ol class="mb-0">
+                                <li>Unduh template terlebih dahulu menggunakan tombol "Download Template"</li>
+                                <li>Isi data sesuai format yang ditentukan</li>
+                                <li>Pilih file yang sudah diisi</li>
+                                <li>Klik tombol "Import" untuk mengunggah</li>
+                            </ol>
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-upload me-1"></i>Import Jadwal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <!-- Insert Slot Modal -->
+    <div class="modal fade" id="insertModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ti ti-plus me-2"></i>Sisipkan Waktu/Jam Baru
+                    </h5>
+                </div>
+                <form action="{{ route('jam_belajar.insert_slot') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Hari</label>
+                            <select name="hari" class="form-select" required>
+                                <option value="">- Pilih Hari -</option>
+                                @foreach($days as $day)
+                                    <option value="{{ $day }}">{{ $day }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Sisipkan di Jam Ke</label>
+                                <input type="number" name="urutan" class="form-control" min="1" required>
+                                <small class="text-muted">Slot lama di jam ini dan setelahnya akan digeser +1.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Jenis Kegiatan</label>
+                                <select name="jenis" class="form-select" required>
+                                    <option value="">-- Pilih Jenis Kegiatan --</option>
+                                    @if(isset($kegiatanList))
+                                        @foreach($kegiatanList as $keg)
+                                            <option value="{{ $keg->nama_kegiatan }}">
+                                                {{ $keg->nama_kegiatan }} ({{ $keg->kode_kegiatan }})
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Mulai</label>
+                                <input type="time" name="jam_mulai" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Selesai</label>
+                                <input type="time" name="jam_selesai" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-plus me-1"></i>Sisipkan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+</div>
+@endsection

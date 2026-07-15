@@ -6,28 +6,28 @@
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Tambah Jenis Pelanggaran</h4>
+            <div class="card-header border-0 pt-3 pb-2">
+                <h4 class="card-title fw-semibold m-0">Tambah Jenis Pelanggaran</h4>
             </div>
             <div class="card-body">
                 <form action="{{ route('jenis_pelanggaran.store') }}" method="POST">
                     @csrf
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Kode</label>
                         <input type="text" name="kode" class="form-control @error('kode') is-invalid @enderror" value="{{ old('kode') }}" required>
                         @error('kode')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama Jenis Pelanggaran</label>
                         <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama') }}" required>
                         @error('nama')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Point Default</label>
                         <input type="number" name="poin_default" min="0" max="1000" class="form-control @error('poin_default') is-invalid @enderror" value="{{ old('poin_default', 0) }}" required>
                         @error('poin_default')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3 form-check">
+                    <div class="mb-2 form-check">
                         <input type="hidden" name="is_active" value="0">
                         <input type="checkbox" name="is_active" value="1" class="form-check-input" id="is_active" {{ old('is_active', 1) ? 'checked' : '' }}>
                         <label class="form-check-label" for="is_active">Aktif</label>

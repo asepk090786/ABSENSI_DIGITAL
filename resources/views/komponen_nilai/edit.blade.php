@@ -27,8 +27,8 @@
                 <form method="POST" action="{{ route('komponen_nilai.update', $item->id) }}">
                     @csrf
                     @method('PUT')
-                    <!-- Pilih Capaian Pembelajaran -->
-                    <div class="row g-3 mb-4">
+                    
+                    <div class="row g-2 mb-4">
                         <div class="col-md-12">
                             <label class="form-label">Capaian Pembelajaran (Opsional)</label>
                             <select name="capaian_pembelajaran_id" class="form-select @error('capaian_pembelajaran_id') is-invalid @enderror">
@@ -45,8 +45,8 @@
                         </div>
                     </div>
 
-                    <!-- Informasi Dasar -->
-                    <div class="row g-3 mb-4">
+                    
+                    <div class="row g-2 mb-4">
                         <div class="col-md-6">
                             <label class="form-label">Nama Komponen <span class="text-danger">*</span></label>
                             <input type="text" name="nama_komponen" class="form-control @error('nama_komponen') is-invalid @enderror" value="{{ old('nama_komponen', $item->nama_komponen) }}" required>
@@ -63,12 +63,12 @@
                         </div>
                     </div>
 
-                    <!-- Struktur Pembelajaran Mendalam -->
+                    
                     <div class="accordion accordion-flush mb-4" id="learningAccordion">
-                        <!-- 1. Capaian Pembelajaran -->
+                        
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button" type="button" data-toggle="collapse" data-target="#cpSection">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#cpSection">
                                     <i class="ti ti-target me-2"></i>
                                     <strong>1. Capaian Pembelajaran (CP)</strong>
                                     <small class="text-muted ms-2">Target kompetensi akhir pada fase</small>
@@ -76,7 +76,7 @@
                             </h2>
                             <div id="cpSection" class="accordion-collapse collapse show" data-parent="#learningAccordion">
                                 <div class="accordion-body">
-                                    <small class="text-muted d-block mb-3">
+                                    <small class="text-muted d-block mb-2">
                                         <strong>Catatan:</strong> Target kompetensi akhir pada fase (misalnya Fase E & F di SMA). Bersifat umum dan menyeluruh, menjadi acuan utama pembelajaran.
                                     </small>
                                     <textarea name="capaian_pembelajaran" class="form-control @error('capaian_pembelajaran') is-invalid @enderror" rows="4" placeholder="Contoh: Siswa dapat menganalisis dan mengevaluasi fenomena sosial dengan perspektif kritis...">{{ old('capaian_pembelajaran', $item->capaian_pembelajaran) }}</textarea>
@@ -87,10 +87,10 @@
                             </div>
                         </div>
 
-                        <!-- 2. Tujuan Pembelajaran -->
+                        
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#tpSection">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tpSection">
                                     <i class="ti ti-target me-2"></i>
                                     <strong>2. Tujuan Pembelajaran (TP)</strong>
                                     <small class="text-muted ms-2">Turunan spesifik dari CP</small>
@@ -98,7 +98,7 @@
                             </h2>
                             <div id="tpSection" class="accordion-collapse collapse" data-parent="#learningAccordion">
                                 <div class="accordion-body">
-                                    <small class="text-muted d-block mb-3">
+                                    <small class="text-muted d-block mb-2">
                                         <strong>Catatan:</strong> Turunan langsung dari CP, lebih spesifik, operasional, dan terukur. Menjadi sasaran pembelajaran harian/per pertemuan yang mendorong berpikir kritis, reflektif, dan bermakna.
                                     </small>
                                     <textarea name="tujuan_pembelajaran" class="form-control @error('tujuan_pembelajaran') is-invalid @enderror" rows="4" placeholder="Contoh: Peserta didik dapat mengidentifikasi penyebab masalah sosial dan merumuskan solusi alternatif...">{{ old('tujuan_pembelajaran', $item->tujuan_pembelajaran) }}</textarea>
@@ -109,10 +109,10 @@
                             </div>
                         </div>
 
-                        <!-- 3. Alur Tujuan Pembelajaran -->
+                        
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#atpSection">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#atpSection">
                                     <i class="ti ti-arrows-shuffle me-2"></i>
                                     <strong>3. Alur Tujuan Pembelajaran (ATP)</strong>
                                     <small class="text-muted ms-2">Rangkaian TP yang progresif</small>
@@ -120,7 +120,7 @@
                             </h2>
                             <div id="atpSection" class="accordion-collapse collapse" data-parent="#learningAccordion">
                                 <div class="accordion-body">
-                                    <small class="text-muted d-block mb-3">
+                                    <small class="text-muted d-block mb-2">
                                         <strong>Catatan:</strong> Rangkaian TP yang logis, berkesinambungan, dan progresif. Menunjukkan kedalaman pemahaman, bukan sekadar urutan materi.
                                     </small>
                                     <textarea name="alur_tujuan_pembelajaran" class="form-control @error('alur_tujuan_pembelajaran') is-invalid @enderror" rows="4" placeholder="Contoh: Pertemuan 1-2: Pemahaman... → Pertemuan 3-4: Analisis... → Pertemuan 5-6: Evaluasi dan refleksi...">{{ old('alur_tujuan_pembelajaran', $item->alur_tujuan_pembelajaran) }}</textarea>
@@ -131,10 +131,10 @@
                             </div>
                         </div>
 
-                        <!-- 4. Indikator / Kriteria Ketercapaian -->
+                        
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#kkSection">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kkSection">
                                     <i class="ti ti-checks me-2"></i>
                                     <strong>4. Indikator / Kriteria Ketercapaian (KKTP)</strong>
                                     <small class="text-muted ms-2">Ukuran pencapaian TP</small>
@@ -142,7 +142,7 @@
                             </h2>
                             <div id="kkSection" class="accordion-collapse collapse" data-parent="#learningAccordion">
                                 <div class="accordion-body">
-                                    <small class="text-muted d-block mb-3">
+                                    <small class="text-muted d-block mb-2">
                                         <strong>Catatan:</strong> Kriteria Ketercapaian Tujuan Pembelajaran (KKTP). Ukuran apakah TP sudah tercapai, menekankan pemahaman konsep, transfer pengetahuan, dan refleksi.
                                     </small>
                                     <textarea name="indikator_kriteria" class="form-control @error('indikator_kriteria') is-invalid @enderror" rows="4" placeholder="Contoh: • Dapat menjelaskan min 3 penyebab... | • Dapat mengajukan 2 solusi yang realistis... | • Dapat merefleksikan pembelajaran dengan analisis kritis...">{{ old('indikator_kriteria', $item->indikator_kriteria) }}</textarea>

@@ -4,7 +4,7 @@
   <div class="row">
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header">
+      <div class="card-header border-0 pt-3 pb-2">
         <h4 class="card-title">Notifications Style</h4>
       </div>
       <div class="card-body">
@@ -12,20 +12,20 @@
           <span>This is a plain notification</span>
         </div>
         <div class="alert alert-info">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span>This is a notification with close button.</span>
         </div>
         <div class="alert alert-info alert-with-icon" data-notify="container">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span data-notify="icon" class="tim-icons icon-bell-55"></span>
           <span data-notify="message">This is a notification with close button and icon.</span>
         </div>
         <div class="alert alert-info alert-with-icon" data-notify="container">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span data-notify="icon" class="tim-icons icon-bell-55"></span>
@@ -36,40 +36,40 @@
   </div>
   <div class="col-md-6">
     <div class="card">
-      <div class="card-header">
+      <div class="card-header border-0 pt-3 pb-2">
         <h4 class="card-title">Notification states</h4>
       </div>
       <div class="card-body">
         <div class="alert alert-primary">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span>
             <b> Primary - </b> This is a regular notification made with ".alert-primary"</span>
         </div>
         <div class="alert alert-info">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span>
             <b> Info - </b> This is a regular notification made with ".alert-info"</span>
         </div>
         <div class="alert alert-success">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span>
             <b> Success - </b> This is a regular notification made with ".alert-success"</span>
         </div>
         <div class="alert alert-warning">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span>
             <b> Warning - </b> This is a regular notification made with ".alert-warning"</span>
         </div>
         <div class="alert alert-danger">
-          <button type="button" aria-hidden="true" class="close" data-dismiss="alert" aria-label="Close">
+          <button type="button" aria-hidden="true" class="close" data-bs-dismiss="alert" aria-label="Close">
             <i class="tim-icons icon-simple-remove"></i>
           </button>
           <span>

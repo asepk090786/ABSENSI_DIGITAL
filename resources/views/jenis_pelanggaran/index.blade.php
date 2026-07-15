@@ -6,13 +6,13 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Master Jenis Pelanggaran</h4>
+            <div class="card-header border-0 pt-3 pb-2">
+                <h4 class="card-title fw-semibold m-0">Master Jenis Pelanggaran</h4>
                 <div class="btn-group float-end" role="group">
                     <a href="{{ route('jenis_pelanggaran.create') }}" class="btn btn-primary btn-sm">Tambah Jenis Pelanggaran</a>
-                    <a href="{{ route('jenis_pelanggaran.export') }}" class="btn btn-info btn-sm">Export</a>
+                    <a href="{{ route('jenis_pelanggaran.export') }}" class="btn btn-sm btn-info btn-modern">Export</a>
                     <a href="{{ route('jenis_pelanggaran.template') }}" class="btn btn-secondary btn-sm">Template</a>
-                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#importJenisPelanggaranModal">Import</button>
+                    <button type="button" class="btn btn-sm btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#importJenisPelanggaranModal">Import</button>
                 </div>
             </div>
             <div class="card-body">
@@ -58,7 +58,7 @@
                                     <span class="badge {{ $item->is_active ? 'bg-success' : 'bg-secondary' }}">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('jenis_pelanggaran.edit', $item->id) }}" class="btn btn-sm btn-info">Edit</a>
+                                    <a href="{{ route('jenis_pelanggaran.edit', $item->id) }}" class="btn btn-sm btn-info btn-modern">Edit</a>
                                     <form action="{{ route('jenis_pelanggaran.destroy', $item->id) }}" method="POST" style="display:inline-block">
                                         @csrf
                                         @method('DELETE')
@@ -84,7 +84,7 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Import Jenis Pelanggaran</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-2">
@@ -94,7 +94,7 @@
                     <small class="text-muted">Gunakan file template agar format kolom sesuai.</small>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Import</button>
                 </div>
             </form>

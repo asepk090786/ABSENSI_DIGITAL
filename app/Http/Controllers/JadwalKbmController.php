@@ -443,6 +443,14 @@ class JadwalKbmController extends Controller
         
         // Ambil master kegiatan untuk kode kegiatan non-KBM
         $kegiatanList = \App\Models\Kegiatan::select('kode_kegiatan', 'nama_kegiatan')->get();
+        
+        // Get current user guru id for highlighting
+        $currentUserGuruId = auth()->user()->guru_id ?? null;
+        $currentUserGuruKode = null;
+        if ($currentUserGuruId) {
+            $guru = \App\Models\Guru::find($currentUserGuruId);
+            $currentUserGuruKode = $guru->kode_guru ?? null;
+        }
 
         $pdf = \Pdf::loadView('jadwal_kbm.pdf-keseluruhan', compact(
             'jadwalKeseluruhan',
@@ -452,7 +460,9 @@ class JadwalKbmController extends Controller
             'semesterAktif',
             'sekolah',
             'paperSize',
-            'kegiatanList'
+            'kegiatanList',
+            'currentUserGuruId',
+            'currentUserGuruKode'
         ));
         
         // Set paper size
@@ -504,6 +514,14 @@ class JadwalKbmController extends Controller
         
         $paperSizeOption = $paperSizes[$paperSize] ?? 'a4';
         
+        // Get current user guru id for highlighting
+        $currentUserGuruId = auth()->user()->guru_id ?? null;
+        $currentUserGuruKode = null;
+        if ($currentUserGuruId) {
+            $guru = \App\Models\Guru::find($currentUserGuruId);
+            $currentUserGuruKode = $guru->kode_guru ?? null;
+        }
+        
         $pdf = \Pdf::loadView('jadwal_kbm.pdf-keseluruhan-mapel', compact(
             'jadwalKeseluruhan',
             'jamBelajarByHari',
@@ -511,7 +529,9 @@ class JadwalKbmController extends Controller
             'tahunAjaranAktif',
             'semesterAktif',
             'sekolah',
-            'paperSize'
+            'paperSize',
+            'currentUserGuruId',
+            'currentUserGuruKode'
         ));
         
         $pdf->setPaper($paperSizeOption, 'landscape');

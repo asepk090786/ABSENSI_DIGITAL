@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <h3 class="card-title">Detail Wakil Kepala Sekolah</h3>
                 </div>
                 <div class="card-body">
@@ -64,7 +64,7 @@
                     </div>
                     @endif
 
-                    <div class="mt-3">
+                    <div class="mt-2">
                         <a href="{{ route('wakil_kepala_sekolah.edit', $wakil->id) }}" class="btn btn-warning">
                             <i class="ti ti-edit"></i> Edit
                         </a>

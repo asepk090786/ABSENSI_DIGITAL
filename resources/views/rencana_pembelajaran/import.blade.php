@@ -6,10 +6,10 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header border-0 pt-3 pb-2">
                 <div class="row align-items-center">
                     <div class="col">
-                        <h4 class="card-title mb-0">Import Rencana Pembelajaran dari Word</h4>
+                        <h4 class="card-title fw-semibold m-0">Import Rencana Pembelajaran dari Word</h4>
                     </div>
                     <div class="col-auto">
                         <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-secondary btn-sm">
@@ -22,7 +22,7 @@
                 @if(session('error'))
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="ti ti-alert-circle me-2"></i>{{ session('error') }}
-                        <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                     </div>
                 @endif
 
@@ -44,7 +44,7 @@
                                 </ol>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 <a href="{{ route('rencana_pembelajaran.template') }}" class="btn btn-outline-primary btn-sm">
                                     <i class="ti ti-download me-1"></i>Download Template Word
                                 </a>
@@ -53,12 +53,12 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Mata Pelajaran</label>
                             <input type="text" class="form-control" value="{{ $mataPelajaran->nama_mapel }}" disabled>
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Pilih Kelas <span class="text-danger">*</span></label>
                             <div class="@error('kelas_ids') is-invalid @enderror">
                                 @forelse($kelas as $k)
@@ -79,7 +79,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">File Word (.docx) <span class="text-danger">*</span></label>
                             <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".docx" required>
                             <small class="form-hint">Format: .docx, maksimal 5MB</small>

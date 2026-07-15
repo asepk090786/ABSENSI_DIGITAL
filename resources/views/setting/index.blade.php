@@ -8,7 +8,7 @@
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <strong>Tahun Ajaran Aktif</strong>
                 </div>
                 <div class="card-body">
@@ -24,7 +24,7 @@
 
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <strong>Semester Aktif</strong>
                 </div>
                 <div class="card-body">

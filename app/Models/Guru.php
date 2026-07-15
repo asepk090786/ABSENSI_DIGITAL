@@ -20,6 +20,7 @@ class Guru extends Model implements AuthenticatableContract
         'guru_id',
         'nama',
         'nip',
+        'pangkat_golongan',
         'kode_guru',
         'username',
         'password',

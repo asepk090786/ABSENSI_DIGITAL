@@ -159,7 +159,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-check mt-3">
+                            <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" id="applyToAllJam" name="apply_to_all_jam" value="1">
                                 <label class="form-check-label" for="applyToAllJam">
                                     Terapkan agenda ini ke semua jam KBM kelas yang sama pada hari yang sama.
@@ -174,7 +174,7 @@
                         </div>
 
                         <div class="col-12 d-flex justify-content-end gap-2">
-                            <a href="{{ route('agenda_kelas.index') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('agenda_kelas.index') }}" class="btn btn-outline-secondary btn-modern">
                                 <i class="ti ti-arrow-left me-1"></i>Batal
                             </a>
                             <button type="submit" class="btn btn-primary px-4">

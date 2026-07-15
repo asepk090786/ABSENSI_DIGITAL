@@ -7,40 +7,40 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Tambah Akun</h4>
+                <h4 class="card-title fw-semibold m-0">Tambah Akun</h4>
                 <a href="{{ route('users.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('users.store') }}">
                     @csrf
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                         <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
                         @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">NIP</label>
                         <input type="text" name="nip" class="form-control @error('nip') is-invalid @enderror" value="{{ old('nip') }}">
                         @error('nip')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Username <span class="text-danger">*</span></label>
                             <input type="text" name="username" class="form-control @error('username') is-invalid @enderror" value="{{ old('username') }}" required>
                             @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Email</label>
                             <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email') }}">
                             @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Password <span class="text-danger">*</span></label>
                         <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
                         @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Jenis Kelamin <span class="text-danger">*</span></label>
                         <select name="jenis_kelamin" class="form-select @error('jenis_kelamin') is-invalid @enderror" required>
                             <option value="">Pilih</option>
@@ -49,7 +49,7 @@
                         </select>
                         @error('jenis_kelamin')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label">Peran <span class="text-danger">*</span></label>
                         <select name="role_id" class="form-select @error('role_id') is-invalid @enderror" required>
                             <option value="">Pilih Peran</option>
@@ -60,7 +60,7 @@
                         @error('role_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Guru (untuk Kepala Sekolah / Guru BK / Guru)</label>
                             <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
                                 <option value="">-- Pilih Guru --</option>
@@ -70,7 +70,7 @@
                             </select>
                             @error('guru_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Kepala Sekolah (untuk peran Kepala Sekolah)</label>
                             <select name="kepala_sekolah_id" class="form-select @error('kepala_sekolah_id') is-invalid @enderror">
                                 <option value="">-- Pilih Kepala Sekolah --</option>
@@ -82,7 +82,7 @@
                             </select>
                             @error('kepala_sekolah_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-2">
                             <label class="form-label">Siswa (untuk akun siswa)</label>
                             <select name="siswa_id" class="form-select @error('siswa_id') is-invalid @enderror">
                                 <option value="">-- Pilih Siswa --</option>

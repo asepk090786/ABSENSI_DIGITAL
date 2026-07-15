@@ -7,7 +7,7 @@
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Detail Mata Pelajaran</h4>
+                <h4 class="card-title fw-semibold m-0">Detail Mata Pelajaran</h4>
                 <a href="{{ route('mata_pelajaran.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">

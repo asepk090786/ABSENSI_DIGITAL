@@ -6,8 +6,8 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Data Jenis Kegiatan</h4>
+            <div class="card-header border-0 pt-3 pb-2">
+                <h4 class="card-title fw-semibold m-0">Data Jenis Kegiatan</h4>
                 <a href="{{ route('jenis_kegiatan.create') }}" class="btn btn-primary btn-sm float-end">Tambah Jenis Kegiatan</a>
             </div>
             <div class="card-body">
@@ -31,7 +31,7 @@
                                 <td>{{ $item->nama }}</td>
                                 <td>{{ $item->kode }}</td>
                                 <td>
-                                    <a href="{{ route('jenis_kegiatan.edit', $item->id) }}" class="btn btn-sm btn-info">Edit</a>
+                                    <a href="{{ route('jenis_kegiatan.edit', $item->id) }}" class="btn btn-sm btn-info btn-modern">Edit</a>
                                     <form action="{{ route('jenis_kegiatan.destroy', $item->id) }}" method="POST" style="display:inline-block">
                                         @csrf
                                         @method('DELETE')

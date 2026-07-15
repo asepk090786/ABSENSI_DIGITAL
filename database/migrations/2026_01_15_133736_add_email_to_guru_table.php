@@ -8,7 +8,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->string('email', 150)->unique()->nullable();
+            if (! Schema::hasColumn('guru', 'email')) {
+                $table->string('email', 150)->unique()->nullable();
+            }
         });
     }
 

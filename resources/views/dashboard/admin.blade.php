@@ -1,14 +1,18 @@
-@extends('layouts.app', ['pageSlug' => 'dashboard-admin'])
+@extends('layouts.app')
 
 @section('title','Dashboard Admin')
 
 @section('content')
-<div class="alert alert-info">Selamat datang di Dashboard <b>Admin</b>. Gunakan menu di samping untuk mengelola data master, pengguna, dan pengaturan sistem.</div>
-<div class="row mb-3">
+<div class="welcome-banner">
+    <h3><i class="ti ti-shield me-2"></i>Dashboard Admin</h3>
+    <p>Selamat datang di panel administrasi. Gunakan menu untuk mengelola data master, pengguna, dan pengaturan sistem.</p>
+</div>
+
+<div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-1">Printout Laporan Kehadiran</h5>
+                <h5 class="card-title"><i class="ti ti-printer me-2 text-primary"></i>Printout Laporan Kehadiran</h5>
             </div>
             <div class="card-body">
                 @php
@@ -31,127 +35,211 @@
                     </div>
                     <div class="col-md-5 d-flex flex-wrap gap-2">
                         <button type="submit" class="btn btn-outline-primary">
-                            <i class="ti ti-printer me-1"></i>Print Laporan Kehadiran Siswa
+                            <i class="ti ti-printer me-1"></i>Print Laporan Siswa
                         </button>
                         <a href="{{ route('absensi.laporan-siswa.export', ['tanggal' => $tanggalLaporan, 'kelas_id' => $kelasLaporanId]) }}" class="btn btn-outline-info">
-                            <i class="ti ti-file-export me-1"></i>Export Excel Siswa
+                            <i class="ti ti-file-export me-1"></i>Export Excel
                         </a>
                         <a href="{{ route('absensi.laporan-guru.print', ['tanggal' => $tanggalLaporan]) }}" target="_blank" class="btn btn-outline-success">
-                            <i class="ti ti-printer me-1"></i>Print Laporan Kehadiran Guru
+                            <i class="ti ti-printer me-1"></i>Print Laporan Guru
                         </a>
                     </div>
                 </form>
                 <div class="text-muted small mt-2">
                     Laporan siswa (PDF/Excel) dihitung sebagai status kehadiran harian per siswa agar konsisten dengan statistik harian.
-                </div>
-            </div>
-        </div>
     </div>
 </div>
-<div class="row">
+
+<div class="row mb-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-1">Menu Cepat</h5>
+            <div class="card-body pb-0">
+                <form class="row g-2 align-items-end" method="GET" action="{{ route('home') }}">
+                    <div class="col-md-3">
+                        <label class="form-label">Tanggal</label>
+                        <input type="date" class="form-control" name="filter_tanggal" value="{{ $filterTanggal }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Minggu</label>
+                        <input type="week" class="form-control" name="filter_minggu" value="{{ $filterMinggu }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Bulan</label>
+                        <input type="month" class="form-control" name="filter_bulan" value="{{ $filterBulan }}">
+                    </div>
+                    <div class="col-md-3 d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-filter me-1"></i>Filter
+                        </button>
+                        @if($filterTanggal || $filterMinggu || $filterBulan)
+                            <a href="{{ route('home') }}" class="btn btn-outline-secondary">
+                                <i class="ti ti-x me-1"></i>Reset
+                            </a>
+                        @endif
+                    </div>
+                </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 col-lg-6">
+        <div class="card attendance-summary-card h-100">
             <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('sekolah.index') }}">
-                            <i class="ti ti-building-bank me-2"></i>Data Sekolah
-                        </a>
+                <div class="attendance-card-header mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="attendance-header-icon bg-primary text-white rounded-circle">
+                                <i class="ti ti-users"></i>
+                            </span>
+                            <h5 class="mb-0">Statistik Kehadiran Siswa Hari Ini</h5>
+                        </div>
+                        <span class="badge rounded-pill bg-light border text-dark py-2 px-3">
+                            <i class="ti ti-calendar me-1"></i>{{ $labelPeriode }}
+                        </span>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('guru.index') }}">
-                            <i class="ti ti-users me-2"></i>Guru
-                        </a>
+                </div>
+                <div class="row g-3 attendance-items">
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-success">
+                            <div class="attendance-item-icon bg-success text-white rounded-3">
+                                <i class="ti ti-check"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Hadir</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->hadir }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('siswa.index') }}">
-                            <i class="ti ti-school me-2"></i>Siswa
-                        </a>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-warning">
+                            <div class="attendance-item-icon" style="background-color: #ffc107; color: white;">
+                                <i class="ti ti-clock"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Terlambat</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->terlambat }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('kelas.index') }}">
-                            <i class="ti ti-building me-2"></i>Kelas
-                        </a>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-info">
+                            <div class="attendance-item-icon bg-info text-white rounded-3">
+                                <i class="ti ti-file-text"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Izin</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->izin }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('mata_pelajaran.index') }}">
-                            <i class="ti ti-books me-2"></i>Mata Pelajaran
-                        </a>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-secondary">
+                            <div class="attendance-item-icon bg-secondary text-white rounded-3">
+                                <i class="ti ti-minus"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Tidak Hadir</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->sakit }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('jam_belajar.index') }}">
-                            <i class="ti ti-clock me-2"></i>Jam Belajar
-                        </a>
+                    <div class="col-12">
+                        <div class="attendance-item attendance-item-danger">
+                            <div class="attendance-item-icon bg-danger text-white rounded-3">
+                                <i class="ti ti-alert-circle"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Alpa</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->alpha }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('absensi.generate.form') }}">
-                            <i class="ti ti-bolt me-2"></i>Generate Absensi
-                        </a>
+                </div>
+                <div class="attendance-summary-footer d-flex flex-column flex-sm-row gap-3 mt-4 pt-3 text-muted small">
+                    <div>Total entri: <strong>{{ $statistikKehadiranSiswaHarian->total_entri }}</strong></div>
+                    <div>Persentase hadir: <strong>{{ number_format((float) $statistikKehadiranSiswaHarian->persentase_hadir, 2, ',', '.') }}%</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="card attendance-summary-card h-100">
+            <div class="card-body">
+                <div class="attendance-card-header mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="attendance-header-icon bg-primary text-white rounded-circle">
+                                <i class="ti ti-school"></i>
+                            </span>
+                            <h5 class="mb-0">Statistik Kehadiran Guru Hari Ini</h5>
+                        </div>
+                        <span class="badge rounded-pill bg-light border text-dark py-2 px-3">
+                            <i class="ti ti-calendar me-1"></i>{{ $labelPeriode }}
+                        </span>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('users.index') }}">
-                            <i class="ti ti-lock me-2"></i>Akun Pengguna
-                        </a>
+                </div>
+                <div class="row g-3 attendance-items">
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-success">
+                            <div class="attendance-item-icon bg-success text-white rounded-3">
+                                <i class="ti ti-check"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Hadir</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranGuruHarian->hadir }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <a class="btn btn-outline-primary w-100" href="{{ route('tahun_ajaran.index') }}">
-                            <i class="ti ti-settings me-2"></i>Pengaturan
-                        </a>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-info">
+                            <div class="attendance-item-icon bg-info text-white rounded-3">
+                                <i class="ti ti-file-text"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Izin</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranGuruHarian->izin }}</div>
+                            </div>
+                        </div>
                     </div>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-secondary">
+                            <div class="attendance-item-icon bg-secondary text-white rounded-3">
+                                <i class="ti ti-stethoscope"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Sakit</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranGuruHarian->sakit }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-danger">
+                            <div class="attendance-item-icon bg-danger text-white rounded-3">
+                                <i class="ti ti-user-x"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Tidak Hadir</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranGuruHarian->tidak_hadir }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="attendance-summary-footer d-flex flex-column flex-sm-row gap-3 mt-4 pt-3 text-muted small">
+                    <div>Total entri: <strong>{{ $statistikKehadiranGuruHarian->total_entri }}</strong></div>
+                    <div>Persentase hadir: <strong>{{ number_format((float) $statistikKehadiranGuruHarian->persentase_hadir, 2, ',', '.') }}%</strong></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-3">
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="card-title mb-1">Statistik Kehadiran Siswa Hari Ini</h5>
-                <div class="text-muted small">{{ \Carbon\Carbon::parse($statistikKehadiranSiswaHarian->tanggal)->format('d M Y') }}</div>
-            </div>
-            <div class="card-body">
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><span class="badge bg-success-lt w-100 py-2">Hadir: {{ $statistikKehadiranSiswaHarian->hadir }}</span></div>
-                    <div class="col-6"><span class="badge bg-yellow-lt w-100 py-2">Terlambat: {{ $statistikKehadiranSiswaHarian->terlambat }}</span></div>
-                    <div class="col-6"><span class="badge bg-blue-lt w-100 py-2">Izin: {{ $statistikKehadiranSiswaHarian->izin }}</span></div>
-                    <div class="col-6"><span class="badge bg-indigo-lt w-100 py-2">Sakit: {{ $statistikKehadiranSiswaHarian->sakit }}</span></div>
-                    <div class="col-12"><span class="badge bg-red-lt w-100 py-2">Alpha: {{ $statistikKehadiranSiswaHarian->alpha }}</span></div>
-                </div>
-                <div class="small text-muted">Total entri: <b>{{ $statistikKehadiranSiswaHarian->total_entri }}</b></div>
-                <div class="small text-muted">Persentase hadir: <b>{{ number_format((float) $statistikKehadiranSiswaHarian->persentase_hadir, 2, ',', '.') }}%</b></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="card-title mb-1">Statistik Kehadiran Guru Hari Ini</h5>
-                <div class="text-muted small">{{ \Carbon\Carbon::parse($statistikKehadiranGuruHarian->tanggal)->format('d M Y') }}</div>
-            </div>
-            <div class="card-body">
-                <div class="row g-2 mb-2">
-                    <div class="col-6"><span class="badge bg-success-lt w-100 py-2">Hadir: {{ $statistikKehadiranGuruHarian->hadir }}</span></div>
-                    <div class="col-6"><span class="badge bg-blue-lt w-100 py-2">Izin: {{ $statistikKehadiranGuruHarian->izin }}</span></div>
-                    <div class="col-6"><span class="badge bg-indigo-lt w-100 py-2">Sakit: {{ $statistikKehadiranGuruHarian->sakit }}</span></div>
-                    <div class="col-6"><span class="badge bg-red-lt w-100 py-2">Tidak Hadir: {{ $statistikKehadiranGuruHarian->tidak_hadir }}</span></div>
-                </div>
-                <div class="small text-muted">Total entri: <b>{{ $statistikKehadiranGuruHarian->total_entri }}</b></div>
-                <div class="small text-muted">Persentase hadir: <b>{{ number_format((float) $statistikKehadiranGuruHarian->persentase_hadir, 2, ',', '.') }}%</b></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-3">
+<div class="row mt-4">
     <div class="col-lg-7">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-1">Rekap Kehadiran Siswa per Kelas</h5>
+                <h5 class="card-title">Rekap Kehadiran Siswa per Kelas</h5>
                 <div class="text-muted small">Berdasarkan data absensi siswa di periode aktif.</div>
             </div>
             <div class="card-body">
@@ -159,7 +247,7 @@
                     <div class="alert alert-warning mb-0">Belum ada data kehadiran siswa per kelas.</div>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-vcenter table-striped">
+                        <table class="table table-vcenter">
                             <thead>
                                 <tr>
                                     <th>Kelas</th>
@@ -167,7 +255,7 @@
                                     <th class="text-center">Terlambat</th>
                                     <th class="text-center">Izin</th>
                                     <th class="text-center">Sakit</th>
-                                    <th class="text-center">Alpha</th>
+                                    <th class="text-center">Alpa</th>
                                     <th class="text-center">Total</th>
                                     <th class="text-end">Aksi</th>
                                 </tr>
@@ -199,7 +287,7 @@
     <div class="col-lg-5">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-1">Rekap Kehadiran Guru per Hari</h5>
+                <h5 class="card-title">Rekap Kehadiran Guru per Hari</h5>
                 <div class="text-muted small">Ringkasan 14 hari terakhir.</div>
             </div>
             <div class="card-body">
@@ -207,7 +295,7 @@
                     <div class="alert alert-warning mb-0">Belum ada data kehadiran guru harian.</div>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-vcenter table-striped">
+                        <table class="table table-vcenter">
                             <thead>
                                 <tr>
                                     <th>Tanggal</th>
@@ -229,9 +317,7 @@
                                     <td class="text-center">{{ $item->tidak_hadir }}</td>
                                     <td class="text-center fw-bold">{{ $item->total_entri }}</td>
                                     <td class="text-end">
-                                        <a href="{{ route('absensi.index', ['tanggal' => $item->tanggal]) }}" class="btn btn-outline-secondary btn-sm">
-                                            Lihat Hari Ini
-                                        </a>
+                                        <a href="{{ route('absensi.index', ['tanggal' => $item->tanggal]) }}" class="btn btn-outline-secondary btn-sm">Lihat</a>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -244,12 +330,12 @@
     </div>
 </div>
 
-<div class="row mt-3">
+<div class="row mt-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
-                    <h5 class="card-title mb-1">Rekap Nilai per Kelas & Mata Pelajaran</h5>
+                    <h5 class="card-title">Rekap Nilai per Kelas & Mata Pelajaran</h5>
                     <div class="text-muted small">Menampilkan nilai yang sudah diinput guru pada tahun ajaran dan semester aktif.</div>
                 </div>
                 <a href="{{ route('rekap_nilai.index') }}" class="btn btn-primary btn-sm">
@@ -258,12 +344,10 @@
             </div>
             <div class="card-body">
                 @if(($rekapNilaiKelasMapel ?? collect())->isEmpty())
-                    <div class="alert alert-warning mb-0">
-                        Belum ada data nilai yang diinput guru untuk periode aktif.
-                    </div>
+                    <div class="alert alert-warning mb-0">Belum ada data nilai yang diinput guru untuk periode aktif.</div>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-vcenter table-striped">
+                        <table class="table table-vcenter">
                             <thead>
                                 <tr>
                                     <th>Kelas</th>
@@ -287,9 +371,7 @@
                                     <td class="text-center">{{ number_format((float) $row->rata_rata_nilai, 2, ',', '.') }}</td>
                                     <td>{{ $row->update_terakhir ? \Carbon\Carbon::parse($row->update_terakhir)->format('d M Y H:i') : '-' }}</td>
                                     <td class="text-end">
-                                        <a href="{{ route('rekap_nilai.index', ['kelas_id' => $row->kelas_id, 'mapel_id' => $row->mapel_id]) }}" class="btn btn-outline-primary btn-sm">
-                                            Detail
-                                        </a>
+                                        <a href="{{ route('rekap_nilai.index', ['kelas_id' => $row->kelas_id, 'mapel_id' => $row->mapel_id]) }}" class="btn btn-outline-primary btn-sm">Detail</a>
                                     </td>
                                 </tr>
                                 @endforeach

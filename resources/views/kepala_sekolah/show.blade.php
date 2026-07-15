@@ -15,9 +15,9 @@
                     <div class="row">
                         <div class="col-md-3 text-center">
                             @if($kepalaSekolah->foto)
-                                <img src="{{ asset('storage/' . $kepalaSekolah->foto) }}" alt="Foto" class="img-fluid rounded mb-3" style="max-height: 300px;">
+                                <img src="{{ asset('storage/' . $kepalaSekolah->foto) }}" alt="Foto" class="img-fluid rounded mb-2" style="max-height: 300px;">
                             @else
-                                <div class="bg-light rounded p-5 mb-3">
+                                <div class="bg-light rounded p-5 mb-2">
                                     <i class="ti ti-user" style="font-size: 150px; color: #ddd;"></i>
                                 </div>
                             @endif
@@ -76,7 +76,7 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <div class="mt-3">
+                            <div class="mt-2">
                                 <a href="{{ route('kepala_sekolah.edit', $kepalaSekolah->id) }}" class="btn btn-warning">
                                     <i class="ti ti-edit"></i> Edit Data
                                 </a>

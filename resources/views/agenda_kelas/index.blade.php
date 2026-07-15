@@ -162,7 +162,7 @@
     @endphp
 
     @if(!$hideGuruPicker && $guruQuickAccess->isNotEmpty())
-    <!-- Menu Akses Cepat - Pilih Guru -->
+    
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-primary">
@@ -189,12 +189,12 @@
     @endif
 
     @if($selectedGuru && $kelasQuickAccess->isNotEmpty())
-    <!-- Menu Akses Cepat - Kelas untuk Guru Terpilih -->
+    
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
+                    <h5 class="card-title fw-semibold m-0">
                         <i class="ti ti-clock-play me-2"></i>Menu Akses Cepat - {{ $selectedGuru->nama }} (Isi Agenda Kelas)
                     </h5>
                     @if(!$hideGuruPicker)
@@ -267,12 +267,12 @@
                                                 margin-bottom: 0.5rem;">
                                         {{ $tingkatLabel }}
                                     </div>
-                                    <div class="mb-3">
+                                    <div class="mb-2">
                                         <i class="ti ti-book-2" style="font-size: 48px; color: {{ $iconColor }} !important;"></i>
                                     </div>
                                     <h5 class="card-title mb-2" style="font-weight: 700; font-size: 1.25rem;">{{ $kelas->nama_kelas }}</h5>
                                     @if($kelas->wali_nama)
-                                    <p class="text-muted small mb-3">
+                                    <p class="text-muted small mb-2">
                                         <i class="ti ti-user me-1"></i>{{ $kelas->wali_nama }}
                                     </p>
                                     @endif
@@ -289,8 +289,8 @@
                                     </a>
                                     @endunless
                                     <button type="button" class="btn btn-sm w-100 mt-2 btn-outline-secondary" 
-                                            data-toggle="modal" 
-                                            data-target="#previewAgendaModal"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#previewAgendaModal"
                                             onclick="loadAgendaPreview({{ $kelas->id }}, {{ $selectedGuru ? $selectedGuru->id : 'null' }})">
                                         <i class="ti ti-eye me-1"></i>Preview Agenda
                                     </button>
@@ -310,7 +310,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title mb-0">
+                        <h4 class="card-title fw-semibold m-0">
                             Data Agenda Kelas
                             @if($selectedGuru)
                                 <span class="badge bg-primary ms-2">{{ $selectedGuru->nama }}</span>
@@ -327,7 +327,7 @@
                     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
                     @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
-                    <form method="GET" action="{{ route('agenda_kelas.index') }}" class="row g-2 mb-3">
+                    <form method="GET" action="{{ route('agenda_kelas.index') }}" class="row g-2 mb-2">
                         @if($filterGuruId)
                             <input type="hidden" name="guru_id" value="{{ $filterGuruId }}">
                         @endif
@@ -351,7 +351,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -384,7 +384,7 @@
                                         <td>
                                             @unless($disableAgendaActions)
                                         <div class="btn-group" role="group">
-                                                <a href="{{ route('agenda_kelas.show', $it->id) }}" class="btn btn-sm btn-info" title="Lihat">
+                                                <a href="{{ route('agenda_kelas.show', $it->id) }}" class="btn btn-sm btn-info btn-modern" title="Lihat">
                                                     <i class="ti ti-eye"></i>
                                                 </a>
                                                 <a href="{{ route('agenda_kelas.edit', $it->id) }}" class="btn btn-sm btn-warning" title="Edit">
@@ -412,7 +412,7 @@
     </div>
 </div>
 
-<!-- Modal Preview Agenda -->
+
 <div class="modal fade" id="previewAgendaModal" tabindex="-1" role="dialog" aria-labelledby="previewAgendaLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen-lg-down modal-xl" role="document">
         <div class="modal-content">
@@ -420,13 +420,13 @@
                 <h5 class="modal-title text-white" id="previewAgendaLabel">
                     <i class="ti ti-file-pdf me-2"></i>Preview Agenda Kelas
                 </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 600px;">
                 <div id="pdfContainer" class="w-100 h-100">
                     <div class="d-flex justify-content-center align-items-center h-100">
                         <div class="text-center text-muted">
-                            <div class="spinner-border text-primary mb-3" role="status">
+                            <div class="spinner-border text-primary mb-2" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                             <p>Memuat preview agenda...</p>
@@ -441,7 +441,7 @@
                 <a href="#" id="printLink" class="btn btn-info" target="_blank" style="display: none;">
                     <i class="ti ti-printer me-1"></i>Print
                 </a>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -463,7 +463,7 @@ function loadAgendaPreview(kelasId, guruId = null) {
     pdfContainer.innerHTML = `
         <div class="d-flex justify-content-center align-items-center h-100">
             <div class="text-center text-muted">
-                <div class="spinner-border text-primary mb-3" role="status">
+                <div class="spinner-border text-primary mb-2" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p>Memuat preview agenda...</p>

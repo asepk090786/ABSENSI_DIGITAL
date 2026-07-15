@@ -7,20 +7,39 @@ use App\Models\JadwalKbm;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class GuruPiketController extends Controller
 {
+    /**
+     * Check if the authenticated user is an admin
+     * 
+     * @return bool
+     */
+    private function isAdmin()
+    {
+        return auth()->check() && auth()->user()->role && auth()->user()->role->role_name === 'Admin';
+    }
+
+    /**
+     * Abort with 403 if user is not admin
+     */
+    private function authorizeAdmin()
+    {
+        if (!$this->isAdmin()) {
+            abort(403, 'Akses ditolak. Hanya admin yang dapat mengakses fitur ini.');
+        }
+    }
+
     public function index()
     {
-        $gurupiket = Guru::with('user')->whereHas('user', function($query) {
-            $query->whereHas('roles', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            })->orWhereHas('role', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            });
-        })->orderBy('created_at', 'desc')->get();
+        $gurupiket = Guru::with('user')
+            ->whereHas('user')
+            ->whereNotNull('hari_piket')
+            ->orderBy('nama')
+            ->get();
 
         $workDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
         $guruByHari = collect($workDays)->mapWithKeys(function ($hari) use ($gurupiket) {
@@ -32,23 +51,23 @@ class GuruPiketController extends Controller
             return [$hari => $items];
         });
         $hasAny = $guruByHari->flatten(1)->isNotEmpty();
-        
+
         return view('guru_piket.index', compact('gurupiket', 'workDays', 'guruByHari', 'hasAny'));
     }
 
     public function create()
     {
+        $this->authorizeAdmin();
+
         $allHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        $guruPiketIds = Guru::whereHas('user', function($query) {
-            $query->whereHas('roles', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            })->orWhereHas('role', function($q) {
-                $q->where('role_name', 'Guru Piket');
-            });
-        })->pluck('id');
 
         $guru = Guru::with('user')
-            ->whereNotIn('id', $guruPiketIds)
+            ->whereHas('user')
+            ->where(function ($query) {
+                $query->whereNull('hari_piket')
+                    ->orWhere('hari_piket', '[]')
+                    ->orWhere('hari_piket', '');
+            })
             ->orderBy('nama')
             ->get();
 
@@ -72,6 +91,8 @@ class GuruPiketController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeAdmin();
+
         $rules = [
             'guru_id' => 'nullable|exists:guru,id',
             'nama' => 'required|string|max:255',
@@ -220,6 +241,8 @@ class GuruPiketController extends Controller
 
     public function edit($id)
     {
+        $this->authorizeAdmin();
+
         $gurupiket = Guru::findOrFail($id);
         $allHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
         $hariMengajar = JadwalKbm::where('guru_id', $gurupiket->id)
@@ -236,6 +259,8 @@ class GuruPiketController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorizeAdmin();
+
         $gurupiket = Guru::findOrFail($id);
 
         $validated = $request->validate([
@@ -316,10 +341,86 @@ class GuruPiketController extends Controller
         return redirect()->route('guru_piket.index')->with('success', 'Data Guru Piket berhasil diperbarui.');
     }
 
+    public function generate(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $workDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = $tahun ? DB::table('semester')->where('tahun_ajaran_id', $tahun->id)->where('is_active', 1)->first() : null;
+
+        if (! $tahun || ! $semester) {
+            return redirect()->route('guru_piket.index')->with('error', 'Tahun ajaran atau semester aktif belum ditetapkan.');
+        }
+
+        $gurupiket = Guru::with('user')
+            ->whereHas('user')
+            ->orderBy('nama')
+            ->get();
+
+        if ($gurupiket->isEmpty()) {
+            return redirect()->route('guru_piket.index')->with('error', 'Tidak ada data guru. Tambah data guru terlebih dahulu.');
+        }
+
+        $guruFreeDays = $gurupiket->mapWithKeys(function ($guru) use ($workDays, $tahun, $semester) {
+            $hariMengajar = JadwalKbm::where('guru_id', $guru->id)
+                ->where('tahun_ajaran_id', $tahun->id)
+                ->where('semester_id', $semester->id)
+                ->select('hari')
+                ->distinct()
+                ->pluck('hari')
+                ->all();
+
+            $freeDays = array_values(array_diff($workDays, $hariMengajar));
+            return [$guru->id => $freeDays];
+        });
+
+        $assignments = [];
+        $maxDaysPerTeacher = 2;
+
+        $guruIds = $guruFreeDays->keys()->values()->all();
+        $dayOffset = 0;
+
+        foreach ($guruIds as $guruId) {
+            $freeDays = $guruFreeDays[$guruId];
+
+            if (empty($freeDays)) {
+                continue;
+            }
+
+            $assignedDays = [];
+            foreach (range(0, $maxDaysPerTeacher - 1) as $i) {
+                $dayIndex = ($dayOffset + $i) % count($freeDays);
+                $assignedDays[] = $freeDays[$dayIndex];
+            }
+
+            $assignments[$guruId] = $assignedDays;
+            $dayOffset = ($dayOffset + 1) % count($workDays);
+        }
+
+        foreach ($gurupiket as $guru) {
+            $guru->hari_piket = $assignments[$guru->id] ?? [];
+            $guru->save();
+        }
+
+        $assignedDays = collect($assignments)->flatten()->unique()->values()->all();
+        $unassignedDays = collect($workDays)->diff($assignedDays)->values()->all();
+
+        if (empty($unassignedDays)) {
+            $message = 'Jadwal piket otomatis berhasil dibuat.';
+        } else {
+            $message = 'Jadwal piket dibuat, tetapi hari ' . implode(', ', $unassignedDays) . ' belum terisi karena tidak ada guru yang bebas pada hari tersebut.';
+        }
+
+        return redirect()->route('guru_piket.index')->with('success', $message);
+    }
+
     public function destroy($id)
     {
+        $this->authorizeAdmin();
+
         $gurupiket = Guru::findOrFail($id);
-        
+
         if ($gurupiket->foto) {
             Storage::disk('public')->delete($gurupiket->foto);
         }
@@ -332,6 +433,42 @@ class GuruPiketController extends Controller
             }
         }
 
+        $gurupiket->hari_piket = null;
+        $gurupiket->save();
+
         return redirect()->route('guru_piket.index')->with('success', 'Data Guru Piket berhasil dihapus.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $this->authorizeAdmin();
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:guru,id',
+        ]);
+
+        $guruList = Guru::whereIn('id', $request->ids)->get();
+        $deleted = 0;
+
+        foreach ($guruList as $gurupiket) {
+            if ($gurupiket->foto) {
+                Storage::disk('public')->delete($gurupiket->foto);
+            }
+
+            $user = User::where('guru_id', $gurupiket->id)->first();
+            if ($user) {
+                $guruPiketRole = Role::where('role_name', 'Guru Piket')->first();
+                if ($guruPiketRole) {
+                    $user->roles()->detach($guruPiketRole->id);
+                }
+            }
+
+            $gurupiket->hari_piket = null;
+            $gurupiket->save();
+            $deleted++;
+        }
+
+        return redirect()->route('guru_piket.index')->with('success', "$deleted data Guru Piket berhasil dihapus.");
     }
 }

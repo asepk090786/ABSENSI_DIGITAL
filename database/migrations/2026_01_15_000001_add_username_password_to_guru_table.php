@@ -8,15 +8,24 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->string('username')->nullable()->unique()->after('nama');
-            $table->string('password')->nullable()->after('username');
+            if (! Schema::hasColumn('guru', 'username')) {
+                $table->string('username')->nullable()->unique()->after('nama');
+            }
+            if (! Schema::hasColumn('guru', 'password')) {
+                $table->string('password')->nullable()->after('username');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->dropColumn(['username', 'password']);
+            if (Schema::hasColumn('guru', 'username')) {
+                $table->dropColumn('username');
+            }
+            if (Schema::hasColumn('guru', 'password')) {
+                $table->dropColumn('password');
+            }
         });
     }
 };

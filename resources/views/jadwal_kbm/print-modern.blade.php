@@ -3,7 +3,7 @@
 @section('title', 'Print Jadwal Kelas')
 
 @section('content')
-<div class="row mb-3 no-print">
+<div class="row mb-2 no-print">
     <div class="col-12">
         <button onclick="window.print()" class="btn btn-primary">
             <i class="ti ti-printer me-2"></i>Print Jadwal
@@ -280,7 +280,7 @@
 <div id="printContent" class="card no-card-style">
     <div class="card-body print-body">
         <div class="jadwal-container">
-            <!-- Header -->
+            
             <div class="jadwal-header">
                 <div class="jadwal-header-top">
                     @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
@@ -310,14 +310,14 @@
                 </div>
             </div>
 
-            <!-- Title Card -->
+            
             <div class="jadwal-title">
                 <h1>Jadwal Pelajaran Kelas</h1>
                 <h2>{{ strtoupper($kelas->nama_kelas) }}</h2>
                 <p><strong>{{ $tahunAjaranAktif->nama_tahun ?? '-' }}</strong> | <strong>{{ $semesterAktif->nama_semester ?? '-' }}</strong></p>
             </div>
 
-            <!-- Schedule Grid -->
+            
             @php
                 $jadwalByHari = $jadwalSorted->groupBy('hari');
                 $hariList = [
@@ -360,7 +360,7 @@
                 @endforeach
             </div>
 
-            <!-- Guru List Section -->
+            
             <div class="jadwal-guru-section">
                 <h4>📋 DAFTAR GURU PENGAJAR</h4>
                 <div class="jadwal-guru-list">
@@ -373,7 +373,7 @@
                 </div>
             </div>
 
-            <!-- Footer -->
+            
             <div class="jadwal-footer">
                 <p>Dicetak: {{ now()->format('d F Y H:i') }}</p>
             </div>

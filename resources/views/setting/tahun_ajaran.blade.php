@@ -7,7 +7,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title mb-0">Tahun Ajaran</h4>
+                <h4 class="card-title fw-semibold m-0">Tahun Ajaran</h4>
                 <a href="{{ route('setting.tahun_ajaran.create') }}" class="btn btn-primary btn-sm">Tambah</a>
             </div>
             <div class="card-body">

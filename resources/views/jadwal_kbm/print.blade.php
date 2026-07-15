@@ -3,14 +3,14 @@
 @section('title', 'Print Jadwal Kelas')
 
 @section('content')
-<div class="row mb-3 no-print">
+<div class="row mb-2 no-print">
     <div class="col-12">
         <button onclick="window.print()" class="btn btn-primary">
             <i class="ti ti-printer me-2"></i>Print Jadwal
         </button>
         
         <div class="btn-group" role="group">
-            <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="ti ti-download me-2"></i>Download PDF
             </button>
             <ul class="dropdown-menu">
@@ -32,27 +32,27 @@
     </div>
 </div>
 
-<!-- Print Content -->
+
 <div id="printContent" class="card no-card-style">
     <div class="card-body print-body">
-        <!-- Header -->
+        
         @if($sekolah && $sekolah->header_html)
-            <!-- Custom Header from Editor -->
+            
             <div class="header-section custom-header-wrapper">
                 {!! $sekolah->header_html !!}
             </div>
         @else
-            <!-- Default Header with New Format -->
+            
             <div class="header-section">
             <div class="header-content">
-                <!-- Logo Kiri -->
+                
                 <div class="logo-left">
                     @if($sekolah && $sekolah->logo_header_kiri && file_exists(public_path('storage/' . $sekolah->logo_header_kiri)))
                         <img src="{{ asset('storage/' . $sekolah->logo_header_kiri) }}" class="school-logo">
                     @endif
                 </div>
 
-                <!-- Informasi Sekolah di Tengah (3 Baris) -->
+                
                 <div class="school-info">
                     @if($sekolah && $sekolah->header_line1)
                         <div class="header-line-1" style="margin: 0; padding: 0; line-height: {{ $sekolah->header_line1_spacing ?? 1.0 }};">{!! $sekolah->header_line1 !!}</div>
@@ -79,7 +79,7 @@
                     @endif
                 </div>
 
-                <!-- Logo Kanan (Logo Sekolah) -->
+                
                 <div class="logo-right">
                     @if($sekolah && $sekolah->logo && file_exists(public_path('storage/' . $sekolah->logo)))
                         <img src="{{ asset('storage/' . $sekolah->logo) }}" class="school-logo-right">
@@ -90,7 +90,7 @@
         </div>
         @endif
 
-        <!-- Judul -->
+        
         <div class="title-section">
             <h2 class="main-title">JADWAL PELAJARAN</h2>
             <h3 class="sub-title">KELAS {{ strtoupper($kelas->nama_kelas) }}</h3>
@@ -104,9 +104,9 @@
             $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
         @endphp
 
-        <!-- Tabel Jadwal Format 2 Kolom -->
+        
         <div class="schedule-container">
-            <!-- Baris 1: Senin dan Selasa -->
+            
             <div class="schedule-row">
                 @foreach(['Senin', 'Selasa'] as $hari)
                     @php
@@ -170,7 +170,7 @@
                 @endforeach
             </div>
 
-            <!-- Baris 2: Rabu dan Kamis -->
+            
             <div class="schedule-row">
                 @foreach(['Rabu', 'Kamis'] as $hari)
                     @php
@@ -234,7 +234,7 @@
                 @endforeach
             </div>
 
-            <!-- Baris 3: Jumat -->
+            
             <div class="schedule-row">
                 @php
                     $hari = 'Jumat';
@@ -299,10 +299,10 @@
             </div>
         </div>
 
-        <!-- Garis Pemisah -->
+        
         <div class="divider"></div>
 
-        <!-- Keterangan Guru -->
+        
         <div class="guru-section">
             <h4 class="guru-title">DAFTAR GURU PENGAJAR</h4>
             <table class="guru-table">
@@ -327,7 +327,7 @@
             </table>
         </div>
 
-        <!-- Footer -->
+        
         <div class="footer-section">
             <p>Dicetak: {{ now()->format('d F Y, H:i') }} WIB</p>
         </div>

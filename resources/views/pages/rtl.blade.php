@@ -111,7 +111,7 @@
             </div>
             <a class="navbar-brand" href="javascript:void(0)">RTL</a>
           </div>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation" aria-expanded="false" aria-label="Toggle navigation">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navigation" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-bar navbar-kebab"></span>
             <span class="navbar-toggler-bar navbar-kebab"></span>
             <span class="navbar-toggler-bar navbar-kebab"></span>
@@ -119,12 +119,12 @@
           <div class="collapse navbar-collapse" id="navigation">
             <ul class="navbar-nav  mr-auto">
               <li class="search-bar input-group">
-                <button class="btn btn-link" id="search-button" data-toggle="modal" data-target="#searchModal"><i class="tim-icons icon-zoom-split"></i>
+                <button class="btn btn-link" id="search-button" data-bs-toggle="modal" data-bs-target="#searchModal"><i class="tim-icons icon-zoom-split"></i>
                   <span class="d-lg-none d-md-block">Search</span>
                 </button>
               </li>
               <li class="dropdown nav-item">
-                <a href="javascript:void(0)" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                <a href="javascript:void(0)" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
                   <div class="notification d-none d-lg-block d-xl-block"></div>
                   <i class="tim-icons icon-sound-wave"></i>
                   <p class="d-lg-none">
@@ -150,7 +150,7 @@
                 </ul>
               </li>
               <li class="dropdown nav-item">
-                <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                <a href="#" class="dropdown-toggle nav-link" data-bs-toggle="dropdown">
                   <div class="photo">
                     <img src="{{ asset('white') }}/img/anime3.png" alt="Profile Photo">
                   </div>
@@ -182,7 +182,7 @@
           <div class="modal-content">
             <div class="modal-header">
               <input type="text" class="form-control" id="inlineFormInputGroup" placeholder="SEARCH">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                 <i class="tim-icons icon-simple-remove"></i>
               </button>
             </div>
@@ -201,7 +201,7 @@
                     <h2 class="card-title">أداء</h2>
                   </div>
                   <div class="col-sm-6">
-                    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <div class="btn-group btn-group-toggle" data-bs-toggle="buttons">
                       <label class="btn btn-sm btn-primary btn-simple active" id="0">
                         <input type="radio" name="options" checked>
                         <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block"> حسابات</span>
@@ -283,7 +283,7 @@
                 <h6 class="title d-inline">تتبع</h6>
                 <p class="card-category d-inline">اليوم</p>
                 <div class="dropdown float-left">
-                  <a class="btn btn-link dropdown-toggle" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="tim-icons icon-settings-gear-63"></i></a>
+                  <a class="btn btn-link dropdown-toggle" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="tim-icons icon-settings-gear-63"></i></a>
                   <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                     <a class="dropdown-item" href="#">عمل</a>
                     <a class="dropdown-item" href="#">عمل آخر</a>
@@ -590,7 +590,7 @@
   </div>
   <div class="fixed-plugin">
     <div class="dropdown show-dropdown">
-      <a href="#" data-toggle="dropdown">
+      <a href="#" data-bs-toggle="dropdown">
         <i class="fa fa-cog fa-2x"> </i>
       </a>
       <ul class="dropdown-menu">

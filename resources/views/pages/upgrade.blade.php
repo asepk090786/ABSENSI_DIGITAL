@@ -18,7 +18,7 @@
             </thead>
             <tbody>
                 <tr>
-                  <td><h3 class="text-primary mb-0 mt-3">Laravel</h3></td>
+                  <td><h3 class="text-primary mb-0 mt-2">Laravel</h3></td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
                 </tr>
@@ -63,7 +63,7 @@
                   <td class="text-center"><i class="fa fa-check text-success"></i></td>
                 </tr>
                 <tr>
-                  <td><h3 class="text-primary mb-0 mt-3">Frontend</h3></td>
+                  <td><h3 class="text-primary mb-0 mt-2">Frontend</h3></td>
                   <td class="text-center"></td>
                   <td class="text-center"></td>
                 </tr>

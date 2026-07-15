@@ -8,7 +8,7 @@
     <form method="POST" action="{{ route('setting.tahun_ajaran.update', $tahunAjaran->id) }}">
         @csrf
         @method('PUT')
-        <div class="mb-3">
+        <div class="mb-2">
             <label>Nama Tahun</label>
             <input name="nama_tahun" class="form-control" value="{{ old('nama_tahun', $tahunAjaran->nama_tahun) }}" required>
             @error('nama_tahun')<div class="text-danger">{{ $message }}</div>@enderror

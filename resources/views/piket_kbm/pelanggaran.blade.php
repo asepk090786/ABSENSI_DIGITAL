@@ -7,7 +7,7 @@
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -18,16 +18,16 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
-    <div class="card mb-3">
-        <div class="card-header">
-            <h3 class="card-title mb-0">Pelanggaran - Menu Cepat Kelas Aktif</h3>
+    <div class="card mb-2">
+        <div class="card-header border-0 pt-3 pb-2">
+            <h3 class="card-title fw-semibold m-0">Pelanggaran - Menu Cepat Kelas Aktif</h3>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('piket.pelanggaran.index') }}" class="row g-2 align-items-end mb-3">
+            <form method="GET" action="{{ route('piket.pelanggaran.index') }}" class="row g-2 align-items-end mb-2">
                 <div class="col-12 col-md-3">
                     <label class="form-label">Tanggal</label>
                     <input type="date" class="form-control" name="tanggal" value="{{ $selectedTanggal }}">
@@ -52,7 +52,7 @@
     @if($kelasId)
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">Input Absensi + Pelanggaran Siswa</h3>
+                <h3 class="card-title fw-semibold m-0">Input Absensi + Pelanggaran Siswa</h3>
                 <small class="text-muted">
                     @if($jamKeSatu)
                         Jam ke-1: {{ $jamKeSatu->jam_mulai }} | Perkiraan keterlambatan saat ini: {{ $lateMinutesPreview }} menit

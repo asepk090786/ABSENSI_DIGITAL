@@ -8,17 +8,36 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->string('telepon')->nullable()->after('username');
-            $table->string('alamat')->nullable()->after('telepon');
-            $table->date('tanggal_lahir')->nullable()->after('alamat');
-            $table->string('jenis_kelamin', 2)->nullable()->after('tanggal_lahir');
+            if (! Schema::hasColumn('guru', 'telepon')) {
+                $table->string('telepon')->nullable()->after('username');
+            }
+            if (! Schema::hasColumn('guru', 'alamat')) {
+                $table->string('alamat')->nullable()->after('telepon');
+            }
+            if (! Schema::hasColumn('guru', 'tanggal_lahir')) {
+                $table->date('tanggal_lahir')->nullable()->after('alamat');
+            }
+            if (! Schema::hasColumn('guru', 'jenis_kelamin')) {
+                $table->string('jenis_kelamin', 2)->nullable()->after('tanggal_lahir');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->dropColumn(['telepon', 'alamat', 'tanggal_lahir', 'jenis_kelamin']);
+            if (Schema::hasColumn('guru', 'telepon')) {
+                $table->dropColumn('telepon');
+            }
+            if (Schema::hasColumn('guru', 'alamat')) {
+                $table->dropColumn('alamat');
+            }
+            if (Schema::hasColumn('guru', 'tanggal_lahir')) {
+                $table->dropColumn('tanggal_lahir');
+            }
+            if (Schema::hasColumn('guru', 'jenis_kelamin')) {
+                $table->dropColumn('jenis_kelamin');
+            }
         });
     }
 };

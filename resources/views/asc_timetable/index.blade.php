@@ -11,8 +11,8 @@
                 <div class="text-muted mt-1">Import jadwal dari aSc Timetables XML</div>
             </div>
             <div class="col-auto ms-auto">
-                <div class="btn-list">
-                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#importModal">
+                <div >
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
                         <i class="ti ti-upload me-2"></i>Import XML
                     </button>
                 </div>
@@ -31,7 +31,7 @@
                     <div class="text-secondary">{{ session('success') }}</div>
                 </div>
             </div>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -46,7 +46,7 @@
                     <div class="text-secondary">{{ session('error') }}</div>
                 </div>
             </div>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         </div>
     @endif
 
@@ -58,7 +58,7 @@
                     
                     <div class="row">
                         <div class="col-md-6">
-                            <h4 class="mb-3">Fitur Import</h4>
+                            <h4 class="mb-2">Fitur Import</h4>
                             <p>Import file XML dari aSc Timetables untuk memuat data:</p>
                             <ul class="list-unstyled">
                                 <li class="mb-2">
@@ -89,7 +89,7 @@
                         </div>
                         
                         <div class="col-md-6">
-                            <h4 class="mb-3">Cara Menggunakan</h4>
+                            <h4 class="mb-2">Cara Menggunakan</h4>
                             <ol>
                                 <li class="mb-2">Export jadwal dari aplikasi aSc Timetables dalam format XML</li>
                                 <li class="mb-2">Klik tombol <strong>"Import XML"</strong> di atas</li>
@@ -98,7 +98,7 @@
                                 <li class="mb-2">Data akan otomatis tersinkronisasi ke sistem</li>
                             </ol>
                             
-                            <div class="alert alert-info mt-3" role="alert">
+                            <div class="alert alert-info mt-2" role="alert">
                                 <div class="d-flex">
                                     <div>
                                         <i class="ti ti-info-circle icon alert-icon"></i>
@@ -124,7 +124,7 @@
 
                     <div class="card bg-light">
                         <div class="card-body">
-                            <h4 class="mb-3">
+                            <h4 class="mb-2">
                                 <i class="ti ti-help-circle text-primary me-2"></i>
                                 Bantuan & Dokumentasi
                             </h4>
@@ -141,7 +141,7 @@
     </div>
 </div>
 
-<!-- Import Modal -->
+
 <div class="modal modal-blur fade" id="importModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -152,10 +152,10 @@
                         <i class="ti ti-upload me-2"></i>
                         Import XML Time Table
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label required">File XML</label>
                         <input type="file" name="xml_file" class="form-control" accept=".xml" required>
                         <small class="form-hint">
@@ -179,7 +179,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                    <button type="button" class="btn btn-outline-secondary btn-modern" data-bs-dismiss="modal">
                         <i class="ti ti-x me-2"></i>Batal
                     </button>
                     <button type="submit" class="btn btn-primary">

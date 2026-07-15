@@ -6,9 +6,9 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Daftar Hadir Layanan BK - {{ $kelas->nama_kelas }}</h3>
+                    <h3 class="card-title fw-semibold m-0">Daftar Hadir Layanan BK - {{ $kelas->nama_kelas }}</h3>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-dark btn-sm" data-toggle="modal" data-target="#printPreviewModalDaftarHadir" id="btnOpenPrintPreviewDaftarHadir" data-print-url="{{ route('guru_bk_layanan.daftar_hadir.print', ['kelas' => $kelas->id, 'tanggal' => $selectedTanggal]) }}">
+                        <button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#printPreviewModalDaftarHadir" id="btnOpenPrintPreviewDaftarHadir" data-print-url="{{ route('guru_bk_layanan.daftar_hadir.print', ['kelas' => $kelas->id, 'tanggal' => $selectedTanggal]) }}">
                             <i class="ti ti-printer"></i> Print Output
                         </button>
                         <a href="{{ route('guru_bk_layanan.layanan', ['kelas' => $kelas->id]) }}" class="btn btn-primary btn-sm">
@@ -25,7 +25,7 @@
                         Data kehadiran layanan BK pada halaman ini diambil otomatis dari input pada menu <strong>Layanan BK</strong>.
                     </div>
 
-                    <form method="GET" action="{{ route('guru_bk_layanan.daftar_hadir', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end mb-3">
+                    <form method="GET" action="{{ route('guru_bk_layanan.daftar_hadir', ['kelas' => $kelas->id]) }}" class="row g-2 align-items-end mb-2">
                         <div class="col-12 col-md-4 col-lg-3">
                             <label for="tanggal" class="form-label mb-1">Filter Tanggal</label>
                             <input type="date" id="tanggal" name="tanggal" class="form-control" value="{{ $selectedTanggal }}">
@@ -49,7 +49,7 @@
                         $totalSiswaUnik = ($daftarHadirItems ?? collect())->pluck('siswa_id')->filter()->unique()->count();
                     @endphp
 
-                    <div class="d-flex flex-wrap gap-2 mb-3">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
                         <span class="badge bg-primary">Total Kehadiran Layanan: {{ $totalKehadiran }}</span>
                         <span class="badge bg-success">Total Siswa Terlayani: {{ $totalSiswaUnik }}</span>
                     </div>
@@ -60,7 +60,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -97,13 +97,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Preview Print Daftar Hadir Layanan BK</h5>
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body p-0" style="height: 75vh;">
                 <iframe id="printPreviewFrameDaftarHadir" src="" style="width:100%;height:100%;border:0;"></iframe>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-primary" id="btnPrintFromPreviewDaftarHadir">
                     <i class="ti ti-printer me-1"></i>Print
                 </button>

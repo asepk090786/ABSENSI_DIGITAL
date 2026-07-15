@@ -1,0 +1,703 @@
+openapi: 3.0.0
+info:
+  title: SIMADIS School Management System API
+  description: RESTful JSON API for Flutter mobile app & web dashboard
+  version: 1.0.0
+  contact:
+    name: SIMADIS Team
+
+servers:
+  - url: http://localhost:8000/api
+    description: Development
+  - url: https://simadis.sman1pontang.sch.id/api
+    description: Production
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              role_name:
+                type: string
+      required:
+        - id
+        - name
+        - email
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        token_type:
+          type: string
+          default: Bearer
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+
+    Kelas:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama_kelas:
+          type: string
+        tingkat_kelas:
+          type: integer
+        wali_kelas:
+          type: object
+          properties:
+            id:
+              type: integer
+            nama:
+              type: string
+
+    Siswa:
+      type: object
+      properties:
+        id:
+          type: integer
+        nis:
+          type: string
+        nama:
+          type: string
+        kelas_id:
+          type: integer
+        jabatan_kelas:
+          type: string
+          nullable: true
+        status_aktif:
+          type: boolean
+
+    Guru:
+      type: object
+      properties:
+        id:
+          type: integer
+        nama:
+          type: string
+        kode_guru:
+          type: string
+        nip:
+          type: string
+          nullable: true
+
+    JamBelajar:
+      type: object
+      properties:
+        id:
+          type: integer
+        urutan:
+          type: integer
+        jam_mulai:
+          type: string
+          format: time
+        jam_selesai:
+          type: string
+          format: time
+
+    AbsensiKelas:
+      type: object
+      properties:
+        id:
+          type: integer
+        tanggal:
+          type: string
+          format: date
+        kelas:
+          $ref: '#/components/schemas/Kelas'
+        guru:
+          $ref: '#/components/schemas/Guru'
+        jam_mulai:
+          type: string
+        jam_selesai:
+          type: string
+        status_kelas:
+          type: string
+          nullable: true
+        counts:
+          type: object
+          properties:
+            hadir:
+              type: integer
+            terlambat:
+              type: integer
+            sakit:
+              type: integer
+            izin:
+              type: integer
+            alpa:
+              type: integer
+
+    AbsensiSiswa:
+      type: object
+      properties:
+        id:
+          type: integer
+        siswa_id:
+          type: integer
+        siswa:
+          $ref: '#/components/schemas/Siswa'
+        status:
+          type: string
+          enum: [hadir, terlambat, sakit, izin, alpa]
+        keterangan:
+          type: string
+          nullable: true
+
+    AbsensiDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        tanggal:
+          type: string
+          format: date
+        kelas_id:
+          type: integer
+        guru_id:
+          type: integer
+        jam_belajar_id:
+          type: integer
+        tahun_ajaran_id:
+          type: integer
+        semester_id:
+          type: integer
+        status_kelas:
+          type: string
+          nullable: true
+        absensi_siswa:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbsensiSiswa'
+
+    CreateAbsensiRequest:
+      type: object
+      properties:
+        kelas_id:
+          type: integer
+        guru_id:
+          type: integer
+        jam_belajar_id:
+          type: integer
+        tanggal:
+          type: string
+          format: date
+        tahun_ajaran_id:
+          type: integer
+        semester_id:
+          type: integer
+        status_kelas:
+          type: string
+          nullable: true
+        absensi_siswa:
+          type: array
+          items:
+            type: object
+            properties:
+              siswa_id:
+                type: integer
+              status:
+                type: string
+                enum: [hadir, terlambat, sakit, izin, alpa]
+              keterangan:
+                type: string
+                nullable: true
+            required:
+              - siswa_id
+              - status
+      required:
+        - kelas_id
+        - guru_id
+        - jam_belajar_id
+        - tanggal
+        - tahun_ajaran_id
+        - semester_id
+        - absensi_siswa
+
+    RekapPerKelas:
+      type: object
+      properties:
+        kelas_id:
+          type: integer
+        kelas:
+          $ref: '#/components/schemas/Kelas'
+        total_hadir:
+          type: integer
+        total_terlambat:
+          type: integer
+        total_sakit:
+          type: integer
+        total_izin:
+          type: integer
+        total_alpha:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+        current_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+
+paths:
+  /auth/login:
+    post:
+      summary: Login user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /auth/user:
+    get:
+      summary: Get current user
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /kelas:
+    get:
+      summary: List all classes
+      tags:
+        - Kelas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Kelas'
+
+  /kelas/{id}:
+    get:
+      summary: Get class detail
+      tags:
+        - Kelas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Class detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Kelas'
+
+  /kelas/{id}/siswa:
+    get:
+      summary: Get siswa in class
+      tags:
+        - Kelas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of siswa
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Siswa'
+
+  /siswa/{id}:
+    get:
+      summary: Get siswa detail
+      tags:
+        - Siswa
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Siswa detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Siswa'
+
+  /jam-belajar:
+    get:
+      summary: Get all jam belajar
+      tags:
+        - Jam Belajar
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of jam belajar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JamBelajar'
+
+  /absensi:
+    get:
+      summary: List absensi with filters
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by date (YYYY-MM-DD)
+        - name: kelas_id
+          in: query
+          schema:
+            type: integer
+        - name: guru_id
+          in: query
+          schema:
+            type: integer
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search query
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: List of absensi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AbsensiKelas'
+                  current_page:
+                    type: integer
+                  total:
+                    type: integer
+
+    post:
+      summary: Create absensi
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAbsensiRequest'
+      responses:
+        '201':
+          description: Absensi created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbsensiDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /absensi/{id}:
+    get:
+      summary: Get absensi detail with siswa
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Absensi detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbsensiDetail'
+
+    put:
+      summary: Update absensi
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAbsensiRequest'
+      responses:
+        '200':
+          description: Absensi updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbsensiDetail'
+
+    delete:
+      summary: Delete absensi
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Absensi deleted
+
+  /absensi/generate:
+    post:
+      summary: Generate absensi for classes
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kelas_ids:
+                  type: array
+                  items:
+                    type: integer
+                tanggal:
+                  type: string
+                  format: date
+                jam_belajar_id:
+                  type: integer
+              required:
+                - kelas_ids
+                - tanggal
+      responses:
+        '201':
+          description: Absensi generated
+
+  /absensi/rekap-per-kelas:
+    get:
+      summary: Get rekap per kelas
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Rekap per kelas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RekapPerKelas'
+
+  /absensi/bk-monitoring:
+    get:
+      summary: BK monitoring - siswa terlambat/tidak masuk
+      tags:
+        - Absensi
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tanggal
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of siswa perlu perhatian
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /settings:
+    get:
+      summary: Get app settings (sekolah, tahun ajaran, semester)
+      tags:
+        - Settings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sekolah:
+                    type: object
+                  tahun_ajaran:
+                    type: object
+                  semester:
+                    type: object
+
+security:
+  - BearerAuth: []

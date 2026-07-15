@@ -7,12 +7,12 @@
 
     <form method="POST" action="{{ route('setting.semester.store') }}">
         @csrf
-        <div class="mb-3">
+        <div class="mb-2">
             <label>Tahun Ajaran</label>
             <input type="text" class="form-control" value="{{ optional($active_tahun)->nama_tahun ?? 'N/A' }}" disabled>
             <input type="hidden" name="tahun_ajaran_id" value="{{ optional($active_tahun)->id }}">
         </div>
-        <div class="mb-3">
+        <div class="mb-2">
             <label>Nama Semester</label>
             <select name="nama_semester" class="form-select" required>
                 <option value="Semester 1 (Ganjil)">Semester 1 (Ganjil)</option>

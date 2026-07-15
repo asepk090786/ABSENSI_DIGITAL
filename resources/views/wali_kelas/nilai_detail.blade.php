@@ -9,7 +9,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title mb-1">
+                        <h4 class="card-title fw-semibold mb-1">
                             <i class="ti ti-user-check me-2"></i>Detail Nilai Siswa
                         </h4>
                         <p class="text-muted mb-0">
@@ -33,7 +33,7 @@
                         </div>
                     @else
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th width="5%">No</th>

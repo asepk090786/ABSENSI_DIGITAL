@@ -144,9 +144,9 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header border-0 pt-3 pb-2">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">Tambah Absensi Kelas</h3>
+                        <h3 class="card-title fw-semibold m-0">Tambah Absensi Kelas</h3>
                         <a href="{{ route('absensi.index') }}" class="btn btn-secondary">
                             <i class="ti ti-arrow-left me-1"></i> Kembali
                         </a>
@@ -161,7 +161,7 @@
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                     @endif
 
@@ -169,7 +169,7 @@
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <strong><i class="ti ti-alert-triangle me-2"></i>Perhatian:</strong>
                         {{ session('warning') }}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                     @endif
 
@@ -202,7 +202,7 @@
 
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label for="tanggal" class="form-label">Tanggal <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control @error('tanggal') is-invalid @enderror" 
                                          id="tanggal" name="tanggal" value="{{ old('tanggal', $selectedDate ?? date('Y-m-d')) }}" required>
@@ -213,7 +213,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label for="kelas_id" class="form-label">Kelas <span class="text-danger">*</span></label>
                                     <select class="form-control @error('kelas_id') is-invalid @enderror" 
                                             id="kelas_id" name="kelas_id" required
@@ -243,7 +243,7 @@
 
                             @if(!($isGuruPiket ?? false))
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label for="guru_id" class="form-label">Guru <span class="text-danger">*</span></label>
                                     <select class="form-control @error('guru_id') is-invalid @enderror" 
                                             id="guru_id" name="guru_id" required>
@@ -261,7 +261,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label for="jam_belajar_id" class="form-label">Jam Belajar <span class="text-danger">*</span></label>
                                     <select class="form-control @error('jam_belajar_id') is-invalid @enderror" 
                                             id="jam_belajar_id" name="jam_belajar_id" required
@@ -299,7 +299,7 @@
 
                             @if(!($isGuruPiket ?? false))
                             <div class="col-md-12">
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label for="status_kelas" class="form-label">Status Kelas</label>
                                     <select class="form-control @error('status_kelas') is-invalid @enderror" id="status_kelas" name="status_kelas">
                                         <option value="">-- Pilih Status Kelas (opsional) --</option>
@@ -324,18 +324,18 @@
                             <strong>Semester:</strong> {{ $semester->nama_semester ?? '-' }}
                         </div>
 
-                        <!-- Data Siswa -->
+                        
                         <div id="siswaContainer" style="display: none;">
                             <div class="card mt-4">
                                 <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
                                     <h5 class="mb-0"><i class="ti ti-users me-2"></i>Daftar Siswa & Absensi</h5>
                                     <div class="ms-auto d-flex flex-wrap gap-2">
                                         @if(!($isGuruPiket ?? false))
-                                            <button type="button" class="btn btn-sm btn-success" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
+                                            <button type="button" class="btn btn-sm btn-success btn-modern" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
                                         @endif
                                         <button type="button" class="btn btn-sm btn-orange" onclick="setAllStatus('terlambat')" style="background:#f59e0b;color:#fff;">Ceklis Semua Terlambat</button>
                                         <button type="button" class="btn btn-sm btn-warning" onclick="setAllStatus('sakit')">Ceklis Semua Sakit</button>
-                                        <button type="button" class="btn btn-sm btn-info" onclick="setAllStatus('izin')">Ceklis Semua Izin</button>
+                                        <button type="button" class="btn btn-sm btn-info btn-modern" onclick="setAllStatus('izin')">Ceklis Semua Izin</button>
                                         <button type="button" class="btn btn-sm btn-danger" onclick="setAllStatus('alpa')">Ceklis Semua Alpa</button>
                                         <input type="text" id="searchSiswa" class="form-control form-control-sm" placeholder="Cari nama / NIS" style="min-width: 200px;">
                                     </div>
