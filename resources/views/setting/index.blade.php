@@ -60,6 +60,12 @@
                             <div class="text-danger small mb-3">{{ $message }}</div>
                         @enderror
 
+                        <div class="mb-3">
+                            <label for="jadwal_maintenance_message" class="form-label">Pesan notifikasi (ditampilkan saat jadwal dinonaktifkan)</label>
+                            <textarea class="form-control" id="jadwal_maintenance_message" name="jadwal_maintenance_message" rows="3">{{ old('jadwal_maintenance_message', optional($sekolah)->jadwal_maintenance_message) }}</textarea>
+                            <div class="form-text">Anda dapat memasukkan teks sederhana atau HTML singkat untuk menampilkan informasi tambahan kepada guru.</div>
+                        </div>
+
                         <p class="text-muted small">
                             Jika dinonaktifkan, preview jadwal di akun guru akan diganti dengan informasi bahwa jadwal masih dalam proses perbaikan.
                         </p>

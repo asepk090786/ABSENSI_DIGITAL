@@ -185,6 +185,7 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'tampilkan_jadwal' => 'required|boolean',
+            'jadwal_maintenance_message' => 'nullable|string',
         ]);
 
         $sekolah = Sekolah::first();
@@ -197,6 +198,7 @@ class SettingController extends Controller
         }
 
         $sekolah->tampilkan_jadwal = $validated['tampilkan_jadwal'];
+        $sekolah->jadwal_maintenance_message = $validated['jadwal_maintenance_message'] ?? null;
         $sekolah->save();
 
         return back()->with('success', 'Pengaturan tampilan jadwal berhasil disimpan.');

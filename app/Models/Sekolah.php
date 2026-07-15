@@ -43,6 +43,7 @@ class Sekolah extends Model
         'header_line4',
         'header_line4_spacing',
         'tampilkan_jadwal',
+        'jadwal_maintenance_message',
     ];
 
     protected $casts = [

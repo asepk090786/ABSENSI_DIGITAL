@@ -12,7 +12,11 @@
             <div class="card-body">
                 <div class="alert alert-warning">
                     <h5><i class="ti ti-alert-circle me-2"></i>Jadwal tidak tersedia</h5>
-                    <p>Jadwal mengajar saat ini sedang dalam proses perbaikan. Silakan cek kembali nanti atau hubungi administrator untuk informasi lebih lanjut.</p>
+                    @if(optional($sekolah)->jadwal_maintenance_message)
+                        {!! optional($sekolah)->jadwal_maintenance_message !!}
+                    @else
+                        <p>Jadwal mengajar saat ini sedang dalam proses perbaikan. Silakan cek kembali nanti atau hubungi administrator untuk informasi lebih lanjut.</p>
+                    @endif
                     <p class="mb-0"><strong>Guru:</strong> {{ $guru->nama }}</p>
                 </div>
                 <a href="{{ route('home') }}" class="btn btn-secondary btn-sm">

@@ -34,7 +34,7 @@ class JadwalKbmController extends Controller
     {
         $sekolah = Sekolah::first();
         if ($sekolah && ! $sekolah->tampilkan_jadwal) {
-            return view('jadwal_kbm.keseluruhan_maintenance');
+            return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
 
         $kelasList = Kelas::with('waliKelas')->orderBy('tingkat_kelas')->orderBy('nama_kelas')->get();
@@ -116,7 +116,7 @@ class JadwalKbmController extends Controller
     {
         $sekolah = Sekolah::first();
         if ($sekolah && ! $sekolah->tampilkan_jadwal) {
-            return view('jadwal_kbm.keseluruhan_maintenance');
+            return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
 
         $kelas = Kelas::findOrFail($kelasId);
@@ -353,7 +353,7 @@ class JadwalKbmController extends Controller
         $sekolah = Sekolah::first();
 
         if ($sekolah && ! $sekolah->tampilkan_jadwal) {
-            return view('jadwal_kbm.show_by_guru_maintenance', compact('guru'));
+            return view('jadwal_kbm.show_by_guru_maintenance', compact('guru', 'sekolah'));
         }
 
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -394,7 +394,7 @@ class JadwalKbmController extends Controller
         $sekolah = Sekolah::first();
 
         if ($sekolah && ! $sekolah->tampilkan_jadwal) {
-            return view('jadwal_kbm.keseluruhan_maintenance');
+            return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
         $semesterAktif = Semester::where('is_active', true)->first();
