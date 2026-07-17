@@ -234,6 +234,14 @@ Route::middleware(['auth'])->group(function(){
     Route::get('tugas-guru/beban-kerja/export-excel', ['App\Http\Controllers\TugasGuruController', 'exportBebanKerjaExcel'])->name('tugas_guru.beban_kerja.export_excel');
     Route::get('tugas-guru/beban-kerja/export-pdf', ['App\Http\Controllers\TugasGuruController', 'exportBebanKerjaPdf'])->name('tugas_guru.beban_kerja.export_pdf');
     Route::get('tugas-guru/beban-kerja/print', ['App\Http\Controllers\TugasGuruController', 'printBebanKerja'])->name('tugas_guru.beban_kerja.print');
+    Route::get('sk-tugas', [App\Http\Controllers\SkTugasController::class, 'index'])->name('sk_tugas.index');
+    Route::get('sk-tugas/create', [App\Http\Controllers\SkTugasController::class, 'create'])->name('sk_tugas.create')->middleware('role:Admin');
+    Route::post('sk-tugas', [App\Http\Controllers\SkTugasController::class, 'store'])->name('sk_tugas.store')->middleware('role:Admin');
+    Route::get('sk-tugas/{sk_tugas}/preview', [App\Http\Controllers\SkTugasController::class, 'preview'])->name('sk_tugas.preview');
+    Route::post('sk-tugas/{sk_tugas}/toggle-visibility', [App\Http\Controllers\SkTugasController::class, 'toggleVisibility'])->name('sk_tugas.toggle_visibility')->middleware('role:Admin');
+    Route::delete('sk-tugas/{sk_tugas}', [App\Http\Controllers\SkTugasController::class, 'destroy'])->name('sk_tugas.destroy')->middleware('role:Admin');
+    Route::get('sk-tugas/{sk_tugas}/download', [App\Http\Controllers\SkTugasController::class, 'download'])->name('sk_tugas.download');
+
     Route::resource('tugas_guru', 'App\Http\Controllers\TugasGuruController');
     
     // Rencana Pembelajaran routes - custom routes BEFORE resource to avoid conflicts
