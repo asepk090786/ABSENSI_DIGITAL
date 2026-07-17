@@ -33,7 +33,11 @@ class Sekolah extends Model
         'logo_header_kiri',
         'header_html',
         'tampilkan_jadwal',
+        'tampilkan_jadwal_guru',
+        'tampilkan_jadwal_siswa',
         'tampilkan_nama_wali_kelas',
+        'tampilkan_nama_wali_kelas_guru',
+        'tampilkan_nama_wali_kelas_siswa',
         'jadwal_maintenance_message',
         'wali_kelas_hidden_message',
         // Header text lines (HTML from Summernote)
@@ -49,6 +53,41 @@ class Sekolah extends Model
 
     protected $casts = [
         'tampilkan_jadwal' => 'boolean',
+        'tampilkan_jadwal_guru' => 'boolean',
+        'tampilkan_jadwal_siswa' => 'boolean',
         'tampilkan_nama_wali_kelas' => 'boolean',
+        'tampilkan_nama_wali_kelas_guru' => 'boolean',
+        'tampilkan_nama_wali_kelas_siswa' => 'boolean',
     ];
+
+    public function shouldShowJadwalForUser($user)
+    {
+        if (! $user) {
+            return true;
+        }
+
+        if ($user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah'])) {
+            return true;
+        }
+
+        if ($user->hasAnyRole(['Siswa'])) {
+            return $this->tampilkan_jadwal_siswa ?? $this->tampilkan_jadwal ?? true;
+        }
+
+        return $this->tampilkan_jadwal_guru ?? $this->tampilkan_jadwal ?? true;
+    }
+
+    public function shouldShowNamaWaliKelasForUser($user)
+    {
+        if (! $user) {
+            return true;
+        }
+
+        if ($user->hasAnyRole(['Siswa'])) {
+            return $this->tampilkan_nama_wali_kelas_siswa ?? $this->tampilkan_nama_wali_kelas ?? true;
+        }
+
+        return $this->tampilkan_nama_wali_kelas_guru ?? $this->tampilkan_nama_wali_kelas ?? true;
+    }
 }
+

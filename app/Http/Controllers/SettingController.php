@@ -184,8 +184,10 @@ class SettingController extends Controller
     public function updateJadwalVisibility(Request $request)
     {
         $validated = $request->validate([
-            'tampilkan_jadwal' => 'required|boolean',
-            'tampilkan_nama_wali_kelas' => 'required|boolean',
+            'tampilkan_jadwal_guru' => 'required|boolean',
+            'tampilkan_jadwal_siswa' => 'required|boolean',
+            'tampilkan_nama_wali_kelas_guru' => 'required|boolean',
+            'tampilkan_nama_wali_kelas_siswa' => 'required|boolean',
             'jadwal_maintenance_message' => 'nullable|string',
             'wali_kelas_hidden_message' => 'nullable|string',
         ]);
@@ -199,8 +201,12 @@ class SettingController extends Controller
             $sekolah->provinsi = '-';
         }
 
-        $sekolah->tampilkan_jadwal = $validated['tampilkan_jadwal'];
-        $sekolah->tampilkan_nama_wali_kelas = $validated['tampilkan_nama_wali_kelas'];
+        $sekolah->tampilkan_jadwal_guru = $validated['tampilkan_jadwal_guru'];
+        $sekolah->tampilkan_jadwal_siswa = $validated['tampilkan_jadwal_siswa'];
+        $sekolah->tampilkan_nama_wali_kelas_guru = $validated['tampilkan_nama_wali_kelas_guru'];
+        $sekolah->tampilkan_nama_wali_kelas_siswa = $validated['tampilkan_nama_wali_kelas_siswa'];
+        $sekolah->tampilkan_jadwal = $validated['tampilkan_jadwal_guru'] || $validated['tampilkan_jadwal_siswa'];
+        $sekolah->tampilkan_nama_wali_kelas = $validated['tampilkan_nama_wali_kelas_guru'] || $validated['tampilkan_nama_wali_kelas_siswa'];
 
         // Sanitasi sederhana untuk menghindari script injection
         $rawMessage = $validated['jadwal_maintenance_message'] ?? null;

@@ -341,7 +341,7 @@
                         <div class="wali-kelas-signature-space"></div>
                         
                         <div class="wali-kelas-nama">
-                            @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false)
+                            @if(!$sekolah || $sekolah->shouldShowNamaWaliKelasForUser(auth()->user()))
                                 @if($waliKelas)
                                     {{ $waliKelas->nama }}
                                 @else
@@ -352,7 +352,7 @@
                             @endif
                         </div>
                         <div class="wali-kelas-nip">
-                            @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false && $waliKelas && $waliKelas->nip)
+                            @if((!$sekolah || $sekolah->shouldShowNamaWaliKelasForUser(auth()->user())) && $waliKelas && $waliKelas->nip)
                                 NIP. {{ $waliKelas->nip }}
                             @endif
                         </div>

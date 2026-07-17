@@ -83,6 +83,14 @@
                 <span>Jadwal KBM</span>
             </a>
         </li>
+        @if(!auth()->user()->hasRole('Siswa'))
+        <li>
+            <a href="{{ route('sk_tugas.index') }}" class="menu-item {{ request()->routeIs('sk_tugas.*') ? 'active' : '' }}">
+                <i class="material-icons">assignment</i>
+                <span>SK TUGAS</span>
+            </a>
+        </li>
+        @endif
         @if(!$isGuru)
         <li>
             <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">

@@ -83,7 +83,7 @@ class GuruPiketExport implements FromArray, WithHeadings, WithStyles, WithColumn
     public function styles(Worksheet $sheet)
     {
         return [
-            4 => [
+            1 => [
                 'font' => [
                     'bold' => true,
                     'color' => ['rgb' => 'FFFFFF'],
@@ -138,7 +138,12 @@ class GuruPiketExport implements FromArray, WithHeadings, WithStyles, WithColumn
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
                 $headerRow = 4;
-                $sheet->getStyle('A' . $headerRow . ':' . $highestColumn . $headerRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $headerStyle = $sheet->getStyle('A' . $headerRow . ':' . $highestColumn . $headerRow);
+                $headerStyle->getFont()->setBold(true);
+                $headerStyle->getFont()->getColor()->setRGB('FFFFFF');
+                $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+                $headerStyle->getFill()->getStartColor()->setRGB('4472C4');
+                $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
                 foreach (range('A', $highestColumn) as $col) {
                     $sheet->getStyle($col . '5:' . $col . $highestRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);

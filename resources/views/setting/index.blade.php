@@ -1,74 +1,80 @@
 @extends('layouts.app', ['pageSlug' => 'setting'])
 
-@section('title','Pengaturan')
+@section('title','Pengaturan Tampilan Dashboard')
 
 @section('content')
-    <h3>Pengaturan Sistem</h3>
-
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header border-0 pt-3 pb-2">
-                    <strong>Tahun Ajaran Aktif</strong>
-                </div>
-                <div class="card-body">
-                    @if($active_tahun)
-                        <p><strong>{{ $active_tahun->nama_tahun }}</strong></p>
-                    @else
-                        <p class="text-danger">Tidak ada tahun ajaran aktif</p>
-                    @endif
-                    <a href="{{ route('setting.tahun_ajaran') }}" class="btn btn-sm btn-outline-primary">Manage</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header border-0 pt-3 pb-2">
-                    <strong>Semester Aktif</strong>
-                </div>
-                <div class="card-body">
-                    @if($active_semester)
-                        <p><strong>{{ $active_semester->nama_semester }}</strong></p>
-                    @else
-                        <p class="text-danger">Tidak ada semester aktif</p>
-                    @endif
-                    <a href="{{ route('setting.semester') }}" class="btn btn-sm btn-outline-primary">Manage</a>
-                </div>
-            </div>
-        </div>
-    </div>
+    <h3>Pengaturan Tampilan Dashboard</h3>
 
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header border-0 pt-3 pb-2">
-                    <strong>Pengaturan Tampilan Jadwal</strong>
+                    <strong>Pengaturan Tampilan Dashboard</strong>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('setting.jadwal_visibility.update') }}" method="POST">
                         @csrf
                         @method('PUT')
-                        <input type="hidden" name="tampilkan_jadwal" value="0">
-                        <input type="hidden" name="tampilkan_nama_wali_kelas" value="0">
+                        <input type="hidden" name="tampilkan_jadwal_guru" value="0">
+                        <input type="hidden" name="tampilkan_jadwal_siswa" value="0">
+                        <input type="hidden" name="tampilkan_nama_wali_kelas_guru" value="0">
+                        <input type="hidden" name="tampilkan_nama_wali_kelas_siswa" value="0">
 
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="tampilkan_jadwal" name="tampilkan_jadwal" value="1" {{ optional($sekolah)->tampilkan_jadwal !== false ? 'checked' : '' }}>
-                            <label class="form-check-label" for="tampilkan_jadwal">Tampilkan jadwal pada akun guru</label>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header border-0 pt-3 pb-2">
+                                        <strong>Tampilan Jadwal</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="tampilkan_jadwal_guru" name="tampilkan_jadwal_guru" value="1" {{ optional($sekolah)->tampilkan_jadwal_guru ?? optional($sekolah)->tampilkan_jadwal ?? true ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="tampilkan_jadwal_guru">Tampilkan jadwal pada akun guru</label>
+                                        </div>
+
+                                        @error('tampilkan_jadwal_guru')
+                                            <div class="text-danger small mb-3">{{ $message }}</div>
+                                        @enderror
+
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="tampilkan_jadwal_siswa" name="tampilkan_jadwal_siswa" value="1" {{ optional($sekolah)->tampilkan_jadwal_siswa ?? optional($sekolah)->tampilkan_jadwal ?? true ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="tampilkan_jadwal_siswa">Tampilkan jadwal pada akun siswa</label>
+                                        </div>
+
+                                        @error('tampilkan_jadwal_siswa')
+                                            <div class="text-danger small mb-3">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header border-0 pt-3 pb-2">
+                                        <strong>Nama Wali Kelas</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="tampilkan_nama_wali_kelas_guru" name="tampilkan_nama_wali_kelas_guru" value="1" {{ optional($sekolah)->tampilkan_nama_wali_kelas_guru ?? optional($sekolah)->tampilkan_nama_wali_kelas ?? true ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="tampilkan_nama_wali_kelas_guru">Tampilkan nama wali kelas pada akun guru</label>
+                                        </div>
+
+                                        @error('tampilkan_nama_wali_kelas_guru')
+                                            <div class="text-danger small mb-3">{{ $message }}</div>
+                                        @enderror
+
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="tampilkan_nama_wali_kelas_siswa" name="tampilkan_nama_wali_kelas_siswa" value="1" {{ optional($sekolah)->tampilkan_nama_wali_kelas_siswa ?? optional($sekolah)->tampilkan_nama_wali_kelas ?? true ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="tampilkan_nama_wali_kelas_siswa">Tampilkan nama wali kelas pada akun siswa</label>
+                                        </div>
+
+                                        @error('tampilkan_nama_wali_kelas_siswa')
+                                            <div class="text-danger small mb-3">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-
-                        @error('tampilkan_jadwal')
-                            <div class="text-danger small mb-3">{{ $message }}</div>
-                        @enderror
-
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="tampilkan_nama_wali_kelas" name="tampilkan_nama_wali_kelas" value="1" {{ optional($sekolah)->tampilkan_nama_wali_kelas !== false ? 'checked' : '' }}>
-                            <label class="form-check-label" for="tampilkan_nama_wali_kelas">Tampilkan nama wali kelas di tampilan kelas guru dan siswa</label>
-                        </div>
-
-                        @error('tampilkan_nama_wali_kelas')
-                            <div class="text-danger small mb-3">{{ $message }}</div>
-                        @enderror
 
                         <div class="mb-3">
                             <label for="wali_kelas_hidden_message" class="form-label">Pesan notifikasi jika nama wali kelas disembunyikan</label>

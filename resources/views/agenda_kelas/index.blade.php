@@ -271,7 +271,7 @@
                                         <i class="ti ti-book-2" style="font-size: 48px; color: {{ $iconColor }} !important;"></i>
                                     </div>
                                     <h5 class="card-title mb-2" style="font-weight: 700; font-size: 1.25rem;">{{ $kelas->nama_kelas }}</h5>
-                                    @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false)
+                                    @if(!$sekolah || $sekolah->shouldShowNamaWaliKelasForUser(auth()->user()))
                                         @if($kelas->wali_nama)
                                         <p class="text-muted small mb-2">
                                             <i class="ti ti-user me-1"></i>{{ $kelas->wali_nama }}
