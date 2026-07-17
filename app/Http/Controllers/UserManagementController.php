@@ -19,7 +19,8 @@ class UserManagementController extends Controller
     public function edit(User $user)
     {
         $roles = Role::orderBy('role_name')->get();
-        return view('user_management.edit', compact('user', 'roles'));
+        $guru = Guru::orderBy('nama')->get();
+        return view('user_management.edit', compact('user', 'roles', 'guru'));
     }
 
     public function update(Request $request, User $user)
@@ -31,6 +32,7 @@ class UserManagementController extends Controller
             'email' => ['nullable', 'email', 'max:150', 'unique:users,email,' . $user->id],
             'role_id' => ['required', 'exists:roles,id'],
             'is_active' => ['required', 'boolean'],
+            'guru_id' => ['nullable', 'exists:guru,id'],
         ]);
 
         if ($validator->fails()) {
@@ -41,6 +43,7 @@ class UserManagementController extends Controller
         $user->username = $data['username'];
         $user->email = $data['email'] ?? null;
         $user->role_id = $data['role_id'];
+        $user->guru_id = $data['guru_id'] ?? null;
         $user->is_active = $data['is_active'];
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);
@@ -70,7 +73,7 @@ class UserManagementController extends Controller
     public function create()
     {
         $roles = Role::orderBy('role_name')->get();
-        $guru = Guru::orderBy('nama')->get();
+        $guru = Guru::with('user')->orderBy('nama')->get();
         $kepala = KepalaSekolah::with('guru')->orderBy('nama')->get();
         $siswa = Siswa::orderBy('nama')->get();
 
@@ -81,18 +84,30 @@ class UserManagementController extends Controller
     {
         $data = $request->all();
 
-        $validator = Validator::make($data, [
+        $guru = isset($data['guru_id']) ? Guru::with('user')->find($data['guru_id']) : null;
+        $existingGuruUser = $guru?->user;
+
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'nip' => ['nullable', 'string', 'max:50'],
-            'username' => ['required', 'string', 'max:50', 'unique:users,username'],
-            'email' => ['nullable', 'email', 'max:150', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6'],
             'jenis_kelamin' => ['required', 'in:L,P'],
             'role_id' => ['required', 'exists:roles,id'],
             'guru_id' => ['nullable', 'exists:guru,id'],
             'kepala_sekolah_id' => ['nullable', 'exists:kepala_sekolah,id'],
             'siswa_id' => ['nullable', 'exists:siswa,id'],
-        ]);
+        ];
+
+        if ($existingGuruUser) {
+            $rules['username'] = ['required', 'string', 'max:50', 'unique:users,username,' . $existingGuruUser->id];
+            $rules['email'] = ['nullable', 'email', 'max:150', 'unique:users,email,' . $existingGuruUser->id];
+            $rules['password'] = ['nullable', 'string', 'min:6'];
+        } else {
+            $rules['username'] = ['required', 'string', 'max:50', 'unique:users,username'];
+            $rules['email'] = ['nullable', 'email', 'max:150', 'unique:users,email'];
+            $rules['password'] = ['required', 'string', 'min:6'];
+        }
+
+        $validator = Validator::make($data, $rules);
 
         $role = Role::find($data['role_id'] ?? null);
 
@@ -118,6 +133,26 @@ class UserManagementController extends Controller
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
+        }
+
+        if ($existingGuruUser) {
+            $existingGuruUser->name = $data['name'];
+            $existingGuruUser->nip = $data['nip'] ?? null;
+            $existingGuruUser->username = $data['username'];
+            $existingGuruUser->email = $data['email'] ?? null;
+            $existingGuruUser->jenis_kelamin = $data['jenis_kelamin'];
+            $existingGuruUser->role_id = $data['role_id'];
+            $existingGuruUser->guru_id = $data['guru_id'] ?? null;
+            $existingGuruUser->kepala_sekolah_id = $data['kepala_sekolah_id'] ?? null;
+            $existingGuruUser->siswa_id = $data['siswa_id'] ?? null;
+
+            if (! empty($data['password'])) {
+                $existingGuruUser->password = Hash::make($data['password']);
+            }
+
+            $existingGuruUser->save();
+
+            return redirect()->route('users.index')->with('success', 'Akun guru berhasil diperbarui menjadi ' . ($role?->role_name ?? 'pengguna baru') . '.');
         }
 
         User::create([

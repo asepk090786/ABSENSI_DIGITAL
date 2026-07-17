@@ -37,7 +37,8 @@
                     </div>
                     <div class="mb-2">
                         <label class="form-label">Password <span class="text-danger">*</span></label>
-                        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
+                        <input type="password" name="password" class="form-control @error('password') is-invalid @enderror">
+                        <div id="passwordHelpText" class="form-text text-muted">Isi password jika membuat akun baru atau ingin mengganti password.</div>
                         @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-2">
@@ -61,11 +62,26 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Guru (untuk Kepala Sekolah / Guru BK / Guru)</label>
+                            <label class="form-label">Guru (untuk Admin / Kepala Sekolah / Guru BK / Guru)</label>
                             <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
                                 <option value="">-- Pilih Guru --</option>
                                 @foreach($guru as $g)
-                                    <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama }}</option>
+                                    @php
+                                        $identifier = $g->kode_guru ?? $g->nip ?? $g->id;
+                                        $autoUsername = $g->user->username ?? $g->username ?? 'guru' . $identifier;
+                                        $autoPassword = $g->user ? '' : 'guru' . $identifier;
+                                    @endphp
+                                    <option value="{{ $g->id }}"
+                                        data-name="{{ htmlspecialchars($g->nama, ENT_QUOTES, 'UTF-8') }}"
+                                        data-nip="{{ htmlspecialchars($g->nip ?? '', ENT_QUOTES, 'UTF-8') }}"
+                                        data-email="{{ htmlspecialchars($g->email ?? '', ENT_QUOTES, 'UTF-8') }}"
+                                        data-jenis-kelamin="{{ htmlspecialchars($g->jenis_kelamin ?? '', ENT_QUOTES, 'UTF-8') }}"
+                                        data-username="{{ htmlspecialchars($autoUsername, ENT_QUOTES, 'UTF-8') }}"
+                                        data-password="{{ htmlspecialchars($autoPassword, ENT_QUOTES, 'UTF-8') }}"
+                                        data-has-user="{{ $g->user ? '1' : '0' }}"
+                                        {{ old('guru_id') == $g->id ? 'selected' : '' }}>
+                                        {{ $g->nama }}
+                                    </option>
                                 @endforeach
                             </select>
                             @error('guru_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -99,4 +115,108 @@
         </div>
     </div>
 </div>
+
+@push('js')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const roleSelect = document.querySelector('select[name="role_id"]');
+        const guruSelect = document.querySelector('select[name="guru_id"]');
+        const guruField = guruSelect.closest('.mb-2');
+        const kepalaField = document.querySelector('select[name="kepala_sekolah_id"]').closest('.mb-2');
+        const siswaField = document.querySelector('select[name="siswa_id"]').closest('.mb-2');
+        const nameInput = document.querySelector('input[name="name"]');
+        const nipInput = document.querySelector('input[name="nip"]');
+        const emailInput = document.querySelector('input[name="email"]');
+        const jenisKelaminSelect = document.querySelector('select[name="jenis_kelamin"]');
+        const usernameInput = document.querySelector('input[name="username"]');
+        const passwordInput = document.querySelector('input[name="password"]');
+        const passwordHelpText = document.querySelector('#passwordHelpText');
+
+        function updateUserRoleFields() {
+            const roleText = roleSelect.options[roleSelect.selectedIndex]?.text || '';
+            const isGuruRole = /Guru|Admin|Wakil Kepala Sekolah/i.test(roleText);
+            const isKepalaRole = /Kepala Sekolah/i.test(roleText);
+            const isSiswaRole = /Siswa/i.test(roleText);
+
+            if (guruField) {
+                guruField.style.display = isGuruRole || isKepalaRole ? '' : 'none';
+            }
+            if (kepalaField) {
+                kepalaField.style.display = isKepalaRole ? '' : 'none';
+            }
+            if (siswaField) {
+                siswaField.style.display = isSiswaRole ? '' : 'none';
+            }
+        }
+
+        function updateGuruFields() {
+            const selectedOption = guruSelect.selectedOptions[0];
+            if (!selectedOption) {
+                return;
+            }
+
+            const selectedName = selectedOption.dataset.name || '';
+            const selectedNip = selectedOption.dataset.nip || '';
+            const selectedEmail = selectedOption.dataset.email || '';
+            const selectedJenisKelamin = selectedOption.dataset.jenisKelamin || selectedOption.dataset['jenis-kelamin'] || '';
+            const selectedUsername = selectedOption.dataset.username || '';
+            const selectedPassword = selectedOption.dataset.password || '';
+            const hasUser = selectedOption.dataset.hasUser === '1';
+
+            if (!selectedOption.value) {
+                nameInput.value = '';
+                nipInput.value = '';
+                emailInput.value = '';
+                jenisKelaminSelect.value = '';
+                usernameInput.value = '';
+                passwordInput.value = '';
+                passwordInput.required = true;
+                if (passwordHelpText) {
+                    passwordHelpText.textContent = 'Isi password jika membuat akun baru atau ingin mengganti password.';
+                }
+                return;
+            }
+
+            if (selectedName) {
+                nameInput.value = selectedName;
+            }
+            if (selectedNip) {
+                nipInput.value = selectedNip;
+            }
+            if (selectedEmail) {
+                emailInput.value = selectedEmail;
+            }
+            if (selectedJenisKelamin) {
+                jenisKelaminSelect.value = selectedJenisKelamin;
+            }
+            if (selectedUsername) {
+                usernameInput.value = selectedUsername;
+            }
+
+            if (hasUser) {
+                passwordInput.required = false;
+                if (passwordHelpText) {
+                    passwordHelpText.textContent = 'Guru sudah memiliki akun. Kosongkan password untuk tetap memakai password lama, atau isi untuk menggantinya.';
+                }
+            } else {
+                passwordInput.required = true;
+                passwordInput.value = selectedPassword;
+                if (passwordHelpText) {
+                    passwordHelpText.textContent = 'Isi password untuk membuat akun baru.';
+                }
+            }
+        }
+
+        if (roleSelect) {
+            roleSelect.addEventListener('change', updateUserRoleFields);
+            updateUserRoleFields();
+        }
+
+        if (guruSelect) {
+            guruSelect.addEventListener('change', updateGuruFields);
+            updateGuruFields();
+        }
+    });
+</script>
+@endpush
 @endsection

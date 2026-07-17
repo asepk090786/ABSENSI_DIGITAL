@@ -34,6 +34,16 @@
                         </select>
                     </div>
                     <div class="mb-2">
+                        <label class="form-label">Guru (untuk Admin / Kepala Sekolah / Guru BK / Guru)</label>
+                        <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
+                            <option value="">-- Pilih Guru --</option>
+                            @foreach($guru as $g)
+                                <option value="{{ $g->id }}" {{ old('guru_id', $user->guru_id) == $g->id ? 'selected' : '' }}>{{ $g->nama }}</option>
+                            @endforeach
+                        </select>
+                        @error('guru_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-2">
                         <label for="is_active" class="form-label">Status</label>
                         <select name="is_active" id="is_active" class="form-select">
                             <option value="1" {{ old('is_active', $user->is_active) ? 'selected' : '' }}>Aktif</option>
@@ -51,4 +61,37 @@
         </div>
     </div>
 </div>
+
+@push('js')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const roleSelect = document.querySelector('select[name="role_id"]');
+        const guruField = document.querySelector('select[name="guru_id"]').closest('.mb-2');
+        const kepalaField = document.querySelector('select[name="kepala_sekolah_id"]').closest('.mb-2');
+        const siswaField = document.querySelector('select[name="siswa_id"]').closest('.mb-2');
+
+        function updateUserRoleFields() {
+            const roleText = roleSelect.options[roleSelect.selectedIndex]?.text || '';
+            const isGuruRole = /Guru|Admin|Wakil Kepala Sekolah/i.test(roleText);
+            const isKepalaRole = /Kepala Sekolah/i.test(roleText);
+            const isSiswaRole = /Siswa/i.test(roleText);
+
+            if (guruField) {
+                guruField.style.display = isGuruRole || isKepalaRole ? '' : 'none';
+            }
+            if (kepalaField) {
+                kepalaField.style.display = isKepalaRole ? '' : 'none';
+            }
+            if (siswaField) {
+                siswaField.style.display = isSiswaRole ? '' : 'none';
+            }
+        }
+
+        if (roleSelect) {
+            roleSelect.addEventListener('change', updateUserRoleFields);
+            updateUserRoleFields();
+        }
+    });
+</script>
+@endpush
 @endsection

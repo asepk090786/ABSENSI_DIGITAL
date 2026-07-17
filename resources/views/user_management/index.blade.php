@@ -103,13 +103,13 @@
                                                 </td>
                                                 <td><strong>{{ $user->name }}</strong></td>
                                                 <td>{{ $user->username }}</td>
-                                                <td><span class="badge bg-secondary">{{ $user->role->role_name ?? '-' }}</span></td>
+                                                <td><span class="badge bg-secondary text-white">{{ $user->role->role_name ?? '-' }}</span></td>
                                                 <td>{{ $user->email ?? '-' }}</td>
                                                 <td>
                                                     @if($user->is_active)
-                                                        <span class="badge bg-success">Aktif</span>
+                                                        <span class="badge bg-success text-white">Aktif</span>
                                                     @else
-                                                        <span class="badge bg-secondary">Nonaktif</span>
+                                                        <span class="badge bg-secondary text-white">Nonaktif</span>
                                                     @endif
                                                 </td>
                                                 <td>
@@ -181,9 +181,9 @@
                                                 <td>{{ $user->email ?? '-' }}</td>
                                                 <td>
                                                     @if($user->is_active)
-                                                        <span class="badge bg-success">Aktif</span>
+                                                        <span class="badge bg-success text-white">Aktif</span>
                                                     @else
-                                                        <span class="badge bg-secondary">Nonaktif</span>
+                                                        <span class="badge bg-secondary text-white">Nonaktif</span>
                                                     @endif
                                                 </td>
                                                 <td>
