@@ -11,50 +11,70 @@
             box-sizing: border-box;
         }
         
+        @page {
+            size: A4 portrait;
+            margin: 4mm;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            font-size: 8px;
+            font-size: 5px;
             color: #333;
+            margin: 0;
+            padding: 0;
         }
         
         .container {
-            padding: 5mm;
+            padding: 2mm;
+            column-count: 2;
+            column-gap: 3mm;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 8px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 5px;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            -webkit-column-break-inside: avoid;
+            column-break-inside: avoid;
+            column-span: all;
+            -webkit-column-span: all;
         }
         
         .header h2 {
-            font-size: 12px;
-            margin-bottom: 2px;
+            font-size: 10px;
+            margin-bottom: 1px;
         }
         
         .header p {
-            font-size: 7px;
+            font-size: 6px;
             margin: 1px 0;
         }
         
         .hari-section {
+            break-inside: avoid;
             page-break-inside: avoid;
-            margin-bottom: 8px;
-            border: 1px solid #999;
+            -webkit-column-break-inside: avoid;
+            margin-bottom: 3px;
+            border: 0.3px solid #999;
+            padding: 1px;
+            background-color: #ffffff;
         }
         
         .hari-title {
             background-color: #2563eb;
             color: white;
-            padding: 3px 5px;
+            padding: 1px 3px;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 6px;
             text-align: center;
         }
         
         .kode-guru {
             font-weight: bold;
+            font-size: 7px;
         }
         
         /* Background colors untuk setiap tingkat kelas */
@@ -71,13 +91,14 @@
         }
         
         .table-wrapper {
-            overflow-x: auto;
+            overflow-x: visible;
+            margin-top: 1px;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 7px;
+            font-size: 5px;
         }
         
         thead {
@@ -85,21 +106,23 @@
         }
         
         th {
-            border: 0.5px solid #999;
-            padding: 2px 1px;
+            border: 0.3px solid #999;
+            padding: 1px;
             text-align: center;
             font-weight: bold;
             background-color: #dbeafe;
-            height: 12px;
+            line-height: 1;
         }
         
         td {
-            border: 0.5px solid #999;
+            border: 0.3px solid #999;
             padding: 1px;
             text-align: center;
             vertical-align: middle;
-            height: 12px;
+            line-height: 1;
             word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
         }
         
         tbody tr:nth-child(odd) {
@@ -111,28 +134,92 @@
         }
         
         .jam-col {
-            width: 5%;
+            width: 6%;
             text-align: center;
+            padding: 1px;
         }
         
         .waktu-col {
-            width: 12%;
+            width: 11%;
             text-align: center;
+            padding: 1px;
         }
         
         .kelas-col {
             width: auto;
-            min-width: 4%;
+            min-width: 5%;
             text-align: center;
+            padding: 1px !important;
         }
         
         .badge {
             display: inline-block;
             background-color: #fbbf24;
             color: #000;
-            padding: 1px 2px;
+            padding: 0.5px 1px;
             border-radius: 2px;
-            font-size: 6px;
+            font-size: 5px;
+            font-weight: bold;
+        }
+
+        .legend-section {
+            margin-top: 4px;
+            column-span: all;
+            -webkit-column-span: all;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            -webkit-column-break-inside: avoid;
+        }
+
+        .legend-title {
+            font-size: 5px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .legend-table-wrapper {
+            width: 100%;
+            overflow-x: visible;
+        }
+
+        .legend-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 7px;
+            table-layout: fixed;
+        }
+
+        .legend-table th,
+        .legend-table td {
+            border: 0.3px solid #999;
+            padding: 0.5px;
+            text-align: left;
+            vertical-align: top;
+            line-height: 1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .legend-table th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+        }
+
+        .legend-table td {
+            font-size: 7px;
+        }
+
+        .legend-table th,
+        .legend-table td {
+            border: 0.3px solid #999;
+            padding: 0.5px;
+            text-align: left;
+            vertical-align: top;
+            line-height: 1;
+        }
+
+        .legend-table th {
+            background-color: #f3f4f6;
             font-weight: bold;
         }
         
@@ -184,6 +271,20 @@
         </div>
 
         <!-- Jadwal per Hari -->
+        @php
+            $guruLegend = collect();
+            foreach ($jadwalKeseluruhan as $jadwalHariGroup) {
+                foreach ($jadwalHariGroup as $jadwalHariItem) {
+                    if (!empty($jadwalHariItem->guru) && !empty($jadwalHariItem->guru->kode_guru)) {
+                        $guruLegend[$jadwalHariItem->guru->kode_guru] = $jadwalHariItem->guru->nama;
+                    }
+                }
+            }
+            $guruLegend = collect($guruLegend)->map(function($nama, $kode) {
+                return ['kode' => $kode, 'nama' => $nama];
+            })->sortBy('kode')->values();
+        @endphp
+
         @foreach($hariList as $hari)
             @php
                 $jadwalHari = $jadwalKeseluruhan->get($hari, collect());
@@ -293,6 +394,48 @@
             </div>
             @endif
         @endforeach
+
+        @if($guruLegend->isNotEmpty())
+            @php
+                $legendColumns = 3;
+                $legendCount = $guruLegend->count();
+                $legendRows = (int) ceil($legendCount / $legendColumns);
+            @endphp
+            <div class="legend-section">
+                <div class="legend-title">Keterangan Kode Guru</div>
+                <div class="legend-table-wrapper">
+                    <table class="legend-table">
+                        <thead>
+                            <tr>
+                                @for($col = 1; $col <= $legendColumns; $col++)
+                                    <th>Kode Guru</th>
+                                    <th>Nama Guru</th>
+                                @endfor
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for($row = 0; $row < $legendRows; $row++)
+                                <tr>
+                                    @for($col = 0; $col < $legendColumns; $col++)
+                                        @php
+                                            $index = $row + ($col * $legendRows);
+                                            $guru = $guruLegend->get($index);
+                                        @endphp
+                                        @if($guru)
+                                            <td>{{ $guru['kode'] }}</td>
+                                            <td>{{ $guru['nama'] }}</td>
+                                        @else
+                                            <td></td>
+                                            <td></td>
+                                        @endif
+                                    @endfor
+                                </tr>
+                            @endfor
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
     </div>
 </body>
 </html>

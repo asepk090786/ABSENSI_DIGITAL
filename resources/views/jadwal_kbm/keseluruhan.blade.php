@@ -36,33 +36,14 @@
                                 <i class="ti ti-id me-1"></i>Jadwal Kode
                             </a>
                         </div>
-                        @if(in_array($viewType, ['compact', 'kode']))
-                        <select id="paperSize" class="form-select form-select-sm d-inline-block w-auto me-2" style="width: 100px !important;">
-                            <option value="a4">A4</option>
-                            <option value="f4">F4</option>
-                            <option value="folio">Folio</option>
-                        </select>
-                        @endif
                         @if($viewType === 'compact')
                         <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan-mapel', ['paper_size' => 'a4']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel (A4)
-                        </a>
-                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan-mapel', ['paper_size' => 'f4']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel (F4)
-                        </a>
-                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan-mapel', ['paper_size' => 'folio']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel (Folio)
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Mapel
                         </a>
                         @endif
                         @if($viewType === 'kode')
                         <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'a4']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (A4)
-                        </a>
-                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'f4']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (F4)
-                        </a>
-                        <a href="{{ route('jadwal-kbm.export-pdf-keseluruhan', ['paper_size' => 'folio']) }}" class="btn btn-danger btn-sm me-2">
-                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode (Folio)
+                            <i class="ti ti-file-pdf me-1"></i>Download PDF Kode
                         </a>
                         @endif
                         <button onclick="window.print()" class="btn btn-sm btn-info btn-modern">
