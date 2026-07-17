@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\TugasGuru;
 use App\Models\Guru;
 use App\Models\MataPelajaran;
@@ -21,8 +22,15 @@ class TugasGuruController extends Controller
      */
     public function index()
     {
-        $items = TugasGuru::with(['guru.user', 'mataPelajaran', 'kelas'])
-            ->whereHas('guru')
+        // Get active tahun ajaran & semester
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+
+        $items = $this->applyTugasMatchingJadwalFilter(
+            TugasGuru::with(['guru.user', 'mataPelajaran', 'kelas'])->whereHas('guru'),
+            $tahunAjaranAktif,
+            $semesterAktif
+        )
             ->orderBy('tingkat_kelas')
             ->orderBy('guru_id')
             ->orderBy('mata_pelajaran_id')
@@ -31,37 +39,27 @@ class TugasGuruController extends Controller
         // Group by tingkat_kelas
         $itemsByTingkat = $items->groupBy('tingkat_kelas');
         
-        // Get list of all guru with active tugas count
+        // Get list of guru who have active tugas that match the active KBM schedule
         $guruList = Guru::with('user')
-            ->whereHas('tugasGuru', function($query) {
-                $query->where('is_active', true);
+            ->whereHas('tugasGuru', function($query) use ($tahunAjaranAktif, $semesterAktif) {
+                $this->applyTugasMatchingJadwalFilter($query, $tahunAjaranAktif, $semesterAktif);
             })
-            ->withCount(['tugasGuru' => function($query) {
-                $query->where('is_active', true);
+            ->withCount(['tugasGuru' => function($query) use ($tahunAjaranAktif, $semesterAktif) {
+                $this->applyTugasMatchingJadwalFilter($query, $tahunAjaranAktif, $semesterAktif);
             }])
             ->orderBy('nama')
             ->get();
         
-        // Get active tahun ajaran & semester
-        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
-        $semesterAktif = Semester::where('is_active', true)->first();
-        
         // Beban Kerja: Data untuk tabel beban kerja guru
         $guruBebanKerja = Guru::with(['user', 'tugasGuru.kelas', 'tugasGuru.mataPelajaran'])
-            ->whereHas('tugasGuru', function($query) {
-                $query->where('is_active', true);
+            ->whereHas('tugasGuru', function($query) use ($tahunAjaranAktif, $semesterAktif) {
+                $this->applyTugasMatchingJadwalFilter($query, $tahunAjaranAktif, $semesterAktif);
             })
             ->orderBy('nama')
             ->get();
         
         // Get kelas yang sebenarnya ada di jadwal KBM
-        $jadwalKelasList = JadwalKbm::select('kelas_id');
-        if ($tahunAjaranAktif) {
-            $jadwalKelasList->where('tahun_ajaran_id', $tahunAjaranAktif->id);
-        }
-        if ($semesterAktif) {
-            $jadwalKelasList->where('semester_id', $semesterAktif->id);
-        }
+        $jadwalKelasList = $this->applyActiveJadwalFilters(JadwalKbm::select('kelas_id'), $tahunAjaranAktif, $semesterAktif);
         $jadwalKelasIds = $jadwalKelasList->distinct()->pluck('kelas_id')->filter()->toArray();
         
         if (!empty($jadwalKelasIds)) {
@@ -95,6 +93,63 @@ class TugasGuruController extends Controller
         }
         
         return view('tugas_guru.index', compact('items', 'itemsByTingkat', 'guruList', 'guruBebanKerja', 'kelasList', 'jadwalKbmJumlah', 'totalJamPerGuru', 'totalJamPerKelas'));
+    }
+
+    /**
+     * Apply active KBM filters to JadwalKbm queries.
+     */
+    private function applyActiveJadwalFilters($query, $tahunAjaranAktif, $semesterAktif)
+    {
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Apply schedule-based filtering to TugasGuru queries.
+     */
+    private function applyTugasMatchingJadwalFilter($query, $tahunAjaranAktif, $semesterAktif)
+    {
+        return $query->where('is_active', true)
+            ->where(function ($query) use ($tahunAjaranAktif, $semesterAktif) {
+                $query->whereNull('kelas_id')
+                    ->whereExists(function ($exists) use ($tahunAjaranAktif, $semesterAktif) {
+                        $exists->select(DB::raw('1'))
+                            ->from('jadwal_kbm')
+                            ->whereRaw('jadwal_kbm.guru_id = tugas_guru.guru_id')
+                            ->whereRaw('jadwal_kbm.mata_pelajaran_id = tugas_guru.mata_pelajaran_id');
+
+                        if ($tahunAjaranAktif) {
+                            $exists->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranAktif->id);
+                        }
+                        if ($semesterAktif) {
+                            $exists->where('jadwal_kbm.semester_id', $semesterAktif->id);
+                        }
+                    })
+                    ->orWhere(function ($subQuery) use ($tahunAjaranAktif, $semesterAktif) {
+                        $subQuery->whereNotNull('kelas_id')
+                            ->whereExists(function ($exists) use ($tahunAjaranAktif, $semesterAktif) {
+                                $exists->select(DB::raw('1'))
+                                    ->from('jadwal_kbm')
+                                    ->whereRaw('jadwal_kbm.guru_id = tugas_guru.guru_id')
+                                    ->whereRaw('jadwal_kbm.mata_pelajaran_id = tugas_guru.mata_pelajaran_id')
+                                    ->whereRaw('jadwal_kbm.kelas_id = tugas_guru.kelas_id');
+
+                                if ($tahunAjaranAktif) {
+                                    $exists->where('jadwal_kbm.tahun_ajaran_id', $tahunAjaranAktif->id);
+                                }
+                                if ($semesterAktif) {
+                                    $exists->where('jadwal_kbm.semester_id', $semesterAktif->id);
+                                }
+                            });
+                    });
+            });
     }
 
     /**
@@ -391,9 +446,16 @@ class TugasGuruController extends Controller
     public function showByGuru($guruId)
     {
         $guru = Guru::with('user')->findOrFail($guruId);
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
         
-        $tugasGuru = TugasGuru::with(['mataPelajaran', 'kelas'])
-            ->where('guru_id', $guruId)
+        $tugasGuru = $this->applyTugasMatchingJadwalFilter(
+                TugasGuru::with(['mataPelajaran', 'kelas'])
+                    ->where('guru_id', $guruId),
+                $tahunAjaranAktif,
+                $semesterAktif
+            )
             ->orderBy('tingkat_kelas')
             ->orderBy('mata_pelajaran_id')
             ->get()

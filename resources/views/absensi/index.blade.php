@@ -106,8 +106,13 @@
                                     </div>
                                     <h5 class="card-title mb-2">{{ $kelas->nama_kelas }}</h5>
                                     <p class="text-muted small mb-2">
-                                        @if($kelas->waliKelas)
-                                        <i class="ti ti-user me-1"></i>{{ $kelas->waliKelas->nama }}
+                                        @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false)
+                                            @if($kelas->waliKelas)
+                                                <i class="ti ti-user me-1"></i>{{ $kelas->waliKelas->nama }}
+                                            @endif
+                                        @else
+                                            <i class="ti ti-alert-triangle me-1"></i>
+                                            {!! optional($sekolah)->wali_kelas_hidden_message ?: 'Info wali kelas disembunyikan oleh administrator.' !!}
                                         @endif
                                     </p>
                                     @unless($isSiswaWithoutClassPosition)

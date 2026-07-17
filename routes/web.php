@@ -219,6 +219,7 @@ Route::middleware(['auth'])->group(function(){
     });
     Route::post('guru_piket/generate', ['App\Http\Controllers\GuruPiketController', 'generate'])->name('guru_piket.generate');
     Route::post('guru_piket/bulk-destroy', ['App\Http\Controllers\GuruPiketController', 'bulkDestroy'])->name('guru_piket.bulk_destroy');
+    Route::get('guru_piket/download', ['App\Http\Controllers\GuruPiketController', 'download'])->name('guru_piket.download');
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
     Route::resource('pembina', 'App\Http\Controllers\PembinaController');
     Route::get('mata-pelajaran/guru', ['App\Http\Controllers\MataPelajaranController', 'guruIndex'])->name('mata_pelajaran.guru');

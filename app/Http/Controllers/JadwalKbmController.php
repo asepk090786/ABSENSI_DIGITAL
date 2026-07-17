@@ -27,13 +27,28 @@ class JadwalKbmController extends Controller
         return null;
     }
 
+    protected function shouldShowMaintenancePage($user = null): bool
+    {
+        $user = $user ?? auth()->user();
+
+        if (! $user) {
+            return true;
+        }
+
+        if ($user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah'])) {
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Display jadwal KBM index
      */
     public function index()
     {
         $sekolah = Sekolah::first();
-        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
             return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
 
@@ -115,7 +130,7 @@ class JadwalKbmController extends Controller
     public function printByKelas($kelasId)
     {
         $sekolah = Sekolah::first();
-        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
             return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
 
@@ -167,7 +182,7 @@ class JadwalKbmController extends Controller
         $paperSize = request()->get('paper_size', 'a4'); // Default A4
         
         $sekolah = Sekolah::first();
-        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
             return redirect()->back()->with('error', 'Jadwal sedang dinonaktifkan oleh administrator.');
         }
 
@@ -268,7 +283,7 @@ class JadwalKbmController extends Controller
         $paperSize = request()->get('paper_size', 'a4');
         
         $sekolah = Sekolah::first();
-        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
             return redirect()->back()->with('error', 'Jadwal sedang dinonaktifkan oleh administrator.');
         }
 
@@ -352,7 +367,7 @@ class JadwalKbmController extends Controller
         $guru = Guru::findOrFail($guruId);
         $sekolah = Sekolah::first();
 
-        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
             return view('jadwal_kbm.show_by_guru_maintenance', compact('guru', 'sekolah'));
         }
 
@@ -393,7 +408,7 @@ class JadwalKbmController extends Controller
         $viewType = $request->get('view', 'full'); // 'full' atau 'compact'
         $sekolah = Sekolah::first();
 
-        if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
             return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -765,7 +780,7 @@ class JadwalKbmController extends Controller
     {
         try {
             $sekolah = Sekolah::first();
-            if ($sekolah && ! $sekolah->tampilkan_jadwal) {
+            if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
                 return response()->json(['error' => 'Jadwal sedang dinonaktifkan oleh administrator.'], 403);
             }
             $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();

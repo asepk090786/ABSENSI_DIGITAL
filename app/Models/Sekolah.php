@@ -33,6 +33,9 @@ class Sekolah extends Model
         'logo_header_kiri',
         'header_html',
         'tampilkan_jadwal',
+        'tampilkan_nama_wali_kelas',
+        'jadwal_maintenance_message',
+        'wali_kelas_hidden_message',
         // Header text lines (HTML from Summernote)
         'header_line1',
         'header_line1_spacing',
@@ -42,11 +45,10 @@ class Sekolah extends Model
         'header_line3_spacing',
         'header_line4',
         'header_line4_spacing',
-        'tampilkan_jadwal',
-        'jadwal_maintenance_message',
     ];
 
     protected $casts = [
         'tampilkan_jadwal' => 'boolean',
+        'tampilkan_nama_wali_kelas' => 'boolean',
     ];
 }

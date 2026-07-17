@@ -185,7 +185,9 @@ class SettingController extends Controller
     {
         $validated = $request->validate([
             'tampilkan_jadwal' => 'required|boolean',
+            'tampilkan_nama_wali_kelas' => 'required|boolean',
             'jadwal_maintenance_message' => 'nullable|string',
+            'wali_kelas_hidden_message' => 'nullable|string',
         ]);
 
         $sekolah = Sekolah::first();
@@ -198,6 +200,8 @@ class SettingController extends Controller
         }
 
         $sekolah->tampilkan_jadwal = $validated['tampilkan_jadwal'];
+        $sekolah->tampilkan_nama_wali_kelas = $validated['tampilkan_nama_wali_kelas'];
+
         // Sanitasi sederhana untuk menghindari script injection
         $rawMessage = $validated['jadwal_maintenance_message'] ?? null;
         if ($rawMessage) {
@@ -229,6 +233,30 @@ class SettingController extends Controller
         } else {
             $sekolah->jadwal_maintenance_message = null;
         }
+
+        $rawHiddenMessage = $validated['wali_kelas_hidden_message'] ?? null;
+        if ($rawHiddenMessage) {
+            $hiddenMsg = preg_replace('#<script(.*?)>(.*?)</script>#is', '', $rawHiddenMessage);
+            $hiddenMsg = preg_replace('#<iframe(.*?)>(.*?)</iframe>#is', '', $hiddenMsg);
+            $hiddenMsg = preg_replace('/\s+on[a-zA-Z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $hiddenMsg);
+            $hiddenMsg = preg_replace_callback('/(href|src)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', function($m) {
+                $attr = $m[0];
+                $parts = explode('=', $attr, 2);
+                if (count($parts) < 2) return '';
+                $name = $parts[0];
+                $val = trim($parts[1]);
+                $valUnquoted = trim($val, " \t\n\r\0\x0B\'\"");
+                if (preg_match('/^javascript:/i', $valUnquoted)) {
+                    return '';
+                }
+                return ' ' . $name . '=' . $val;
+            }, $hiddenMsg);
+            $hiddenMsg = substr($hiddenMsg, 0, 2000);
+            $sekolah->wali_kelas_hidden_message = $hiddenMsg;
+        } else {
+            $sekolah->wali_kelas_hidden_message = null;
+        }
+
         $sekolah->save();
 
         return back()->with('success', 'Pengaturan tampilan jadwal berhasil disimpan.');

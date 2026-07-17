@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\Sekolah;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('*', function ($view) {
             $kelasBinaanBk = collect();
+            $sekolah = Schema::hasTable('sekolah') ? Sekolah::first() : null;
 
             if (Auth::check() && Auth::user()->hasRole('Guru BK')) {
                 $guru = Auth::user()->guru;
@@ -47,7 +49,8 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
 
-            $view->with('kelasBinaanBk', $kelasBinaanBk);
+            $view->with('kelasBinaanBk', $kelasBinaanBk)
+                 ->with('sekolah', $sekolah);
         });
     }
 }

@@ -93,7 +93,11 @@
                                         <p class="text-muted mb-2">
                                             <small>
                                                 <i class="ti ti-user me-1"></i>
-                                                Wali Kelas: {{ $kelas->waliKelas->nama ?? '-' }}
+                                                @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false)
+                                                    Wali Kelas: {{ $kelas->waliKelas->nama ?? '-' }}
+                                                @else
+                                                    {!! optional($sekolah)->wali_kelas_hidden_message ?: 'Nama wali kelas disembunyikan oleh administrator.' !!}
+                                                @endif
                                             </small>
                                         </p>
                                         <p class="text-muted mb-2">

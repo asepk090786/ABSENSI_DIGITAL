@@ -18,6 +18,9 @@
                         <a href="{{ route('guru_piket.create') }}" class="btn btn-primary">
                             <i class="ti ti-plus"></i> Tambah Guru Piket
                         </a>
+                        <a href="{{ route('guru_piket.download') }}" class="btn btn-info">
+                            <i class="ti ti-download"></i> Download Jadwal Piket
+                        </a>
                     </div>
                     @endif
                 </div>
@@ -141,13 +144,9 @@
                                                             <a href="{{ route('guru_piket.edit', $item->id) }}" class="btn btn-sm btn-warning action-btn" title="Edit">
                                                                 <i class="ti ti-edit"></i>
                                                             </a>
-                                                            <form action="{{ route('guru_piket.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit" class="btn btn-sm btn-danger action-btn" title="Hapus">
-                                                                    <i class="ti ti-trash"></i>
-                                                                </button>
-                                                            </form>
+                                                            <button type="button" class="btn btn-sm btn-danger action-btn" title="Hapus" onclick="confirmRowDelete('{{ route('guru_piket.destroy', $item->id) }}')">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
                                                             @endif
                                                         </div>
                                                     </td>
@@ -157,6 +156,7 @@
                                     </table>
                                 </div>
                             </div>
+                        </form>
 
                         <hr class="my-4">
 
@@ -312,6 +312,29 @@
             });
         }
     });
+    function confirmRowDelete(actionUrl) {
+        if (confirm('Yakin ingin menghapus data ini?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = actionUrl;
+            form.style.display = 'none';
+
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = '_token';
+            tokenInput.value = '{{ csrf_token() }}';
+            form.appendChild(tokenInput);
+
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            form.appendChild(methodInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
 </script>
 
 <style>

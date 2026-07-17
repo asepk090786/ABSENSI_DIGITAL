@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\GuruPiketExport;
 
 class GuruPiketController extends Controller
 {
@@ -389,10 +391,12 @@ class GuruPiketController extends Controller
             }
 
             $assignedDays = [];
-            foreach (range(0, $maxDaysPerTeacher - 1) as $i) {
+            $availableSlots = min($maxDaysPerTeacher, count($freeDays));
+            foreach (range(0, $availableSlots - 1) as $i) {
                 $dayIndex = ($dayOffset + $i) % count($freeDays);
                 $assignedDays[] = $freeDays[$dayIndex];
             }
+            $assignedDays = array_values(array_unique($assignedDays));
 
             $assignments[$guruId] = $assignedDays;
             $dayOffset = ($dayOffset + 1) % count($workDays);
@@ -413,6 +417,15 @@ class GuruPiketController extends Controller
         }
 
         return redirect()->route('guru_piket.index')->with('success', $message);
+    }
+
+    public function download()
+    {
+        $this->authorizeAdmin();
+
+        $workDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+
+        return Excel::download(new \App\Exports\GuruPiketExport($workDays), 'jadwal_piket_' . date('Ymd_His') . '.xlsx');
     }
 
     public function destroy($id)

@@ -50,6 +50,7 @@
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="tampilkan_jadwal" value="0">
+                        <input type="hidden" name="tampilkan_nama_wali_kelas" value="0">
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="tampilkan_jadwal" name="tampilkan_jadwal" value="1" {{ optional($sekolah)->tampilkan_jadwal !== false ? 'checked' : '' }}>
@@ -57,6 +58,26 @@
                         </div>
 
                         @error('tampilkan_jadwal')
+                            <div class="text-danger small mb-3">{{ $message }}</div>
+                        @enderror
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="tampilkan_nama_wali_kelas" name="tampilkan_nama_wali_kelas" value="1" {{ optional($sekolah)->tampilkan_nama_wali_kelas !== false ? 'checked' : '' }}>
+                            <label class="form-check-label" for="tampilkan_nama_wali_kelas">Tampilkan nama wali kelas di tampilan kelas guru dan siswa</label>
+                        </div>
+
+                        @error('tampilkan_nama_wali_kelas')
+                            <div class="text-danger small mb-3">{{ $message }}</div>
+                        @enderror
+
+                        <div class="mb-3">
+                            <label for="wali_kelas_hidden_message" class="form-label">Pesan notifikasi jika nama wali kelas disembunyikan</label>
+                            <input type="hidden" id="wali_kelas_hidden_message" name="wali_kelas_hidden_message" value="{{ old('wali_kelas_hidden_message', optional($sekolah)->wali_kelas_hidden_message) }}">
+                            <div id="wali_kelas_editor" style="min-height:120px;">{!! old('wali_kelas_hidden_message', optional($sekolah)->wali_kelas_hidden_message) !!}</div>
+                            <div class="form-text">Tampilan pesan ini akan muncul pada kartu kelas ketika nama wali kelas disembunyikan.</div>
+                        </div>
+
+                        @error('wali_kelas_hidden_message')
                             <div class="text-danger small mb-3">{{ $message }}</div>
                         @enderror
 
@@ -69,6 +90,9 @@
 
                         <p class="text-muted small">
                             Jika dinonaktifkan, preview jadwal di akun guru akan diganti dengan informasi bahwa jadwal masih dalam proses perbaikan.
+                        </p>
+                        <p class="text-muted small">
+                            Jika nama wali kelas disembunyikan, akan ditampilkan notifikasi khusus di tampilan kelas untuk guru dan siswa.
                         </p>
 
                         <button type="submit" class="btn btn-primary btn-sm">Simpan pengaturan</button>
@@ -101,15 +125,27 @@
 
             // set initial content from hidden input (already set via server-rendered HTML)
             var hidden = document.getElementById('jadwal_maintenance_message');
+            var quill2 = new Quill('#wali_kelas_editor', {
+                modules: { toolbar: toolbarOptions, clipboard: { matchVisual: false } },
+                theme: 'snow'
+            });
+
+            // set initial content from hidden inputs (already set via server-rendered HTML)
+            var hidden = document.getElementById('jadwal_maintenance_message');
+            var hidden2 = document.getElementById('wali_kelas_hidden_message');
             if (hidden && hidden.value) {
                 try { quill.clipboard.dangerouslyPasteHTML(hidden.value); } catch(e) {}
             }
+            if (hidden2 && hidden2.value) {
+                try { quill2.clipboard.dangerouslyPasteHTML(hidden2.value); } catch(e) {}
+            }
 
-            // on form submit, copy html to hidden input
+            // on form submit, copy html to hidden inputs
             var form = document.querySelector('form[action="{{ route('setting.jadwal_visibility.update') }}"]');
             if (form) {
                 form.addEventListener('submit', function() {
                     hidden.value = quill.root.innerHTML;
+                    hidden2.value = quill2.root.innerHTML;
                 });
             }
         });

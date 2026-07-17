@@ -341,14 +341,18 @@
                         <div class="wali-kelas-signature-space"></div>
                         
                         <div class="wali-kelas-nama">
-                            @if($waliKelas)
-                                {{ $waliKelas->nama }}
+                            @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false)
+                                @if($waliKelas)
+                                    {{ $waliKelas->nama }}
+                                @else
+                                    <span style="color: #999;">(----)</span>
+                                @endif
                             @else
-                                <span style="color: #999;">(----)</span>
+                                {!! optional($sekolah)->wali_kelas_hidden_message ?: '<span style="color: #999;">Nama wali kelas disembunyikan oleh administrator.</span>' !!}
                             @endif
                         </div>
                         <div class="wali-kelas-nip">
-                            @if($waliKelas && $waliKelas->nip)
+                            @if(optional($sekolah)->tampilkan_nama_wali_kelas !== false && $waliKelas && $waliKelas->nip)
                                 NIP. {{ $waliKelas->nip }}
                             @endif
                         </div>
