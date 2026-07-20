@@ -75,15 +75,17 @@ class AgendaGuruController extends Controller
         $bulan = $request->get('bulan', now()->month);
         $tahunFilter = $request->get('tahun', now()->year);
 
-        // Get all agenda guru for the selected month
-        $agendaList = AgendaGuru::where('guru_id', $guru->id)
-            ->where('tahun_ajaran_id', $tahun->id)
-            ->where('semester_id', $semester->id)
-            ->whereYear('tanggal', $tahunFilter)
-            ->whereMonth('tanggal', $bulan)
+        // Get all agenda guru for the selected month, ordering by jam_belajar.urutan
+        $agendaList = AgendaGuru::select('agenda_guru.*')
+            ->where('agenda_guru.guru_id', $guru->id)
+            ->where('agenda_guru.tahun_ajaran_id', $tahun->id)
+            ->where('agenda_guru.semester_id', $semester->id)
+            ->whereYear('agenda_guru.tanggal', $tahunFilter)
+            ->whereMonth('agenda_guru.tanggal', $bulan)
+            ->join('jam_belajar', 'agenda_guru.jam_belajar_id', '=', 'jam_belajar.id')
             ->with(['jamBelajar'])
-            ->orderBy('tanggal', 'asc')
-            ->orderBy('jam_belajar_id', 'asc')
+            ->orderBy('agenda_guru.tanggal', 'asc')
+            ->orderBy('jam_belajar.urutan', 'asc')
             ->get();
 
         // Get guru's mata pelajaran
@@ -362,14 +364,16 @@ class AgendaGuruController extends Controller
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
         // Get agenda guru entries for export
-        $agendaList = AgendaGuru::where('guru_id', $guru->id)
-            ->where('tahun_ajaran_id', $tahun->id)
-            ->where('semester_id', $semester->id)
-            ->whereYear('tanggal', $tahunFilter)
-            ->whereMonth('tanggal', $bulan)
+        $agendaList = AgendaGuru::select('agenda_guru.*')
+            ->where('agenda_guru.guru_id', $guru->id)
+            ->where('agenda_guru.tahun_ajaran_id', $tahun->id)
+            ->where('agenda_guru.semester_id', $semester->id)
+            ->whereYear('agenda_guru.tanggal', $tahunFilter)
+            ->whereMonth('agenda_guru.tanggal', $bulan)
+            ->join('jam_belajar', 'agenda_guru.jam_belajar_id', '=', 'jam_belajar.id')
             ->with(['jamBelajar'])
-            ->orderBy('tanggal', 'asc')
-            ->orderBy('jam_belajar_id', 'asc')
+            ->orderBy('agenda_guru.tanggal', 'asc')
+            ->orderBy('jam_belajar.urutan', 'asc')
             ->get();
 
         // Get guru's mata pelajaran
