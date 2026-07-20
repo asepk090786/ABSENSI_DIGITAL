@@ -320,7 +320,7 @@
                         <h4 class="card-title fw-semibold m-0">
                             Data Agenda Kelas
                             @if($selectedGuru)
-                                <span class="badge bg-primary ms-2">{{ $selectedGuru->nama }}</span>
+                                <span class="badge bg-primary text-white ms-2">{{ $selectedGuru->nama }}</span>
                             @endif
                         </h4>
                     </div>
