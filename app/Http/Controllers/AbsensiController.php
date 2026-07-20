@@ -1526,6 +1526,51 @@ class AbsensiController extends Controller
                         $existing[$jamId]['statuses'][$asw->siswa_id] = $asw->status;
                     }
                 }
+
+                // If the requester is Guru Piket (or Admin/Kepala), include a daily aggregated
+                // snapshot so piket view can prefill statuses from combined class absensi.
+                try {
+                    $user = auth()->user();
+                    $isAdminOrKepala = $user ? $user->hasAnyRole(['Admin', 'Kepala Sekolah']) : false;
+                    $isGuruPiket = false;
+                    if ($user && $user->guru_id) {
+                        $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+                        $todayEng = \Carbon\Carbon::parse($tanggal)->format('l');
+                        $map = [
+                            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                        ];
+                        $todayIndo = $map[$todayEng] ?? null;
+                        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+                    }
+
+                    if ($isGuruPiket || $isAdminOrKepala) {
+                        // build aggregated daily status per siswa using existing absensi entries
+                        $dailyRows = $this->getDailyStudentReportRows($tanggal, $kelasId, DB::table('tahun_ajaran')->where('is_active',1)->first(), DB::table('semester')->where('is_active',1)->first());
+                        $dailyStatuses = [];
+                        foreach ($dailyRows as $dr) {
+                            // map status labels to normalized values
+                            $norm = strtolower((string) $dr->status);
+                            if ($norm === 'hadir') $norm = 'hadir';
+                            elseif (in_array($norm, ['terlambat','telat'], true)) $norm = 'terlambat';
+                            elseif ($norm === 'sakit') $norm = 'sakit';
+                            elseif (in_array($norm, ['izin','ijin'], true)) $norm = 'izin';
+                            else $norm = 'alpa';
+                            $dailyStatuses[$dr->siswa_id] = $norm;
+                        }
+
+                        // insert with a special key so front-end can prefer this (jam_urutan = 0)
+                        $existing['daily'] = [
+                            'absensi_kelas_id' => null,
+                            'guru_id' => null,
+                            'guru_name' => '(Gabungan)',
+                            'jam_urutan' => 0,
+                            'statuses' => $dailyStatuses,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    // ignore aggregation errors, return per-jam data as-is
+                }
             }
 
             return response()->json([
