@@ -87,6 +87,7 @@
                                     <td>{{ $abs->siswa->nama ?? '-' }}</td>
                                     <td>
                                         @php $statusKey = strtolower((string) $abs->status); @endphp
+                                        <span class="status-badge status-{{ $abs->siswa->id }}">
                                         @if($statusKey === 'hadir')
                                             <span class="badge bg-success">Hadir</span>
                                         @elseif($statusKey === 'terlambat' || $statusKey === 'telat')
@@ -100,20 +101,36 @@
                                         @else
                                             <span class="badge bg-secondary">{{ $abs->status }}</span>
                                         @endif
+                                        </span>
                                     </td>
-                                    <td>{{ $abs->keterangan ?? '-' }}</td>
+                                    <td class="keterangan-{{ $abs->siswa->id }}">{{ $abs->keterangan ?? '-' }}</td>
                                     <td>
                                         @if(auth()->user()->guru_id)
-                                            <button
-                                                type="button"
-                                                class="btn btn-sm btn-outline-danger btn-lapor-siswa"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modalLaporanSiswa"
-                                                data-siswa-id="{{ $abs->siswa->id ?? '' }}"
-                                                data-siswa-nama="{{ $abs->siswa->nama ?? '-' }}"
-                                            >
-                                                <i class="ti ti-message-report"></i> Lapor
-                                            </button>
+                                            @if(($isGuruPiket ?? false) || auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
+                                                <form method="POST" action="{{ route('absensi.siswa.update_status', ['absensi' => $absensi->id, 'siswa' => $abs->siswa->id]) }}" class="d-flex gap-2 align-items-center ajax-update-absensi" data-siswa-id="{{ $abs->siswa->id }}">
+                                                    @csrf
+                                                    <select name="status" class="form-select form-select-sm">
+                                                        <option value="hadir" {{ strtolower($abs->status) === 'hadir' ? 'selected' : '' }}>Hadir</option>
+                                                        <option value="terlambat" {{ in_array(strtolower($abs->status), ['terlambat','telat']) ? 'selected' : '' }}>Terlambat</option>
+                                                        <option value="sakit" {{ strtolower($abs->status) === 'sakit' ? 'selected' : '' }}>Sakit</option>
+                                                        <option value="izin" {{ in_array(strtolower($abs->status), ['izin','ijin']) ? 'selected' : '' }}>Izin</option>
+                                                        <option value="alpa" {{ in_array(strtolower($abs->status), ['alpa','alpha','alfa','absen']) ? 'selected' : '' }}>Alpa</option>
+                                                    </select>
+                                                    <input type="text" name="keterangan" class="form-control form-control-sm" placeholder="Keterangan" value="{{ $abs->keterangan ?? '' }}">
+                                                    <button type="submit" class="btn btn-sm btn-primary btn-save">Simpan</button>
+                                                </form>
+                                            @else
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-danger btn-lapor-siswa"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalLaporanSiswa"
+                                                    data-siswa-id="{{ $abs->siswa->id ?? '' }}"
+                                                    data-siswa-nama="{{ $abs->siswa->nama ?? '-' }}"
+                                                >
+                                                    <i class="ti ti-message-report"></i> Lapor
+                                                </button>
+                                            @endif
                                         @else
                                             -
                                         @endif
@@ -169,12 +186,97 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Handler for Report modal
     document.querySelectorAll('.btn-lapor-siswa').forEach(function (button) {
         button.addEventListener('click', function () {
             document.getElementById('lapor_siswa_id').value = this.getAttribute('data-siswa-id') || '';
             document.getElementById('lapor_siswa_nama').value = this.getAttribute('data-siswa-nama') || '-';
         });
     });
+
+    // Intercept inline update forms (AJAX)
+    document.querySelectorAll('form.ajax-update-absensi').forEach(function(form){
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            var url = form.getAttribute('action');
+            var data = new FormData(form);
+            var submitBtn = form.querySelector('button[type="submit"]');
+            var originalBtnHtml = submitBtn ? submitBtn.innerHTML : null;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>...';
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: data
+            }).then(function(resp){
+                return resp.json();
+            }).then(function(json){
+                if (submitBtn) submitBtn.disabled = false;
+                if (json.success) {
+                    showToast('Sukses', json.message || 'Perubahan tersimpan');
+                    // update DOM: badge and keterangan
+                    var siswaId = form.getAttribute('data-siswa-id');
+                    if (siswaId) {
+                        var badgeContainer = document.querySelector('.status-' + siswaId);
+                        if (badgeContainer) {
+                            // replace badge HTML based on selected status
+                            var selectedStatus = form.querySelector('select[name="status"]').value;
+                            var newBadge = '';
+                            switch (selectedStatus.toLowerCase()) {
+                                case 'hadir': newBadge = '<span class="badge bg-success">Hadir</span>'; break;
+                                case 'terlambat': newBadge = '<span class="badge" style="background:#f59e0b;color:#fff;">Terlambat</span>'; break;
+                                case 'sakit': newBadge = '<span class="badge bg-warning">Sakit</span>'; break;
+                                case 'izin': newBadge = '<span class="badge bg-info">Izin</span>'; break;
+                                default: newBadge = '<span class="badge bg-danger">Alpa</span>'; break;
+                            }
+                            badgeContainer.innerHTML = newBadge;
+                        }
+                        var ketCell = document.querySelector('.keterangan-' + siswaId);
+                        if (ketCell) {
+                            var newKet = form.querySelector('input[name="keterangan"]').value || '-';
+                            ketCell.innerText = newKet;
+                        }
+                    }
+
+                    if (json.deleted_pelanggaran && json.deleted_pelanggaran > 0) {
+                        showToast('Informasi', 'Pelanggaran terkait telah dihapus: ' + json.deleted_pelanggaran, 'info');
+                    }
+                } else {
+                    showToast('Gagal', json.message || 'Gagal menyimpan perubahan', 'danger');
+                }
+            }).catch(function(err){
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
+                showToast('Error', 'Terjadi kesalahan jaringan', 'danger');
+                console.error(err);
+            });
+        });
+    });
+
+    function showToast(title, message, type = 'success'){
+        var bg = (type === 'danger') ? 'bg-danger' : (type === 'info' ? 'bg-info' : 'bg-success');
+        var toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white ' + bg;
+        toast.setAttribute('role','alert');
+        toast.style.position = 'fixed';
+        toast.style.right = '20px';
+        toast.style.top = (20 + (document.querySelectorAll('.toast').length * 60)) + 'px';
+        toast.style.zIndex = 99999;
+        toast.style.minWidth = '220px';
+        toast.innerHTML = '<div class="d-flex"><div class="toast-body"><strong>' + title + ':</strong> ' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+        document.body.appendChild(toast);
+        var bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+        bsToast.show();
+        toast.addEventListener('hidden.bs.toast', function(){ toast.remove(); });
+    }
 });
 </script>
 @endif

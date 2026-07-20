@@ -786,7 +786,13 @@
                 $isGuruPiket = false;
                 if ($isGuru && $user->guru) {
                     $hrPkt = $user->guru->hari_piket ?? [];
-                    $isGuruPiket = !empty($hrPkt) || $user->hasRole('Guru Piket');
+                    $todayEng = \Carbon\Carbon::now()->format('l');
+                    $map = [
+                        'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                        'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                    ];
+                    $todayIndo = $map[$todayEng] ?? null;
+                    $isGuruPiket = in_array($todayIndo, (array) $hrPkt, true) || $user->hasAnyRole(['Admin','Kepala Sekolah']);
                 }
                 $isWali = false; $kelasBindaan = null;
                 if ($isGuru && $user->guru) {
@@ -813,7 +819,9 @@
                     <div class="collapse {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','nilai.*','rekap_nilai.*','absensi.*']) ? 'show' : '' }}" id="subAkademik">
                         <ul class="sidebar-subnav">
                             <li class="nav-item"><a href="{{ route('jadwal-kbm.index') }}" class="nav-link {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal KBM</a></li>
-                            <li class="nav-item"><a href="{{ route('guru_piket.index') }}" class="nav-link {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal Piket</a></li>
+                            @if($isGuruPiket || $user->hasAnyRole(['Admin','Kepala Sekolah']))
+                                <li class="nav-item"><a href="{{ route('guru_piket.index') }}" class="nav-link {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal Piket</a></li>
+                            @endif
                             <li class="nav-item"><a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengaturan Jam</a></li>
                             <li class="nav-item"><a href="{{ route('tugas_guru.index') }}" class="nav-link {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Beban Kerja Guru</a></li>
                             @if(!auth()->user()->hasRole('Siswa'))

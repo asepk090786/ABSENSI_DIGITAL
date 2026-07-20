@@ -413,6 +413,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Handle Pilih Semua on the "Tambah Siswa dari Database" panel
+    const checkAllAssign = document.getElementById('checkAll');
+    const siswaList = document.getElementById('siswaList');
+    if (checkAllAssign && siswaList) {
+        checkAllAssign.addEventListener('change', function() {
+            const isChecked = this.checked;
+            const listCheckboxes = siswaList.querySelectorAll('input.siswa-checkbox');
+            listCheckboxes.forEach(cb => cb.checked = isChecked);
+        });
+
+        // Keep the master checkbox state in sync when individual list items change
+        const listCheckboxes = siswaList.querySelectorAll('input.siswa-checkbox');
+        listCheckboxes.forEach(cb => cb.addEventListener('change', function() {
+            const total = listCheckboxes.length;
+            const checked = Array.from(listCheckboxes).filter(c => c.checked).length;
+            if (checked === 0) {
+                checkAllAssign.checked = false;
+                checkAllAssign.indeterminate = false;
+            } else if (checked === total) {
+                checkAllAssign.checked = true;
+                checkAllAssign.indeterminate = false;
+            } else {
+                checkAllAssign.checked = false;
+                checkAllAssign.indeterminate = true;
+            }
+        }));
+    }
+
     // Handle individual siswa checkbox
     siswaCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {

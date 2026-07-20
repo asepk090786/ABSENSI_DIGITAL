@@ -16,6 +16,7 @@ class AbsensiSiswa extends Model
         'siswa_id',
         'status',
         'keterangan',
+        'updated_by',
     ];
 
     public function absensiKelas()

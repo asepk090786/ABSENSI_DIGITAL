@@ -22,7 +22,14 @@ class AgendaGuruController extends Controller
                 ->with('error', 'Anda tidak terdaftar sebagai guru.');
         }
 
-        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($guru->hari_piket ?? []));
+        $hariPiketArr = (array) ($guru->hari_piket ?? []);
+        $todayEng = \Carbon\Carbon::now()->format('l');
+        $map = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ];
+        $todayIndo = $map[$todayEng] ?? null;
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
 
         if ($isGuruPiket) {
             $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
@@ -125,7 +132,14 @@ class AgendaGuruController extends Controller
                 ->with('error', 'Akun guru tidak ditemukan.');
         }
 
-        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($pencatatGuru->hari_piket ?? []));
+        $hariPiketArr = (array) ($pencatatGuru->hari_piket ?? []);
+        $todayEng = \Carbon\Carbon::now()->format('l');
+        $map = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ];
+        $todayIndo = $map[$todayEng] ?? null;
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
         if (!$isGuruPiket) {
             abort(403, 'Anda tidak memiliki akses absensi guru.');
         }

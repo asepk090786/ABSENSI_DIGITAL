@@ -47,7 +47,14 @@ class AbsensiController extends Controller
 
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+        $todayEng = \Carbon\Carbon::now()->format('l');
+        $map = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ];
+        $todayIndo = $map[$todayEng] ?? null;
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
         $isGuruBk = $user->hasRole('Guru BK');
         $hasGuruBkKelasColumn = Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id');
 
@@ -442,7 +449,7 @@ class AbsensiController extends Controller
             abort(403, 'Akses ditolak. Fitur ini hanya untuk akun guru.');
         }
 
-        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $isGuruPiket = !empty((array) ($user->guru->hari_piket ?? []));
         if ($isGuruPiket) {
             abort(403, 'Akses ditolak. Fitur ini hanya untuk akun guru biasa.');
         }
@@ -537,7 +544,7 @@ class AbsensiController extends Controller
 
         $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $isGuruPiket = !empty((array) ($user->guru->hari_piket ?? []));
         $isGuruBk = $user->hasRole('Guru BK');
         $selectedKelasId = $request->get('kelas_id');
         $selectedJamBelajarId = null;
@@ -1005,7 +1012,7 @@ class AbsensiController extends Controller
 
         $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        $isGuruPiket = $user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? []));
+        $isGuruPiket = !empty((array) ($user->guru->hari_piket ?? []));
         $isGuruBk = $user->hasRole('Guru BK');
 
         if ($isGuruPiket) {
@@ -1256,7 +1263,129 @@ class AbsensiController extends Controller
         $absensi = AbsensiKelas::with(['kelas', 'guru', 'jamBelajar', 'tahunAjaran', 'semester', 'absensiSiswa.siswa'])
             ->findOrFail($id);
 
-        return view('absensi.show', compact('absensi'));
+        // determine if current user is piket for today
+        $user = auth()->user();
+        $isGuruPiket = false;
+        if ($user && $user->guru_id) {
+            $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+            $todayEng = \Carbon\Carbon::now()->format('l');
+            $map = [
+                'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+            ];
+            $todayIndo = $map[$todayEng] ?? null;
+            $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        }
+
+        return view('absensi.show', compact('absensi', 'isGuruPiket'));
+    }
+
+    public function updateSiswaStatus(Request $request, $absensiId, $siswaId)
+    {
+        $user = auth()->user();
+        if (! $user || empty($user->guru_id)) {
+            abort(403, 'Akses ditolak. Hanya guru yang dapat mengubah status.');
+        }
+
+        // allow admins and kepala always
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+
+        // check piket for today unless admin/kepala
+        $isGuruPiket = false;
+        if (! $isAdminOrKepala) {
+            $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+            $todayEng = \Carbon\Carbon::now()->format('l');
+            $map = [
+                'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+            ];
+            $todayIndo = $map[$todayEng] ?? null;
+            $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        } else {
+            $isGuruPiket = true;
+        }
+
+        if (! $isGuruPiket) {
+            abort(403, 'Akses ditolak. Hanya Guru Piket hari ini atau Admin yang dapat mengubah status.');
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|string|max:50',
+            'keterangan' => 'nullable|string|max:255',
+        ]);
+
+        $absensi = AbsensiKelas::findOrFail($absensiId);
+
+        // ensure siswa in same kelas
+        $siswa = \App\Models\Siswa::where('id', $siswaId)->where('kelas_id', $absensi->kelas_id)->first();
+        if (! $siswa) {
+            return redirect()->back()->withErrors(['error' => 'Siswa tidak ditemukan di kelas ini.']);
+        }
+
+        $statusNormalized = $this->normalizeAttendanceStatus($validated['status']);
+
+        $as = AbsensiSiswa::where('absensi_kelas_id', $absensi->id)->where('siswa_id', $siswaId)->first();
+        $payload = [
+            'status' => $statusNormalized,
+            'keterangan' => $validated['keterangan'] ?? null,
+            'updated_by' => $user->id,
+        ];
+
+        // record history before change
+        $previousStatus = $as->status ?? null;
+        $previousKeterangan = $as->keterangan ?? null;
+
+        if ($as) {
+            $as->update($payload);
+            $absensiSiswaId = $as->id;
+        } else {
+            $payload['absensi_kelas_id'] = $absensi->id;
+            $payload['siswa_id'] = $siswaId;
+            $created = AbsensiSiswa::create($payload);
+            $absensiSiswaId = $created->id;
+        }
+
+        // store history
+        try {
+            \App\Models\AbsensiSiswaHistory::create([
+                'absensi_siswa_id' => $absensiSiswaId ?? null,
+                'absensi_kelas_id' => $absensi->id,
+                'siswa_id' => $siswaId,
+                'previous_status' => $previousStatus,
+                'new_status' => $statusNormalized,
+                'previous_keterangan' => $previousKeterangan,
+                'new_keterangan' => $payload['keterangan'],
+                'changed_by' => $user->id,
+            ]);
+        } catch (\Exception $e) {
+            // don't block update if history fails; log if necessary
+            \Log::error('Failed to write absensi_siswa_history: ' . $e->getMessage());
+        }
+
+        // Update related notes and pelanggaran if necessary
+        $deletedPelanggaran = 0;
+        if (Schema::hasTable('pelanggaran_siswa')) {
+            // remove pelanggaran if status changed to hadir/izin/sakit
+            if (in_array(strtolower($statusNormalized), ['hadir','izin','sakit'], true)) {
+                $deletedPelanggaran = DB::table('pelanggaran_siswa')->where('siswa_id', $siswaId)
+                    ->whereDate('tanggal', $absensi->tanggal)
+                    ->where('kelas_id', $absensi->kelas_id)
+                    ->delete();
+            }
+        }
+
+        // Sync to agenda guru
+        $this->updateAgendaGuruAttendanceNote($absensi);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Status absensi siswa berhasil diperbarui.',
+                'deleted_pelanggaran' => (int) $deletedPelanggaran,
+            ]);
+        }
+
+        return redirect()->route('absensi.show', $absensi->id)->with('success', 'Status absensi siswa berhasil diperbarui.');
     }
 
     public function edit($id)

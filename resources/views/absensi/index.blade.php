@@ -340,6 +340,7 @@
                                         <th>Izin</th>
                                         <th>Alpa</th>
                                         <th>Total Data Siswa</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -355,6 +356,13 @@
                                             <td><span class="badge bg-info">{{ $rekap->total_izin }}</span></td>
                                             <td><span class="badge bg-danger">{{ $rekap->total_alpha }}</span></td>
                                             <td><span class="badge bg-secondary">{{ $rekap->total_data_siswa }}</span></td>
+                                            <td>
+                                                @if($isGuruPiket || $isAdminOrKepala)
+                                                    <a href="{{ route('absensi.create', ['kelas_id' => $rekap->kelas->id, 'tanggal' => $selectedTanggal ?? now()->format('Y-m-d')]) }}" class="btn btn-sm btn-outline-primary">Edit Absensi</a>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -468,6 +476,7 @@
                                         <th>Tidak Hadir</th>
                                         <th>Jumlah Siswa</th>
                                         <th>Aksi</th>
+                                        <th>Aksi Piket</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -528,6 +537,13 @@
                                                     </form>
                                                 </div>
                                                 @endunless
+                                            </td>
+                                            <td>
+                                                @if($isGuruPiket || $isAdminOrKepala)
+                                                    <a href="{{ route('absensi.edit', $item->id) }}" class="btn btn-sm btn-outline-primary">Edit Absensi</a>
+                                                @else
+                                                    -
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach

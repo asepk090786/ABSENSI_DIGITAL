@@ -11,7 +11,14 @@ class PiketPelanggaranController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isGuruPiket = $user && ($user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? [])));
+        $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+        $todayEng = \Carbon\Carbon::now()->format('l');
+        $map = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ];
+        $todayIndo = $map[$todayEng] ?? null;
+        $isGuruPiket = $user && in_array($todayIndo, $hariPiketArr, true);
 
         if (!$isGuruPiket || empty($user->guru_id)) {
             abort(403, 'Menu ini hanya untuk Guru Piket.');
@@ -74,7 +81,14 @@ class PiketPelanggaranController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $isGuruPiket = $user && ($user->hasRole('Guru Piket') || !empty((array) ($user->guru->hari_piket ?? [])));
+        $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+        $todayEng = \Carbon\Carbon::now()->format('l');
+        $map = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ];
+        $todayIndo = $map[$todayEng] ?? null;
+        $isGuruPiket = $user && in_array($todayIndo, $hariPiketArr, true);
 
         if (!$isGuruPiket || empty($user->guru_id)) {
             abort(403, 'Menu ini hanya untuk Guru Piket.');

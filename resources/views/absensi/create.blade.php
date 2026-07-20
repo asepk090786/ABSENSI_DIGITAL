@@ -330,13 +330,10 @@
                                 <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
                                     <h5 class="mb-0"><i class="ti ti-users me-2"></i>Daftar Siswa & Absensi</h5>
                                     <div class="ms-auto d-flex flex-wrap gap-2">
-                                        @if(!($isGuruPiket ?? false))
                                             <button type="button" class="btn btn-sm btn-success btn-modern" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
-                                        @endif
                                         <button type="button" class="btn btn-sm btn-orange" onclick="setAllStatus('terlambat')" style="background:#f59e0b;color:#fff;">Ceklis Semua Terlambat</button>
                                         <button type="button" class="btn btn-sm btn-warning" onclick="setAllStatus('sakit')">Ceklis Semua Sakit</button>
                                         <button type="button" class="btn btn-sm btn-info btn-modern" onclick="setAllStatus('izin')">Ceklis Semua Izin</button>
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="setAllStatus('alpa')">Ceklis Semua Alpa</button>
                                         <input type="text" id="searchSiswa" class="form-control form-control-sm" placeholder="Cari nama / NIS" style="min-width: 200px;">
                                     </div>
                                 </div>
@@ -350,13 +347,11 @@
                                                     <th rowspan="2" class="align-middle text-center" width="8%">NISN</th>
                                                     <th rowspan="2" class="align-middle text-center" width="20%">NAMA</th>
                                                     <th rowspan="2" class="align-middle text-center" width="10%">JENIS KELAMIN</th>
-                                                    <th colspan="{{ ($isGuruPiket ?? false) ? 4 : 5 }}" class="text-center">STATUS</th>
+                                                    <th colspan="5" class="text-center">STATUS</th>
                                                     <th rowspan="2" class="align-middle text-center" width="15%">KETERANGAN</th>
                                                 </tr>
                                                 <tr>
-                                                    @if(!($isGuruPiket ?? false))
                                                         <th class="text-center" width="5%">Hadir</th>
-                                                    @endif
                                                     <th class="text-center" width="7%">Terlambat</th>
                                                     <th class="text-center" width="5%">Sakit</th>
                                                     <th class="text-center" width="5%">Izin</th>
@@ -672,13 +667,10 @@
                     if (data.siswa && data.siswa.length > 0) {
                         let html = '';
                         data.siswa.forEach((siswa, index) => {
-                            let statusHadirCell = '';
-                            if (!isGuruPiket) {
-                                statusHadirCell =
-                                    '<td class="text-center">' +
-                                        '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
-                                    '</td>';
-                            }
+                            let statusHadirCell =
+                                '<td class="text-center">' +
+                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
+                                '</td>';
 
                             html += '<tr data-siswa-id="' + siswa.id + '">' +
                                 '<td class="text-center">' + (index + 1) + '</td>' +
