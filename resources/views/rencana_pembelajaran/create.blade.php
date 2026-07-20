@@ -51,7 +51,7 @@
                         </div>
 
                         <div class="col-md-12 mb-2">
-                            <label class="form-label">Deskripsi</label>
+                            <label class="form-label">Capaian Pembelajaran</label>
                             <textarea name="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" rows="3">{{ old('deskripsi') }}</textarea>
                             @error('deskripsi')
                                 <div class="invalid-feedback">{{ $message }}</div>
