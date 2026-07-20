@@ -57,6 +57,19 @@
                         </div>
 
                         <div class="mb-2">
+                            <label class="form-label">Rencana Pembelajaran (opsional)</label>
+                            <select class="form-select" name="rencana_pembelajaran_id">
+                                <option value="">-- Pilih RPP --</option>
+                                @foreach($rencanaPembelajaranList as $r)
+                                    <option value="{{ $r->id }}" {{ old('rencana_pembelajaran_id', $agendaGuru->rencana_pembelajaran_id) == $r->id ? 'selected' : '' }}>
+                                        {{ $r->judul }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Memilih RPP akan mengisi ringkasan kegiatan secara otomatis jika kegiatan kosong.</small>
+                        </div>
+
+                        <div class="mb-2">
                             <label class="form-label">Kegiatan / Materi Ajar <span class="text-danger">*</span></label>
                             <textarea class="form-control @error('kegiatan') is-invalid @enderror" 
                                       name="kegiatan" rows="5" placeholder="Tuliskan kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan', $agendaGuru->kegiatan) }}</textarea>

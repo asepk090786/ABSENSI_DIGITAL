@@ -32,6 +32,7 @@ Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->
 Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(function () {
     Route::get('/', [App\Http\Controllers\WaliKelasController::class, 'index'])->name('index');
     Route::get('/siswa', [App\Http\Controllers\WaliKelasController::class, 'siswa'])->name('siswa');
+    Route::post('/siswa/{siswa}/jabatan', [App\Http\Controllers\WaliKelasController::class, 'updateJabatan'])->name('siswa.jabatan.update');
     Route::get('/absensi', [App\Http\Controllers\WaliKelasController::class, 'absensi'])->name('absensi');
     Route::get('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'laporanGuru'])->name('laporan_guru');
     Route::post('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'storeLaporanGuru'])->name('laporan_guru.store');

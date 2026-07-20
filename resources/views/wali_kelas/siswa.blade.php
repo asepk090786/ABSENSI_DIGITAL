@@ -24,8 +24,23 @@
                             <i class="ti ti-info-circle me-2"></i>Belum ada siswa di kelas ini.
                         </div>
                     @else
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="jabatanFilter" class="form-label">Filter Jabatan</label>
+                                <select id="jabatanFilter" class="form-select form-select-sm">
+                                    <option value="">Semua Jabatan</option>
+                                    <option value="ketua">Ketua Kelas</option>
+                                    <option value="wakil">Wakil Ketua Kelas</option>
+                                    <option value="sekretaris">Sekretaris</option>
+                                    <option value="bendahara">Bendahara</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button id="clearJabatanFilter" type="button" class="btn btn-sm btn-outline-secondary">Reset Filter</button>
+                            </div>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-vcenter table-hover table-tabler">
+                            <table id="waliKelasSiswaTable" class="table table-vcenter table-hover table-tabler">
                                 <thead>
                                     <tr>
                                         <th width="5%">No</th>
@@ -34,8 +49,9 @@
                                         <th>Nama Siswa</th>
                                         <th>Jenis Kelamin</th>
                                         <th>Email</th>
+                                        <th>Jabatan</th>
                                         <th>Status</th>
-                                        <th width="8%">Aksi</th>
+                                        <th width="12%">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -47,9 +63,22 @@
                                         <td>{{ $s->nama ?? '-' }}</td>
                                         <td>{{ $s->jenis_kelamin ?? '-' }}</td>
                                         <td>{{ $s->email ?? '-' }}</td>
+                                        <td class="jabatan-cell" data-jabatan="{{ $s->jabatan_kelas }}">
+                                            @if($s->jabatan_kelas === 'ketua')
+                                                Ketua Kelas
+                                            @elseif($s->jabatan_kelas === 'wakil')
+                                                Wakil Ketua Kelas
+                                            @elseif($s->jabatan_kelas === 'sekretaris')
+                                                Sekretaris
+                                            @elseif($s->jabatan_kelas === 'bendahara')
+                                                Bendahara
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                         <td>{{ ($s->status_aktif ?? 0) ? 'Aktif' : 'Nonaktif' }}</td>
                                         <td>
-                                            <a href="{{ route('siswa.edit', $s->id) }}" class="btn btn-sm btn-outline-primary" title="Edit Data Siswa">
+                                            <a href="{{ route('siswa.edit', $s->id) }}" class="btn btn-sm btn-outline-primary me-1" title="Edit Data Siswa">
                                                 <i class="ti ti-edit"></i>
                                             </a>
                                         </td>
@@ -71,3 +100,40 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filter = document.getElementById('jabatanFilter');
+    const clearFilter = document.getElementById('clearJabatanFilter');
+    const table = document.getElementById('waliKelasSiswaTable');
+
+    if (!filter || !table) {
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    function updateFilter() {
+        const selected = filter.value;
+
+        rows.forEach(row => {
+            const jabatanCell = row.querySelector('.jabatan-cell');
+            const jabatan = jabatanCell ? jabatanCell.dataset.jabatan || '' : '';
+            const match = selected === '' || jabatan === selected;
+
+            row.style.display = match ? '' : 'none';
+            row.classList.toggle('table-success', selected !== '' && match && jabatan !== '');
+        });
+    }
+
+    filter.addEventListener('change', updateFilter);
+    clearFilter.addEventListener('click', function () {
+        filter.value = '';
+        updateFilter();
+    });
+});
+</script>
+@endpush
+
+

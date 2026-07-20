@@ -14,11 +14,8 @@
                         </h4>
                     </div>
                     <div class="btn-group" role="group">
-                        <a href="{{ route('agenda_kelas.create') }}" class="btn btn-primary btn-sm">
-                            <i class="ti ti-plus"></i> Tambah Agenda Kelas
-                        </a>
-                        <a href="{{ route('agenda_kelas.create', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="btn btn-warning btn-sm">
-                            <i class="ti ti-notes"></i> Tambah Kegiatan
+                        <a href="{{ route('agenda_guru.create') }}" class="btn btn-primary btn-sm">
+                            <i class="ti ti-plus"></i> Tambah Agenda Guru
                         </a>
                         <button type="button" class="btn btn-sm btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#filterModal">
                             <i class="ti ti-calendar"></i> Filter Bulan
@@ -81,9 +78,6 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($item->kelas)
-                                                <span class="badge bg-primary me-1">{{ $item->kelas->nama_kelas }}</span>
-                                            @endif
                                             <strong>{{ Str::limit(strip_tags($item->kegiatan), 100) }}</strong>
                                             @php
                                                 $absensiSummary = $item->getAbsensiSummary();
@@ -97,13 +91,10 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ route('agenda_kelas.show', $item->id) }}" class="btn btn-info" title="Lihat">
-                                                    <i class="ti ti-eye"></i>
-                                                </a>
-                                                <a href="{{ route('agenda_kelas.edit', $item->id) }}" class="btn btn-warning" title="Edit">
+                                                <a href="{{ route('agenda_guru.edit', $item->id) }}" class="btn btn-warning" title="Edit">
                                                     <i class="ti ti-edit"></i>
                                                 </a>
-                                                <form action="{{ route('agenda_kelas.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus agenda ini?')">
+                                                <form action="{{ route('agenda_guru.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus agenda ini?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-danger" title="Hapus">

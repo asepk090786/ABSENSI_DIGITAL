@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AgendaKelas;
 use App\Models\AgendaGuru;
 use App\Models\AbsensiGuru;
 use App\Models\Guru;
@@ -76,13 +75,13 @@ class AgendaGuruController extends Controller
         $bulan = $request->get('bulan', now()->month);
         $tahunFilter = $request->get('tahun', now()->year);
 
-        // Get all agenda kelas for the selected month (source utama agenda guru)
-        $agendaList = AgendaKelas::where('guru_id', $guru->id)
+        // Get all agenda guru for the selected month
+        $agendaList = AgendaGuru::where('guru_id', $guru->id)
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('semester_id', $semester->id)
             ->whereYear('tanggal', $tahunFilter)
             ->whereMonth('tanggal', $bulan)
-            ->with(['jamBelajar', 'kelas'])
+            ->with(['jamBelajar'])
             ->orderBy('tanggal', 'asc')
             ->orderBy('jam_belajar_id', 'asc')
             ->get();
@@ -204,13 +203,19 @@ class AgendaGuruController extends Controller
         // Get jam belajar
         $jamBelajar = DB::table('jam_belajar')->get();
 
+        // Get Rencana Pembelajaran authored by this guru (for selection)
+        $rencanaPembelajaranList = \App\Models\RencanaPembelajaran::where('guru_id', $guru->id)
+            ->orderBy('judul')
+            ->get(['id', 'judul', 'mata_pelajaran_id', 'kelas_id']);
+
         // Get selected tanggal jika ada dari request
         $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
 
         return view('agenda_guru.create', compact(
             'guru',
             'jamBelajar',
-            'selectedTanggal'
+            'selectedTanggal',
+            'rencanaPembelajaranList'
         ));
     }
 
@@ -239,15 +244,26 @@ class AgendaGuruController extends Controller
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
-        // Create agenda
-        AgendaGuru::create([
+        // Prepare data
+        $agendaData = [
             'guru_id' => $guru->id,
             'jam_belajar_id' => $validated['jam_belajar_id'],
             'tanggal' => $validated['tanggal'],
-            'kegiatan' => $validated['kegiatan'],
+            'kegiatan' => $validated['kegiatan'] ?? null,
             'tahun_ajaran_id' => $tahun->id,
             'semester_id' => $semester->id,
-        ]);
+        ];
+
+        if (!empty($validated['rencana_pembelajaran_id'])) {
+            $agendaData['rencana_pembelajaran_id'] = $validated['rencana_pembelajaran_id'];
+            $rencana = \App\Models\RencanaPembelajaran::find($validated['rencana_pembelajaran_id']);
+            if ($rencana && empty($agendaData['kegiatan'])) {
+                // Fill kegiatan with rencana's judul + deskripsi (short)
+                $agendaData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->deskripsi ?? ''));
+            }
+        }
+
+        AgendaGuru::create($agendaData);
 
         return redirect()->route('agenda_guru.index')
             ->with('success', 'Agenda guru berhasil ditambahkan');
@@ -264,10 +280,14 @@ class AgendaGuruController extends Controller
         }
 
         $jamBelajar = DB::table('jam_belajar')->get();
+        $rencanaPembelajaranList = \App\Models\RencanaPembelajaran::where('guru_id', $guru->id)
+            ->orderBy('judul')
+            ->get(['id', 'judul', 'mata_pelajaran_id', 'kelas_id']);
 
         return view('agenda_guru.edit', compact(
             'agendaGuru',
-            'jamBelajar'
+            'jamBelajar',
+            'rencanaPembelajaranList'
         ));
     }
 
@@ -293,7 +313,15 @@ class AgendaGuruController extends Controller
         ]);
 
         // Update
-        $agendaGuru->update($validated);
+        $updateData = $validated;
+        if (!empty($validated['rencana_pembelajaran_id'])) {
+            $rencana = \App\Models\RencanaPembelajaran::find($validated['rencana_pembelajaran_id']);
+            if ($rencana && empty($updateData['kegiatan'])) {
+                $updateData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->deskripsi ?? ''));
+            }
+        }
+
+        $agendaGuru->update($updateData);
 
         return redirect()->route('agenda_guru.index')
             ->with('success', 'Agenda guru berhasil diperbarui');
@@ -333,13 +361,13 @@ class AgendaGuruController extends Controller
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
-        // Get agenda kelas (source utama agenda guru)
-        $agendaList = AgendaKelas::where('guru_id', $guru->id)
+        // Get agenda guru entries for export
+        $agendaList = AgendaGuru::where('guru_id', $guru->id)
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('semester_id', $semester->id)
             ->whereYear('tanggal', $tahunFilter)
             ->whereMonth('tanggal', $bulan)
-            ->with(['jamBelajar', 'kelas'])
+            ->with(['jamBelajar'])
             ->orderBy('tanggal', 'asc')
             ->orderBy('jam_belajar_id', 'asc')
             ->get();

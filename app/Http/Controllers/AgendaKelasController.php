@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgendaKelas;
 use App\Models\AgendaGuru;
 use App\Models\Kelas;
+use App\Services\AgendaKelasStorageService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -12,6 +13,12 @@ use Illuminate\Support\Facades\DB;
 
 class AgendaKelasController extends Controller
 {
+    private AgendaKelasStorageService $agendaKelasStorageService;
+
+    public function __construct(AgendaKelasStorageService $agendaKelasStorageService)
+    {
+        $this->agendaKelasStorageService = $agendaKelasStorageService;
+    }
     public function index(Request $request)
     {
         $tahun = DB::table('tahun_ajaran')->where('is_active',1)->first();
@@ -475,6 +482,10 @@ class AgendaKelasController extends Controller
         $data['tahun_ajaran_id'] = $tahun->id;
         $data['semester_id'] = $semester->id;
 
+        if ($agendaId && ! $applyToAllJam && $this->hasDuplicateAgendaKelas($data, $agendaId)) {
+            return back()->withInput()->withErrors('Agenda kelas untuk guru, kelas, jam, tanggal, dan semester yang sama sudah ada.');
+        }
+
         if ($data['jenis_kegiatan'] === 'kbm' && $applyToAllJam) {
             // Determine effective guru id: prefer submitted guru_id, fallback to logged-in guru (if any)
             $effectiveGuruId = $data['guru_id'] ?? ($guru->id ?? null);
@@ -509,11 +520,11 @@ class AgendaKelasController extends Controller
                 if ($existingAgenda) {
                     // Update existing
                     $existingAgenda->update($agendaData);
-                    $this->syncAgendaGuru($existingAgenda);
+                    $this->agendaKelasStorageService->syncAgendaGuru($existingAgenda);
                 } else {
                     // Create new
                     $newAgenda = AgendaKelas::create($agendaData);
-                    $this->syncAgendaGuru($newAgenda);
+                    $this->agendaKelasStorageService->syncAgendaGuru($newAgenda);
                 }
                 $createdCount++;
             }
@@ -526,14 +537,18 @@ class AgendaKelasController extends Controller
                 $agenda = AgendaKelas::findOrFail($agendaId);
                 $agenda->update($data);
                 if ($agenda->jenis_kegiatan === 'kbm') {
-                    $this->syncAgendaGuru($agenda);
+                    $this->agendaKelasStorageService->syncAgendaGuru($agenda);
                 }
                 $message = 'Agenda kelas berhasil diperbarui';
             } else {
+                if ($this->hasDuplicateAgendaKelas($data)) {
+                    return back()->withInput()->withErrors('Agenda kelas untuk guru, kelas, jam, tanggal, dan semester yang sama sudah ada.');
+                }
+
                 // Create new agenda
                 $agenda = AgendaKelas::create($data);
                 if ($agenda->jenis_kegiatan === 'kbm') {
-                    $this->syncAgendaGuru($agenda);
+                    $this->agendaKelasStorageService->syncAgendaGuru($agenda);
                 }
                 $message = $agenda->jenis_kegiatan === 'pengembangan_diri'
                     ? 'Kegiatan pengembangan diri berhasil ditambahkan'
@@ -716,9 +731,113 @@ class AgendaKelasController extends Controller
             ));
         }
 
-        $guru = DB::table('guru')->find($agenda->guru_id);
-        $kelas = DB::table('kelas')->find($agenda->kelas_id);
-        $jamBelajar = DB::table('jam_belajar')->find($agenda->jam_belajar_id);
+        $guru = $user->guru;
+        if (! $guru) {
+            return redirect()->route('agenda_kelas.index')
+                ->with('error', 'Anda tidak terdaftar sebagai guru.');
+        }
+
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        if (! $tahun || ! $semester) {
+            return redirect()->route('agenda_kelas.index')
+                ->with('error', 'Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        $kelas = DB::table('jadwal_kbm')
+            ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
+            ->where('jadwal_kbm.guru_id', $guru->id)
+            ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+            ->where('jadwal_kbm.semester_id', $semester->id)
+            ->select('kelas.id', 'kelas.nama_kelas')
+            ->distinct()
+            ->orderBy('kelas.nama_kelas')
+            ->get();
+
+        $selectedKelasId = old('kelas_id', $agenda->kelas_id ?? $request->get('kelas_id') ?? ($kelas->first()->id ?? null));
+        $selectedGuruId = old('guru_id', $agenda->guru_id ?? $guru->id);
+        $selectedDate = old('tanggal', $agenda->tanggal ?? now()->format('Y-m-d'));
+        $selectedJenisKegiatan = old('jenis_kegiatan', $agenda->jenis_kegiatan ?? 'kbm');
+        $selectedJamBelajarId = old('jam_belajar_id', $agenda->jam_belajar_id ?? null);
+        $selectedHari = $this->getHariIndonesiaFromDate($selectedDate);
+
+        $jadwalItems = DB::table('jadwal_kbm')
+            ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
+            ->where('jadwal_kbm.guru_id', $guru->id)
+            ->where('jadwal_kbm.tahun_ajaran_id', $tahun->id)
+            ->where('jadwal_kbm.semester_id', $semester->id)
+            ->select(
+                'jadwal_kbm.guru_id',
+                'jadwal_kbm.kelas_id',
+                'jadwal_kbm.jam_belajar_id',
+                'jadwal_kbm.hari',
+                'jadwal_kbm.jam_ke',
+                'jam_belajar.urutan',
+                'jam_belajar.jam_mulai',
+                'jam_belajar.jam_selesai',
+                'jam_belajar.jenis'
+            )
+            ->orderBy('jadwal_kbm.kelas_id')
+            ->orderBy('jadwal_kbm.jam_ke')
+            ->get();
+
+        $jadwalByKelas = [];
+        foreach ($jadwalItems as $item) {
+            $kelasId = (string) $item->kelas_id;
+
+            if (!isset($jadwalByKelas[$kelasId])) {
+                $jadwalByKelas[$kelasId] = [];
+            }
+
+            $jadwalByKelas[$kelasId][] = [
+                'guru_id' => (int) ($item->guru_id ?? 0),
+                'jam_belajar_id' => (int) $item->jam_belajar_id,
+                'hari' => $item->hari,
+                'jam_ke' => (int) $item->jam_ke,
+                'urutan' => (int) ($item->urutan ?? $item->jam_ke),
+                'jam_mulai' => $item->jam_mulai,
+                'jam_selesai' => $item->jam_selesai,
+                'jenis' => $item->jenis,
+                'label' => $item->hari . ' - Jam Ke-' . $item->jam_ke . ' (' . $item->jam_mulai . ' - ' . $item->jam_selesai . ' | ' . $item->jenis . ')',
+            ];
+        }
+
+        $jamBelajarList = DB::table('jam_belajar')->orderBy('urutan')->get();
+
+        $initialJamOptions = [];
+        if (!empty($selectedKelasId) && isset($jadwalByKelas[(string) $selectedKelasId])) {
+            $initialJamOptions = collect($jadwalByKelas[(string) $selectedKelasId])
+                ->filter(function ($item) use ($selectedHari, $selectedGuruId) {
+                    if (trim($item['hari']) !== trim($selectedHari)) {
+                        return false;
+                    }
+                    if (! empty($selectedGuruId) && (string) $item['guru_id'] !== (string) $selectedGuruId) {
+                        return false;
+                    }
+                    return true;
+                })
+                ->sortBy('jam_ke')
+                ->values()
+                ->all();
+        }
+
+        $guruList = collect([$guru]);
+
+        return view('agenda_kelas.create', compact(
+            'kelas',
+            'guru',
+            'guruList',
+            'selectedJenisKegiatan',
+            'selectedKelasId',
+            'selectedDate',
+            'selectedHari',
+            'selectedJamBelajarId',
+            'selectedGuruId',
+            'jadwalByKelas',
+            'jamBelajarList',
+            'initialJamOptions',
+            'agenda'
+        ));
 
         return view('agenda_kelas.show', compact('agenda', 'kelas', 'jamBelajar', 'guru'));
     }
@@ -790,8 +909,12 @@ class AgendaKelasController extends Controller
             }
         }
 
+        if ($this->hasDuplicateAgendaKelas($data, $agenda->id)) {
+            return back()->withInput()->withErrors('Agenda kelas untuk guru, kelas, jam, tanggal, dan semester yang sama sudah ada.');
+        }
+
         $agenda->update($data);
-        $this->syncAgendaGuru($agenda);
+        $this->agendaKelasStorageService->syncAgendaGuru($agenda);
 
         return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil diperbarui');
     }
@@ -810,10 +933,26 @@ class AgendaKelasController extends Controller
             return back()->with('error', 'Anda tidak memiliki akses untuk menghapus agenda ini.');
         }
 
-        $this->cleanupAgendaGuru($agenda);
+        $this->agendaKelasStorageService->cleanupAgendaGuru($agenda);
         $agenda->delete();
 
         return redirect()->route('agenda_kelas.index')->with('success', 'Agenda kelas berhasil dihapus');
+    }
+
+    private function hasDuplicateAgendaKelas(array $data, int $excludeAgendaId = null): bool
+    {
+        $query = AgendaKelas::where('guru_id', $data['guru_id'])
+            ->where('kelas_id', $data['kelas_id'])
+            ->where('jam_belajar_id', $data['jam_belajar_id'])
+            ->where('tanggal', $data['tanggal'])
+            ->where('tahun_ajaran_id', $data['tahun_ajaran_id'])
+            ->where('semester_id', $data['semester_id']);
+
+        if ($excludeAgendaId) {
+            $query->where('id', '<>', $excludeAgendaId);
+        }
+
+        return $query->exists();
     }
 
     private function canManageAgenda(AgendaKelas $agenda, $user): bool
@@ -905,42 +1044,6 @@ class AgendaKelasController extends Controller
      * Sync agenda kelas ke agenda guru
      * Ketika guru membuat/mengubah agenda kelas, otomatis terupdate di agenda guru
      */
-    private function syncAgendaGuru(AgendaKelas $agendaKelas)
-    {
-        // Get kelas info untuk deskripsi
-        $kelas = DB::table('kelas')->find($agendaKelas->kelas_id);
-        
-        // Buat ringkasan kegiatan: Kelas + Kegiatan
-        $kegiatanRingkasan = $kelas ? $kelas->nama_kelas . ' - ' : '';
-        $kegiatanRingkasan .= $agendaKelas->kegiatan ?? '';
-
-        // Cari atau buat agenda guru dengan kriteria yang sama
-        $agendaGuru = AgendaGuru::where('guru_id', $agendaKelas->guru_id)
-            ->where('jam_belajar_id', $agendaKelas->jam_belajar_id)
-            ->where('tanggal', $agendaKelas->tanggal)
-            ->where('tahun_ajaran_id', $agendaKelas->tahun_ajaran_id)
-            ->where('semester_id', $agendaKelas->semester_id)
-            ->first();
-
-        if ($agendaGuru) {
-            // Update existing - append kelas baru jika belum ada
-            if (strpos($agendaGuru->kegiatan, $kelas->nama_kelas) === false) {
-                $agendaGuru->kegiatan = $agendaGuru->kegiatan . "\n" . $kegiatanRingkasan;
-                $agendaGuru->save();
-            }
-        } else {
-            // Create new agenda guru
-            AgendaGuru::create([
-                'guru_id' => $agendaKelas->guru_id,
-                'jam_belajar_id' => $agendaKelas->jam_belajar_id,
-                'tanggal' => $agendaKelas->tanggal,
-                'kegiatan' => $kegiatanRingkasan,
-                'tahun_ajaran_id' => $agendaKelas->tahun_ajaran_id,
-                'semester_id' => $agendaKelas->semester_id,
-            ]);
-        }
-    }
-
     private function getNearestScheduleDate($currentDate, array $availableDays)
     {
         $dayOrder = [
@@ -996,24 +1099,4 @@ class AgendaKelasController extends Controller
     /**
      * Remove agenda guru jika semua agenda kelas untuk jam tersebut sudah dihapus
      */
-    private function cleanupAgendaGuru(AgendaKelas $deletedAgenda)
-    {
-        // Cek apakah masih ada agenda kelas lain untuk jam, tanggal, dan guru yang sama
-        $otherAgendas = AgendaKelas::where('guru_id', $deletedAgenda->guru_id)
-            ->where('jam_belajar_id', $deletedAgenda->jam_belajar_id)
-            ->where('tanggal', $deletedAgenda->tanggal)
-            ->where('tahun_ajaran_id', $deletedAgenda->tahun_ajaran_id)
-            ->where('semester_id', $deletedAgenda->semester_id)
-            ->count();
-
-        // Jika tidak ada agenda kelas lain, hapus agenda guru
-        if ($otherAgendas === 0) {
-            AgendaGuru::where('guru_id', $deletedAgenda->guru_id)
-                ->where('jam_belajar_id', $deletedAgenda->jam_belajar_id)
-                ->where('tanggal', $deletedAgenda->tanggal)
-                ->where('tahun_ajaran_id', $deletedAgenda->tahun_ajaran_id)
-                ->where('semester_id', $deletedAgenda->semester_id)
-                ->delete();
-        }
-    }
 }

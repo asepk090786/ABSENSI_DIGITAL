@@ -2,9 +2,9 @@
 
 @section('title','Edit Siswa')
 
-@php($isWaliKelas = auth()->check() && auth()->user()->hasRole('Wali Kelas'))
-@php($canManageClassPositions = auth()->check() && auth()->user()->hasAnyRole(['Admin', 'Wali Kelas']))
-@php($backRoute = $isWaliKelas ? route('wali_kelas.siswa') : route('siswa.index'))
+@php
+    $backRoute = $backRoute ?? route('siswa.index');
+@endphp
 
 @section('content')
 <div class="row">
@@ -72,6 +72,7 @@
                                     <option value="ketua" {{ old('jabatan_kelas', $siswa->jabatan_kelas) == 'ketua' ? 'selected' : '' }}>Ketua Kelas</option>
                                     <option value="wakil" {{ old('jabatan_kelas', $siswa->jabatan_kelas) == 'wakil' ? 'selected' : '' }}>Wakil Ketua Kelas</option>
                                     <option value="sekretaris" {{ old('jabatan_kelas', $siswa->jabatan_kelas) == 'sekretaris' ? 'selected' : '' }}>Sekretaris Kelas</option>
+                                    <option value="bendahara" {{ old('jabatan_kelas', $siswa->jabatan_kelas) == 'bendahara' ? 'selected' : '' }}>Bendahara</option>
                                 </select>
                                 @error('jabatan_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>

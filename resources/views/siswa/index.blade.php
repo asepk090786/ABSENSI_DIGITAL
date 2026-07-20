@@ -106,7 +106,7 @@
                                     @if($item->jabatan_kelas === 'ketua')
                                         <span class="badge bg-primary me-1">Ketua</span>
                                     @elseif($item->jabatan_kelas === 'wakil')
-                                        <span class="badge bg-info me-1">Wakil</span>
+                                            <span class="badge bg-info me-1">Wakil Ketua Kelas</span>
                                     @elseif($item->jabatan_kelas === 'sekretaris')
                                         <span class="badge bg-warning me-1">Sekretaris</span>
                                     @else

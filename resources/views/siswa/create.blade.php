@@ -66,9 +66,10 @@
                             <label class="form-label fw-medium">Jabatan Kelas</label>
                             <select name="jabatan_kelas" class="form-select @error('jabatan_kelas') is-invalid @enderror">
                                 <option value="">-- Pilih --</option>
-                                <option value="ketua" {{ old('jabatan_kelas') == 'ketua' ? 'selected' : '' }}>Ketua Kelas</option>
-                                <option value="wakil" {{ old('jabatan_kelas') == 'wakil' ? 'selected' : '' }}>Wakil Ketua Kelas</option>
-                                <option value="sekretaris" {{ old('jabatan_kelas') == 'sekretaris' ? 'selected' : '' }}>Sekretaris Kelas</option>
+                                    <option value="ketua" {{ old('jabatan_kelas') == 'ketua' ? 'selected' : '' }}>Ketua Kelas</option>
+                                    <option value="wakil" {{ old('jabatan_kelas') == 'wakil' ? 'selected' : '' }}>Wakil Ketua Kelas</option>
+                                    <option value="sekretaris" {{ old('jabatan_kelas') == 'sekretaris' ? 'selected' : '' }}>Sekretaris Kelas</option>
+                                    <option value="bendahara" {{ old('jabatan_kelas') == 'bendahara' ? 'selected' : '' }}>Bendahara</option>
                             </select>
                             @error('jabatan_kelas')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>

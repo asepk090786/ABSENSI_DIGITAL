@@ -65,6 +65,27 @@ class SiswaController extends Controller
         return auth()->check() && auth()->user()->hasAnyRole(['Admin', 'Wali Kelas']);
     }
 
+    private function canManageClassPositionsForStudent(Siswa $siswa): bool
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->canManageClassPositions()) {
+            return true;
+        }
+
+        $guru = $user->guru;
+        if (! $guru) {
+            return false;
+        }
+
+        return Kelas::where('id', $siswa->kelas_id)
+            ->where('wali_kelas_id', $guru->id)
+            ->exists();
+    }
+
     public function index()
     {
         $items = Siswa::with(['user', 'kelas'])->orderBy('nama')->get();
@@ -90,7 +111,7 @@ class SiswaController extends Controller
             'email' => 'required|email|max:255|unique:users,email|unique:siswa,email',
             'username' => 'required|string|max:255|unique:users,username',
             'password' => 'required|string|min:6|confirmed',
-            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris',
+            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris,bendahara',
         ]);
 
         $roleSiswa = Role::where('role_name', 'Siswa')->first();
@@ -134,12 +155,16 @@ class SiswaController extends Controller
         $this->ensureWaliKelasCanEditSiswa($siswa);
 
         $kelasList = Kelas::orderBy('nama_kelas')->get();
-        return view('siswa.edit', compact('siswa', 'kelasList'));
+        $canManageClassPositions = $this->canManageClassPositionsForStudent($siswa);
+        $backRoute = $canManageClassPositions ? route('wali_kelas.siswa') : route('siswa.index');
+
+        return view('siswa.edit', compact('siswa', 'kelasList', 'canManageClassPositions', 'backRoute'));
     }
 
     public function update(Request $request, Siswa $siswa)
     {
         $this->ensureWaliKelasCanEditSiswa($siswa);
+        $redirectToWaliKelasSiswa = $this->canManageClassPositionsForStudent($siswa);
 
         $userId = $siswa->user->id ?? null;
 
@@ -152,7 +177,7 @@ class SiswaController extends Controller
             'email' => 'required|email|max:255|unique:users,email,' . $userId . '|unique:siswa,email,' . $siswa->id,
             'username' => 'required|string|max:255|unique:users,username,' . $userId,
             'password' => 'nullable|string|min:6|confirmed',
-            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris',
+            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris,bendahara',
         ]);
 
         $roleSiswa = Role::where('role_name', 'Siswa')->first();
@@ -199,7 +224,7 @@ class SiswaController extends Controller
             User::create($userData);
         }
 
-        if (auth()->check() && auth()->user()->hasRole('Wali Kelas')) {
+        if ($redirectToWaliKelasSiswa) {
             return redirect()->route('wali_kelas.siswa')->with('success', 'Data siswa berhasil diperbarui.');
         }
 

@@ -15,6 +15,7 @@ class AgendaGuru extends Model
         'jam_belajar_id',
         'tanggal',
         'kegiatan',
+        'rencana_pembelajaran_id',
         'tahun_ajaran_id',
         'semester_id'
     ];
@@ -31,6 +32,11 @@ class AgendaGuru extends Model
     public function jamBelajar()
     {
         return $this->belongsTo(\App\Models\JamBelajar::class, 'jam_belajar_id');
+    }
+
+    public function rencanaPembelajaran()
+    {
+        return $this->belongsTo(\App\Models\RencanaPembelajaran::class, 'rencana_pembelajaran_id');
     }
 
     public function tahunAjaran()

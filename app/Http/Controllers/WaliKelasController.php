@@ -70,6 +70,55 @@ class WaliKelasController extends Controller
         
         return view('wali_kelas.siswa', compact('kelasBinaan', 'siswa', 'guru'));
     }
+
+    /**
+     * Update jabatan_kelas for a siswa in the kelas binaan
+     */
+    public function updateJabatan(Request $request, $siswaId)
+    {
+        $user = Auth::user();
+        $guru = $user->guru;
+
+        if (! $guru) {
+            return redirect()->route('home')->with('error', 'Anda tidak terdaftar sebagai guru.');
+        }
+
+        $kelasBinaan = DB::table('kelas')
+            ->where('wali_kelas_id', $guru->id)
+            ->first();
+
+        if (! $kelasBinaan) {
+            return redirect()->route('home')->with('error', 'Anda tidak ditugaskan sebagai wali kelas.');
+        }
+
+        $validated = $request->validate([
+            'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris'
+        ]);
+
+        $siswa = DB::table('siswa')
+            ->where('id', $siswaId)
+            ->where('kelas_id', $kelasBinaan->id)
+            ->first();
+
+        if (! $siswa) {
+            return redirect()->back()->with('error', 'Siswa tidak ditemukan di kelas binaan Anda.');
+        }
+
+        DB::table('siswa')->where('id', $siswaId)->update([
+            'jabatan_kelas' => $validated['jabatan_kelas'] ?? null,
+            'updated_at' => now()
+        ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Jabatan kelas siswa berhasil diperbarui.',
+                'jabatan' => $validated['jabatan_kelas'] ?? null,
+            ]);
+        }
+
+        return redirect()->route('wali_kelas.siswa')->with('success', 'Jabatan kelas siswa berhasil diperbarui.');
+    }
     
     /**
      * Halaman absensi kelas binaan

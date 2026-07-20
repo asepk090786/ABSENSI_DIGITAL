@@ -200,9 +200,6 @@
                             {{ ($item->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri' ? 'Pengembangan Diri' : 'KBM' }}
                         </td>
                         <td style="line-height: 1.2;">
-                            @if($item->kelas)
-                                [{{ $item->kelas->nama_kelas }}]
-                            @endif
                             {{ Str::limit(strip_tags($item->kegiatan), 120) }}
                         </td>
                         <td style="line-height: 1.2; font-size: 10px;">
