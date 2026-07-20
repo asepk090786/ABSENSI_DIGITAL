@@ -178,12 +178,19 @@
                     </form>
 
                     @php
-                        $totalTerlambatBk = ($siswaPerluPerhatian ?? collect())->filter(function ($row) {
-                            return in_array(strtolower((string) ($row->status ?? '')), ['terlambat', 'telat'], true);
-                        })->count();
-                        $totalTidakMasukBk = ($siswaPerluPerhatian ?? collect())->filter(function ($row) {
-                            return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
-                        })->count();
+                        $totalTerlambatBk = ($siswaPerluPerhatian ?? collect())
+                            ->filter(function ($row) {
+                                return in_array(strtolower((string) ($row->status ?? '')), ['terlambat', 'telat'], true);
+                            })
+                            ->unique('siswa_id')
+                            ->count();
+
+                        $totalTidakMasukBk = ($siswaPerluPerhatian ?? collect())
+                            ->filter(function ($row) {
+                                return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
+                            })
+                            ->unique('siswa_id')
+                            ->count();
                     @endphp
 
                     <div class="d-flex flex-wrap gap-2 mb-2">

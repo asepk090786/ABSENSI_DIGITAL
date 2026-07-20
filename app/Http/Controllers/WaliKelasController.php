@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class WaliKelasController extends Controller
 {
@@ -123,7 +124,7 @@ class WaliKelasController extends Controller
     /**
      * Halaman absensi kelas binaan
      */
-    public function absensi()
+    public function absensi(Request $request)
     {
         $user = Auth::user();
         $guru = $user->guru;
@@ -144,12 +145,25 @@ class WaliKelasController extends Controller
         // Get tahun ajaran dan semester aktif
         $tahunAjaran = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
+        $hariIndonesia = [
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu'
+        ];
+        $hariQuery = $hariIndonesia[Carbon::parse($selectedTanggal)->format('l')] ?? Carbon::parse($selectedTanggal)->format('l');
         
-        // Get data absensi untuk kelas binaan
+        // Get data absensi untuk kelas binaan pada tanggal terpilih
         $absensi = DB::table('absensi_kelas as ak')
             ->leftJoin('guru as g', 'ak.guru_id', '=', 'g.id')
             ->leftJoin('jam_belajar as jb', 'ak.jam_belajar_id', '=', 'jb.id')
             ->where('ak.kelas_id', $kelasBinaan->id)
+            ->whereDate('ak.tanggal', $selectedTanggal)
             ->when($tahunAjaran, function ($query) use ($tahunAjaran) {
                 $query->where('ak.tahun_ajaran_id', $tahunAjaran->id);
             })
@@ -160,10 +174,44 @@ class WaliKelasController extends Controller
                 'ak.*',
                 'g.nama as guru_nama',
                 'jb.jam_mulai',
-                'jb.jam_selesai'
+                'jb.jam_selesai',
+                'jb.urutan as jam_urutan'
             )
-            ->orderBy('ak.tanggal', 'desc')
+            ->orderBy('jb.urutan')
             ->get();
+
+        $jadwalMap = collect();
+        if ($tahunAjaran && $semester) {
+            $jadwalMap = DB::table('jadwal_kbm as jk')
+                ->leftJoin('mata_pelajaran as mp', 'jk.mata_pelajaran_id', '=', 'mp.id')
+                ->leftJoin('guru as g2', 'jk.guru_id', '=', 'g2.id')
+                ->where('jk.kelas_id', $kelasBinaan->id)
+                ->where('jk.hari', $hariQuery)
+                ->where('jk.tahun_ajaran_id', $tahunAjaran->id)
+                ->where('jk.semester_id', $semester->id)
+                ->select(
+                    'jk.jam_belajar_id',
+                    DB::raw('COALESCE(mp.nama_mapel, \'-\') as mapel_nama'),
+                    DB::raw('COALESCE(g2.nama, \'-\') as mapel_guru'),
+                    'jk.jam_ke'
+                )
+                ->get()
+                ->keyBy('jam_belajar_id');
+        }
+
+        $absensi = $absensi->map(function ($row) use ($jadwalMap) {
+            if ($jadwalMap->has($row->jam_belajar_id)) {
+                $schedule = $jadwalMap->get($row->jam_belajar_id);
+                $row->mapel_nama = $schedule->mapel_nama;
+                $row->mapel_guru = $schedule->mapel_guru;
+                $row->jam_ke = $schedule->jam_ke;
+            } else {
+                $row->mapel_nama = '-';
+                $row->mapel_guru = '-';
+                $row->jam_ke = null;
+            }
+            return $row;
+        });
 
         $startMonth = now()->startOfMonth()->toDateString();
         $endMonth = now()->endOfMonth()->toDateString();
@@ -201,8 +249,29 @@ class WaliKelasController extends Controller
                 ->get()
                 ->keyBy('absensi_kelas_id');
         }
+
+        $absensiSummary = [
+            'terlambat' => 0,
+            'tidak_masuk' => 0,
+        ];
+        if ($absensi->isNotEmpty()) {
+            $absensiSiswa = DB::table('absensi_siswa')
+                ->whereIn('absensi_kelas_id', $absensi->pluck('id'))
+                ->select('siswa_id', DB::raw('LOWER(status) as status'))
+                ->get();
+
+            $absensiSummary['terlambat'] = $absensiSiswa
+                ->filter(fn ($row) => in_array($row->status, ['terlambat', 'telat'], true))
+                ->unique('siswa_id')
+                ->count();
+
+            $absensiSummary['tidak_masuk'] = $absensiSiswa
+                ->filter(fn ($row) => in_array($row->status, ['alpa', 'alpha', 'alfa', 'absen'], true))
+                ->unique('siswa_id')
+                ->count();
+        }
         
-        return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester', 'akumulasiTerlambatBulanan'));
+        return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester', 'akumulasiTerlambatBulanan', 'selectedTanggal', 'absensiSummary'));
     }
 
     public function laporanGuru()

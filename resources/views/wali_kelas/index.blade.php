@@ -129,6 +129,18 @@
                         </div>
 
                         <div class="col-md-6 col-lg-3">
+                            <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id]) }}" class="text-decoration-none">
+                                <div class="card border-primary h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="ti ti-pencil" style="font-size: 48px; color: #2563eb;"></i>
+                                        <h6 class="mt-2 mb-0">Input Absensi</h6>
+                                        <small class="text-muted">Absen kelas binaan Anda</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-md-6 col-lg-3">
                             <a href="{{ route('wali_kelas.nilai') }}" class="text-decoration-none">
                                 <div class="card border-warning h-100 hover-card">
                                     <div class="card-body text-center">
