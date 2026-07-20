@@ -31,6 +31,24 @@
     <h5>🎓 Pembelajaran</h5>
     <ul class="menu-list">
         <li>
+            <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
+                <i class="material-icons">event_note</i>
+                <span>Agenda Kelas</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ auth()->user()->guru ? route('agenda_kelas.index', ['guru_id' => auth()->user()->guru->id]) : route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') && request()->has('guru_id') ? 'active' : '' }}">
+                <i class="material-icons">assignment_ind</i>
+                <span>Agenda Guru</span>
+            </a>
+        </li>
+    </ul>
+    @endif
+
+    <h5>📚 Akademik</h5>
+    <ul class="menu-list">
+        @if($isGuru)
+        <li>
             <a href="{{ route('komponen_nilai.index') }}" class="menu-item {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}">
                 <i class="material-icons">fact_check</i>
                 <span>Komponen Penilaian</span>
@@ -43,28 +61,12 @@
             </a>
         </li>
         <li>
-            <a href="{{ route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}">
-                <i class="material-icons">event_note</i>
-                <span>Agenda Kelas</span>
+            <a href="{{ route('rencana_pembelajaran.index') }}" class="menu-item {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}">
+                <i class="material-icons">description</i>
+                <span>Rencana Pembelajaran</span>
             </a>
         </li>
-        <li>
-            <a href="{{ auth()->user()->guru ? route('agenda_kelas.index', ['guru_id' => auth()->user()->guru->id]) : route('agenda_kelas.index') }}" class="menu-item {{ request()->routeIs('agenda_kelas.*') && request()->has('guru_id') ? 'active' : '' }}">
-                <i class="material-icons">assignment_ind</i>
-                <span>Agenda Guru</span>
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('absensi.index') }}" class="menu-item {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
-                <i class="material-icons">assignment</i>
-                <span>Absensi</span>
-            </a>
-        </li>
-    </ul>
-    @endif
-
-    <h5>📚 Akademik</h5>
-    <ul class="menu-list">
+        @endif
         <li>
             <a href="{{ route('jam_belajar.index') }}" class="menu-item {{ request()->routeIs('jam_belajar.*') ? 'active' : '' }}">
                 <i class="material-icons">schedule</i>
@@ -105,18 +107,6 @@
             </a>
         </li>
         @endif
-        <li>
-            <a href="{{ route('nilai.index') }}" class="menu-item {{ request()->routeIs('nilai.index') ? 'active' : '' }}">
-                <i class="material-icons">grading</i>
-                <span>Nilai</span>
-            </a>
-        </li>
-        <li>
-            <a href="{{ route('rekap_nilai.index') }}" class="menu-item {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}">
-                <i class="material-icons">assessment</i>
-                <span>Rekap Nilai</span>
-            </a>
-        </li>
     </ul>
 
     @if($isWaliKelas)

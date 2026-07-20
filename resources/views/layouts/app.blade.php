@@ -812,11 +812,11 @@
                 <!-- Akademik -->
                 @if($user->hasAnyRole(['Admin','Kepala Sekolah','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas']))
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','nilai.*','rekap_nilai.*','absensi.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-school"></i> Akademik
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','nilai.*','rekap_nilai.*','absensi.*']) ? 'show' : '' }}" id="subAkademik">
+                    <div class="collapse {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*']) ? 'show' : '' }}" id="subAkademik">
                         <ul class="sidebar-subnav">
                             <li class="nav-item"><a href="{{ route('jadwal-kbm.index') }}" class="nav-link {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal KBM</a></li>
                             @if($isGuruPiket || $user->hasAnyRole(['Admin','Kepala Sekolah']))
@@ -827,9 +827,11 @@
                             @if(!auth()->user()->hasRole('Siswa'))
                                 <li class="nav-item"><a href="{{ route('sk_tugas.index') }}" class="nav-link {{ request()->routeIs('sk_tugas.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> SK TUGAS</a></li>
                             @endif
-                            <li class="nav-item"><a href="{{ route('nilai.index') }}" class="nav-link {{ request()->routeIs('nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Nilai</a></li>
-                            <li class="nav-item"><a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rekap Nilai</a></li>
-                            <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
+                            @if($isGuru)
+                                <li class="nav-item"><a href="{{ route('komponen_nilai.index') }}" class="nav-link {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Komponen Penilaian</a></li>
+                                <li class="nav-item"><a href="{{ route('mata_pelajaran.guru') }}" class="nav-link {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Mata Pelajaran</a></li>
+                                <li class="nav-item"><a href="{{ route('rencana_pembelajaran.index') }}" class="nav-link {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rencana Pembelajaran</a></li>
+                            @endif
                         </ul>
                     </div>
                 </li>
@@ -838,18 +840,17 @@
                 <!-- Pembelajaran (Guru) -->
                 @if($isGuru)
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','agenda_kelas.*','agenda_guru.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-book"></i> Pembelajaran
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','agenda_kelas.*','agenda_guru.*']) ? 'show' : '' }}" id="subPembelajaran">
+                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*']) ? 'show' : '' }}" id="subPembelajaran">
                         <ul class="sidebar-subnav">
-                            <li class="nav-item"><a href="{{ route('komponen_nilai.index') }}" class="nav-link {{ request()->routeIs('komponen_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Komponen Penilaian</a></li>
-                            <li class="nav-item"><a href="{{ route('mata_pelajaran.guru') }}" class="nav-link {{ request()->routeIs('mata_pelajaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Mata Pelajaran</a></li>
-                            <li class="nav-item"><a href="{{ route('rencana_pembelajaran.index') }}" class="nav-link {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rencana Pembelajaran</a></li>
+                            <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
                             <li class="nav-item"><a href="{{ route('agenda_kelas.index') }}" class="nav-link {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Kelas</a></li>
                             <li class="nav-item"><a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Guru</a></li>
-                            <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
+                            <li class="nav-item"><a href="{{ route('nilai.index') }}" class="nav-link {{ request()->routeIs('nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Nilai</a></li>
+                            <li class="nav-item"><a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rekap Nilai</a></li>
                         </ul>
                     </div>
                 </li>
