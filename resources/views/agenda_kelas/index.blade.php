@@ -380,11 +380,11 @@
                                         <td>{{ $it->jamBelajar->jam_mulai ?? '-' }} - {{ $it->jamBelajar->jam_selesai ?? '-' }}</td>
                                         <td>
                                             @if(($it->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri')
-                                                <span class="badge bg-info mb-1">Pengembangan Diri</span><br>
+                                                <span class="badge bg-info text-white mb-1">Pengembangan Diri</span><br>
                                                 <strong>{{ $it->nama_kegiatan ?? '-' }}</strong><br>
                                                 <small>{{ Str::limit(strip_tags($it->kegiatan), 50) }}</small>
                                             @else
-                                                <span class="badge bg-primary mb-1">KBM</span><br>
+                                                <span class="badge bg-primary text-white mb-1">KBM</span><br>
                                                 {{ Str::limit(strip_tags($it->kegiatan), 50) }}
                                             @endif
                                         </td>
