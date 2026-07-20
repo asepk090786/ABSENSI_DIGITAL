@@ -59,10 +59,10 @@
                     </div>
                     @endif
 
-                    @if($item->deskripsi)
+                    @if($item->capaian_pembelajaran)
                     <div class="col-md-12 mb-2">
-                        <label class="form-label text-muted">Deskripsi</label>
-                        <p class="form-control-plaintext">{!! nl2br(e($item->deskripsi)) !!}</p>
+                        <label class="form-label text-muted">Capaian Pembelajaran</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->capaian_pembelajaran)) !!}</p>
                     </div>
                     @endif
 

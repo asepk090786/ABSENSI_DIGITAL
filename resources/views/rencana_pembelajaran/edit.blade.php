@@ -51,8 +51,8 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Capaian Pembelajaran</label>
-                            <textarea name="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" rows="3">{{ old('deskripsi', $item->deskripsi) }}</textarea>
-                            @error('deskripsi')
+                            <textarea name="capaian_pembelajaran" class="form-control @error('capaian_pembelajaran') is-invalid @enderror" rows="3">{{ old('capaian_pembelajaran', $item->capaian_pembelajaran) }}</textarea>
+                            @error('capaian_pembelajaran')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

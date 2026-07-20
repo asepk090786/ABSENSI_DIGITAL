@@ -18,7 +18,7 @@ class RencanaPembelajaran extends Model
         'kelas_id',
         'jadwal_kbm_id',
         'judul',
-        'deskripsi',
+        'capaian_pembelajaran',
         'tujuan',
         'metode',
         'media',

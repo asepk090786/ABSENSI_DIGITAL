@@ -260,8 +260,8 @@ class AgendaGuruController extends Controller
             $agendaData['rencana_pembelajaran_id'] = $validated['rencana_pembelajaran_id'];
             $rencana = \App\Models\RencanaPembelajaran::find($validated['rencana_pembelajaran_id']);
             if ($rencana && empty($agendaData['kegiatan'])) {
-                // Fill kegiatan with rencana's judul + deskripsi (short)
-                $agendaData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->deskripsi ?? ''));
+                // Fill kegiatan with rencana's judul + capaian pembelajaran (short)
+                $agendaData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->capaian_pembelajaran ?? ''));
             }
         }
 
@@ -318,9 +318,9 @@ class AgendaGuruController extends Controller
         $updateData = $validated;
         if (!empty($validated['rencana_pembelajaran_id'])) {
             $rencana = \App\Models\RencanaPembelajaran::find($validated['rencana_pembelajaran_id']);
-            if ($rencana && empty($updateData['kegiatan'])) {
-                $updateData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->deskripsi ?? ''));
-            }
+                if ($rencana && empty($updateData['kegiatan'])) {
+                    $updateData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->capaian_pembelajaran ?? ''));
+                }
         }
 
         $agendaGuru->update($updateData);

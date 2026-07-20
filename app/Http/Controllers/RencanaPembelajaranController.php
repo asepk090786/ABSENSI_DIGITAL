@@ -204,7 +204,7 @@ class RencanaPembelajaranController extends Controller
             'kelas_ids' => 'required|array|min:1',
             'kelas_ids.*' => 'exists:kelas,id',
             'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
+            'capaian_pembelajaran' => 'nullable|string',
             'tujuan' => 'nullable|string',
             'metode' => 'nullable|string',
             'media' => 'nullable|string',
@@ -310,7 +310,7 @@ class RencanaPembelajaranController extends Controller
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'judul' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
+            'capaian_pembelajaran' => 'nullable|string',
             'tujuan' => 'nullable|string',
             'metode' => 'nullable|string',
             'media' => 'nullable|string',
@@ -518,9 +518,9 @@ class RencanaPembelajaranController extends Controller
         $section->addText('');
         
         // Details sections
-        if ($rencanaPembelajaran->deskripsi) {
-            $section->addText('Deskripsi', ['bold' => true, 'size' => 12]);
-            $section->addText($rencanaPembelajaran->deskripsi);
+        if ($rencanaPembelajaran->capaian_pembelajaran) {
+            $section->addText('Capaian Pembelajaran', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->capaian_pembelajaran);
             $section->addText('');
         }
         
@@ -654,7 +654,7 @@ class RencanaPembelajaranController extends Controller
                 $rencana->mata_pelajaran_id = $mataPelajaranId;
                 $rencana->kelas_id = $kelasId;
                 $rencana->judul = $data['judul'];
-                $rencana->deskripsi = $data['deskripsi'] ?? null;
+                $rencana->capaian_pembelajaran = $data['deskripsi'] ?? null;
                 $rencana->tujuan = $data['tujuan'] ?? null;
                 $rencana->metode = $data['metode'] ?? null;
                 $rencana->media = $data['media'] ?? null;
