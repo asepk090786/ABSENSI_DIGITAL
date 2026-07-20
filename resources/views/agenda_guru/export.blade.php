@@ -189,12 +189,14 @@
                         <td class="text-center">{{ $no++ }}</td>
                         <td>{{ $day }}<br>{{ $item->tanggal->format('d/m/Y') }}</td>
                         <td class="text-center">
-                            @if($item->jamBelajar)
-                                {{ $item->jamBelajar->jam_mulai }}<br>
-                                {{ $item->jamBelajar->jam_selesai }}
-                            @else
-                                -
-                            @endif
+                                @if($item->jamBelajar)
+                                    @if(!empty($item->jamBelajar->urutan))
+                                        <div class="fw-semibold">Jam Ke-{{ $item->jamBelajar->urutan }}</div>
+                                    @endif
+                                    <div>{{ $item->jamBelajar->jam_mulai }} - {{ $item->jamBelajar->jam_selesai }}</div>
+                                @else
+                                    -
+                                @endif
                         </td>
                         <td class="col-center">
                             {{ ($item->jenis_kegiatan ?? 'kbm') === 'pengembangan_diri' ? 'Pengembangan Diri' : 'KBM' }}

@@ -71,8 +71,10 @@
                                         <td><strong>{{ $dateStr }}</strong></td>
                                         <td class="text-center">
                                             @if($item->jamBelajar)
-                                                {{ $item->jamBelajar->jam_mulai }}<br>
-                                                <small class="text-muted">s/d {{ $item->jamBelajar->jam_selesai }}</small>
+                                                @if(!empty($item->jamBelajar->urutan))
+                                                    <div class="fw-semibold">Jam Ke-{{ $item->jamBelajar->urutan }}</div>
+                                                @endif
+                                                <div>{{ $item->jamBelajar->jam_mulai }} <small class="text-muted">s/d {{ $item->jamBelajar->jam_selesai }}</small></div>
                                             @else
                                                 -
                                             @endif
