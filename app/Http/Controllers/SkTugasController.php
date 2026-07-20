@@ -74,6 +74,47 @@ class SkTugasController extends Controller
         return response()->file(Storage::disk('public')->path($path), ['Content-Type' => 'application/pdf']);
     }
 
+    public function edit(SkTugas $sk_tugas)
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
+
+        return view('sk_tugas.edit', compact('sk_tugas'));
+    }
+
+    public function update(Request $request, SkTugas $sk_tugas)
+    {
+        if (!auth()->user()->hasRole('Admin')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'is_visible_to_guru' => 'nullable|boolean',
+        ]);
+
+        $data = [
+            'judul' => $request->input('judul'),
+            'is_visible_to_guru' => $request->has('is_visible_to_guru'),
+        ];
+
+        if ($request->hasFile('file')) {
+            // Delete old file
+            if ($sk_tugas->file && Storage::disk('public')->exists($sk_tugas->file)) {
+                Storage::disk('public')->delete($sk_tugas->file);
+            }
+
+            $path = $request->file('file')->store('sk_tugas', 'public');
+            $data['file'] = $path;
+        }
+
+        $sk_tugas->update($data);
+
+        return redirect()->route('sk_tugas.index')->with('success', 'SK Tugas berhasil diperbarui.');
+    }
+
     public function destroy(SkTugas $sk_tugas)
     {
         if (!auth()->user()->hasRole('Admin')) {

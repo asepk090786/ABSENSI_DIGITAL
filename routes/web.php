@@ -240,6 +240,8 @@ Route::middleware(['auth'])->group(function(){
     Route::get('sk-tugas', [App\Http\Controllers\SkTugasController::class, 'index'])->name('sk_tugas.index');
     Route::get('sk-tugas/create', [App\Http\Controllers\SkTugasController::class, 'create'])->name('sk_tugas.create')->middleware('role:Admin');
     Route::post('sk-tugas', [App\Http\Controllers\SkTugasController::class, 'store'])->name('sk_tugas.store')->middleware('role:Admin');
+    Route::get('sk-tugas/{sk_tugas}/edit', [App\Http\Controllers\SkTugasController::class, 'edit'])->name('sk_tugas.edit')->middleware('role:Admin');
+    Route::put('sk-tugas/{sk_tugas}', [App\Http\Controllers\SkTugasController::class, 'update'])->name('sk_tugas.update')->middleware('role:Admin');
     Route::get('sk-tugas/{sk_tugas}/preview', [App\Http\Controllers\SkTugasController::class, 'preview'])->name('sk_tugas.preview');
     Route::post('sk-tugas/{sk_tugas}/toggle-visibility', [App\Http\Controllers\SkTugasController::class, 'toggleVisibility'])->name('sk_tugas.toggle_visibility')->middleware('role:Admin');
     Route::delete('sk-tugas/{sk_tugas}', [App\Http\Controllers\SkTugasController::class, 'destroy'])->name('sk_tugas.destroy')->middleware('role:Admin');

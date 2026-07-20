@@ -46,6 +46,7 @@
                                                 @endif
                                                 <a href="{{ route('sk_tugas.download', $item->id) }}" class="btn btn-sm btn-success">Download</a>
                                                 @if(auth()->user()->hasRole('Admin'))
+                                                    <a href="{{ route('sk_tugas.edit', $item->id) }}" class="btn btn-sm btn-primary me-1"><i class="ti ti-pencil me-1"></i>Edit</a>
                                                     <form action="{{ route('sk_tugas.toggle_visibility', $item->id) }}" method="POST" class="d-inline me-1">
                                                         @csrf
                                                         <button type="submit" class="btn btn-sm btn-warning" title="{{ $item->is_visible_to_guru ? 'Sembunyikan dari guru' : 'Tampilkan ke guru' }}">
