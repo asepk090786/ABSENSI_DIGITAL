@@ -46,13 +46,19 @@
                             <i class="ti ti-file-pdf me-1"></i>Download PDF Kode
                         </a>
                         @endif
-                        <button onclick="window.print()" class="btn btn-sm btn-info btn-modern">
+                        <button id="printSchedule" class="btn btn-sm btn-info btn-modern">
                             <i class="ti ti-printer me-1"></i>Cetak
                         </button>
                     </div>
                 </div>
             </div>
             <div class="card-body">
+                <div id="jadwal-keseluruhan-print">
+                    <div class="jadwal-kbm-header mb-3 text-center">
+                        <div class="jadwal-kbm-title">Jadwal KBM</div>
+                        <div class="jadwal-kbm-school">{{ optional($sekolah)->nama_sekolah ?? 'Sekolah' }}</div>
+                        <div class="jadwal-kbm-semester">Semester {{ optional($semesterAktif)->nama_semester ?? '-' }} - {{ optional($tahunAjaranAktif)->nama_tahun ?? '-' }}</div>
+                    </div>
                 @if($jadwalKeseluruhan->isEmpty())
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle me-2"></i>
@@ -193,7 +199,7 @@
                                             <th class="text-center" style="width: 5%;">Jam</th>
                                             <th class="text-center" style="width: 15%;">Waktu</th>
                                             @foreach($kelasJadwal as $kelas)
-                                            <th class="text-center" style="width: auto; min-width: 45px;">{{ $kelas->nama_kelas }}</th>
+                                            <th class="text-center" style="width: auto; min-width: 24px;">{{ $kelas->nama_kelas }}</th>
                                             @endforeach
                                         </tr>
                                     </thead>
@@ -359,6 +365,7 @@
                         @endforeach
                     @endif
                 @endif
+                </div>
             </div>
         </div>
     </div>
@@ -366,7 +373,7 @@
 
 @endsection
 
-@push('styles')
+@push('css')
 <style>
     /* Paper size specific styles for Jadwal Kode */
     @media print {
@@ -409,8 +416,8 @@
             white-space: nowrap;
             line-height: 1.1;
             vertical-align: middle;
-            padding-top: 6px;
-            padding-bottom: 6px;
+            padding-top: 2px;
+            padding-bottom: 2px;
         }
 
         /* Ensure badges in kelas columns remain visible and nicely spaced */
@@ -424,16 +431,17 @@
 
         /* Compact view adjustments */
         .compact-view.time-hide td {
-            padding: 4px 2px !important;
+            padding: 2px 1px !important;
+            font-size: 6px !important;
         }
         .compact-view.time-hide td .badge {
-            font-size: 9px !important;
-            margin-top: 3px;
+            font-size: 5px !important;
+            margin-top: 2px;
         }
         
         body.paper-f4 h5 {
-            font-size: 6.5px !important;
-        }
+            font-size: 6px !important;
+        
         
         /* Folio Paper (215mm x 330mm - same as F4 but different name) */
         body.paper-folio {
@@ -505,7 +513,7 @@
         }
         
         h5 {
-            font-size: 7px !important;
+            font-size: 6px !important;
             margin: 2px 0 1px 0 !important;
             padding: 0 !important;
             font-weight: bold;
@@ -538,34 +546,36 @@
         }
         
         .table {
-            font-size: 5.5px !important;
+            font-size: 4px !important;
             margin-bottom: 2px !important;
             border-collapse: collapse;
+            width: 100% !important;
         }
-        
+
         .table thead {
             background-color: #2563eb !important;
             color: white !important;
         }
-        
+
         .table-primary th {
             background-color: #2563eb !important;
             color: white !important;
         }
-        
+
         .table th {
-            padding: 1px 2px !important;
+            padding: 0.4px 0.8px !important;
             font-weight: bold;
-            border: 0.5px solid #999 !important;
+            border: 0.3px solid #999 !important;
             text-align: center;
             line-height: 1;
+            font-size: 4.5px !important;
         }
         
         .table td {
-            padding: 1px 2px !important;
-            border: 0.5px solid #999 !important;
+            padding: 0.4px 0.8px !important;
             vertical-align: middle;
-            line-height: 1.1;
+            line-height: 1.05;
+            font-size: 4px !important;
         }
         
         .table tbody tr {
@@ -574,19 +584,19 @@
         
         /* Compact view styles - used by Jadwal Kode */
         .compact-view {
-            font-size: 7px !important;
+            font-size: 6px !important;
             width: 100% !important;
         }
         
         .compact-view td {
-            padding: 1px 1px !important;
+            padding: 0.6px 0.8px !important;
             height: 8px;
             font-size: 6px !important;
             line-height: 1;
         }
         
         .compact-view th {
-            padding: 1px 1px !important;
+            padding: 0.6px 0.8px !important;
             font-size: 6px !important;
             line-height: 1;
         }
@@ -623,27 +633,20 @@
         }
         
         /* Paper size specific adjustments for compact view */
-        body.paper-a4 .compact-view {
-            font-size: 5.5px !important;
+        body.paper-a4 .compact-view,
+        body.paper-f4 .compact-view,
+        body.paper-folio .compact-view {
+            font-size: 6px !important;
         }
         
         body.paper-a4 .compact-view td,
-        body.paper-a4 .compact-view th {
-            font-size: 5px !important;
-            padding: 0.5px 1px !important;
-        }
-        
-        body.paper-f4 .compact-view,
-        body.paper-folio .compact-view {
-            font-size: 6.5px !important;
-        }
-        
+        body.paper-a4 .compact-view th,
         body.paper-f4 .compact-view td,
         body.paper-f4 .compact-view th,
         body.paper-folio .compact-view td,
         body.paper-folio .compact-view th {
             font-size: 6px !important;
-            padding: 0.8px 1px !important;
+            padding: 0.5px 0.8px !important;
         }
         
         .table tbody tr:nth-child(odd) {
@@ -672,6 +675,29 @@
         
         .text-center {
             text-align: center !important;
+        }
+        
+        .jadwal-kbm-header {
+            margin-bottom: 4px;
+        }
+
+        .jadwal-kbm-title {
+            font-size: 8px !important;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .jadwal-kbm-school {
+            font-size: 7px !important;
+            font-weight: bold;
+            margin-top: 1px;
+        }
+
+        .jadwal-kbm-semester {
+            font-size: 6px !important;
+            margin-top: 1px;
+            font-weight: normal;
         }
         
         .fw-bold {
@@ -725,6 +751,78 @@
         .bg-success-subtle {
             background-color: #dcfce7 !important;
         }
+
+        /* Print only the schedule content and hide all other UI chrome */
+        body.print-only-schedule * {
+            visibility: hidden !important;
+        }
+
+        body.print-only-schedule #jadwal-keseluruhan-print,
+        body.print-only-schedule #jadwal-keseluruhan-print * {
+            visibility: visible !important;
+        }
+
+        body.print-only-schedule #jadwal-keseluruhan-print {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body.print-only-schedule.landscape @page {
+            size: A4 landscape;
+        }
+
+        body.print-only-schedule .table,
+        body.print-only-schedule .compact-view,
+        body.print-only-schedule .table-responsive,
+        body.print-only-schedule .compact-card {
+            width: 100% !important;
+            font-size: 4px !important;
+        }
+
+        body.print-only-schedule.landscape .compact-view {
+            table-layout: fixed !important;
+            width: 100% !important;
+        }
+
+        body.print-only-schedule.landscape .compact-view th,
+        body.print-only-schedule.landscape .compact-view td {
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+        }
+
+        body.print-only-schedule.landscape .compact-view th {
+            padding: 0.4px 0.8px !important;
+            font-size: 6px !important;
+        }
+
+        body.print-only-schedule.landscape .compact-view td {
+            padding: 0.5px 0.8px !important;
+            font-size: 6px !important;
+        }
+
+        body.print-only-schedule .table th,
+        body.print-only-schedule .table td,
+        body.print-only-schedule .compact-view th,
+        body.print-only-schedule .compact-view td {
+            padding: 0.5px 1px !important;
+            border-width: 0.3px !important;
+        }
+
+        body.print-only-schedule h4,
+        body.print-only-schedule h5 {
+            font-size: 6px !important;
+            margin: 0 !important;
+        }
+
+        body.print-only-schedule .badge {
+            font-size: 3.5px !important;
+            padding: 0.3px 1px !important;
+        }
     }
     
     /* Highlighting untuk jadwal current user - screen view */
@@ -745,10 +843,12 @@
 </style>
 @endpush
 
-@push('scripts')
+@push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const paperSizeSelector = document.getElementById('paperSize');
+        const printButton = document.getElementById('printSchedule');
+        const isKodeView = '{{ $viewType }}' === 'kode';
         
         if (paperSizeSelector) {
             // Load saved paper size preference
@@ -761,6 +861,22 @@
                 const selectedSize = this.value;
                 localStorage.setItem('jadwal_kode_paper_size', selectedSize);
                 applyPaperSize(selectedSize);
+            });
+        }
+
+        if (printButton) {
+            printButton.addEventListener('click', function() {
+                document.body.classList.add('print-only-schedule');
+                if (isKodeView) {
+                    document.body.classList.add('landscape');
+                }
+                window.print();
+                setTimeout(function() {
+                    document.body.classList.remove('print-only-schedule');
+                    if (isKodeView) {
+                        document.body.classList.remove('landscape');
+                    }
+                }, 1000);
             });
         }
         
