@@ -125,7 +125,7 @@
             </div>
             <div class="card-body">
                 @if($classPositionLabel)
-                    <div class="badge bg-primary mb-2 px-3 py-2">{{ $classPositionLabel }}</div>
+                    <div class="badge bg-primary text-white mb-2 px-3 py-2">{{ $classPositionLabel }}</div>
                     <p class="mb-0" style="font-size:0.85rem;">Anda dapat mengakses fitur Agenda Kelas dan Absensi Kelas sesuai hak jabatan.</p>
                 @else
                     <div class="text-muted" style="font-size:0.85rem;">Anda belum memiliki jabatan kelas aktif. Hubungi wali kelas atau admin untuk penempatan jabatan.</div>

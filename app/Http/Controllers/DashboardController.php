@@ -460,48 +460,51 @@ class DashboardController extends Controller
                 ! empty($user->siswa_id) &&
                 $user->siswa
             ) {
-                $rekapRows = DB::table('absensi_siswa')
-                    ->join('absensi_kelas', 'absensi_kelas.id', '=', 'absensi_siswa.absensi_kelas_id')
-                    ->where('absensi_siswa.siswa_id', $user->siswa_id)
+                $dailyStatusQuery = DB::table('absensi_siswa as abs_s')
+                    ->join('absensi_kelas as abs_k', 'abs_k.id', '=', 'abs_s.absensi_kelas_id')
+                    ->where('abs_s.siswa_id', $user->siswa_id)
                     ->when($tahun, function ($query) use ($tahun) {
-                        $query->where('absensi_kelas.tahun_ajaran_id', $tahun->id);
+                        $query->where('abs_k.tahun_ajaran_id', $tahun->id);
                     })
                     ->when($semester, function ($query) use ($semester) {
-                        $query->where('absensi_kelas.semester_id', $semester->id);
+                        $query->where('abs_k.semester_id', $semester->id);
                     })
-                    ->select('absensi_siswa.status')
-                    ->get();
+                    ->select(
+                        DB::raw('DATE(abs_k.tanggal) as tanggal'),
+                        DB::raw("MAX(CASE
+                            WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
+                            WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                            WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
+                            WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
+                            WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                            ELSE 0
+                        END) as status_rank")
+                    )
+                    ->groupBy(DB::raw('DATE(abs_k.tanggal)'));
 
-                $normalizeStatus = function ($status) {
-                    return mb_strtolower(trim((string) $status));
-                };
+                $dailyAttendance = DB::query()
+                    ->fromSub($dailyStatusQuery, 'daily_absensi')
+                    ->select(
+                        DB::raw('COUNT(*) as total'),
+                        DB::raw('SUM(CASE WHEN status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN status_rank = 3 THEN 1 ELSE 0 END) as izin'),
+                        DB::raw('SUM(CASE WHEN status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN status_rank = 5 THEN 1 ELSE 0 END) as alpa')
+                    )
+                    ->first();
 
-                foreach ($rekapRows as $row) {
-                    $status = $normalizeStatus($row->status);
-
-                    if ($status === 'hadir') {
-                        $attendanceSummary['hadir']++;
-                    } elseif (in_array($status, ['terlambat', 'telat'], true)) {
-                        $attendanceSummary['terlambat']++;
-                    } elseif (in_array($status, ['izin', 'ijin'], true)) {
-                        $attendanceSummary['izin']++;
-                    } elseif ($status === 'sakit') {
-                        $attendanceSummary['sakit']++;
-                    } elseif (in_array($status, ['alpa', 'alpha', 'alfa', 'absen'], true)) {
-                        $attendanceSummary['alpa']++;
-                    }
+                if ($dailyAttendance) {
+                    $attendanceSummary['hadir'] = (int) ($dailyAttendance->hadir ?? 0);
+                    $attendanceSummary['terlambat'] = (int) ($dailyAttendance->terlambat ?? 0);
+                    $attendanceSummary['izin'] = (int) ($dailyAttendance->izin ?? 0);
+                    $attendanceSummary['sakit'] = (int) ($dailyAttendance->sakit ?? 0);
+                    $attendanceSummary['alpa'] = (int) ($dailyAttendance->alpa ?? 0);
+                    $attendanceSummary['total'] = (int) ($dailyAttendance->total ?? 0);
+                    $attendanceSummary['present_percent'] = $attendanceSummary['total'] > 0
+                        ? round(($attendanceSummary['hadir'] / $attendanceSummary['total']) * 100, 2)
+                        : 0;
                 }
-
-                $attendanceSummary['total'] = array_sum([
-                    $attendanceSummary['hadir'],
-                    $attendanceSummary['terlambat'],
-                    $attendanceSummary['izin'],
-                    $attendanceSummary['sakit'],
-                    $attendanceSummary['alpa'],
-                ]);
-                $attendanceSummary['present_percent'] = $attendanceSummary['total'] > 0
-                    ? round(($attendanceSummary['hadir'] / $attendanceSummary['total']) * 100, 2)
-                    : 0;
             }
 
             return view('dashboard.siswa', compact(
