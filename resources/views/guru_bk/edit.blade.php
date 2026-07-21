@@ -78,20 +78,23 @@
                                     @php
                                         $selectedKelasBinaan = old('kelas_binaan', $kelasBinaanIds ?? []);
                                     @endphp
-                                    <select name="kelas_binaan[]" class="form-control @error('kelas_binaan') is-invalid @enderror @error('kelas_binaan.*') is-invalid @enderror" multiple size="5">
+                                    <div class="border rounded p-3" style="max-height: 280px; overflow-y: auto;">
                                         @foreach($kelasList as $kelas)
-                                            <option value="{{ $kelas->id }}" {{ in_array($kelas->id, $selectedKelasBinaan) ? 'selected' : '' }}>
-                                                {{ $kelas->nama_kelas }}
-                                            </option>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="kelas_binaan[]" value="{{ $kelas->id }}" id="kelas_binaan_{{ $kelas->id }}" {{ in_array($kelas->id, $selectedKelasBinaan) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="kelas_binaan_{{ $kelas->id }}">
+                                                    {{ $kelas->nama_kelas }}
+                                                </label>
+                                            </div>
                                         @endforeach
-                                    </select>
+                                    </div>
                                     @error('kelas_binaan')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
                                     @error('kelas_binaan.*')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
-                                    <small class="text-muted d-block mt-1">Tekan Ctrl (Windows/Linux) untuk memilih lebih dari satu kelas.</small>
+                                    <small class="text-muted d-block mt-1">Centang semua kelas binaan yang ingin ditetapkan untuk Guru BK ini.</small>
                                 </div>
                             </div>
                         </div>

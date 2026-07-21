@@ -907,7 +907,11 @@
                         <ul class="sidebar-subnav">
                             @forelse($kelasBinaanBk ?? [] as $kelasBk)
                             <li class="nav-item">
-                                <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelasBk->id]) }}" class="nav-link {{ request()->routeIs('guru_bk_layanan.*') && (int) request()->route('kelas') === (int) $kelasBk->id ? 'active' : '' }}">
+                                @php
+                                    $currentKelasRoute = request()->route('kelas');
+                                    $currentKelasId = is_object($currentKelasRoute) ? ($currentKelasRoute->id ?? null) : $currentKelasRoute;
+                                @endphp
+                                <a href="{{ route('guru_bk_layanan.menu', ['kelas' => $kelasBk->id]) }}" class="nav-link {{ request()->routeIs('guru_bk_layanan.*') && (int) $currentKelasId === (int) $kelasBk->id ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> {{ $kelasBk->nama_kelas }}
                                 </a>
                             </li>

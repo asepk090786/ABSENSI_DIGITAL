@@ -413,6 +413,8 @@ class MobileApiController extends Controller
                     'terlambat' => (int) $item->terlambat,
                     'izin' => (int) $item->izin,
                     'sakit' => (int) $item->sakit,
+                    'alpa' => (int) $item->alpha,
+                    // backward compatible alias
                     'alpha' => (int) $item->alpha,
                     'tanggal_terakhir' => $item->tanggal_terakhir,
                 ];

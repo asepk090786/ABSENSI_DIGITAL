@@ -140,12 +140,24 @@
 
             if (guruField) {
                 guruField.style.display = isGuruRole || isKepalaRole ? '' : 'none';
+                const guruSelectElement = guruField.querySelector('select[name="guru_id"]');
+                if (guruSelectElement) {
+                    guruSelectElement.required = isGuruRole || isKepalaRole;
+                }
             }
             if (kepalaField) {
                 kepalaField.style.display = isKepalaRole ? '' : 'none';
+                const kepalaSelectElement = kepalaField.querySelector('select[name="kepala_sekolah_id"]');
+                if (kepalaSelectElement) {
+                    kepalaSelectElement.required = isKepalaRole;
+                }
             }
             if (siswaField) {
                 siswaField.style.display = isSiswaRole ? '' : 'none';
+                const siswaSelectElement = siswaField.querySelector('select[name="siswa_id"]');
+                if (siswaSelectElement) {
+                    siswaSelectElement.required = isSiswaRole;
+                }
             }
         }
 

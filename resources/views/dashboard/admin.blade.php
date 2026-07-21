@@ -55,23 +55,32 @@
         <div class="card">
             <div class="card-body pb-0">
                 <form class="row g-2 align-items-end" method="GET" action="{{ route('home') }}">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">Tanggal</label>
                         <input type="date" class="form-control" name="filter_tanggal" value="{{ $filterTanggal }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Hari</label>
+                        <select class="form-select" name="filter_hari">
+                            <option value="">Semua</option>
+                            @foreach($hariOptions as $hari)
+                                <option value="{{ $hari }}" {{ $filterHari === $hari ? 'selected' : '' }}>{{ $hari }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">Minggu</label>
                         <input type="week" class="form-control" name="filter_minggu" value="{{ $filterMinggu }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">Bulan</label>
                         <input type="month" class="form-control" name="filter_bulan" value="{{ $filterBulan }}">
                     </div>
-                    <div class="col-md-3 d-flex flex-wrap gap-2">
+                    <div class="col-md-4 d-flex flex-wrap gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-filter me-1"></i>Filter
                         </button>
-                        @if($filterTanggal || $filterMinggu || $filterBulan)
+                        @if($filterTanggal || $filterHari || $filterMinggu || $filterBulan)
                             <a href="{{ route('home') }}" class="btn btn-outline-secondary">
                                 <i class="ti ti-x me-1"></i>Reset
                             </a>
@@ -152,7 +161,7 @@
                             </div>
                             <div class="attendance-item-content">
                                 <div class="attendance-item-label">Alpa</div>
-                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->alpha }}</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->alpa }}</div>
                             </div>
                         </div>
                     </div>
@@ -268,7 +277,7 @@
                                     <td class="text-center">{{ $item->terlambat }}</td>
                                     <td class="text-center">{{ $item->izin }}</td>
                                     <td class="text-center">{{ $item->sakit }}</td>
-                                    <td class="text-center">{{ $item->alpha }}</td>
+                                    <td class="text-center">{{ $item->alpa }}</td>
                                     <td class="text-center fw-bold">{{ $item->total_entri }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('absensi.create', ['kelas_id' => $item->kelas_id, 'tanggal' => $statistikKehadiranSiswaHarian->tanggal]) }}" class="btn btn-outline-primary btn-sm">

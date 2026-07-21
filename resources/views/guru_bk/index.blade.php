@@ -77,7 +77,7 @@
                                                     <span class="text-muted">Belum ada</span>
                                                 @else
                                                     @foreach($item->kelasBinaanBk as $kelasBinaan)
-                                                        <span class="badge bg-primary me-1 mb-1">{{ $kelasBinaan->nama_kelas }}</span>
+                                                        <span class="badge bg-primary text-white me-1 mb-1">{{ $kelasBinaan->nama_kelas }}</span>
                                                     @endforeach
                                                 @endif
                                             </td>

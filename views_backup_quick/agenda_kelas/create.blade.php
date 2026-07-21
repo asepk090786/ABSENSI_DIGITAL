@@ -178,7 +178,7 @@
                                 <i class="ti ti-arrow-left me-1"></i>Batal
                             </a>
                             <button type="submit" class="btn btn-primary px-4">
-                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Lanjut Isi Template Agenda' }}
+                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Simpan Agenda' }}
                             </button>
                         </div>
                     </div>

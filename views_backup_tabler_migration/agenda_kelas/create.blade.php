@@ -178,7 +178,7 @@
                                 <i class="ti ti-arrow-left me-1"></i>Batal
                             </a>
                             <button type="submit" class="btn btn-primary px-4">
-                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Lanjut Isi Template Agenda' }}
+                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Simpan Agenda' }}
                             </button>
                         </div>
                     </div>
@@ -307,13 +307,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function checkMultipleJam() {
-        if (jenisKegiatanSelect.value !== 'kbm') {
-            multipleJamInfo.style.display = 'none';
-            applyToAllJam.checked = false;
-            jamSelect.innerHTML = '<option value="">-- Pilih Jam KBM --</option>';
-            return;
-        }
-
         if (!kelasSelect.value) {
             multipleJamInfo.style.display = 'none';
             applyToAllJam.checked = false;
@@ -321,7 +314,59 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        renderJamOptions();
+        const isKbm = jenisKegiatanSelect.value === 'kbm';
+        if (isKbm) {
+            renderJamOptions();
+        } else {
+            // For pengembangan_diri, populate jam options based on class schedule
+            renderJamOptionsForPengembangan();
+        }
+    }
+
+    function renderJamOptionsForPengembangan() {
+        const selectedKelasId = kelasSelect.value || initialSelectedKelasId;
+        const selectedHariRaw = getHariIndonesia(tanggalInput.value) || initialSelectedHari;
+        const selectedHari = normalizeHari(selectedHariRaw);
+        const jadwalKelas = jadwalByKelas[selectedKelasId] || [];
+
+        // For pengembangan_diri, get all jam for the class/day (not filtered by guru)
+        const jadwalHari = jadwalKelas
+            .filter(item => normalizeHari(item.hari) === selectedHari)
+            .sort((a, b) => a.jam_ke - b.jam_ke);
+
+        jamSelect.innerHTML = '<option value="">-- Pilih Jam KBM --</option>';
+
+        // Create a map to avoid duplicate jam entries
+        const uniqueJams = {};
+        jadwalHari.forEach(item => {
+            const jamId = item.jam_belajar_id;
+            if (!uniqueJams[jamId]) {
+                uniqueJams[jamId] = item;
+            }
+        });
+
+        Object.values(uniqueJams).forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.jam_belajar_id;
+            option.textContent = item.label;
+            jamSelect.appendChild(option);
+        });
+
+        if (Object.keys(uniqueJams).length === 0) {
+            const noDataOption = document.createElement('option');
+            noDataOption.value = '';
+            noDataOption.disabled = true;
+            noDataOption.textContent = 'Tidak ada jam KBM aktif untuk hari ini';
+            jamSelect.appendChild(noDataOption);
+        } else {
+            // Auto-select first jam if not already selected
+            if (!jamSelect.value) {
+                jamSelect.value = String(Object.values(uniqueJams)[0].jam_belajar_id);
+            }
+        }
+
+        multipleJamInfo.style.display = 'none';
+        applyToAllJam.checked = false;
     }
 
     function toggleJenisKegiatanForm() {
@@ -332,13 +377,18 @@ document.addEventListener('DOMContentLoaded', function() {
         multipleJamInfo.style.display = isKbm ? multipleJamInfo.style.display : 'none';
 
         kelasSelect.required = isKbm;
-        jamSelect.required = isKbm;
+        jamSelect.required = true; // jam is always required now for both types
+        if (document.getElementById('guruSelect')) {
+            document.getElementById('guruSelect').required = isKbm;
+        }
         namaKegiatanInput.required = !isKbm;
         kegiatanLabel.textContent = isKbm ? 'Kegiatan/Materi' : 'Uraian Kegiatan';
 
         if (isKbm) {
             checkMultipleJam();
         } else {
+            // For pengembangan_diri, still populate jam options
+            checkMultipleJam();
             applyToAllJam.checked = false;
         }
     }

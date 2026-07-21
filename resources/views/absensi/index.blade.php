@@ -317,7 +317,7 @@
                         $totalTerlambatHarian = ($rekapPerKelas ?? collect())->sum('total_terlambat');
                         $totalSakitHarian = ($rekapPerKelas ?? collect())->sum('total_sakit');
                         $totalIzinHarian = ($rekapPerKelas ?? collect())->sum('total_izin');
-                        $totalAlpaHarian = ($rekapPerKelas ?? collect())->sum('total_alpha');
+                        $totalAlpaHarian = ($rekapPerKelas ?? collect())->sum(function($r){ return $r->total_alpa ?? $r->total_alpha ?? 0; });
                     @endphp
 
                         <div class="d-flex flex-wrap gap-2 mb-2">
@@ -361,7 +361,7 @@
                                             <td><span class="badge" style="background:#f59e0b;color:#fff;">{{ $rekap->total_terlambat }}</span></td>
                                             <td><span class="badge bg-danger">{{ $rekap->total_sakit }}</span></td>
                                             <td><span class="badge bg-info">{{ $rekap->total_izin }}</span></td>
-                                            <td><span class="badge bg-danger">{{ $rekap->total_alpha }}</span></td>
+                                            <td><span class="badge bg-danger">{{ $rekap->total_alpa ?? $rekap->total_alpha }}</span></td>
                                             <td><span class="badge bg-secondary">{{ $rekap->total_data_siswa }}</span></td>
                                             <td>
                                                 @if($isGuruPiket || $isAdminOrKepala)

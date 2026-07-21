@@ -242,7 +242,7 @@ class WaliKelasController extends Controller
                     DB::raw("SUM(CASE WHEN LOWER(status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
                     DB::raw("SUM(CASE WHEN LOWER(status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
                     DB::raw("SUM(CASE WHEN LOWER(status) IN ('izin', 'ijin') THEN 1 ELSE 0 END) as izin"),
-                    DB::raw("SUM(CASE WHEN LOWER(status) IN ('alpha', 'alfa') THEN 1 ELSE 0 END) as alpha")
+                    DB::raw("SUM(CASE WHEN LOWER(status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa")
                 )
                 ->whereIn('absensi_kelas_id', $absensi->pluck('id'))
                 ->groupBy('absensi_kelas_id')

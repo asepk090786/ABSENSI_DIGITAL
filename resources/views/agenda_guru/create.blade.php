@@ -70,8 +70,16 @@
 
                         <div class="mb-2">
                             <label class="form-label">Kegiatan / Materi Ajar <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('kegiatan') is-invalid @enderror" 
-                                      name="kegiatan" rows="5" placeholder="Tuliskan kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan') }}</textarea>
+                            <select class="form-select @error('kegiatan') is-invalid @enderror" name="kegiatan_select" required id="kegiatanSelect">
+                                <option value="">-- Pilih Kegiatan --</option>
+                                @foreach($kegiatanList as $keg)
+                                    <option value="{{ $keg->nama_kegiatan }}" {{ old('kegiatan') == $keg->nama_kegiatan ? 'selected' : '' }}>
+                                        {{ $keg->nama_kegiatan }} {{ $keg->kode_kegiatan ? '(' . $keg->kode_kegiatan . ')' : '' }}
+                                    </option>
+                                @endforeach
+                                <option value="__other__" {{ !in_array(old('kegiatan'), $kegiatanList->pluck('nama_kegiatan')->toArray()) && old('kegiatan') ? 'selected' : '' }}>Lainnya (ketik sendiri)</option>
+                            </select>
+                            <input type="text" name="kegiatan" id="kegiatanOther" class="form-control mt-2 @error('kegiatan') is-invalid @enderror" value="{{ old('kegiatan') }}" placeholder="Ketik kegiatan atau materi ajar pada hari ini..." style="display: none;" maxlength="1000">
                             @error('kegiatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -92,4 +100,26 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const kegiatanSelect = document.getElementById('kegiatanSelect');
+    const kegiatanOther = document.getElementById('kegiatanOther');
+    if (kegiatanSelect && kegiatanOther) {
+        function toggleKegiatanOther() {
+            if (kegiatanSelect.value === '__other__') {
+                kegiatanOther.style.display = 'block';
+                kegiatanOther.required = true;
+                kegiatanOther.focus();
+            } else {
+                kegiatanOther.style.display = 'none';
+                kegiatanOther.required = false;
+                kegiatanOther.value = '';
+            }
+        }
+        kegiatanSelect.addEventListener('change', toggleKegiatanOther);
+        toggleKegiatanOther();
+    }
+});
+</script>
 @endsection

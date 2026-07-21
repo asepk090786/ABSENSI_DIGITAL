@@ -213,11 +213,15 @@ class AgendaGuruController extends Controller
         // Get selected tanggal jika ada dari request
         $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
 
+        // Get daftar kegiatan dari database
+        $kegiatanList = DB::table('kegiatan')->orderBy('nama_kegiatan')->get();
+
         return view('agenda_guru.create', compact(
             'guru',
             'jamBelajar',
             'selectedTanggal',
-            'rencanaPembelajaranList'
+            'rencanaPembelajaranList',
+            'kegiatanList'
         ));
     }
 
@@ -241,6 +245,11 @@ class AgendaGuruController extends Controller
             'jam_belajar_id.required' => 'Jam pelajaran harus dipilih',
             'kegiatan.required' => 'Kegiatan harus diisi',
         ]);
+
+        if ($this->isPastDate($validated['tanggal']) && ! $this->canEditPastAgenda($user)) {
+            return redirect()->route('agenda_guru.index')
+                ->with('error', 'Akses ditolak. Agenda guru tanggal lampau hanya dapat ditambahkan oleh Admin, Wali Kelas, atau Guru BK.');
+        }
 
         // Get active tahun and semester
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
@@ -281,6 +290,10 @@ class AgendaGuruController extends Controller
             abort(403, 'Tidak diizinkan mengakses agenda guru ini');
         }
 
+        if ($this->isPastDate($agendaGuru->tanggal) && ! $this->canEditPastAgenda($user)) {
+            abort(403, 'Akses ditolak. Agenda guru tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         $jamBelajar = DB::table('jam_belajar')->get();
         $rencanaPembelajaranList = \App\Models\RencanaPembelajaran::where('guru_id', $guru->id)
             ->orderBy('judul')
@@ -303,6 +316,10 @@ class AgendaGuruController extends Controller
             abort(403, 'Tidak diizinkan mengubah agenda guru ini');
         }
 
+        if ($this->isPastDate($agendaGuru->tanggal) && ! $this->canEditPastAgenda($user)) {
+            abort(403, 'Akses ditolak. Agenda guru tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         // Validate
         $validated = $request->validate([
             'tanggal' => 'required|date',
@@ -323,6 +340,10 @@ class AgendaGuruController extends Controller
                 }
         }
 
+        if ($this->isPastDate($updateData['tanggal']) && ! $this->canEditPastAgenda($user)) {
+            abort(403, 'Akses ditolak. Agenda guru tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         $agendaGuru->update($updateData);
 
         return redirect()->route('agenda_guru.index')
@@ -339,10 +360,28 @@ class AgendaGuruController extends Controller
             abort(403, 'Tidak diizinkan menghapus agenda guru ini');
         }
 
+        if ($this->isPastDate($agendaGuru->tanggal) && ! $this->canEditPastAgenda($user)) {
+            abort(403, 'Akses ditolak. Agenda guru tanggal lampau hanya dapat dihapus oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         $agendaGuru->delete();
 
         return redirect()->route('agenda_guru.index')
             ->with('success', 'Agenda guru berhasil dihapus');
+    }
+
+    private function canEditPastAgenda($user): bool
+    {
+        return $user && (
+            $user->hasAnyRole(['Admin', 'Kepala Sekolah']) ||
+            $user->hasRole('Wali Kelas') ||
+            $user->hasRole('Guru BK')
+        );
+    }
+
+    private function isPastDate($date): bool
+    {
+        return Carbon::parse($date)->startOfDay()->lt(Carbon::today());
     }
 
     public function export(Request $request)

@@ -110,7 +110,7 @@
                                         <td><span class="badge bg-success">{{ $rekapCounts[$a->id]->hadir ?? 0 }}</span></td>
                                         <td><span class="badge bg-warning">{{ $rekapCounts[$a->id]->sakit ?? 0 }}</span></td>
                                         <td><span class="badge bg-info">{{ $rekapCounts[$a->id]->izin ?? 0 }}</span></td>
-                                        <td><span class="badge bg-danger">{{ $rekapCounts[$a->id]->alpha ?? 0 }}</span></td>
+                                        <td><span class="badge bg-danger">{{ $rekapCounts[$a->id]->alpa ?? 0 }}</span></td>
                                     </tr>
                                     @endforeach
                                 </tbody>

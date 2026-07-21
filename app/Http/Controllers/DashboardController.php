@@ -43,9 +43,11 @@ class DashboardController extends Controller
             $tanggalHariIni = now()->toDateString();
 
             $filterTanggal = request('filter_tanggal');
+            $filterHari = request('filter_hari');
             $filterMinggu = request('filter_minggu');
             $filterBulan = request('filter_bulan');
 
+            $hariOptions = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
             $tanggalMulai = null;
             $tanggalSelesai = null;
             $labelPeriode = 'Hari Ini';
@@ -55,10 +57,21 @@ class DashboardController extends Controller
                 $tanggalMulai = $tanggalSelesai = $filterTanggal;
                 $periodeTanggal = $filterTanggal;
                 $labelPeriode = \Carbon\Carbon::parse($filterTanggal)->format('d M Y');
+            } elseif ($filterHari) {
+                $tanggalMulai = $tanggalSelesai = \Carbon\Carbon::now()->startOfWeek(\Carbon\Carbon::MONDAY);
+
+                $weekdayIndex = array_search($filterHari, $hariOptions, true);
+                if ($weekdayIndex !== false) {
+                    $tanggalMulai = $tanggalMulai->copy()->addDays($weekdayIndex);
+                    $tanggalSelesai = $tanggalMulai;
+                }
+
+                $periodeTanggal = $tanggalMulai->toDateString();
+                $labelPeriode = "Hari $filterHari, " . $tanggalMulai->format('d M Y');
             } elseif ($filterMinggu) {
                 [$year, $week] = explode('-W', $filterMinggu);
-                $tanggalMulai = \Carbon\Carbon::now()->setISODate($year, (int) $week)->startOfWeek()->toDateString();
-                $tanggalSelesai = \Carbon\Carbon::now()->setISODate($year, (int) $week)->endOfWeek()->toDateString();
+                $tanggalMulai = \Carbon\Carbon::now()->setISODate($year, (int) $week)->startOfWeek(\Carbon\Carbon::MONDAY)->toDateString();
+                $tanggalSelesai = \Carbon\Carbon::now()->setISODate($year, (int) $week)->endOfWeek(\Carbon\Carbon::MONDAY)->toDateString();
                 $periodeTanggal = $tanggalMulai;
                 $labelPeriode = "Minggu ke-$week, $year";
             } elseif ($filterBulan) {
@@ -78,7 +91,7 @@ class DashboardController extends Controller
                 'terlambat' => 0,
                 'izin' => 0,
                 'sakit' => 0,
-                'alpha' => 0,
+                'alpa' => 0, // per-siswa-per-day alpa count
                 'persentase_hadir' => 0,
             ];
 
@@ -179,7 +192,7 @@ class DashboardController extends Controller
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpha')
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa')
                     );
 
                 $rekapSiswaPerKelasQuery = DB::query()
@@ -187,6 +200,8 @@ class DashboardController extends Controller
                     ->join('kelas as k', 'daily_siswa.kelas_id', '=', 'k.id')
                     ->when($tanggalMulai && $tanggalSelesai, function ($q) use ($tanggalMulai, $tanggalSelesai) {
                         $q->whereBetween('daily_siswa.tanggal', [$tanggalMulai, $tanggalSelesai]);
+                    }, function ($q) use ($tanggalHariIni) {
+                        $q->whereDate('daily_siswa.tanggal', $tanggalHariIni);
                     })
                     ->select(
                         'k.id as kelas_id',
@@ -196,7 +211,7 @@ class DashboardController extends Controller
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpha'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
                         DB::raw('MAX(daily_siswa.tanggal) as tanggal_terakhir')
                     )
                     ->groupBy('k.id', 'k.nama_kelas')
@@ -213,7 +228,9 @@ class DashboardController extends Controller
                         'terlambat' => (int) ($statSiswaRaw->terlambat ?? 0),
                         'izin' => (int) ($statSiswaRaw->izin ?? 0),
                         'sakit' => (int) ($statSiswaRaw->sakit ?? 0),
-                        'alpha' => (int) ($statSiswaRaw->alpha ?? 0),
+                        'alpa' => (int) ($statSiswaRaw->alpa ?? 0),
+                        // keep legacy key for compatibility
+                        'alpha' => (int) ($statSiswaRaw->alpa ?? 0),
                         'persentase_hadir' => $totalSiswaEnt > 0 ? round(($hadirSiswa / $totalSiswaEnt) * 100, 2) : 0,
                     ];
                 }
@@ -310,8 +327,10 @@ class DashboardController extends Controller
                 'kelasLaporanOptions',
                 'labelPeriode',
                 'filterTanggal',
+                'filterHari',
                 'filterMinggu',
-                'filterBulan'
+                'filterBulan',
+                'hariOptions'
             ));
         } elseif ($isGuruPanel) {
             // Data khusus untuk dashboard guru

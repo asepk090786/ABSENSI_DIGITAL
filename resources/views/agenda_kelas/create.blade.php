@@ -37,15 +37,12 @@
                     </div>
                 @endif
 
-                @php
-                    $kegiatanUmumGuru = config('kegiatan_guru.umum', []);
-                @endphp
-
                 <form method="POST" action="{{ route('agenda_kelas.store') }}">
                     @csrf
                     @if(isset($agenda))
                         <input type="hidden" name="agenda_id" value="{{ $agenda->id }}">
                     @endif
+                    <input type="hidden" name="guru_id" id="hiddenGuruId" value="{{ old('guru_id', $agenda->guru_id ?? $selectedGuruId ?? $guru->id ?? '') }}">
                     <div class="row g-4">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Jenis Kegiatan</label>
@@ -98,7 +95,7 @@
                                 <span class="input-group-text bg-white border-0 px-3">
                                     <i class="ti ti-user"></i>
                                 </span>
-                                <select name="guru_id" id="guruSelect" class="form-control border-0 @error('guru_id') is-invalid @enderror" required>
+                                <select id="guruSelect" class="form-control border-0 @error('guru_id') is-invalid @enderror" required>
                                     @if(isset($guruList) && $guruList->isNotEmpty())
                                         <option value="">-- Pilih Guru --</option>
                                         @foreach($guruList as $gItem)
@@ -135,18 +132,58 @@
                         </div>
                     </div>
 
-                        <div id="pengembanganDiriFields" class="col-12" style="display:none;">
-                            <div class="form-floating">
-                                <input type="text" name="nama_kegiatan" id="namaKegiatanInput" list="daftarKegiatanGuru" class="form-control @error('nama_kegiatan') is-invalid @enderror" value="{{ old('nama_kegiatan', $agenda->nama_kegiatan ?? '') }}" placeholder="Nama Kegiatan">
-                                <label for="namaKegiatanInput">Nama Kegiatan</label>
-                                <datalist id="daftarKegiatanGuru">
-                                    @foreach($kegiatanUmumGuru as $kegiatanUmum)
-                                        <option value="{{ $kegiatanUmum }}"></option>
-                                    @endforeach
-                                </datalist>
-                                @error('nama_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                                <small class="text-muted d-block mt-2">Pilih dari daftar atau ketik kegiatan lain sesuai kebutuhan.</small>
+                        <div id="pengembanganDiriFields" class="row g-4 mt-2" style="display:none;">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Kelas</label>
+                                <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                    <span class="input-group-text bg-white border-0 px-3">
+                                        <i class="ti ti-users"></i>
+                                    </span>
+                                    <select name="kelas_id_pengembangan" id="kelasSelectPengembangan" class="form-control border-0">
+                                        <option value="">-- Pilih Kelas --</option>
+                                        @forelse($kelas as $k)
+                                            <option value="{{ $k->id }}" @if((string) old('kelas_id', $agenda->kelas_id ?? $selectedKelasId) === (string) $k->id) selected @endif>
+                                                {{ $k->nama_kelas ?? 'Kelas '.$k->id }}
+                                            </option>
+                                        @empty
+                                            <option disabled>Tidak ada kelas</option>
+                                        @endforelse
+                                    </select>
+                                </div>
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Jam KBM</label>
+                                <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                    <span class="input-group-text bg-white border-0 px-3">
+                                        <i class="ti ti-clock"></i>
+                                    </span>
+                                    <select id="jamSelectPengembangan" class="form-control border-0">
+                                        <option value="">-- Pilih Jam KBM --</option>
+                                    </select>
+                                </div>
+                                <small class="text-muted d-block mt-2">Otomatis terisi sesuai jadwal kelas dan hari yang dipilih.</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Nama Kegiatan</label>
+                                <div class="input-group rounded-3 border border-secondary overflow-hidden">
+                                    <span class="input-group-text bg-white border-0 px-3">
+                                        <i class="ti ti-book"></i>
+                                    </span>
+                                    <select name="nama_kegiatan" id="namaKegiatanInput" class="form-control border-0 @error('nama_kegiatan') is-invalid @enderror" required>
+                                        <option value="">-- Pilih Kegiatan --</option>
+                                        @if(isset($kegiatanList) && $kegiatanList->isNotEmpty())
+                                            @foreach($kegiatanList as $keg)
+                                                <option value="{{ $keg->nama_kegiatan }}" @if(old('nama_kegiatan', $agenda->nama_kegiatan ?? '') === $keg->nama_kegiatan) selected @endif>
+                                                    {{ $keg->nama_kegiatan }} {{ $keg->kode_kegiatan ? '(' . $keg->kode_kegiatan . ')' : '' }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                @error('nama_kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                <small class="text-muted d-block mt-2">Pilih kegiatan dari daftar di bawah ini.</small>
+                            </div>
+                        </div>
                         </div>
 
                         <div class="col-12" id="multipleJamInfo" style="display: none;">
@@ -178,7 +215,7 @@
                                 <i class="ti ti-arrow-left me-1"></i>Batal
                             </a>
                             <button type="submit" class="btn btn-primary px-4">
-                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Lanjut Isi Template Agenda' }}
+                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Simpan Agenda' }}
                             </button>
                         </div>
                     </div>
@@ -201,12 +238,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const pengembanganDiriFields = document.getElementById('pengembanganDiriFields');
     const namaKegiatanInput = document.getElementById('namaKegiatanInput');
     const kegiatanLabel = document.getElementById('kegiatanLabel');
+    const jamSelectPengembangan = document.getElementById('jamSelectPengembangan');
+    const kelasSelectPengembangan = document.getElementById('kelasSelectPengembangan');
     const selectedJamBelajarId = '{{ old('jam_belajar_id', $agenda->jam_belajar_id ?? $selectedJamBelajarId ?? '') }}';
     const initialSelectedHari = '{{ old('tanggal', $agenda->tanggal ?? $selectedDate ?? '') }}';
     const initialSelectedKelasId = '{{ old('kelas_id', $agenda->kelas_id ?? $selectedKelasId ?? '') }}';
     const initialSelectedGuruId = '{{ old('guru_id', $agenda->guru_id ?? $selectedGuruId ?? $guru->id ?? '') }}';
     
     const jadwalByKelas = @json($jadwalByKelas);
+
+    const hiddenGuruId = document.getElementById('hiddenGuruId');
+    const guruSelect = document.getElementById('guruSelect');
+
+    function syncGuruId() {
+        if (hiddenGuruId && guruSelect) {
+            hiddenGuruId.value = guruSelect.value || hiddenGuruId.value;
+        }
+    }
+
+    if (guruSelect) {
+        guruSelect.addEventListener('change', syncGuruId);
+    }
 
     function getHariIndonesia(dateString) {
         if (!dateString) return '';
@@ -306,14 +358,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function checkMultipleJam() {
-        if (jenisKegiatanSelect.value !== 'kbm') {
-            multipleJamInfo.style.display = 'none';
-            applyToAllJam.checked = false;
-            jamSelect.innerHTML = '<option value="">-- Pilih Jam KBM --</option>';
-            return;
-        }
+    // Sync pengembangan_diri kelas selection to main kelasSelect
+    if (kelasSelectPengembangan) {
+        kelasSelectPengembangan.addEventListener('change', function() {
+            kelasSelect.value = this.value;
+            checkMultipleJam();
+        });
+    }
 
+    // Sync pengembangan_diri jam selection to main jamSelect
+    if (jamSelectPengembangan) {
+        jamSelectPengembangan.addEventListener('change', function() {
+            jamSelect.value = this.value;
+        });
+    }
+
+    // Sync main jamSelect to pengembangan_diri jam select
+    jamSelect.addEventListener('change', function() {
+        if (jamSelectPengembangan) {
+            jamSelectPengembangan.value = this.value;
+        }
+    });
+
+    function checkMultipleJam() {
         if (!kelasSelect.value) {
             multipleJamInfo.style.display = 'none';
             applyToAllJam.checked = false;
@@ -321,7 +388,74 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        renderJamOptions();
+        const isKbm = jenisKegiatanSelect.value === 'kbm';
+        if (isKbm) {
+            renderJamOptions();
+        } else {
+            // For pengembangan_diri, populate jam options based on class schedule
+            renderJamOptionsForPengembangan();
+        }
+    }
+
+    function renderJamOptionsForPengembangan() {
+        const selectedKelasId = kelasSelect.value || initialSelectedKelasId;
+        const selectedHariRaw = getHariIndonesia(tanggalInput.value) || initialSelectedHari;
+        const selectedHari = normalizeHari(selectedHariRaw);
+        const jadwalKelas = jadwalByKelas[selectedKelasId] || [];
+
+        // For pengembangan_diri, get all jam for the class/day (not filtered by guru)
+        const jadwalHari = jadwalKelas
+            .filter(item => normalizeHari(item.hari) === selectedHari)
+            .sort((a, b) => a.jam_ke - b.jam_ke);
+
+        jamSelect.innerHTML = '<option value="">-- Pilih Jam KBM --</option>';
+        jamSelectPengembangan.innerHTML = '<option value="">-- Pilih Jam KBM --</option>';
+
+        // Create a map to avoid duplicate jam entries
+        const uniqueJams = {};
+        jadwalHari.forEach(item => {
+            const jamId = item.jam_belajar_id;
+            if (!uniqueJams[jamId]) {
+                uniqueJams[jamId] = item;
+            }
+        });
+
+        // Sort by jam_ke to ensure consistent order
+        const sortedJams = Object.values(uniqueJams).sort((a, b) => a.jam_ke - b.jam_ke);
+
+        sortedJams.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.jam_belajar_id;
+            option.textContent = item.label;
+            jamSelect.appendChild(option);
+            
+            const optionPengembangan = document.createElement('option');
+            optionPengembangan.value = item.jam_belajar_id;
+            optionPengembangan.textContent = item.label;
+            jamSelectPengembangan.appendChild(optionPengembangan);
+        });
+
+        if (sortedJams.length === 0) {
+            const noDataOption = document.createElement('option');
+            noDataOption.value = '';
+            noDataOption.disabled = true;
+            noDataOption.textContent = 'Tidak ada jam KBM aktif untuk hari ini';
+            jamSelect.appendChild(noDataOption);
+            
+            const noDataOptionPengembangan = document.createElement('option');
+            noDataOptionPengembangan.value = '';
+            noDataOptionPengembangan.disabled = true;
+            noDataOptionPengembangan.textContent = 'Tidak ada jam KBM aktif untuk hari ini';
+            jamSelectPengembangan.appendChild(noDataOptionPengembangan);
+        } else {
+            // Auto-select first jam for pengembangan_diri (always)
+            const firstJamId = String(sortedJams[0].jam_belajar_id);
+            jamSelect.value = firstJamId;
+            jamSelectPengembangan.value = firstJamId;
+        }
+
+        multipleJamInfo.style.display = 'none';
+        applyToAllJam.checked = false;
     }
 
     function toggleJenisKegiatanForm() {
@@ -332,20 +466,52 @@ document.addEventListener('DOMContentLoaded', function() {
         multipleJamInfo.style.display = isKbm ? multipleJamInfo.style.display : 'none';
 
         kelasSelect.required = isKbm;
-        jamSelect.required = isKbm;
+        jamSelect.required = true; // jam is always required now for both types
+        if (guruSelect) {
+            guruSelect.required = isKbm;
+        }
         namaKegiatanInput.required = !isKbm;
         kegiatanLabel.textContent = isKbm ? 'Kegiatan/Materi' : 'Uraian Kegiatan';
 
         if (isKbm) {
             checkMultipleJam();
         } else {
+            // For pengembangan_diri, sync the kelas value and populate jam options
+            if (kelasSelectPengembangan) {
+                kelasSelectPengembangan.value = kelasSelect.value;
+            }
+            checkMultipleJam();
             applyToAllJam.checked = false;
         }
+
+        syncGuruId();
     }
     
     jenisKegiatanSelect.addEventListener('change', toggleJenisKegiatanForm);
     kelasSelect.addEventListener('change', checkMultipleJam);
     tanggalInput.addEventListener('change', checkMultipleJam);
+    
+    // Sync pengembangan_diri kelas selection to main kelasSelect
+    if (kelasSelectPengembangan) {
+        kelasSelectPengembangan.addEventListener('change', function() {
+            kelasSelect.value = this.value;
+            checkMultipleJam();
+        });
+    }
+
+    // Sync pengembangan_diri jam selection to main jamSelect
+    if (jamSelectPengembangan) {
+        jamSelectPengembangan.addEventListener('change', function() {
+            jamSelect.value = this.value;
+        });
+    }
+
+    // Sync main jamSelect to pengembangan_diri jam select
+    jamSelect.addEventListener('change', function() {
+        if (jamSelectPengembangan) {
+            jamSelectPengembangan.value = this.value;
+        }
+    });
     
     // Check on page load
     if (kelasSelect.value && jenisKegiatanSelect.value === 'kbm') {
@@ -354,6 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
         checkMultipleJam();
     }
 
+    syncGuruId();
     toggleJenisKegiatanForm();
 });
 </script>

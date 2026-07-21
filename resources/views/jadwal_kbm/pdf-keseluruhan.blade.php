@@ -74,7 +74,7 @@
         
         .kode-guru {
             font-weight: bold;
-            font-size: 7px;
+            font-size: 9px;
         }
         
         /* Background colors untuk setiap tingkat kelas */
@@ -107,16 +107,17 @@
         
         th {
             border: 0.3px solid #999;
-            padding: 1px;
+            padding: 1.5px 1px;
             text-align: center;
             font-weight: bold;
+            font-size: 6px;
             background-color: #dbeafe;
             line-height: 1;
         }
         
         td {
             border: 0.3px solid #999;
-            padding: 1px;
+            padding: 1.5px 1px;
             text-align: center;
             vertical-align: middle;
             line-height: 1;

@@ -203,7 +203,9 @@ class AbsensiController extends Controller
                         'total_terlambat' => (int) ($summary->total_terlambat ?? 0),
                         'total_sakit' => (int) ($summary->total_sakit ?? 0),
                         'total_izin' => (int) ($summary->total_izin ?? 0),
-                        'total_alpha' => (int) ($summary->total_alpha ?? 0),
+                        'total_alpa' => (int) ($summary->total_alpha ?? $summary->total_alpa ?? 0),
+                        // backward compatibility alias
+                        'total_alpha' => (int) ($summary->total_alpha ?? $summary->total_alpa ?? 0),
                         'total_data_siswa' => (int) ($totalSiswaAktifPerKelas[$kelas->id] ?? 0),
                     ];
                 })->values();
@@ -302,7 +304,7 @@ class AbsensiController extends Controller
         // - daily rows: each row has 'status'
         // - aggregated range rows: each row has 'hadir_count','terlambat_count', etc.
         if ($laporanRows->isEmpty()) {
-            $summary = ['hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0, 'total' => 0];
+            $summary = ['hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpa' => 0, 'total' => 0];
         } else {
             $first = $laporanRows->first();
             if (isset($first->status)) {
@@ -311,7 +313,7 @@ class AbsensiController extends Controller
                     'terlambat' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['terlambat', 'telat'], true))->count(),
                     'izin' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['izin', 'ijin'], true))->count(),
                     'sakit' => $laporanRows->filter(fn ($row) => strtolower((string) $row->status) === 'sakit')->count(),
-                    'alpha' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true))->count(),
+                    'alpa' => $laporanRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true))->count(),
                     'total' => $laporanRows->count(),
                 ];
             } elseif (isset($first->hadir_count) || isset($first->hadir)) {
@@ -321,12 +323,12 @@ class AbsensiController extends Controller
                     'terlambat' => (int) $laporanRows->sum(fn ($r) => (int) ($r->terlambat_count ?? $r->terlambat ?? 0)),
                     'izin' => (int) $laporanRows->sum(fn ($r) => (int) ($r->izin_count ?? $r->izin ?? 0)),
                     'sakit' => (int) $laporanRows->sum(fn ($r) => (int) ($r->sakit_count ?? $r->sakit ?? 0)),
-                    'alpha' => (int) $laporanRows->sum(fn ($r) => (int) ($r->alfa_count ?? $r->alfa ?? 0)),
+                    'alpa' => (int) $laporanRows->sum(fn ($r) => (int) ($r->alpa_count ?? $r->alfa_count ?? $r->alfa ?? 0)),
                     'total' => (int) $laporanRows->sum(fn ($r) => (int) ($r->total_days ?? 0)),
                 ];
             } else {
                 // Unknown shape, attempt best-effort by counting any non-empty properties
-                $summary = ['hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpha' => 0, 'total' => $laporanRows->count()];
+                $summary = ['hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpa' => 0, 'total' => $laporanRows->count()];
             }
         }
 
@@ -503,6 +505,12 @@ class AbsensiController extends Controller
                     return in_array(strtolower((string) ($row->status ?? '')), ['izin', 'ijin'], true);
                 })->count();
             }),
+            'total_alpa' => $items->sum(function ($item) {
+                return $item->absensiSiswa->filter(function ($row) {
+                    return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
+                })->count();
+            }),
+            // backward compatibility
             'total_alpha' => $items->sum(function ($item) {
                 return $item->absensiSiswa->filter(function ($row) {
                     return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
@@ -1060,6 +1068,7 @@ class AbsensiController extends Controller
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruPiket = !empty((array) ($user->guru->hari_piket ?? []));
         $isGuruBk = $user->hasRole('Guru BK');
+        $isWaliKelas = $user->hasRole('Wali Kelas');
 
         if ($isGuruPiket) {
             if (!$request->filled('guru_id') && $user->guru_id) {
@@ -1384,6 +1393,20 @@ class AbsensiController extends Controller
         return view('absensi.show', compact('absensi', 'isGuruPiket'));
     }
 
+    private function canEditPastAttendance($user): bool
+    {
+        return $user && (
+            $user->hasAnyRole(['Admin', 'Kepala Sekolah']) ||
+            $user->hasRole('Wali Kelas') ||
+            $user->hasRole('Guru BK')
+        );
+    }
+
+    private function isPastDate($date): bool
+    {
+        return Carbon::parse($date)->startOfDay()->lt(Carbon::today());
+    }
+
     public function updateSiswaStatus(Request $request, $absensiId, $siswaId)
     {
         $user = auth()->user();
@@ -1413,12 +1436,15 @@ class AbsensiController extends Controller
             abort(403, 'Akses ditolak. Hanya Guru Piket hari ini atau Admin yang dapat mengubah status.');
         }
 
+        $absensi = AbsensiKelas::findOrFail($absensiId);
+        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance($user)) {
+            abort(403, 'Akses ditolak. Status absensi tanggal lampau hanya dapat diubah oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         $validated = $request->validate([
             'status' => 'required|string|max:50',
             'keterangan' => 'nullable|string|max:255',
         ]);
-
-        $absensi = AbsensiKelas::findOrFail($absensiId);
 
         // ensure siswa in same kelas
         $siswa = \App\Models\Siswa::where('id', $siswaId)->where('kelas_id', $absensi->kelas_id)->first();
@@ -1495,6 +1521,11 @@ class AbsensiController extends Controller
     public function edit($id)
     {
         $absensi = AbsensiKelas::findOrFail($id);
+        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance(auth()->user())) {
+            return redirect()->route('absensi.index')
+                ->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         $guruList = Guru::orderBy('nama')->get();
         $jamBelajarList = JamBelajar::orderBy('urutan')->get();
@@ -1507,6 +1538,11 @@ class AbsensiController extends Controller
     public function update(Request $request, $id)
     {
         $absensi = AbsensiKelas::findOrFail($id);
+        $user = auth()->user();
+
+        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance($user)) {
+            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        }
 
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
@@ -1517,6 +1553,10 @@ class AbsensiController extends Controller
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
             'semester_id' => 'required|exists:semester,id',
         ]);
+
+        if ($this->isPastDate($validated['tanggal']) && ! $this->canEditPastAttendance($user)) {
+            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        }
 
         $absensi->update($validated);
         
@@ -1530,6 +1570,10 @@ class AbsensiController extends Controller
     public function destroy($id)
     {
         $absensi = AbsensiKelas::findOrFail($id);
+        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance(auth()->user())) {
+            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat dihapus oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         $absensi->delete();
 
         return redirect()->route('absensi.index')
@@ -2012,7 +2056,7 @@ class AbsensiController extends Controller
                 DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as total_terlambat'),
                 DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as total_izin'),
                 DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as total_sakit'),
-                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as total_alpha')
+                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as total_alpa')
             )
             ->groupBy('daily_siswa.kelas_id')
             ->get();
@@ -2049,7 +2093,7 @@ class AbsensiController extends Controller
                     DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
                     DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
                     DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alfa_count")
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa_count")
                 )
                 ->groupBy('abs_s.siswa_id')
                 ->get()
@@ -2072,7 +2116,7 @@ class AbsensiController extends Controller
                 $terlambat = $att->terlambat_count ?? 0;
                 $sakit = $att->sakit_count ?? 0;
                 $izin = $att->izin_count ?? 0;
-                $alfa = $att->alfa_count ?? 0;
+                $alfa = $att->alpa_count ?? $att->alfa_count ?? 0;
 
                 $rows->push((object) [
                     'siswa_id' => $s->id,
@@ -2151,7 +2195,7 @@ class AbsensiController extends Controller
                 'terlambat_count' => (int) $terlambat,
                 'sakit_count' => (int) $sakit,
                 'izin_count' => (int) $izin,
-                'alfa_count' => (int) $alfa,
+                'alpa_count' => (int) $alfa,
                 'total_days' => (int) max(1, $distinctDatesAll),
             ]);
         }

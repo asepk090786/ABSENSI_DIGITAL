@@ -195,7 +195,7 @@ class SiswaController extends Controller
             'email' => $validated['email'],
         ];
 
-        if ($this->canManageClassPositions()) {
+        if ($this->canManageClassPositionsForStudent($siswa)) {
             $siswaData['jabatan_kelas'] = $validated['jabatan_kelas'] ?? null;
         }
 

@@ -256,6 +256,46 @@ class AgendaKelasController extends Controller
             ];
         }
         
+        // For pengembangan_diri, add all jam_belajar for each hari if not already in jadwalByKelas
+        // This allows pengembangan_diri to be created at any time slot
+        $allJam = DB::table('jam_belajar')->orderBy('urutan')->get();
+        $allHari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        
+        foreach ($allHari as $hari) {
+            foreach ($allJam as $jam) {
+                // Check if this jam/hari combination already exists in jadwalByKelas for this class
+                $exists = false;
+                if (isset($jadwalByKelas[(string)$selectedKelasId])) {
+                    foreach ($jadwalByKelas[(string)$selectedKelasId] as $item) {
+                        if ($item['hari'] === $hari && $item['jam_belajar_id'] === (int)$jam->id) {
+                            $exists = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // If not exists, add it for pengembangan_diri support
+                if (!$exists && !empty($selectedKelasId)) {
+                    $kelasId = (string)$selectedKelasId;
+                    if (!isset($jadwalByKelas[$kelasId])) {
+                        $jadwalByKelas[$kelasId] = [];
+                    }
+                    
+                    $jadwalByKelas[$kelasId][] = [
+                        'guru_id' => 0,
+                        'jam_belajar_id' => (int)$jam->id,
+                        'hari' => $hari,
+                        'jam_ke' => (int)$jam->urutan,
+                        'urutan' => (int)$jam->urutan,
+                        'jam_mulai' => $jam->jam_mulai,
+                        'jam_selesai' => $jam->jam_selesai,
+                        'jenis' => $jam->jenis,
+                        'label' => $hari . ' - Jam Ke-' . $jam->urutan . ' (' . $jam->jam_mulai . ' - ' . $jam->jam_selesai . ' | ' . $jam->jenis . ')',
+                    ];
+                }
+            }
+        }
+        
         // Get all guru for reference (if needed for other features)
         if (!isset($guruList)) {
             $guruList = collect([$guru]);
@@ -336,6 +376,9 @@ class AgendaKelasController extends Controller
                 ->all();
         }
 
+        // Get daftar kegiatan dari database untuk dropdown
+        $kegiatanList = DB::table('kegiatan')->orderBy('nama_kegiatan')->get();
+
         return view('agenda_kelas.create', compact(
             'kelas',
             'guru',
@@ -348,7 +391,8 @@ class AgendaKelasController extends Controller
             'selectedGuruId',
             'jadwalByKelas',
             'jamBelajarList',
-            'initialJamOptions'
+            'initialJamOptions',
+            'kegiatanList'
         ));
     }
 
@@ -423,8 +467,8 @@ class AgendaKelasController extends Controller
             if (empty(trim((string) ($data['kegiatan'] ?? '')))) {
                 return back()->withInput()->withErrors('Uraian kegiatan wajib diisi untuk Pengembangan Diri.');
             }
+            // For pengembangan_diri, keep jam_belajar_id but set kelas_id to null (general activity)
             $data['kelas_id'] = null;
-            $data['jam_belajar_id'] = null;
             $data['apply_to_all_jam'] = false;
         }
 
@@ -433,14 +477,23 @@ class AgendaKelasController extends Controller
             if (! $siswa || empty($siswa->kelas_id)) {
                 return back()->with('error', 'Data siswa atau kelas tidak lengkap.');
             }
-            if ($data['kelas_id'] != $siswa->kelas_id) {
-                return back()->withInput()->withErrors('Anda hanya dapat membuat agenda untuk kelas Anda.');
+
+            if ($data['jenis_kegiatan'] === 'kbm') {
+                if ((int) ($data['kelas_id'] ?? 0) !== (int) $siswa->kelas_id) {
+                    return back()->withInput()->withErrors('Anda hanya dapat membuat agenda untuk kelas Anda.');
+                }
+            } else {
+                $data['kelas_id'] = $siswa->kelas_id;
             }
 
             $kelasModel = Kelas::find($siswa->kelas_id);
             if ($kelasModel && empty($data['guru_id']) && $kelasModel->wali_kelas_id) {
                 $data['guru_id'] = $kelasModel->wali_kelas_id;
             }
+        }
+
+        if ($this->isPastDate($data['tanggal']) && ! $this->canEditPastAgenda($user)) {
+            return back()->withInput()->withErrors('Akses ditolak. Agenda tanggal lampau hanya dapat disimpan oleh Admin, Wali Kelas, atau Guru BK.');
         }
 
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
@@ -909,6 +962,14 @@ class AgendaKelasController extends Controller
             }
         }
 
+        if ($this->isPastDate($agenda->tanggal) && ! $this->canEditPastAgenda($user)) {
+            return back()->with('error', 'Akses ditolak. Agenda tanggal lampau hanya dapat diubah oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
+        if ($this->isPastDate($data['tanggal']) && ! $this->canEditPastAgenda($user)) {
+            return back()->with('error', 'Akses ditolak. Agenda tanggal lampau hanya dapat diubah oleh Admin, Wali Kelas, atau Guru BK.');
+        }
+
         if ($this->hasDuplicateAgendaKelas($data, $agenda->id)) {
             return back()->withInput()->withErrors('Agenda kelas untuk guru, kelas, jam, tanggal, dan semester yang sama sudah ada.');
         }
@@ -927,6 +988,10 @@ class AgendaKelasController extends Controller
 
         if ($user->hasRole('Siswa') && ! $isSiswaOfficer) {
             return back()->with('error', 'Akses ditolak. Hanya siswa dengan jabatan kelas yang dapat menghapus agenda kelas.');
+        }
+
+        if ($this->isPastDate($agenda->tanggal) && ! $this->canEditPastAgenda($user)) {
+            return back()->with('error', 'Akses ditolak. Agenda tanggal lampau hanya dapat dihapus oleh Admin, Wali Kelas, atau Guru BK.');
         }
 
         if (! $this->canManageAgenda($agenda, $user)) {
@@ -967,6 +1032,20 @@ class AgendaKelasController extends Controller
         }
 
         return false;
+    }
+
+    private function canEditPastAgenda($user): bool
+    {
+        return $user && (
+            $user->hasAnyRole(['Admin', 'Kepala Sekolah']) ||
+            $user->hasRole('Wali Kelas') ||
+            $user->hasRole('Guru BK')
+        );
+    }
+
+    private function isPastDate($date): bool
+    {
+        return Carbon::parse($date)->startOfDay()->lt(Carbon::today());
     }
 
     public function preview(Request $request)
