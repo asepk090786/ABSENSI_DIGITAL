@@ -45,11 +45,12 @@
             <h5>Manual Backup</h5>
             <form method="POST" action="{{ route('setting.backup.manual') }}" class="d-flex gap-2">
                 @csrf
+                <input type="hidden" name="download" value="1">
                 <select name="format" class="form-control w-auto">
                     <option value="sql">SQL</option>
                     <option value="zip" selected>ZIP</option>
                 </select>
-                <button class="btn btn-success">Buat Backup Sekarang</button>
+                <button class="btn btn-success">Buat & Unduh Backup Sekarang</button>
             </form>
         </div>
     </div>

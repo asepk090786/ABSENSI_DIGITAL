@@ -294,6 +294,16 @@ class SettingController extends Controller
         $format = $request->get('format', 'sql');
         $svc = new BackupService();
         $name = $svc->createBackup($format);
+
+        // If the request asked for immediate download, return the file
+        if ($request->boolean('download')) {
+            $path = $svc->downloadPath($name);
+            if ($path && file_exists($path)) {
+                return response()->download($path, $name)->deleteFileAfterSend(false);
+            }
+            return back()->withErrors('Gagal membuat backup untuk diunduh');
+        }
+
         return back()->with('success', 'Backup dibuat: ' . $name);
     }
 
