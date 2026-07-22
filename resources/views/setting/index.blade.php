@@ -5,6 +5,12 @@
 @section('content')
     <h3>Pengaturan Tampilan Dashboard</h3>
 
+    <div class="mb-3">
+        <a href="{{ route('setting.backup') }}" class="btn btn-outline-secondary">
+            <i class="ti ti-database me-1"></i> Backup Database
+        </a>
+    </div>
+
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
