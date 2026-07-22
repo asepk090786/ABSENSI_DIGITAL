@@ -1639,6 +1639,7 @@ class AbsensiController extends Controller
         try {
             $kelasId = $request->get('kelas_id');
             $tanggal = $request->get('tanggal');
+            $loadExisting = $request->boolean('load_existing', false);
             
             if (!$kelasId) {
                 return response()->json([
@@ -1654,7 +1655,7 @@ class AbsensiController extends Controller
                 ->get();
 
             $existing = [];
-            if ($tanggal) {
+            if ($tanggal && $loadExisting) {
                 // find existing absensi_kelas for this kelas and tanggal
                 $absensiKelas = AbsensiKelas::with(['absensiSiswa', 'jamBelajar', 'guru'])
                     ->where('kelas_id', $kelasId)

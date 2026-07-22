@@ -236,6 +236,23 @@
                                 </div>
                             </div>
 
+                            @if(auth()->user()->guru_id && !($isAdminOrKepala ?? false))
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mt-3 pt-2">
+                                    <input class="form-check-input" type="checkbox" id="ambilAbsensiToggle" name="ambil_absensi_dari_kelas" value="1" {{ old('ambil_absensi_dari_kelas') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="ambilAbsensiToggle">
+                                        Ambil Absensi dari Kelas
+                                    </label>
+                                </div>
+                                <div class="form-text text-muted">
+                                    Jika aktif, sistem akan memuat data absensi kelas yang sudah diinput oleh siswa dengan jabatan.
+                                </div>
+                                <div class="form-text text-muted mt-1">
+                                    Jika nonaktif, guru akan menginput absensi sendiri secara manual. Pada mode manual, guru hanya dapat menyimpan jika memiliki jadwal mengajar di kelas ini pada tanggal tersebut.
+                                </div>
+                            </div>
+                            @endif
+
                             @if($isGuruPiket ?? false)
                                 <input type="hidden" name="guru_id" value="{{ old('guru_id', auth()->user()->guru_id) }}">
                                 <input type="hidden" name="jam_belajar_id" value="{{ old('jam_belajar_id', $selectedJamBelajarId ?? ($jamBelajarList->first()->id ?? '')) }}">
@@ -638,6 +655,8 @@
         if (guruSelect) guruSelect.addEventListener('change', function(){ renderJamOptionsByGuru(); });
         if (tanggalInput) tanggalInput.addEventListener('change', function(){ renderJamOptionsByGuru(); });
 
+        var ambilAbsensiToggle = document.getElementById('ambilAbsensiToggle');
+
         if (kelasSelect) {
             kelasSelect.addEventListener('change', function() {
                 console.log('Kelas changed to:', this.value);
@@ -651,11 +670,20 @@
             });
         }
 
+        if (ambilAbsensiToggle) {
+            ambilAbsensiToggle.addEventListener('change', function() {
+                if (kelasSelect && kelasSelect.value) {
+                    loadSiswaByKelas(kelasSelect.value);
+                }
+            });
+        }
+
         function loadSiswaByKelas(kelasId) {
             console.log('Fetching siswa for kelas:', kelasId);
             var tanggalVal = tanggalInput ? tanggalInput.value : '';
-            const url = '{{ route("absensi.get-siswa") }}?kelas_id=' + kelasId + (tanggalVal ? '&tanggal=' + tanggalVal : '');
-            console.log('Fetch URL:', url);
+            var loadExisting = ambilAbsensiToggle ? ambilAbsensiToggle.checked : false;
+            const url = '{{ route("absensi.get-siswa") }}?kelas_id=' + kelasId + (tanggalVal ? '&tanggal=' + tanggalVal : '') + '&load_existing=' + (loadExisting ? '1' : '0');
+            console.log('Fetch URL:', url, 'loadExisting:', loadExisting);
             
             fetch(url)
                 .then(response => {
@@ -700,8 +728,9 @@
                         siswaContainer.style.display = 'block';
                         btnSubmit.disabled = false;
 
-                        // If there is existing_absensi returned, prefill statuses
-                        if (data.existing_absensi) {
+                        var loadExisting = ambilAbsensiToggle ? ambilAbsensiToggle.checked : false;
+                        // If there is existing_absensi returned and toggle is enabled, prefill statuses
+                        if (loadExisting && data.existing_absensi) {
                             // choose appropriate jam to use for prefilling
                             var preferJamId = null;
                             var selGuru = guruSelect ? guruSelect.value : '';

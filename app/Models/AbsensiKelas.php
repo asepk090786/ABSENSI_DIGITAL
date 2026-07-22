@@ -54,4 +54,11 @@ class AbsensiKelas extends Model
     {
         return $this->hasMany(AbsensiSiswa::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function (AbsensiKelas $absensiKelas) {
+            $absensiKelas->absensiSiswa()->delete();
+        });
+    }
 }

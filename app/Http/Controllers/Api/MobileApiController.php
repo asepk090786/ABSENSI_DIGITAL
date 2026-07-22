@@ -366,11 +366,11 @@ class MobileApiController extends Controller
 
             $totalAgenda = 0;
             $agendaMingguIni = 0;
-            if ($guruData && Schema::hasTable('agenda')) {
-                $totalAgenda = DB::table('agenda')->where('guru_id', $guruData->id)->count();
+            if ($guruData && Schema::hasTable('agenda_guru')) {
+                $totalAgenda = DB::table('agenda_guru')->where('guru_id', $guruData->id)->count();
                 $startOfWeek = date('Y-m-d', strtotime('monday this week'));
                 $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
-                $agendaMingguIni = DB::table('agenda')
+                $agendaMingguIni = DB::table('agenda_guru')
                     ->where('guru_id', $guruData->id)
                     ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
                     ->count();
