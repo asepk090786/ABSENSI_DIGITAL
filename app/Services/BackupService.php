@@ -47,9 +47,9 @@ class BackupService
 
                 // Allow custom mysqldump path via env DB_DUMP_PATH
                 $mysqldump = env('DB_DUMP_PATH') ?: 'mysqldump';
-                $mysqldump = escapeshellcmd($mysqldump);
+                $mysqldump = escapeshellarg($mysqldump);
 
-                $dumpCommand = "$mysqldump --single-transaction --quick --routines -h $host $port -u $user $pass $db > " . escapeshellarg($fullPath);
+                $dumpCommand = $mysqldump . " --single-transaction --quick --routines -h $host $port -u $user $pass $db > " . escapeshellarg($fullPath);
             }
 
             if ($dumpCommand) {
