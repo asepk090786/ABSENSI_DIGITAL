@@ -74,9 +74,12 @@
                                     <th rowspan="2" class="align-middle">No</th>
                                     <th rowspan="2" class="align-middle">NIS</th>
                                     <th rowspan="2" class="align-middle">Nama Siswa</th>
+                                    <th rowspan="2" class="align-middle">Jabatan Kelas</th>
+                                    <th rowspan="2" class="align-middle">Absensi Kelas</th>
                                     <th colspan="5" class="text-center">Status Absensi</th>
-                                    <th>Pelanggaran</th>
-                                    <th>Keterangan</th>
+                                    <th rowspan="2" class="align-middle">Jenis Pelanggaran</th>
+                                    <th rowspan="2" class="align-middle">Point</th>
+                                    <th rowspan="2" class="align-middle">Keterangan</th>
                                 </tr>
                                 <tr>
                                     <th class="text-center">Hadir</th>
@@ -84,50 +87,109 @@
                                     <th class="text-center">Sakit</th>
                                     <th class="text-center">Izin</th>
                                     <th class="text-center">Alpa</th>
-                                    <th class="text-center">Point</th>
-                                    <th></th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($siswaList as $index => $siswa)
                                     @php
                                         $existing = $existingBySiswa->get($siswa->id);
-                                        $selectedStatus = strtolower((string) old('status.' . $siswa->id, $existing->status_absensi ?? 'hadir'));
-                                        if (in_array($selectedStatus, ['alpha', 'absen'], true)) {
-                                            $selectedStatus = 'alpa';
-                                        }
-                                        if ($selectedStatus === '') {
+                                        $absensi = $absensiBySiswa->get($siswa->id);
+
+                                        $normalizeStatus = function ($status) {
+                                            $status = strtolower(trim((string) $status));
+                                            $statusMap = [
+                                                'alpha' => 'alpa',
+                                                'absen' => 'alpa',
+                                                'alfa' => 'alpa',
+                                                'telat' => 'terlambat',
+                                                'late' => 'terlambat',
+                                                'hadir' => 'hadir',
+                                                'terlambat' => 'terlambat',
+                                                'sakit' => 'sakit',
+                                                'izin' => 'izin',
+                                                'alpa' => 'alpa',
+                                            ];
+                                            return $statusMap[$status] ?? null;
+                                        };
+
+                                        $absensiStatus = $normalizeStatus($absensi->status ?? null);
+                                        $pelanggaranStatus = $normalizeStatus($existing->status_absensi ?? null);
+                                        $oldStatus = $normalizeStatus(old('status.' . $siswa->id));
+
+                                        if ($oldStatus) {
+                                            $selectedStatus = $oldStatus;
+                                        } elseif ($absensiStatus) {
+                                            $selectedStatus = $absensiStatus;
+                                        } elseif ($pelanggaranStatus) {
+                                            $selectedStatus = $pelanggaranStatus;
+                                        } else {
                                             $selectedStatus = 'hadir';
                                         }
+
+                                        $isLocked = $selectedStatus === 'terlambat';
                                     @endphp
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $siswa->nis ?: '-' }}</td>
                                         <td>{{ $siswa->nama }}</td>
+                                        <td class="text-center align-middle">{{ $siswa->jabatan_kelas ?: '-' }}</td>
                                         <td class="text-center align-middle">
-                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="hadir" {{ $selectedStatus === 'hadir' ? 'checked' : '' }} required>
+                                            @if($absensi)
+                                                @php
+                                                    $badgeClass = 'secondary';
+                                                    switch ($absensiStatus) {
+                                                        case 'hadir': $badgeClass = 'success'; break;
+                                                        case 'terlambat': $badgeClass = 'warning'; break;
+                                                        case 'sakit': $badgeClass = 'info'; break;
+                                                        case 'izin': $badgeClass = 'primary'; break;
+                                                        case 'alpa': $badgeClass = 'danger'; break;
+                                                    }
+                                                @endphp
+                                                <span class="badge bg-{{ $badgeClass }}">{{ ucfirst($absensiStatus) }}</span>
+                                                @if(!empty($absensi->keterangan))
+                                                    <div class="small text-muted">{{ $absensi->keterangan }}</div>
+                                                @endif
+                                            @else
+                                                <span class="text-muted">Belum</span>
+                                            @endif
                                         </td>
                                         <td class="text-center align-middle">
-                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="terlambat" {{ $selectedStatus === 'terlambat' ? 'checked' : '' }}>
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="hadir" {{ $selectedStatus === 'hadir' ? 'checked' : '' }} {{ $isLocked ? 'disabled' : '' }} required>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="sakit" {{ $selectedStatus === 'sakit' ? 'checked' : '' }}>
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="terlambat" {{ $selectedStatus === 'terlambat' ? 'checked' : '' }} {{ $isLocked ? 'disabled' : '' }}>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="izin" {{ $selectedStatus === 'izin' ? 'checked' : '' }}>
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="sakit" {{ $selectedStatus === 'sakit' ? 'checked' : '' }} {{ $isLocked ? 'disabled' : '' }}>
                                         </td>
                                         <td class="text-center align-middle">
-                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="alpa" {{ $selectedStatus === 'alpa' ? 'checked' : '' }}>
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="izin" {{ $selectedStatus === 'izin' ? 'checked' : '' }} {{ $isLocked ? 'disabled' : '' }}>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <input class="form-check-input" type="radio" name="status[{{ $siswa->id }}]" value="alpa" {{ $selectedStatus === 'alpa' ? 'checked' : '' }} {{ $isLocked ? 'disabled' : '' }}>
+                                        </td>
+                                        @if($isLocked)
+                                            <input type="hidden" name="status[{{ $siswa->id }}]" value="terlambat">
+                                        @endif
+                                        <td>
+                                            <select name="jenis_pelanggaran_id[{{ $siswa->id }}]" class="form-select form-select-sm" {{ $isLocked ? 'disabled' : '' }}>
+                                                <option value="">Pilih Jenis</option>
+                                                @foreach($jenisPelanggaranOptions as $jenis)
+                                                    <option value="{{ $jenis->id }}" data-poin="{{ $jenis->poin_default }}" {{ (string) old('jenis_pelanggaran_id.' . $siswa->id, $existing->jenis_pelanggaran_id ?? '') === (string) $jenis->id ? 'selected' : '' }}>{{ $jenis->nama }}</option>
+                                                @endforeach
+                                            </select>
+                                            @if($isLocked && !empty($existing->jenis_pelanggaran_id))
+                                                <input type="hidden" name="jenis_pelanggaran_id[{{ $siswa->id }}]" value="{{ $existing->jenis_pelanggaran_id }}">
+                                            @endif
                                         </td>
                                         <td>
-                                            <input type="number" min="0" max="1000" class="form-control form-control-sm" name="point[{{ $siswa->id }}]" value="{{ old('point.' . $siswa->id, $existing->poin_pelanggaran ?? 0) }}" placeholder="0">
+                                            <input type="number" min="0" max="1000" class="form-control form-control-sm" name="point[{{ $siswa->id }}]" value="{{ old('point.' . $siswa->id, $existing->poin_pelanggaran ?? 0) }}" placeholder="0" {{ $isLocked ? 'readonly' : '' }}>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control form-control-sm" name="pelanggaran[{{ $siswa->id }}]" value="{{ old('pelanggaran.' . $siswa->id, $existing->deskripsi_pelanggaran ?? '') }}" placeholder="Contoh: Terlambat masuk kelas">
+                                            <input type="text" class="form-control form-control-sm" name="pelanggaran[{{ $siswa->id }}]" value="{{ old('pelanggaran.' . $siswa->id, $existing->deskripsi_pelanggaran ?? '') }}" placeholder="Contoh: Terlambat masuk kelas" {{ $isLocked ? 'readonly' : '' }}>
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control form-control-sm" name="keterangan[{{ $siswa->id }}]" value="{{ old('keterangan.' . $siswa->id) }}" placeholder="Opsional">
+                                            <input type="text" class="form-control form-control-sm" name="keterangan[{{ $siswa->id }}]" value="{{ old('keterangan.' . $siswa->id) }}" placeholder="Opsional" {{ $isLocked ? 'readonly' : '' }}>
                                         </td>
                                     </tr>
                                 @empty

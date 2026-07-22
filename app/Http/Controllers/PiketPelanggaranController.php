@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\JenisPelanggaran;
 
 class PiketPelanggaranController extends Controller
 {
@@ -45,20 +46,35 @@ class PiketPelanggaranController extends Controller
 
         $siswaList = collect();
         $existingBySiswa = collect();
+        $absensiBySiswa = collect();
         $jamKeSatu = DB::table('jam_belajar')->orderBy('urutan')->first();
 
         if (!empty($kelasId)) {
             $siswaList = DB::table('siswa')
                 ->where('kelas_id', $kelasId)
                 ->orderBy('nama')
-                ->get(['id', 'nis', 'nama']);
+                ->get(['id', 'nis', 'nama', 'jabatan_kelas']);
 
             $existingBySiswa = DB::table('pelanggaran_siswa')
                 ->where('kelas_id', $kelasId)
                 ->whereDate('tanggal', $selectedTanggal)
                 ->get()
                 ->keyBy('siswa_id');
+
+            $absensiBySiswa = DB::table('absensi_siswa as asi')
+                ->join('absensi_kelas as ak', 'asi.absensi_kelas_id', '=', 'ak.id')
+                ->where('ak.kelas_id', $kelasId)
+                ->whereDate('ak.tanggal', $selectedTanggal)
+                ->when($jamKeSatu, fn ($query) => $query->where('ak.jam_belajar_id', $jamKeSatu->id))
+                ->select('asi.siswa_id', 'asi.status', 'asi.keterangan')
+                ->get()
+                ->keyBy('siswa_id');
         }
+
+        $jenisPelanggaranOptions = JenisPelanggaran::query()
+            ->where('is_active', true)
+            ->orderBy('nama')
+            ->get(['id', 'kode', 'nama', 'poin_default']);
 
         $lateMinutesPreview = 0;
         if ($jamKeSatu && !empty($jamKeSatu->jam_mulai)) {
@@ -73,6 +89,8 @@ class PiketPelanggaranController extends Controller
             'selectedTanggal',
             'siswaList',
             'existingBySiswa',
+            'absensiBySiswa',
+            'jenisPelanggaranOptions',
             'jamKeSatu',
             'lateMinutesPreview'
         ));
@@ -99,6 +117,8 @@ class PiketPelanggaranController extends Controller
             'tanggal' => 'required|date',
             'status' => 'required|array|min:1',
             'status.*' => 'required|in:hadir,terlambat,sakit,izin,alpa',
+            'jenis_pelanggaran_id' => 'nullable|array',
+            'jenis_pelanggaran_id.*' => 'nullable|exists:jenis_pelanggaran,id',
             'point' => 'nullable|array',
             'point.*' => 'nullable|integer|min:0|max:1000',
             'pelanggaran' => 'nullable|array',
@@ -162,8 +182,16 @@ class PiketPelanggaranController extends Controller
                 }
 
                 $keterangan = $validated['keterangan'][$siswaId] ?? null;
-                $deskripsiPelanggaran = $validated['pelanggaran'][$siswaId] ?? null;
-                $pointPelanggaran = (int) ($validated['point'][$siswaId] ?? 0);
+                $jenisPelanggaranId = $validated['jenis_pelanggaran_id'][$siswaId] ?? null;
+                $jenisPelanggaran = $jenisPelanggaranId ? JenisPelanggaran::find($jenisPelanggaranId) : null;
+                $deskripsiPelanggaran = $validated['pelanggaran'][$siswaId] ?? ($jenisPelanggaran->nama ?? null);
+                $pointPelanggaran = $validated['point'][$siswaId] ?? null;
+                if ($pointPelanggaran === null && $jenisPelanggaran) {
+                    $pointPelanggaran = (int) $jenisPelanggaran->poin_default;
+                }
+                if ($pointPelanggaran === null) {
+                    $pointPelanggaran = 0;
+                }
 
                 $existingAbsensiSiswa = DB::table('absensi_siswa')
                     ->where('absensi_kelas_id', $absensiId)
