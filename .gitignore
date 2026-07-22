@@ -47,6 +47,15 @@
 /android_app/local.properties
 /simadis_mobile/.metadata
 
+# Temporary and local scripts
+tmp_*.php
+test_*.php
+*.local.php
+
+# Editor backups
+*~
+.cache/
+
 # Misc
 .DS_Store
 Thumbs.db
