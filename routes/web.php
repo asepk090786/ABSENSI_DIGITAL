@@ -300,6 +300,12 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/setting/header', [SettingController::class, 'header'])->name('setting.header');
         Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
         Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
+        // Database backup settings and actions
+        Route::get('/setting/backup', [SettingController::class, 'backupIndex'])->name('setting.backup');
+        Route::post('/setting/backup/manual', [SettingController::class, 'backupManual'])->name('setting.backup.manual');
+        Route::post('/setting/backup/settings', [SettingController::class, 'backupUpdateSettings'])->name('setting.backup.settings');
+        Route::get('/setting/backup/download/{name}', [SettingController::class, 'backupDownload'])->name('setting.backup.download');
+        Route::delete('/setting/backup/{name}', [SettingController::class, 'backupDelete'])->name('setting.backup.delete');
     });
     
     // Profile routes

@@ -7,6 +7,10 @@ use App\Models\Semester;
 use App\Models\Sekolah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\BackupService;
+use App\Services\SettingsManager;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SettingController extends Controller
 {
@@ -272,6 +276,55 @@ class SettingController extends Controller
     {
         $sekolah = \App\Models\Sekolah::first();
         return view('setting.header', compact('sekolah'));
+    }
+
+    // Backup settings UI
+    public function backupIndex()
+    {
+        $settings = new SettingsManager();
+        $backupSettings = $settings->all();
+        $svc = new BackupService();
+        $backups = $svc->listBackups();
+        return view('setting.backup', compact('backupSettings','backups'));
+    }
+
+    public function backupManual(Request $request)
+    {
+        $request->validate(['format' => 'nullable|in:sql,zip']);
+        $format = $request->get('format', 'sql');
+        $svc = new BackupService();
+        $name = $svc->createBackup($format);
+        return back()->with('success', 'Backup dibuat: ' . $name);
+    }
+
+    public function backupDownload($name)
+    {
+        $svc = new BackupService();
+        $path = $svc->downloadPath($name);
+        if (! $path) return back()->withErrors('File tidak ditemukan');
+        return response()->download($path, $name);
+    }
+
+    public function backupDelete($name)
+    {
+        $svc = new BackupService();
+        $ok = $svc->delete($name);
+        if ($ok) return back()->with('success','Backup dihapus');
+        return back()->withErrors('Gagal menghapus backup');
+    }
+
+    public function backupUpdateSettings(Request $request)
+    {
+        $v = $request->validate([
+            'enabled' => 'nullable|boolean',
+            'time' => 'nullable|date_format:H:i',
+            'format' => 'nullable|in:sql,zip',
+        ]);
+        $settings = new SettingsManager();
+        $settings->set('backup.enabled', (bool) ($v['enabled'] ?? false));
+        if (isset($v['time'])) $settings->set('backup.time', $v['time']);
+        if (isset($v['format'])) $settings->set('backup.format', $v['format']);
+        return back()->with('success','Pengaturan backup disimpan');
     }
 
     public function updateHeader(Request $request)
