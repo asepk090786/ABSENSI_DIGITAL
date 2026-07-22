@@ -1104,10 +1104,10 @@
             <div class="topbar-actions">
                 <!-- User dropdown -->
                 <div class="dropdown">
-                    <a href="#" class="topbar-user-avatar" data-bs-toggle="dropdown" aria-label="User menu">
+                    <a href="#" id="userDropdown" class="topbar-user-avatar dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="User menu">
                         {{ mb_substr($user->name ?? '?', 0, 1) }}
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                         <li>
                             <div class="px-3 py-2">
                                 <div class="fw-semibold">{{ $user->name ?? 'User' }}</div>
