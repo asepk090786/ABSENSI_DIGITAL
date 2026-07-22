@@ -186,6 +186,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('users.admin') }}" class="menu-item {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'active' : '' }}">
+                    <i class="material-icons">admin_panel_settings</i>
+                    <span>Admin</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('siswa.index') }}" class="menu-item {{ request()->routeIs('siswa.*') ? 'active' : '' }}">
                     <i class="material-icons">school</i>
                     <span>Siswa</span>

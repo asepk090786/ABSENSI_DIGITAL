@@ -7,8 +7,8 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title fw-semibold m-0">Tambah Akun</h4>
-                <a href="{{ route('users.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
+                <h4 class="card-title fw-semibold m-0">{{ request()->query('role') === 'Admin' ? 'Tambah Akun Admin' : 'Tambah Akun' }}</h4>
+                <a href="{{ request()->query('role') === 'Admin' ? route('users.admin') : route('users.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ route('users.store') }}">
@@ -55,7 +55,7 @@
                         <select name="role_id" class="form-select @error('role_id') is-invalid @enderror" required>
                             <option value="">Pilih Peran</option>
                             @foreach($roles as $role)
-                                <option value="{{ $role->id }}" {{ old('role_id') == $role->id ? 'selected' : '' }}>{{ $role->role_name }}</option>
+                                <option value="{{ $role->id }}" {{ old('role_id', $defaultRoleId) == $role->id ? 'selected' : '' }}>{{ $role->role_name }}</option>
                             @endforeach
                         </select>
                         @error('role_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

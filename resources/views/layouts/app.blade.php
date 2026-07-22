@@ -968,8 +968,13 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                                <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.index') && !request()->has('role') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Akun Pengguna
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('users.admin') }}" class="nav-link {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> Admin
                                 </a>
                             </li>
                             <li class="nav-item">

@@ -7,11 +7,13 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title fw-semibold m-0">Daftar Akun Pengguna</h4>
+                <h4 class="card-title fw-semibold m-0">
+                    {{ request()->routeIs('users.admin') || request()->input('role') === 'Admin' ? 'Daftar Akun Admin' : 'Daftar Akun Pengguna' }}
+                </h4>
                 @if(!auth()->user()->hasAnyRole(['Guru', 'Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']))
                 <div class="btn-group" role="group">
-                    <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
-                        <i class="ti ti-plus"></i> Tambah Akun
+                    <a href="{{ request()->routeIs('users.admin') || request()->input('role') === 'Admin' ? route('users.create', ['role' => 'Admin']) : route('users.create') }}" class="btn btn-primary btn-sm">
+                        <i class="ti ti-plus"></i> {{ request()->routeIs('users.admin') || request()->input('role') === 'Admin' ? 'Tambah Akun Admin' : 'Tambah Akun' }}
                     </a>
                     <a href="{{ route('users.export') }}" class="btn btn-sm btn-success btn-modern" title="Export ke Excel">
                         <i class="ti ti-download"></i> Export
@@ -29,9 +31,12 @@
                 <form method="GET" action="" class="mb-2">
                     <div class="input-group">
                         <input type="text" name="search" class="form-control" placeholder="Cari nama, username, email, atau peran..." value="{{ request('search') }}">
+                        @if(request()->routeIs('users.admin') || request()->input('role') === 'Admin')
+                            <input type="hidden" name="role" value="Admin">
+                        @endif
                         <button class="btn btn-primary" type="submit">Cari</button>
-                        @if(request('search'))
-                            <a href="{{ route('users.index') }}" class="btn btn-secondary">Reset</a>
+                        @if(request('search') || request()->routeIs('users.admin') || request()->input('role') === 'Admin')
+                            <a href="{{ request()->routeIs('users.admin') ? route('users.admin') : route('users.index') }}" class="btn btn-secondary">Reset</a>
                         @endif
                     </div>
                 </form>
@@ -57,12 +62,20 @@
                 @php
                     // Define role groups
                     $staffRoles = ['Admin', 'Kepala Sekolah', 'Guru Kelas', 'Wali Kelas', 'Guru Mapel', 'Guru BK', 'Guru Piket', 'Petugas Keamanan', 'Wakil Kepala Sekolah', 'Pembina'];
-                    
+
+                    $isAdminFilter = !empty($roleFilter) && strtolower($roleFilter) === 'admin';
+
                     // Separate users by staff and siswa
-                    $staffUsers = $users->filter(function($user) use ($staffRoles) {
-                        return in_array($user->role->role_name ?? '', $staffRoles);
+                    $staffUsers = $users->filter(function($user) use ($staffRoles, $isAdminFilter) {
+                        $roleName = $user->role->role_name ?? '';
+
+                        if ($isAdminFilter) {
+                            return $roleName === 'Admin';
+                        }
+
+                        return in_array($roleName, $staffRoles);
                     });
-                    
+
                     $siswaUsers = $users->filter(function($user) {
                         return ($user->role->role_name ?? '') === 'Siswa';
                     });

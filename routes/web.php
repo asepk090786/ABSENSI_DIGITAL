@@ -266,6 +266,7 @@ Route::middleware(['auth'])->group(function(){
     Route::get('asc-timetable/download-template', ['App\Http\Controllers\AscTimetableController', 'downloadTemplate'])->name('asc_timetable.download_template');
     
     // User Management routes
+    Route::get('users/admin', [UserManagementController::class, 'index'])->name('users.admin')->defaults('role', 'Admin');
     Route::resource('users', UserManagementController::class)->only(['index','create','store','show','edit','update','destroy']);
     Route::patch('users/{user}/activate', [UserManagementController::class, 'activate'])->name('users.activate');
     Route::get('users/export/excel', [UserManagementController::class, 'export'])->name('users.export');

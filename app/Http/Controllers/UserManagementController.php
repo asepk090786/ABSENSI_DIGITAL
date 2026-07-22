@@ -56,6 +56,11 @@ class UserManagementController extends Controller
     {
         $query = User::with(['role', 'guru', 'kepalaSekolah', 'siswa']);
         $search = $request->input('search');
+        $roleFilter = $request->input('role');
+        if (empty($roleFilter) && $request->route()) {
+            $roleFilter = $request->route()->defaults['role'] ?? null;
+        }
+
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%$search%")
@@ -66,18 +71,34 @@ class UserManagementController extends Controller
                   });
             });
         }
-        $users = $query->orderBy('name')->paginate(20)->appends(['search' => $search]);
-        return view('user_management.index', compact('users', 'search'));
+
+        if ($roleFilter) {
+            $query->whereHas('role', function ($q) use ($roleFilter) {
+                $q->where('role_name', 'like', $roleFilter);
+            });
+        }
+
+        $users = $query->orderBy('name')->paginate(20)->appends(['search' => $search, 'role' => $roleFilter]);
+        return view('user_management.index', compact('users', 'search', 'roleFilter'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $roles = Role::orderBy('role_name')->get();
         $guru = Guru::with('user')->orderBy('nama')->get();
         $kepala = KepalaSekolah::with('guru')->orderBy('nama')->get();
         $siswa = Siswa::orderBy('nama')->get();
 
-        return view('user_management.create', compact('roles', 'guru', 'kepala', 'siswa'));
+        $defaultRoleId = null;
+        $roleParam = $request->query('role');
+        if ($roleParam) {
+            $defaultRole = Role::where('role_name', 'like', $roleParam)->first();
+            if ($defaultRole) {
+                $defaultRoleId = $defaultRole->id;
+            }
+        }
+
+        return view('user_management.create', compact('roles', 'guru', 'kepala', 'siswa', 'defaultRoleId'));
     }
 
     public function store(Request $request)

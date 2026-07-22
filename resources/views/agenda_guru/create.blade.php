@@ -70,16 +70,16 @@
 
                         <div class="mb-2">
                             <label class="form-label">Kegiatan / Materi Ajar <span class="text-danger">*</span></label>
-                            <select class="form-select @error('kegiatan') is-invalid @enderror" name="kegiatan_select" required id="kegiatanSelect">
-                                <option value="">-- Pilih Kegiatan --</option>
+                            <select class="form-select mb-2" id="kegiatanSelect">
+                                <option value="">-- Pilih (opsional) --</option>
                                 @foreach($kegiatanList as $keg)
                                     <option value="{{ $keg->nama_kegiatan }}" {{ old('kegiatan') == $keg->nama_kegiatan ? 'selected' : '' }}>
                                         {{ $keg->nama_kegiatan }} {{ $keg->kode_kegiatan ? '(' . $keg->kode_kegiatan . ')' : '' }}
                                     </option>
                                 @endforeach
-                                <option value="__other__" {{ !in_array(old('kegiatan'), $kegiatanList->pluck('nama_kegiatan')->toArray()) && old('kegiatan') ? 'selected' : '' }}>Lainnya (ketik sendiri)</option>
+                                <option value="__other__">Lainnya (ketik sendiri)</option>
                             </select>
-                            <input type="text" name="kegiatan" id="kegiatanOther" class="form-control mt-2 @error('kegiatan') is-invalid @enderror" value="{{ old('kegiatan') }}" placeholder="Ketik kegiatan atau materi ajar pada hari ini..." style="display: none;" maxlength="1000">
+                            <textarea name="kegiatan" id="kegiatanOther" class="form-control @error('kegiatan') is-invalid @enderror" rows="7" placeholder="Ketik kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan') }}</textarea>
                             @error('kegiatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -101,25 +101,41 @@
     </div>
 </div>
 
+@push('js')
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const kegiatanSelect = document.getElementById('kegiatanSelect');
-    const kegiatanOther = document.getElementById('kegiatanOther');
-    if (kegiatanSelect && kegiatanOther) {
-        function toggleKegiatanOther() {
-            if (kegiatanSelect.value === '__other__') {
-                kegiatanOther.style.display = 'block';
-                kegiatanOther.required = true;
-                kegiatanOther.focus();
-            } else {
-                kegiatanOther.style.display = 'none';
-                kegiatanOther.required = false;
-                kegiatanOther.value = '';
-            }
+    const kegiatanTextarea = document.getElementById('kegiatanOther');
+    let kegiatanEditor = null;
+
+    function initKegiatanEditor() {
+        if (!kegiatanTextarea || kegiatanEditor) return;
+        try {
+            ClassicEditor.create(kegiatanTextarea, {
+                toolbar: ['heading','bold','italic','link','bulletedList','numberedList','blockQuote','undo','redo']
+            }).then(editor => { kegiatanEditor = editor; }).catch(e => console.error(e));
+        } catch (e) {
+            console.error('CKEditor init error', e);
         }
-        kegiatanSelect.addEventListener('change', toggleKegiatanOther);
-        toggleKegiatanOther();
+    }
+
+    initKegiatanEditor();
+
+    if (kegiatanSelect) {
+        kegiatanSelect.addEventListener('change', function() {
+            const val = this.value;
+            if (!kegiatanEditor) return;
+            if (val === '__other__' || val === '') {
+                // do not overwrite if empty or explicit other
+                if (val === '') return;
+                kegiatanEditor.setData('');
+            } else {
+                kegiatanEditor.setData(val);
+            }
+        });
     }
 });
 </script>
+@endpush
 @endsection

@@ -71,7 +71,7 @@
 
                         <div class="mb-2">
                             <label class="form-label">Kegiatan / Materi Ajar <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('kegiatan') is-invalid @enderror" 
+                            <textarea id="kegiatanEdit" class="form-control @error('kegiatan') is-invalid @enderror" 
                                       name="kegiatan" rows="5" placeholder="Tuliskan kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan', $agendaGuru->kegiatan) }}</textarea>
                             @error('kegiatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -94,3 +94,20 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const kegiatanTextarea = document.getElementById('kegiatanEdit');
+    if (!kegiatanTextarea) return;
+    try {
+        ClassicEditor.create(kegiatanTextarea, {
+            toolbar: ['heading','bold','italic','link','bulletedList','numberedList','blockQuote','undo','redo']
+        }).catch(e => console.error(e));
+    } catch (e) {
+        console.error('CKEditor init error', e);
+    }
+});
+</script>
+@endpush
