@@ -44,14 +44,21 @@ class BackupService
                 $host = escapeshellarg($dbConfig['host'] ?? '127.0.0.1');
                 $port = isset($dbConfig['port']) ? '--port=' . escapeshellarg($dbConfig['port']) : '';
                 $db = escapeshellarg($dbConfig['database'] ?? '');
-                $dumpCommand = "mysqldump --single-transaction --quick --routines -h $host $port -u $user $pass $db > " . escapeshellarg($fullPath);
+
+                // Allow custom mysqldump path via env DB_DUMP_PATH
+                $mysqldump = env('DB_DUMP_PATH') ?: 'mysqldump';
+                $mysqldump = escapeshellcmd($mysqldump);
+
+                $dumpCommand = "$mysqldump --single-transaction --quick --routines -h $host $port -u $user $pass $db > " . escapeshellarg($fullPath);
             }
 
             if ($dumpCommand) {
-                @exec($dumpCommand, $output, $returnVar);
+                @exec($dumpCommand . ' 2>&1', $output, $returnVar);
                 if ($returnVar !== 0) {
-                    // fallback: try using DB export via SELECT
-                    file_put_contents($fullPath, "-- failed to run mysqldump\n");
+                    $msg = "-- failed to run mysqldump\n";
+                    $msg .= "-- command: " . $dumpCommand . "\n";
+                    $msg .= "-- output: " . implode("\n", array_slice($output,0,20)) . "\n";
+                    file_put_contents($fullPath, $msg);
                 }
             } else {
                 file_put_contents($fullPath, "-- unsupported driver for automated dump\n");
