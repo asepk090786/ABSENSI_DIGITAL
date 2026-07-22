@@ -164,6 +164,12 @@
                             <div class="qm-label">Agenda Kelas</div>
                         </a>
                     </div>
+                    <div class="col-6 col-md-3">
+                        <a href="{{ auth()->user()->siswa && auth()->user()->siswa->kelas_id ? route('jadwal-kbm.show-by-kelas', ['kelas' => auth()->user()->siswa->kelas_id]) : route('agenda_kelas.index') }}" class="quick-menu-card">
+                            <div class="qm-icon" style="background:#10b981;"><i class="ti ti-calendar-time"></i></div>
+                            <div class="qm-label">Jadwal Kelas Saya</div>
+                        </a>
+                    </div>
                     @if($isSiswaOfficer)
                         <div class="col-6 col-md-3">
                             <a href="{{ route('agenda_kelas.create', ['kelas_id' => auth()->user()->siswa->kelas_id ?? '']) }}" class="quick-menu-card">

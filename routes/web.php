@@ -146,7 +146,9 @@ Route::middleware(['auth'])->group(function(){
         Route::get('jadwal-kbm/export-pdf-keseluruhan-mapel', [JadwalKbmController::class, 'exportPdfKeseluruhanMapel'])->name('jadwal-kbm.export-pdf-keseluruhan-mapel');
         Route::post('jadwal-kbm/store', [JadwalKbmController::class, 'store'])->name('jadwal-kbm.store');
         Route::get('jadwal-kbm/guru/{guru}', [JadwalKbmController::class, 'showByGuru'])->name('jadwal-kbm.show-by-guru');
+        Route::get('jadwal-kbm/kelas/{kelas}', [JadwalKbmController::class, 'showByKelas'])->name('jadwal-kbm.show-by-kelas');
         Route::get('jadwal-kbm/keseluruhan', [JadwalKbmController::class, 'showKeseluruhan'])->name('jadwal-kbm.keseluruhan');
+        Route::get('jadwal-kbm/hari-ini', [JadwalKbmController::class, 'showToday'])->name('jadwal-kbm.today');
         Route::put('jadwal-kbm/{id}', [JadwalKbmController::class, 'update'])->name('jadwal-kbm.update');
         Route::delete('jadwal-kbm/{id}', [JadwalKbmController::class, 'destroy'])->name('jadwal-kbm.destroy');
         Route::delete('jadwal-kbm-destroy-all', [JadwalKbmController::class, 'destroyAll'])->name('jadwal-kbm.destroy-all');

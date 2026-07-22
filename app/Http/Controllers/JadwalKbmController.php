@@ -53,7 +53,7 @@ class JadwalKbmController extends Controller
     public function index()
     {
         $sekolah = Sekolah::first();
-        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && ! auth()->user()->hasRole('Siswa') && $this->shouldShowMaintenancePage()) {
             return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
 
@@ -406,6 +406,43 @@ class JadwalKbmController extends Controller
     }
 
     /**
+     * Show jadwal per kelas
+     */
+    public function showByKelas($kelasId)
+    {
+        $kelas = Kelas::findOrFail($kelasId);
+        $user = auth()->user();
+
+        if ($user->hasRole('Siswa') && optional($user->siswa)->kelas_id !== $kelas->id) {
+            return redirect()->route('home')->with('error', 'Akses ditolak. Anda hanya dapat melihat jadwal untuk kelas Anda sendiri.');
+        }
+
+        $sekolah = Sekolah::first();
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && ! $user->hasRole('Siswa') && $this->shouldShowMaintenancePage()) {
+            return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
+        }
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+
+        $query = JadwalKbm::where('kelas_id', $kelas->id);
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+
+        $jadwalKelas = $query
+            ->with(['guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get()
+            ->groupBy('hari');
+
+        return view('jadwal_kbm.show_by_kelas', compact('kelas', 'jadwalKelas', 'tahunAjaranAktif', 'semesterAktif', 'sekolah'));
+    }
+
+    /**
      * Show overall schedule (Jadwal Keseluruhan)
      */
     public function showKeseluruhan(Request $request)
@@ -413,7 +450,7 @@ class JadwalKbmController extends Controller
         $viewType = $request->get('view', 'full'); // 'full' atau 'compact'
         $sekolah = Sekolah::first();
 
-        if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && ! auth()->user()->hasRole('Siswa') && $this->shouldShowMaintenancePage()) {
             return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
         }
         $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
@@ -452,6 +489,79 @@ class JadwalKbmController extends Controller
         }
         
         return view('jadwal_kbm.keseluruhan', compact('jadwalKeseluruhan', 'jamBelajarByHari', 'hariList', 'tahunAjaranAktif', 'semesterAktif', 'sekolah', 'viewType', 'kegiatanList', 'currentUserGuruId', 'currentUserGuruKode'));
+    }
+
+    /**
+     * Show schedule for today only (Jadwal Hari Ini)
+     */
+    public function showToday(Request $request)
+    {
+        $viewType = $request->get('view', 'full');
+        $sekolah = Sekolah::first();
+
+        if ($sekolah && ! $sekolah->tampilkan_jadwal && ! auth()->user()->hasRole('Siswa') && $this->shouldShowMaintenancePage()) {
+            return view('jadwal_kbm.keseluruhan_maintenance', compact('sekolah'));
+        }
+
+        $hariIndonesia = [
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu',
+        ];
+        $hariIni = $hariIndonesia[
+            \Carbon\Carbon::now()->format('l')
+        ] ?? \Carbon\Carbon::now()->format('l');
+
+        $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
+        $semesterAktif = Semester::where('is_active', true)->first();
+
+        $query = JadwalKbm::query();
+
+        if ($tahunAjaranAktif) {
+            $query->where('tahun_ajaran_id', $tahunAjaranAktif->id);
+        }
+        if ($semesterAktif) {
+            $query->where('semester_id', $semesterAktif->id);
+        }
+
+        $query->where('hari', $hariIni);
+
+        $jadwalKeseluruhan = $query
+            ->with(['kelas', 'guru', 'mataPelajaran', 'jamBelajar'])
+            ->orderBySchedule()
+            ->get()
+            ->groupBy('hari');
+
+        $jamBelajarByHari = JamBelajar::orderByDay()->where('hari', $hariIni)->get()->groupBy('hari');
+
+        $hariList = [$hariIni];
+        $sekolah = \App\Models\Sekolah::first();
+
+        $kegiatanList = \App\Models\Kegiatan::select('kode_kegiatan', 'nama_kegiatan')->get();
+
+        $currentUserGuruId = auth()->user()->guru_id ?? null;
+        $currentUserGuruKode = null;
+        if ($currentUserGuruId) {
+            $guru = \App\Models\Guru::find($currentUserGuruId);
+            $currentUserGuruKode = $guru->kode_guru ?? null;
+        }
+
+        return view('jadwal_kbm.keseluruhan', compact(
+            'jadwalKeseluruhan',
+            'jamBelajarByHari',
+            'hariList',
+            'tahunAjaranAktif',
+            'semesterAktif',
+            'sekolah',
+            'viewType',
+            'kegiatanList',
+            'currentUserGuruId',
+            'currentUserGuruKode'
+        ))->with('todayOnly', true);
     }
 
     /**
@@ -779,7 +889,7 @@ class JadwalKbmController extends Controller
     {
         try {
             $sekolah = Sekolah::first();
-            if ($sekolah && ! $sekolah->tampilkan_jadwal && $this->shouldShowMaintenancePage()) {
+            if ($sekolah && ! $sekolah->tampilkan_jadwal && ! auth()->user()->hasRole('Siswa') && $this->shouldShowMaintenancePage()) {
                 return response()->json(['error' => 'Jadwal sedang dinonaktifkan oleh administrator.'], 403);
             }
             $tahunAjaranAktif = TahunAjaran::where('is_active', true)->first();
