@@ -794,6 +794,8 @@
                     $todayIndo = $map[$todayEng] ?? null;
                     $isGuruPiket = in_array($todayIndo, (array) $hrPkt, true) || $user->hasAnyRole(['Admin','Kepala Sekolah']);
                 }
+                $isModeAcademic = request()->query('mode') === 'academic';
+                $isModePiket = ! $isModeAcademic;
                 $isWali = false; $kelasBindaan = null;
                 if ($isGuru && $user->guru) {
                     $kelasBindaan = DB::table('kelas')->where('wali_kelas_id', $user->guru->id)->first();
@@ -822,8 +824,10 @@
                             @if($isGuruPiket || $user->hasAnyRole(['Admin','Kepala Sekolah']))
                                 <li class="nav-item"><a href="{{ route('guru_piket.index') }}" class="nav-link {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal Piket</a></li>
                             @endif
-                            @if(!auth()->user()->hasRole('Siswa'))
+                            @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
                                 <li class="nav-item"><a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengaturan Jam</a></li>
+                            @endif
+                            @if(!auth()->user()->hasRole('Siswa'))
                                 <li class="nav-item"><a href="{{ route('tugas_guru.index') }}" class="nav-link {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Beban Kerja Guru</a></li>
                             @endif
                             @if(!auth()->user()->hasRole('Siswa'))
@@ -848,9 +852,9 @@
                     </a>
                     <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*']) ? 'show' : '' }}" id="subPembelajaran">
                         <ul class="sidebar-subnav">
-                            <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
+                            <li class="nav-item"><a href="{{ route('absensi.index', ['mode' => 'academic']) }}" class="nav-link {{ request()->routeIs('absensi.*') && $isModeAcademic ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
                             <li class="nav-item"><a href="{{ route('agenda_kelas.index') }}" class="nav-link {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Kelas</a></li>
-                            <li class="nav-item"><a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Guru</a></li>
+                            <li class="nav-item"><a href="{{ route('agenda_guru.index', ['mode' => 'academic']) }}" class="nav-link {{ request()->routeIs('agenda_guru.*') && $isModeAcademic ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Guru</a></li>
                             <li class="nav-item"><a href="{{ route('nilai.index') }}" class="nav-link {{ request()->routeIs('nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Nilai</a></li>
                             <li class="nav-item"><a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rekap Nilai</a></li>
                         </ul>
@@ -861,15 +865,14 @@
                 <!-- Piket KBM -->
                 @if($isGuruPiket)
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPiket" aria-expanded="{{ request()->is('jadwal-kbm*') || request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPiket" aria-expanded="{{ request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-shield-checkered"></i> Piket KBM
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->is('jadwal-kbm*') || request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'show' : '' }}" id="subPiket">
+                    <div class="collapse {{ request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'show' : '' }}" id="subPiket">
                         <ul class="sidebar-subnav">
-                            <li class="nav-item"><a href="{{ url('/jadwal-kbm') }}" class="nav-link {{ request()->is('jadwal-kbm*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal Mengajar</a></li>
-                            <li class="nav-item"><a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Guru</a></li>
-                            <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Siswa</a></li>
+                            <li class="nav-item"><a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') && $isModePiket ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Guru</a></li>
+                            <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') && $isModePiket ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Siswa</a></li>
                             <li class="nav-item"><a href="{{ route('piket.pelanggaran.index') }}" class="nav-link {{ request()->routeIs('piket.pelanggaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pelanggaran</a></li>
                         </ul>
                     </div>

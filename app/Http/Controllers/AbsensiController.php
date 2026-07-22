@@ -48,6 +48,7 @@ class AbsensiController extends Controller
 
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $mode = $request->get('mode');
         $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
         $todayEng = \Carbon\Carbon::now()->format('l');
         $map = [
@@ -55,7 +56,7 @@ class AbsensiController extends Controller
             'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
         ];
         $todayIndo = $map[$todayEng] ?? null;
-        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true) && $mode !== 'academic';
         $isGuruBk = $user->hasRole('Guru BK');
         $isWaliKelas = $user->hasRole('Wali Kelas');
         $hasGuruBkKelasColumn = Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id');

@@ -21,6 +21,7 @@ class AgendaGuruController extends Controller
                 ->with('error', 'Anda tidak terdaftar sebagai guru.');
         }
 
+        $mode = $request->get('mode');
         $hariPiketArr = (array) ($guru->hari_piket ?? []);
         $todayEng = \Carbon\Carbon::now()->format('l');
         $map = [
@@ -28,7 +29,7 @@ class AgendaGuruController extends Controller
             'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
         ];
         $todayIndo = $map[$todayEng] ?? null;
-        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true) && $mode !== 'academic';
 
         if ($isGuruPiket) {
             $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));

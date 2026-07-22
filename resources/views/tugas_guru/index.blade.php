@@ -7,9 +7,11 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title">Tugas Guru - Penugasan Mata Pelajaran</h3>
-                    <a href="{{ route('tugas_guru.create') }}" class="btn btn-primary">
-                        <i class="ti ti-plus"></i> Tambah Tugas
-                    </a>
+                    @if(auth()->user()->hasRole('Admin'))
+                        <a href="{{ route('tugas_guru.create') }}" class="btn btn-primary">
+                            <i class="ti ti-plus"></i> Tambah Tugas
+                        </a>
+                    @endif
                 </div>
                 <div class="card-body">
                     @if(session('success'))

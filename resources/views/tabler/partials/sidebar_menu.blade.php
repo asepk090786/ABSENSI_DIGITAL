@@ -24,11 +24,13 @@
             <i class="ti ti-calendar me-2"></i> Jadwal KBM
         </a>
     </div>
+    @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
     <div class="nav-item">
         <a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}">
             <i class="ti ti-clock me-2"></i> Pengaturan Jam
         </a>
     </div>
+    @endif
     <div class="nav-item">
         <a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}">
             <i class="ti ti-checkup-list me-2"></i> Absensi
