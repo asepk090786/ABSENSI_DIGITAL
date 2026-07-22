@@ -257,6 +257,12 @@
                 <span>Semester</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('setting.backup') }}" class="menu-item {{ request()->routeIs('setting.backup') ? 'active' : '' }}">
+                <i class="material-icons">backup</i>
+                <span>Backup Database</span>
+            </a>
+        </li>
         @else
         <li>
             <a href="{{ route('profile.edit') }}" class="menu-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
