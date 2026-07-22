@@ -75,18 +75,7 @@ class AgendaGuruController extends Controller
         $bulan = $request->get('bulan', now()->month);
         $tahunFilter = $request->get('tahun', now()->year);
 
-        // Get all agenda guru for the selected month, ordering by jam_belajar.urutan
-        $agendaList = AgendaGuru::select('agenda_guru.*')
-            ->where('agenda_guru.guru_id', $guru->id)
-            ->where('agenda_guru.tahun_ajaran_id', $tahun->id)
-            ->where('agenda_guru.semester_id', $semester->id)
-            ->whereYear('agenda_guru.tanggal', $tahunFilter)
-            ->whereMonth('agenda_guru.tanggal', $bulan)
-            ->join('jam_belajar', 'agenda_guru.jam_belajar_id', '=', 'jam_belajar.id')
-            ->with(['jamBelajar'])
-            ->orderBy('agenda_guru.tanggal', 'asc')
-            ->orderBy('jam_belajar.urutan', 'asc')
-            ->get();
+        $agendaList = $this->buildAgendaGuruQuery($guru, $tahun, $semester, $tahunFilter, $bulan)->get();
 
         // Get guru's mata pelajaran
         $mataPelajaran = DB::table('jadwal_kbm')
@@ -384,6 +373,20 @@ class AgendaGuruController extends Controller
         return Carbon::parse($date)->startOfDay()->lt(Carbon::today());
     }
 
+    private function buildAgendaGuruQuery($guru, $tahun, $semester, $tahunFilter, $bulan)
+    {
+        return AgendaGuru::select('agenda_guru.*')
+            ->where('agenda_guru.guru_id', $guru->id)
+            ->where('agenda_guru.tahun_ajaran_id', $tahun->id)
+            ->where('agenda_guru.semester_id', $semester->id)
+            ->whereYear('agenda_guru.tanggal', $tahunFilter)
+            ->whereMonth('agenda_guru.tanggal', $bulan)
+            ->leftJoin('jam_belajar', 'agenda_guru.jam_belajar_id', '=', 'jam_belajar.id')
+            ->with(['jamBelajar'])
+            ->orderBy('agenda_guru.tanggal', 'asc')
+            ->orderBy('jam_belajar.urutan', 'asc');
+    }
+
     public function export(Request $request)
     {
         $user = auth()->user();
@@ -402,18 +405,13 @@ class AgendaGuruController extends Controller
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
-        // Get agenda guru entries for export
-        $agendaList = AgendaGuru::select('agenda_guru.*')
-            ->where('agenda_guru.guru_id', $guru->id)
-            ->where('agenda_guru.tahun_ajaran_id', $tahun->id)
-            ->where('agenda_guru.semester_id', $semester->id)
-            ->whereYear('agenda_guru.tanggal', $tahunFilter)
-            ->whereMonth('agenda_guru.tanggal', $bulan)
-            ->join('jam_belajar', 'agenda_guru.jam_belajar_id', '=', 'jam_belajar.id')
-            ->with(['jamBelajar'])
-            ->orderBy('agenda_guru.tanggal', 'asc')
-            ->orderBy('jam_belajar.urutan', 'asc')
-            ->get();
+        if (!$tahun || !$semester) {
+            return redirect()->route('agenda_guru.index')
+                ->with('error', 'Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        // Get agenda guru entries for export using same query as index
+        $agendaList = $this->buildAgendaGuruQuery($guru, $tahun, $semester, $tahunFilter, $bulan)->get();
 
         // Get guru's mata pelajaran
         $mataPelajaran = DB::table('jadwal_kbm')

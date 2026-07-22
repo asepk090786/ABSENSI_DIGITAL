@@ -378,16 +378,31 @@ class DashboardController extends Controller
             }
             
             // Statistik Agenda Pembelajaran
-            $totalAgenda = 0;
-            $agendaMingguIni = 0;
+            $totalAgendaGuru = 0;
+            $agendaGuruMingguIni = 0;
             if ($guruData && \Illuminate\Support\Facades\Schema::hasTable('agenda_guru')) {
-                $totalAgenda = DB::table('agenda_guru')
+                $totalAgendaGuru = DB::table('agenda_guru')
                     ->where('guru_id', $guruData->id)
                     ->count();
-                    
+
                 $startOfWeek = date('Y-m-d', strtotime('monday this week'));
                 $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
-                $agendaMingguIni = DB::table('agenda_guru')
+                $agendaGuruMingguIni = DB::table('agenda_guru')
+                    ->where('guru_id', $guruData->id)
+                    ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
+                    ->count();
+            }
+
+            $totalAgendaKelas = 0;
+            $agendaKelasMingguIni = 0;
+            if ($guruData && \Illuminate\Support\Facades\Schema::hasTable('agenda_kelas')) {
+                $totalAgendaKelas = DB::table('agenda_kelas')
+                    ->where('guru_id', $guruData->id)
+                    ->count();
+
+                $startOfWeek = $startOfWeek ?? date('Y-m-d', strtotime('monday this week'));
+                $endOfWeek = $endOfWeek ?? date('Y-m-d', strtotime('sunday this week'));
+                $agendaKelasMingguIni = DB::table('agenda_kelas')
                     ->where('guru_id', $guruData->id)
                     ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
                     ->count();
@@ -432,7 +447,7 @@ class DashboardController extends Controller
             return view('dashboard.guru', compact(
                 'guru','siswa','kelas','absensi','tahunAjaran','semestrName',
                 'totalJadwal','jadwalHariIni','totalAbsensiGuru','absensiHariIni',
-                'totalAgenda','agendaMingguIni','totalNilai','kelasYangDiajar',
+                'totalAgendaGuru','agendaGuruMingguIni','totalAgendaKelas','agendaKelasMingguIni','totalNilai','kelasYangDiajar',
                 'isGuruBk','kelasBinaanBk'
             ));
         } elseif ($isSiswa) {

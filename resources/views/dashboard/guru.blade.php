@@ -81,9 +81,21 @@
                 <i class="ti ti-file-text"></i>
             </div>
             <div>
-                <div class="stat-label">{{ $totalAgenda ?? 0 }} Agenda</div>
-                <div class="text-muted small">Total Agenda Pembelajaran</div>
-                <div class="stat-change" style="color:#0ea5e9;"><i class="ti ti-calendar-week me-1"></i>{{ $agendaMingguIni ?? 0 }} minggu ini</div>
+                <div class="stat-label">{{ $totalAgendaGuru ?? 0 }} Agenda Guru</div>
+                <div class="text-muted small">Total Agenda Guru</div>
+                <div class="stat-change" style="color:#0ea5e9;"><i class="ti ti-calendar-week me-1"></i>{{ $agendaGuruMingguIni ?? 0 }} minggu ini</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon" style="background:#ecfdf5;color:#15803d;">
+                <i class="ti ti-school"></i>
+            </div>
+            <div>
+                <div class="stat-label">{{ $totalAgendaKelas ?? 0 }} Agenda Kelas</div>
+                <div class="text-muted small">Total Agenda Kelas</div>
+                <div class="stat-change" style="color:#16a34a;"><i class="ti ti-calendar-week me-1"></i>{{ $agendaKelasMingguIni ?? 0 }} minggu ini</div>
             </div>
         </div>
     </div>

@@ -47,6 +47,7 @@ class AgendaKelasStorageService
             ->where('tanggal', $deletedAgenda->tanggal)
             ->where('tahun_ajaran_id', $deletedAgenda->tahun_ajaran_id)
             ->where('semester_id', $deletedAgenda->semester_id)
+            ->where('id', '!=', $deletedAgenda->id)
             ->count();
 
         if ($otherAgendas === 0) {
