@@ -21,6 +21,7 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Log;
 
 class AbsensiController extends Controller
 {
@@ -56,6 +57,7 @@ class AbsensiController extends Controller
         $todayIndo = $map[$todayEng] ?? null;
         $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
         $isGuruBk = $user->hasRole('Guru BK');
+        $isWaliKelas = $user->hasRole('Wali Kelas');
         $hasGuruBkKelasColumn = Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id');
 
         $kelasAktifDijadwalIds = JadwalKbm::query()
@@ -98,7 +100,7 @@ class AbsensiController extends Controller
         }
         
         // Filter by guru_id if user is a teacher (not admin or kepala sekolah)
-        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk) {
+        if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk && !$isWaliKelas) {
             $query->where('guru_id', $user->guru_id);
         }
 
@@ -559,17 +561,6 @@ class AbsensiController extends Controller
         $selectedJamBelajarId = null;
         $isQuickAccess = false;
         $selectedDate = $request->get('tanggal', date('Y-m-d'));
-        
-        // Check if this is quick access or manual with kelas preselected
-        if (!empty($selectedKelasId)) {
-            $isQuickAccess = true;
-        }
-
-        if ($isSiswaOfficer) {
-            $siswa = $user->siswa;
-            $selectedKelasId = $siswa->kelas_id;
-            $isQuickAccess = true;
-        }
 
         $hariIndonesia = [
             'Monday' => 'Senin',
@@ -581,12 +572,23 @@ class AbsensiController extends Controller
             'Sunday' => 'Minggu'
         ];
 
+        $hariEnglish = Carbon::parse($selectedDate)->format('l');
+        $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
+
+        // Check if this is quick access or manual with kelas preselected
+        if (!empty($selectedKelasId)) {
+            $isQuickAccess = true;
+        }
+
+        if ($isSiswaOfficer) {
+            $siswa = $user->siswa;
+            $selectedKelasId = $siswa->kelas_id;
+            $isQuickAccess = true;
+        }
+
         // Validate teacher schedule access for normal guru users
         if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk && !$isWaliKelas) {
             if ($selectedKelasId) {
-                $hariEnglish = Carbon::parse($selectedDate)->format('l');
-                $hariQuery = $hariIndonesia[$hariEnglish] ?? $hariEnglish;
-                
                 $hasSchedule = JadwalKbm::where('guru_id', $user->guru_id)
                     ->where('kelas_id', $selectedKelasId)
                     ->where('hari', $hariQuery)
@@ -595,9 +597,7 @@ class AbsensiController extends Controller
                     ->exists();
                     
                 if (!$hasSchedule) {
-                    // Don't redirect, just show warning - let user change date
                     session()->flash('warning', 'Anda tidak memiliki jadwal mengajar di kelas ini pada hari ' . $hariQuery . ' (' . date('d/m/Y', strtotime($selectedDate)) . '). Silakan pilih tanggal lain.');
-                    // Keep the kelas selected but don't auto-load siswa
                 }
             }
         }
@@ -624,15 +624,17 @@ class AbsensiController extends Controller
                 }
             }
             
-            // Get ALL classes taught by this teacher (all days)
-            $allJadwal = JadwalKbm::with(['kelas'])
+            // Get classes scheduled for this teacher on the selected date
+            $kelasList = JadwalKbm::with(['kelas'])
                 ->where('guru_id', $user->guru_id)
+                ->where('hari', $hariQuery)
                 ->where('tahun_ajaran_id', $tahunAjaran->id)
                 ->where('semester_id', $semester->id)
-                ->get();
-            
-            // Get unique classes from all schedules
-            $kelasList = $allJadwal->pluck('kelas')->unique('id')->sortBy('nama_kelas')->values();
+                ->get()
+                ->pluck('kelas')
+                ->unique('id')
+                ->sortBy('nama_kelas')
+                ->values();
 
             if ($isGuruBk && Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id')) {
                 $kelasBinaanIds = Kelas::where('guru_bk_id', $user->guru_id)->pluck('id');
@@ -658,7 +660,7 @@ class AbsensiController extends Controller
                 if ($scheduledJamIds->isNotEmpty()) {
                     $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
                 } else {
-                    $jamBelajarList = JamBelajar::orderBy('urutan')->get();
+                    $jamBelajarList = collect();
                 }
                 
                 if (!$selectedJamBelajarId && $multiSlotJadwal->isNotEmpty()) {
@@ -668,8 +670,16 @@ class AbsensiController extends Controller
                 $jamBelajarList = JamBelajar::orderBy('urutan')->get();
             }
             
+            // Also provide ALL schedules for this teacher (all days) so client-side
+            // code can filter by any selected date without needing a page reload.
+            $allJadwal = JadwalKbm::with(['kelas', 'jamBelajar', 'mataPelajaran'])
+                ->where('guru_id', $user->guru_id)
+                ->where('tahun_ajaran_id', $tahunAjaran->id)
+                ->where('semester_id', $semester->id)
+                ->get();
+
             $guruList = Guru::where('id', $user->guru_id)->get();
-            $jadwalList = $jadwalHariIni;
+            $jadwalList = $allJadwal;
         } elseif ($isWaliKelas) {
             $kelasBinaan = Kelas::where('wali_kelas_id', $user->guru_id)->first();
             $allowedKelasIds = collect();
@@ -1085,6 +1095,18 @@ class AbsensiController extends Controller
 
         $applyAll = $request->has('apply_to_all_guru');
 
+        // Debug logging: record who attempted to store absensi and payload
+        try {
+            Log::info('absensi.store.attempt', [
+                'user_id' => optional(auth()->user())->id,
+                'user_guru_id' => optional(auth()->user())->guru_id,
+                'roles' => auth()->user() ? auth()->user()->getRoleNames()->toArray() : [],
+                'input' => $request->all(),
+            ]);
+        } catch (\Throwable $e) {
+            // ignore logging failures
+        }
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'guru_id' => [Rule::requiredIf(!$applyAll), 'nullable', 'exists:guru,id'],
@@ -1256,10 +1278,8 @@ class AbsensiController extends Controller
                     }
                     $targetEntries = $targetEntries->unique(fn($entry) => $entry->jam_id . ':' . ($entry->guru_id ?? ''))->values();
                 } else {
-                    if (empty($validated['guru_id'])) {
-                        $validated['guru_id'] = $user->guru_id;
-                    }
-                    $targetEntries->push((object)['jam_id' => $validated['jam_belajar_id'], 'guru_id' => $validated['guru_id'] ?? null]);
+                    // Do not allow wali kelas to create absensi when there is no KBM jadwal
+                    return back()->withInput()->withErrors(['error' => 'Tidak ada jadwal KBM untuk kelas ini pada hari tersebut. Wali Kelas tidak dapat membuat absensi tanpa jadwal.']);
                 }
             } elseif ($user->guru_id && !$isWaliKelas) {
                 $jadwalJamIds = JadwalKbm::where('guru_id', $validated['guru_id'])
@@ -1282,6 +1302,29 @@ class AbsensiController extends Controller
             $skippedJamIds = [];
             $firstExistingAbsensi = null;
             $savedAbsensiSiswaCount = 0;
+
+            // Additional safety: ensure normal guru users cannot create absensi for jams
+            // they do not actually have in their Jadwal KBM. This prevents bypasses
+            // where a jam id is supplied but no jadwal exists for the teacher.
+            if ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket && !$isGuruBk && !$isWaliKelas) {
+                foreach ($targetEntries as $te) {
+                    $jamToCheck = $te->jam_id;
+                    $guruToCheck = $te->guru_id ?? $validated['guru_id'] ?? null;
+                    if (empty($guruToCheck)) continue;
+
+                    $exists = JadwalKbm::where('guru_id', $guruToCheck)
+                        ->where('kelas_id', $validated['kelas_id'])
+                        ->where('jam_belajar_id', $jamToCheck)
+                        ->where('hari', $hariQuery)
+                        ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
+                        ->where('semester_id', $validated['semester_id'])
+                        ->exists();
+
+                    if (! $exists) {
+                        return back()->withInput()->withErrors(['error' => 'Anda tidak memiliki jadwal KBM untuk jam yang dipilih, sehingga absensi tidak dapat disimpan.']);
+                    }
+                }
+            }
 
             $appliedJamIds = [];
             foreach ($targetEntries as $entry) {

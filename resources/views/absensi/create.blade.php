@@ -137,6 +137,8 @@
 <div class="container-fluid">
     @php
         $isAdminOrKepala = auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruBk = auth()->user()->hasRole('Guru BK');
+        $isWaliKelas = auth()->user()->hasRole('Wali Kelas');
         $isSiswaOfficer = auth()->user()->hasRole('Siswa') && auth()->user()->hasClassPosition();
         // Keep quick-access locked for non-admins, non-guru-piket, but allow SiswaOfficer to choose jam
         $lockQuickAccessField = ($isQuickAccess ?? false) && !$isAdminOrKepala && !($isGuruPiket ?? false) && !$isSiswaOfficer;
