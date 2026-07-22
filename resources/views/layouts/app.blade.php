@@ -1061,6 +1061,11 @@
                                     <i class="ti ti-circle-filled"></i> Edit Header
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('setting.backup') }}" class="nav-link {{ request()->routeIs('setting.backup') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> Backup Database
+                                </a>
+                            </li>
                             @endif
                         </ul>
                     </div>
