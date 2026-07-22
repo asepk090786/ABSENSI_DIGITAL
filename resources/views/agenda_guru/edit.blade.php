@@ -72,7 +72,7 @@
                         <div class="mb-2">
                             <label class="form-label">Kegiatan / Materi Ajar <span class="text-danger">*</span></label>
                             <textarea id="kegiatanEdit" class="form-control @error('kegiatan') is-invalid @enderror" 
-                                      name="kegiatan" rows="5" placeholder="Tuliskan kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan', $agendaGuru->kegiatan) }}</textarea>
+                                      name="kegiatan" rows="5" placeholder="Tuliskan kegiatan atau materi ajar pada hari ini..." required>{!! old('kegiatan', $agendaGuru->kegiatan) !!}</textarea>
                             @error('kegiatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
