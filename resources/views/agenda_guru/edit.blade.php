@@ -51,6 +51,7 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <small class="text-muted">Jam yang sudah terpakai oleh jadwal guru pada hari yang dipilih tidak ditampilkan.</small>
                             @error('jam_belajar_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

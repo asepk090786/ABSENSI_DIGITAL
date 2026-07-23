@@ -11,9 +11,25 @@ class AgendaKelasStorageService
     public function syncAgendaGuru(AgendaKelas $agendaKelas): void
     {
         $kelas = DB::table('kelas')->find($agendaKelas->kelas_id);
-        $kegiatanRingkasan = ($kelas ? $kelas->nama_kelas . ' - ' : '') . ($agendaKelas->kegiatan ?? '');
+        $kegiatanRingkasan = ($kelas ? $kelas->nama_kelas . ' - ' : '') . ($agendaKelas->kegiatan ?? $agendaKelas->nama_kegiatan ?? '');
         $kegiatanRingkasan = trim($kegiatanRingkasan);
 
+        $agendaGuru = AgendaGuru::updateOrCreate(
+            [
+                'guru_id' => $agendaKelas->guru_id,
+                'jam_belajar_id' => $agendaKelas->jam_belajar_id,
+                'tanggal' => $agendaKelas->tanggal,
+                'tahun_ajaran_id' => $agendaKelas->tahun_ajaran_id,
+                'semester_id' => $agendaKelas->semester_id,
+            ],
+            [
+                'kegiatan' => $this->mergeAgendaKegiatan($agendaKelas, $kegiatanRingkasan),
+            ]
+        );
+    }
+
+    private function mergeAgendaKegiatan(AgendaKelas $agendaKelas, string $newKegiatan): string
+    {
         $agendaGuru = AgendaGuru::where('guru_id', $agendaKelas->guru_id)
             ->where('jam_belajar_id', $agendaKelas->jam_belajar_id)
             ->where('tanggal', $agendaKelas->tanggal)
@@ -21,23 +37,15 @@ class AgendaKelasStorageService
             ->where('semester_id', $agendaKelas->semester_id)
             ->first();
 
-        if ($agendaGuru) {
-            if ($kegiatanRingkasan !== '' && strpos($agendaGuru->kegiatan ?? '', $kegiatanRingkasan) === false) {
-                $agendaGuru->kegiatan = trim(($agendaGuru->kegiatan ?? '') . "\n" . $kegiatanRingkasan);
-                $agendaGuru->save();
-            }
-
-            return;
+        if (!$agendaGuru || $agendaGuru->kegiatan === null || trim($agendaGuru->kegiatan) === '') {
+            return $newKegiatan;
         }
 
-        AgendaGuru::create([
-            'guru_id' => $agendaKelas->guru_id,
-            'jam_belajar_id' => $agendaKelas->jam_belajar_id,
-            'tanggal' => $agendaKelas->tanggal,
-            'kegiatan' => $kegiatanRingkasan,
-            'tahun_ajaran_id' => $agendaKelas->tahun_ajaran_id,
-            'semester_id' => $agendaKelas->semester_id,
-        ]);
+        if ($newKegiatan === '' || strpos($agendaGuru->kegiatan, $newKegiatan) !== false) {
+            return $agendaGuru->kegiatan;
+        }
+
+        return trim($agendaGuru->kegiatan . "\n" . $newKegiatan);
     }
 
     public function cleanupAgendaGuru(AgendaKelas $deletedAgenda): void

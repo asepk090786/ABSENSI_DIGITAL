@@ -589,9 +589,7 @@ class AgendaKelasController extends Controller
                 // Update existing agenda
                 $agenda = AgendaKelas::findOrFail($agendaId);
                 $agenda->update($data);
-                if ($agenda->jenis_kegiatan === 'kbm') {
-                    $this->agendaKelasStorageService->syncAgendaGuru($agenda);
-                }
+                $this->agendaKelasStorageService->syncAgendaGuru($agenda);
                 $message = 'Agenda kelas berhasil diperbarui';
             } else {
                 if ($this->hasDuplicateAgendaKelas($data)) {
@@ -600,9 +598,7 @@ class AgendaKelasController extends Controller
 
                 // Create new agenda
                 $agenda = AgendaKelas::create($data);
-                if ($agenda->jenis_kegiatan === 'kbm') {
-                    $this->agendaKelasStorageService->syncAgendaGuru($agenda);
-                }
+                $this->agendaKelasStorageService->syncAgendaGuru($agenda);
                 $message = $agenda->jenis_kegiatan === 'pengembangan_diri'
                     ? 'Kegiatan pengembangan diri berhasil ditambahkan'
                     : 'Agenda kelas ditambahkan';

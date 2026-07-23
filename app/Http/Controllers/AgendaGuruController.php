@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgendaGuru;
 use App\Models\AbsensiGuru;
 use App\Models\Guru;
+use App\Models\JamBelajar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -192,16 +193,14 @@ class AgendaGuruController extends Controller
                 ->with('error', 'Tahun ajaran atau semester belum di-set aktif.');
         }
 
-        // Get jam belajar
-        $jamBelajar = DB::table('jam_belajar')->get();
+        // Get jam belajar relevant to this guru and selected date
+        $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
+        $jamBelajar = $this->getAvailableJamBelajarForGuruAndDate($guru, $selectedTanggal, $tahun, $semester);
 
         // Get Rencana Pembelajaran authored by this guru (for selection)
         $rencanaPembelajaranList = \App\Models\RencanaPembelajaran::where('guru_id', $guru->id)
             ->orderBy('judul')
             ->get(['id', 'judul', 'mata_pelajaran_id', 'kelas_id']);
-
-        // Get selected tanggal jika ada dari request
-        $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
 
         // Get daftar kegiatan dari database
         $kegiatanList = DB::table('kegiatan')->orderBy('nama_kegiatan')->get();
@@ -230,6 +229,7 @@ class AgendaGuruController extends Controller
             'tanggal' => 'required|date',
             'jam_belajar_id' => 'required|exists:jam_belajar,id',
             'kegiatan' => 'required|string|max:1000',
+            'rencana_pembelajaran_id' => 'nullable|exists:rencana_pembelajaran,id',
         ], [
             'tanggal.required' => 'Tanggal harus diisi',
             'jam_belajar_id.required' => 'Jam pelajaran harus dipilih',
@@ -244,6 +244,24 @@ class AgendaGuruController extends Controller
         // Get active tahun and semester
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        $availableJamBelajar = $this->getAvailableJamBelajarForGuruAndDate($guru, $validated['tanggal'], $tahun, $semester);
+        $availableJamBelajarIds = $availableJamBelajar->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $requestedJamBelajarId = (int) $validated['jam_belajar_id'];
+        $selectedJamBelajar = JamBelajar::find($requestedJamBelajarId);
+        $expectedHari = $this->getHariIndonesiaFromDate($validated['tanggal']);
+
+        if (!in_array($requestedJamBelajarId, $availableJamBelajarIds, true)) {
+            return back()->withInput()->withErrors([
+                'jam_belajar_id' => 'Jam pelajaran yang dipilih sudah terpakai atau tidak tersedia untuk guru ini pada tanggal tersebut.',
+            ]);
+        }
+
+        if (!$selectedJamBelajar || $selectedJamBelajar->hari !== $expectedHari) {
+            return back()->withInput()->withErrors([
+                'jam_belajar_id' => 'Jam pelajaran yang dipilih tidak sesuai dengan hari yang Anda pilih.',
+            ]);
+        }
 
         // Prepare data
         $agendaData = [
@@ -260,11 +278,21 @@ class AgendaGuruController extends Controller
             $rencana = \App\Models\RencanaPembelajaran::find($validated['rencana_pembelajaran_id']);
             if ($rencana && empty($agendaData['kegiatan'])) {
                 // Fill kegiatan with rencana's judul + capaian pembelajaran (short)
-                $agendaData['kegiatan'] = trim(($rencana->judul ?? '') . '\n' . ($rencana->capaian_pembelajaran ?? ''));
+                $agendaData['kegiatan'] = trim(($rencana->judul ?? '') . "\n" . ($rencana->capaian_pembelajaran ?? ''));
             }
         }
 
-        AgendaGuru::create($agendaData);
+        try {
+            DB::transaction(function () use ($agendaData) {
+                AgendaGuru::create($agendaData);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'kegiatan' => 'Gagal menyimpan agenda guru. Silakan cek data yang Anda masukkan.',
+            ]);
+        }
 
         return redirect()->route('agenda_guru.index')
             ->with('success', 'Agenda guru berhasil ditambahkan');
@@ -284,7 +312,16 @@ class AgendaGuruController extends Controller
             abort(403, 'Akses ditolak. Agenda guru tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
         }
 
-        $jamBelajar = DB::table('jam_belajar')->get();
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        if (!$tahun || !$semester) {
+            return redirect()->route('agenda_guru.index')
+                ->with('error', 'Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        $selectedTanggal = $agendaGuru->tanggal->format('Y-m-d');
+        $jamBelajar = $this->getAvailableJamBelajarForGuruAndDate($guru, $selectedTanggal, $tahun, $semester);
         $rencanaPembelajaranList = \App\Models\RencanaPembelajaran::where('guru_id', $guru->id)
             ->orderBy('judul')
             ->get(['id', 'judul', 'mata_pelajaran_id', 'kelas_id']);
@@ -315,6 +352,7 @@ class AgendaGuruController extends Controller
             'tanggal' => 'required|date',
             'jam_belajar_id' => 'required|exists:jam_belajar,id',
             'kegiatan' => 'required|string|max:1000',
+            'rencana_pembelajaran_id' => 'nullable|exists:rencana_pembelajaran,id',
         ], [
             'tanggal.required' => 'Tanggal harus diisi',
             'jam_belajar_id.required' => 'Jam pelajaran harus dipilih',
@@ -334,7 +372,43 @@ class AgendaGuruController extends Controller
             abort(403, 'Akses ditolak. Agenda guru tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
         }
 
-        $agendaGuru->update($updateData);
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        if (!$tahun || !$semester) {
+            return redirect()->route('agenda_guru.index')
+                ->with('error', 'Tahun ajaran atau semester belum di-set aktif.');
+        }
+
+        $availableJamBelajar = $this->getAvailableJamBelajarForGuruAndDate($guru, $updateData['tanggal'], $tahun, $semester);
+        $availableJamBelajarIds = $availableJamBelajar->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $requestedJamBelajarId = (int) $updateData['jam_belajar_id'];
+        $selectedJamBelajar = JamBelajar::find($requestedJamBelajarId);
+        $expectedHari = $this->getHariIndonesiaFromDate($updateData['tanggal']);
+
+        if (!in_array($requestedJamBelajarId, $availableJamBelajarIds, true)) {
+            return back()->withInput()->withErrors([
+                'jam_belajar_id' => 'Jam pelajaran yang dipilih sudah terpakai atau tidak tersedia untuk guru ini pada tanggal tersebut.',
+            ]);
+        }
+
+        if (!$selectedJamBelajar || $selectedJamBelajar->hari !== $expectedHari) {
+            return back()->withInput()->withErrors([
+                'jam_belajar_id' => 'Jam pelajaran yang dipilih tidak sesuai dengan hari yang Anda pilih.',
+            ]);
+        }
+
+        try {
+            DB::transaction(function () use ($agendaGuru, $updateData) {
+                $agendaGuru->update($updateData);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withInput()->withErrors([
+                'kegiatan' => 'Gagal memperbarui agenda guru. Silakan cek data yang Anda masukkan.',
+            ]);
+        }
 
         return redirect()->route('agenda_guru.index')
             ->with('success', 'Agenda guru berhasil diperbarui');
@@ -367,6 +441,47 @@ class AgendaGuruController extends Controller
             $user->hasRole('Wali Kelas') ||
             $user->hasRole('Guru BK')
         );
+    }
+
+    private function getAvailableJamBelajarForGuruAndDate($guru, $selectedTanggal, $tahun, $semester)
+    {
+        $hariAgenda = $this->getHariIndonesiaFromDate($selectedTanggal);
+
+        $scheduledJamIds = DB::table('jadwal_kbm')
+            ->where('guru_id', $guru->id)
+            ->where('hari', $hariAgenda)
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('semester_id', $semester->id)
+            ->pluck('jam_belajar_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        $query = JamBelajar::where('hari', $hariAgenda)
+            ->orderBy('urutan');
+
+        if (!empty($scheduledJamIds)) {
+            $query->whereNotIn('id', $scheduledJamIds);
+        }
+
+        return $query->get();
+    }
+
+    private function getHariIndonesiaFromDate($date)
+    {
+        $hariIndonesia = [
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu',
+        ];
+
+        $hariEnglish = Carbon::parse($date)->format('l');
+
+        return $hariIndonesia[$hariEnglish] ?? $hariEnglish;
     }
 
     private function isPastDate($date): bool

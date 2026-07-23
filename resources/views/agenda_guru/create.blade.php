@@ -25,13 +25,13 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('agenda_guru.store') }}" method="POST">
+                    <form id="agendaGuruForm" action="{{ route('agenda_guru.store') }}" method="POST">
                         @csrf
 
                         <div class="mb-2">
                             <label class="form-label">Tanggal <span class="text-danger">*</span></label>
                             <input type="date" class="form-control @error('tanggal') is-invalid @enderror" 
-                                   name="tanggal" value="{{ old('tanggal', $selectedTanggal) }}" required>
+                                   name="tanggal" id="tanggalInput" value="{{ old('tanggal', $selectedTanggal) }}" required>
                             @error('tanggal')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -39,6 +39,9 @@
 
                         <div class="mb-2">
                             <label class="form-label">Jam Pelajaran <span class="text-danger">*</span></label>
+                            @if($jamBelajar->isEmpty())
+                                <div class="alert alert-warning small mb-2">Tidak ada jam pelajaran tersedia untuk guru pada tanggal yang dipilih.</div>
+                            @endif
                             <select class="form-select @error('jam_belajar_id') is-invalid @enderror" name="jam_belajar_id" required>
                                 <option value="">-- Pilih Jam Pelajaran --</option>
                                 @foreach($jamBelajar as $jam)
@@ -50,6 +53,7 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <small class="text-muted">Jam yang sudah terpakai oleh jadwal guru pada hari yang dipilih tidak ditampilkan.</small>
                             @error('jam_belajar_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -79,7 +83,7 @@
                                 @endforeach
                                 <option value="__other__">Lainnya (ketik sendiri)</option>
                             </select>
-                            <textarea name="kegiatan" id="kegiatanOther" class="form-control @error('kegiatan') is-invalid @enderror" rows="7" placeholder="Ketik kegiatan atau materi ajar pada hari ini..." required>{{ old('kegiatan') }}</textarea>
+                             <textarea name="kegiatan" id="kegiatanOther" class="form-control @error('kegiatan') is-invalid @enderror" rows="7" placeholder="Ketik kegiatan atau materi ajar pada hari ini...">{{ old('kegiatan') }}</textarea>
                             @error('kegiatan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -105,9 +109,18 @@
 <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const tanggalInput = document.getElementById('tanggalInput');
     const kegiatanSelect = document.getElementById('kegiatanSelect');
     const kegiatanTextarea = document.getElementById('kegiatanOther');
+    const createRoute = '{{ route('agenda_guru.create') }}';
     let kegiatanEditor = null;
+
+    if (tanggalInput) {
+        tanggalInput.addEventListener('change', function() {
+            if (!this.value) return;
+            window.location.href = createRoute + '?tanggal=' + encodeURIComponent(this.value);
+        });
+    }
 
     function initKegiatanEditor() {
         if (!kegiatanTextarea || kegiatanEditor) return;
@@ -127,11 +140,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const val = this.value;
             if (!kegiatanEditor) return;
             if (val === '__other__' || val === '') {
-                // do not overwrite if empty or explicit other
                 if (val === '') return;
                 kegiatanEditor.setData('');
             } else {
                 kegiatanEditor.setData(val);
+            }
+        });
+    }
+
+    const form = document.getElementById('agendaGuruForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (kegiatanEditor) {
+                kegiatanEditor.updateSourceElement();
+            }
+            const kegiatanVal = kegiatanTextarea ? kegiatanTextarea.value.trim() : '';
+            const rppSelect = form.querySelector('select[name="rencana_pembelajaran_id"]');
+            const rppValue = rppSelect ? rppSelect.value : '';
+            
+            if (kegiatanVal === '' && rppValue === '') {
+                e.preventDefault();
+                alert('Kegiatan harus diisi');
+                if (kegiatanTextarea) kegiatanTextarea.focus();
             }
         });
     }
