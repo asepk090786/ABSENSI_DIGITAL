@@ -25,6 +25,8 @@
 /storage/framework/sessions/
 /storage/framework/testing/
 /storage/framework/views/
+/storage/app/backups/
+/storage/app/settings.json
 /storage/app/public/logos/
 /storage/app/public/user_photos/
 
