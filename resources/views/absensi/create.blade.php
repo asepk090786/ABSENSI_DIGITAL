@@ -411,15 +411,40 @@
         var isQuickAccess = '{{ $isQuickAccess ?? 0 }}' === '1';
         var isGuruPiket = '{{ ($isGuruPiket ?? false) ? 1 : 0 }}' === '1';
 
-        console.log('Initializing form...', {
-            kelasValue: kelasSelect ? kelasSelect.value : null,
-            isQuickAccess: isQuickAccess
-        });
+        // Ensure query params (kelas_id, tanggal, jam_belajar_id) populate inputs when present
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var qKelas = params.get('kelas_id');
+            var qTanggal = params.get('tanggal');
+            var qJam = params.get('jam_belajar_id');
+
+            if (qTanggal && tanggalInput && !tanggalInput.value) {
+                tanggalInput.value = qTanggal;
+            }
+
+            if (qKelas && kelasSelect && !kelasSelect.value) {
+                // set selected option if exists
+                if (kelasSelect.querySelector('option[value="' + qKelas + '"]')) {
+                    kelasSelect.value = qKelas;
+                }
+            }
+
+            // store requested jam to apply after jam options are rendered
+            if (qJam) {
+                window._requestedJamBelajarId = qJam;
+            }
+        } catch (e) {
+            console.warn('Failed to apply URL params to form', e);
+        }
+
+        console.log('Initializing form...', { kelasValue: kelasSelect ? kelasSelect.value : null, isQuickAccess: isQuickAccess });
 
         // Trigger load siswa jika ada kelas yang sudah dipilih saat page load
-        if (kelasSelect && kelasSelect.value && isQuickAccess) {
-            console.log('Quick access mode detected, loading siswa for kelas:', kelasSelect.value);
+        if (kelasSelect && kelasSelect.value) {
+            console.log('Preselected kelas detected, refreshing guru/jam and loading siswa for kelas:', kelasSelect.value);
             setTimeout(function() {
+                renderGuruOptionsByKelasTanggal();
+                renderJamOptionsByGuru();
                 loadSiswaByKelas(kelasSelect.value);
             }, 100);
         }
@@ -436,6 +461,10 @@
         console.log('jamBelajarServer (mapped by id):', jamBelajarServer);
 
         function renderJamOptionsByGuru() {
+            if (!jamBelajarSelect) {
+                return;
+            }
+
             // Determine selected values
             var kelasId = kelasSelect ? kelasSelect.value : '';
             var guruId = guruSelect ? guruSelect.value : '';
@@ -456,30 +485,47 @@
                 if (kelasId && String(item.kelas_id || item.kelasId || '') !== String(kelasId)) return false;
                 if (hariName && String((item.hari || '').trim()) !== String(hariName)) return false;
                 if (guruId && String(guruId) !== 'all') {
-                        return String(item.guru_id || '') === String(guruId);
-                    }
-                    return true;
+                    return String(item.guru_id || '') === String(guruId);
+                }
+                return true;
             });
 
             // Sort and populate select
-            filtered.sort(function(a,b){ return (a.jam_ke||0) - (b.jam_ke||0); });
+            filtered.sort(function(a,b){ return (a.jam_ke || 0) - (b.jam_ke || 0); });
             jamBelajarSelect.innerHTML = '<option value="">Pilih Jam Belajar</option>';
             var added = {};
-            filtered.forEach(function(item){
-                var jamId = item.jam_belajar_id || (item.jamBelajar && item.jamBelajar.id) || item.jam_belajar;
-                if (!jamId) return;
-                if (added[jamId]) return;
-                added[jamId] = true;
-                var urutan = item.jam_ke || (item.jamBelajar && item.jamBelajar.urutan) || item.urutan || '?';
-                var jamMulai = item.jam_mulai || (item.jamBelajar && item.jamBelajar.jam_mulai) || (jamBelajarServer[jamId] && jamBelajarServer[jamId].jam_mulai) || '';
-                var jamSelesai = item.jam_selesai || (item.jamBelajar && item.jamBelajar.jam_selesai) || (jamBelajarServer[jamId] && jamBelajarServer[jamId].jam_selesai) || '';
-                var urutan = urutan || (jamBelajarServer[jamId] && jamBelajarServer[jamId].urutan) || urutan;
-                var label = 'Jam ke-' + urutan + ' (' + jamMulai + ' - ' + jamSelesai + ')';
-                var opt = document.createElement('option');
-                opt.value = jamId;
-                opt.textContent = label;
-                jamBelajarSelect.appendChild(opt);
-            });
+
+            if (filtered.length === 0) {
+                // Fallback: show all master jam KBM entries so the dropdown is never empty
+                var fallbackJamList = (jamBelajarServerRaw || []).slice().sort(function(a, b) {
+                    return (a.urutan || 0) - (b.urutan || 0);
+                });
+
+                fallbackJamList.forEach(function(jam) {
+                    if (!jam || !jam.id) return;
+                    added[jam.id] = true;
+                    var opt = document.createElement('option');
+                    opt.value = jam.id;
+                    opt.textContent = 'Jam ke-' + (jam.urutan || '?') + ' (' + (jam.jam_mulai || '') + ' - ' + (jam.jam_selesai || '') + ')';
+                    jamBelajarSelect.appendChild(opt);
+                });
+            } else {
+                filtered.forEach(function(item){
+                    var jamId = item.jam_belajar_id || (item.jamBelajar && item.jamBelajar.id) || item.jam_belajar;
+                    if (!jamId) return;
+                    if (added[jamId]) return;
+                    added[jamId] = true;
+                    var urutan = item.jam_ke || (item.jamBelajar && item.jamBelajar.urutan) || item.urutan || '?';
+                    var jamMulai = item.jam_mulai || (item.jamBelajar && item.jamBelajar.jam_mulai) || (jamBelajarServer[jamId] && jamBelajarServer[jamId].jam_mulai) || '';
+                    var jamSelesai = item.jam_selesai || (item.jamBelajar && item.jamBelajar.jam_selesai) || (jamBelajarServer[jamId] && jamBelajarServer[jamId].jam_selesai) || '';
+                    var urutan = urutan || (jamBelajarServer[jamId] && jamBelajarServer[jamId].urutan) || urutan;
+                    var label = 'Jam ke-' + urutan + ' (' + jamMulai + ' - ' + jamSelesai + ')';
+                    var opt = document.createElement('option');
+                    opt.value = jamId;
+                    opt.textContent = label;
+                    jamBelajarSelect.appendChild(opt);
+                });
+            }
 
             // expose added jam ids for other logic
             window._lastAddedJamIds = Object.keys(added);
@@ -511,6 +557,17 @@
 
             // Initial render of jam options on page load
             renderJamOptionsByGuru();
+
+            // If a requested jam id was passed via URL, apply it after options are rendered
+            if (window._requestedJamBelajarId) {
+                setTimeout(function(){
+                    try {
+                        if (jamBelajarSelect && jamBelajarSelect.querySelector('option[value="' + window._requestedJamBelajarId + '"]')) {
+                            jamBelajarSelect.value = window._requestedJamBelajarId;
+                        }
+                    } catch (e) {}
+                }, 150);
+            }
 
         // Render guru options based on selected kelas and tanggal
         var isSiswaOfficer = '{{ $isSiswaOfficer ? 1 : 0 }}' === '1';
@@ -662,6 +719,8 @@
         if (kelasSelect) {
             kelasSelect.addEventListener('change', function() {
                 console.log('Kelas changed to:', this.value);
+                renderGuruOptionsByKelasTanggal();
+                renderJamOptionsByGuru();
                 if (this.value) {
                     loadSiswaByKelas(this.value);
                 } else {
@@ -695,6 +754,7 @@
                 .then(data => {
                     console.log('Response data:', data);
                     if (data.siswa && data.siswa.length > 0) {
+                        siswaContainer.style.display = 'block';
                         let html = '';
                         data.siswa.forEach((siswa, index) => {
                             let statusHadirCell =
@@ -799,6 +859,7 @@
 
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
+                        siswaContainer.style.display = 'block';
                         siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
                         btnSubmit.disabled = true;
                     }

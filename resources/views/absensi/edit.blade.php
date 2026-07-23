@@ -141,14 +141,145 @@
                             </div>
                         </div>
 
+                        <div id="siswaContainer" style="display: none;">
+                            <div class="card mt-4">
+                                <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
+                                    <h5 class="mb-0"><i class="ti ti-users me-2"></i>Daftar Siswa & Absensi</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive siswa-list">
+                                        <table class="table table-bordered table-hover table-absensi">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th class="align-middle text-center" width="3%">No</th>
+                                                    <th class="align-middle text-center" width="8%">NIS</th>
+                                                    <th class="align-middle text-center" width="8%">NISN</th>
+                                                    <th class="align-middle text-center" width="20%">NAMA</th>
+                                                    <th class="align-middle text-center" width="10%">JENIS KELAMIN</th>
+                                                    <th class="text-center" width="5%">Hadir</th>
+                                                    <th class="text-center" width="7%">Terlambat</th>
+                                                    <th class="text-center" width="5%">Sakit</th>
+                                                    <th class="text-center" width="5%">Izin</th>
+                                                    <th class="text-center" width="8%">Alpa/Tanpa Keterangan</th>
+                                                    <th class="align-middle text-center" width="15%">KETERANGAN</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="siswaTableBody">
+                                                <tr>
+                                                    <td colspan="11" class="text-center text-muted">
+                                                        <i class="ti ti-info-circle me-1"></i>Memuat daftar siswa...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="btnSubmit">
                                 <i class="ti ti-check me-1"></i> Update
                             </button>
                             <a href="{{ route('absensi.show', $absensi->id) }}" class="btn btn-secondary">
                                 <i class="ti ti-x me-1"></i> Batal
                             </a>
                         </div>
+
+                        @push('js')
+                        <script>
+                            (function(){
+                                var siswaContainer, siswaTableBody, btnSubmit, kelasId, tanggal, preferJamId;
+
+                                function init() {
+                                    siswaContainer = document.getElementById('siswaContainer');
+                                    siswaTableBody = document.getElementById('siswaTableBody');
+                                    btnSubmit = document.getElementById('btnSubmit');
+
+                                    kelasId = '{{ $absensi->kelas_id }}';
+                                    tanggal = '{{ $absensi->tanggal->format('Y-m-d') }}';
+                                    preferJamId = '{{ $absensi->jam_belajar_id }}';
+
+                                    function updateStatusBadge(value, row) {
+                                        if (!row) return;
+                                        row.classList.remove('bg-success-subtle','bg-warning-subtle','bg-info-subtle','bg-danger-subtle','status-terlambat');
+                                        if (value === 'hadir') row.classList.add('bg-success-subtle');
+                                        else if (value === 'terlambat') row.classList.add('status-terlambat');
+                                        else if (value === 'sakit') row.classList.add('bg-warning-subtle');
+                                        else if (value === 'izin') row.classList.add('bg-info-subtle');
+                                        else if (value === 'alpa') row.classList.add('bg-danger-subtle');
+                                    }
+
+                                    fetch('{{ route('absensi.get-siswa') }}?kelas_id=' + kelasId + '&tanggal=' + tanggal + '&load_existing=1')
+                                        .then(r => r.json())
+                                        .then(function(data){
+                                            if (!data.siswa || data.siswa.length === 0) {
+                                                siswaTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
+                                                btnSubmit.disabled = true;
+                                                return;
+                                            }
+
+                                            var html = '';
+                                            data.siswa.forEach(function(siswa, idx){
+                                                html += '<tr data-siswa-id="' + siswa.id + '">'
+                                                    + '<td class="text-center">' + (idx+1) + '</td>'
+                                                    + '<td class="text-center">' + (siswa.nis || '-') + '</td>'
+                                                    + '<td class="text-center">' + (siswa.nisn || '-') + '</td>'
+                                                    + '<td>' + siswa.nama + '</td>'
+                                                    + '<td class="text-center">' + (siswa.jenis_kelamin || '-') + '</td>'
+                                                    + '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir"></td>'
+                                                    + '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="terlambat"></td>'
+                                                    + '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="sakit"></td>'
+                                                    + '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="izin"></td>'
+                                                    + '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="alpa"></td>'
+                                                    + '<td><input type="text" name="keterangan_siswa[' + siswa.id + ']" class="form-control form-control-sm" placeholder="Keterangan (opsional)"></td>'
+                                                    + '</tr>';
+                                            });
+                                            siswaTableBody.innerHTML = html;
+                                            siswaContainer.style.display = 'block';
+                                            btnSubmit.disabled = false;
+
+                                            var existing = data.existing_absensi || {};
+                                            var map = {};
+                                            if (existing[preferJamId] && existing[preferJamId].statuses) {
+                                                map = existing[preferJamId].statuses;
+                                            } else if (existing.daily && existing.daily.statuses) {
+                                                map = existing.daily.statuses;
+                                            } else {
+                                                for (var k in existing) { if (existing[k] && existing[k].statuses) { map = existing[k].statuses; break; } }
+                                            }
+
+                                            document.querySelectorAll('#siswaTableBody tr').forEach(function(row){
+                                                var sid = row.getAttribute('data-siswa-id');
+                                                if (!sid) return;
+                                                var status = map[sid];
+                                                if (!status) return;
+                                                var norm = String(status).toLowerCase();
+                                                if (['hadir','terlambat','sakit','izin','alpa'].indexOf(norm) === -1) norm = 'alpa';
+                                                var radio = row.querySelector('.status-radio[value="' + norm + '"]');
+                                                if (radio) { radio.checked = true; updateStatusBadge(norm, row); }
+                                            });
+
+                                            document.querySelectorAll('.status-radio').forEach(function(r){
+                                                r.addEventListener('change', function(){ updateStatusBadge(this.value, this.closest('tr')); });
+                                            });
+                                        })
+                                        .catch(function(err){
+                                            console.error('Gagal memuat siswa:', err);
+                                            siswaTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
+                                            btnSubmit.disabled = true;
+                                        });
+                                }
+
+                                // ensure script runs after tabler/bootstrap bundle loaded
+                                if (window.tabler || window.bootstrap) {
+                                    init();
+                                } else {
+                                    window.addEventListener('load', init);
+                                }
+                            })();
+                        </script>
+                        @endpush
                     </form>
                 </div>
             </div>

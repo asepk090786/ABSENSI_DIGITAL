@@ -301,6 +301,8 @@ Route::middleware(['auth'])->group(function(){
         
         Route::get('/setting/header', [SettingController::class, 'header'])->name('setting.header');
         Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
+        Route::get('/setting/absensi', [SettingController::class, 'absensi'])->name('setting.absensi');
+        Route::put('/setting/absensi', [SettingController::class, 'updateAbsensi'])->name('setting.absensi.update');
         Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
         // Database backup settings and actions
         Route::get('/setting/backup', [SettingController::class, 'backupIndex'])->name('setting.backup');

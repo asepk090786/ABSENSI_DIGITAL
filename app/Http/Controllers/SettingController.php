@@ -24,6 +24,32 @@ class SettingController extends Controller
         return view('setting.index', compact('tahuns', 'active_tahun', 'active_semester', 'sekolah'));
     }
 
+    public function absensi()
+    {
+        $settings = new SettingsManager();
+
+        return view('setting.absensi', [
+            'settings' => [
+                'allow_edit_past_for_guru' => (bool) $settings->get('attendance.allow_edit_past_for_guru', false),
+                'allow_edit_past_for_siswa_officer' => (bool) $settings->get('attendance.allow_edit_past_for_siswa_officer', false),
+            ],
+        ]);
+    }
+
+    public function updateAbsensi(Request $request)
+    {
+        $validated = $request->validate([
+            'allow_edit_past_for_guru' => 'required|boolean',
+            'allow_edit_past_for_siswa_officer' => 'required|boolean',
+        ]);
+
+        $settings = new SettingsManager();
+        $settings->set('attendance.allow_edit_past_for_guru', (bool) $validated['allow_edit_past_for_guru']);
+        $settings->set('attendance.allow_edit_past_for_siswa_officer', (bool) $validated['allow_edit_past_for_siswa_officer']);
+
+        return redirect()->route('setting.absensi')->with('success', 'Pengaturan absensi disimpan.');
+    }
+
     public function tahunAjaran()
     {
         $tahuns = TahunAjaran::all();

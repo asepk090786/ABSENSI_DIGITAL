@@ -1067,6 +1067,11 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('setting.absensi') }}" class="nav-link {{ request()->routeIs('setting.absensi*') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> Pengaturan Absen
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('setting.backup') }}" class="nav-link {{ request()->routeIs('setting.backup') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Backup Database
                                 </a>

@@ -17,6 +17,7 @@ use App\Models\JadwalKbm;
 use App\Models\LaporanSiswaGuru;
 use App\Exports\AbsensiBkMonitoringExport;
 use App\Exports\AbsensiLaporanSiswaHarianExport;
+use App\Services\SettingsManager;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
@@ -656,14 +657,15 @@ class AbsensiController extends Controller
                     ->where('semester_id', $semester->id)
                     ->orderBy('jam_ke')
                     ->get();
-                    
+
                 $scheduledJamIds = $multiSlotJadwal->pluck('jam_belajar_id')->unique();
                 if ($scheduledJamIds->isNotEmpty()) {
                     $jamBelajarList = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get();
                 } else {
-                    $jamBelajarList = collect();
+                    // Fallback to the master jam KBM list so the dropdown is never empty
+                    $jamBelajarList = JamBelajar::orderBy('urutan')->get();
                 }
-                
+
                 if (!$selectedJamBelajarId && $multiSlotJadwal->isNotEmpty()) {
                     $selectedJamBelajarId = $multiSlotJadwal->first()->jam_belajar_id;
                 }
@@ -1121,6 +1123,14 @@ class AbsensiController extends Controller
         $absensiSiswa = $request->input('absensi_siswa', []);
         $keteranganSiswa = $request->input('keterangan_siswa', []);
 
+        if ($this->isFutureDate($validated['tanggal'])) {
+            return back()->withInput()->withErrors(['tanggal' => 'Tanggal absensi tidak boleh lebih dari hari ini.']);
+        }
+
+        if ($this->isPastDate($validated['tanggal']) && ! $this->canEditAttendanceDate($user, $validated['tanggal'])) {
+            return back()->withInput()->withErrors(['tanggal' => 'Absensi tanggal lampau tidak diizinkan untuk peran Anda.']);
+        }
+
         $hasSelectedStatus = collect($absensiSiswa)->contains(function ($status) {
             return !empty($this->normalizeAttendanceStatus($status));
         });
@@ -1439,11 +1449,76 @@ class AbsensiController extends Controller
 
     private function canEditPastAttendance($user): bool
     {
-        return $user && (
-            $user->hasAnyRole(['Admin', 'Kepala Sekolah']) ||
-            $user->hasRole('Wali Kelas') ||
-            $user->hasRole('Guru BK')
-        );
+        return $this->canEditAttendanceDate($user, Carbon::today()->toDateString());
+    }
+
+    protected function canEditAttendanceDate($user, $date): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        $dateValue = Carbon::parse($date)->startOfDay();
+        $today = Carbon::today();
+
+        if ($dateValue->gt($today)) {
+            return false;
+        }
+
+        if ($dateValue->lt($today)) {
+            if ($user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+                return true;
+            }
+
+            if ($user->hasRole('Wali Kelas') || $user->hasRole('Guru BK')) {
+                return true;
+            }
+
+            if ($user->hasRole('Guru')) {
+                return (bool) (new SettingsManager())->get('attendance.allow_edit_past_for_guru', false);
+            }
+
+            if ($user->hasRole('Siswa') && $user->hasClassPosition()) {
+                return (bool) (new SettingsManager())->get('attendance.allow_edit_past_for_siswa_officer', false);
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function canModifyStudentAttendanceStatus($user, $date, $isGuruPiketToday = false): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            return true;
+        }
+
+        if ($user->hasRole('Wali Kelas') || $user->hasRole('Guru BK')) {
+            return true;
+        }
+
+        if ($user->hasRole('Guru')) {
+            $dateValue = Carbon::parse($date)->startOfDay();
+            $today = Carbon::today();
+
+            if ($dateValue->lt($today)) {
+                return (bool) (new SettingsManager())->get('attendance.allow_edit_past_for_guru', false);
+            }
+
+            return $isGuruPiketToday;
+        }
+
+        return false;
+    }
+
+    private function isFutureDate($date): bool
+    {
+        return Carbon::parse($date)->startOfDay()->gt(Carbon::today());
     }
 
     private function isPastDate($date): bool
@@ -1476,13 +1551,9 @@ class AbsensiController extends Controller
             $isGuruPiket = true;
         }
 
-        if (! $isGuruPiket) {
-            abort(403, 'Akses ditolak. Hanya Guru Piket hari ini atau Admin yang dapat mengubah status.');
-        }
-
         $absensi = AbsensiKelas::findOrFail($absensiId);
-        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance($user)) {
-            abort(403, 'Akses ditolak. Status absensi tanggal lampau hanya dapat diubah oleh Admin, Wali Kelas, atau Guru BK.');
+        if (! $this->canModifyStudentAttendanceStatus($user, $absensi->tanggal, $isGuruPiket)) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengubah status absensi ini.');
         }
 
         $validated = $request->validate([
@@ -1565,9 +1636,9 @@ class AbsensiController extends Controller
     public function edit($id)
     {
         $absensi = AbsensiKelas::findOrFail($id);
-        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance(auth()->user())) {
+        if (! $this->canEditAttendanceDate(auth()->user(), $absensi->tanggal)) {
             return redirect()->route('absensi.index')
-                ->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+                ->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit sesuai pengaturan admin.');
         }
 
         $kelasList = Kelas::orderBy('nama_kelas')->get();
@@ -1584,8 +1655,8 @@ class AbsensiController extends Controller
         $absensi = AbsensiKelas::findOrFail($id);
         $user = auth()->user();
 
-        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance($user)) {
-            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        if (! $this->canEditAttendanceDate($user, $absensi->tanggal)) {
+            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit sesuai pengaturan admin.');
         }
 
         $validated = $request->validate([
@@ -1598,14 +1669,124 @@ class AbsensiController extends Controller
             'semester_id' => 'required|exists:semester,id',
         ]);
 
-        if ($this->isPastDate($validated['tanggal']) && ! $this->canEditPastAttendance($user)) {
-            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit oleh Admin, Wali Kelas, atau Guru BK.');
+        // Debug: log incoming per-siswa payload for troubleshooting
+        try {
+            \Log::info('absensi.update.payload', [
+                'user_id' => optional($user)->id,
+                'absensi_id' => $absensi->id,
+                'absensi_siswa_keys' => array_keys((array) $request->input('absensi_siswa', [])),
+                'keterangan_siswa_keys' => array_keys((array) $request->input('keterangan_siswa', [])),
+                'raw_input_count' => count($request->all()),
+            ]);
+        } catch (\Throwable $e) {
+            // ignore logging failures
+        }
+
+        if (! $this->canEditAttendanceDate($user, $validated['tanggal'])) {
+            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat diedit sesuai pengaturan admin.');
         }
 
         $absensi->update($validated);
         
         // Update attendance note in agenda guru
         $this->updateAgendaGuruAttendanceNote($absensi);
+
+        // Process per-siswa status updates if provided
+        $absensiSiswa = $request->input('absensi_siswa', []);
+        $keteranganSiswa = $request->input('keterangan_siswa', []);
+
+        if (!empty($absensiSiswa) && is_array($absensiSiswa)) {
+            // determine isGuruPiket similar to updateSiswaStatus logic
+            $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+            $isGuruPiket = false;
+            if (! $isAdminOrKepala && $user && ! empty($user->guru_id)) {
+                $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+                $todayEng = \Carbon\Carbon::now()->format('l');
+                $map = [
+                    'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                ];
+                $todayIndo = $map[$todayEng] ?? null;
+                $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+            } else {
+                $isGuruPiket = true;
+            }
+
+            $canModifyGlobal = $this->canEditAttendanceDate($user, $absensi->tanggal) || (
+                $this->canModifyStudentAttendanceStatus($user, $absensi->tanggal, $isGuruPiket) || (
+                    $user && !empty($user->guru_id) && $user->guru_id == $absensi->guru_id
+                )
+            );
+
+            foreach ($absensiSiswa as $siswaId => $statusRaw) {
+                // permission check per-student
+                if (! $canModifyGlobal) {
+                    try { \Log::info('absensi.update.skip_permission', ['user_id' => $user->id ?? null, 'absensi_id' => $absensi->id]); } catch (\Throwable $e) {}
+                    continue; // skip if user not allowed to modify student statuses
+                }
+
+                $siswa = \App\Models\Siswa::where('id', $siswaId)->where('kelas_id', $absensi->kelas_id)->first();
+                if (! $siswa) {
+                    continue;
+                }
+
+                $statusNormalized = $this->normalizeAttendanceStatus($statusRaw);
+                if (empty($statusNormalized)) {
+                    continue;
+                }
+
+                $as = AbsensiSiswa::where('absensi_kelas_id', $absensi->id)->where('siswa_id', $siswaId)->first();
+                $payload = [
+                    'status' => $statusNormalized,
+                    'keterangan' => isset($keteranganSiswa[$siswaId]) ? $keteranganSiswa[$siswaId] : null,
+                    'updated_by' => $user->id,
+                ];
+
+                $previousStatus = $as->status ?? null;
+                $previousKeterangan = $as->keterangan ?? null;
+
+                if ($as) {
+                    $as->update($payload);
+                    $absensiSiswaId = $as->id;
+                    try { \Log::info('absensi.update.siswa', ['action' => 'update', 'absensi_id' => $absensi->id, 'siswa_id' => $siswaId, 'previous' => $previousStatus, 'new' => $statusNormalized, 'keterangan' => $payload['keterangan']]); } catch (\Throwable $e) {}
+                } else {
+                    $payload['absensi_kelas_id'] = $absensi->id;
+                    $payload['siswa_id'] = $siswaId;
+                    $created = AbsensiSiswa::create($payload);
+                    $absensiSiswaId = $created->id;
+                    try { \Log::info('absensi.update.siswa', ['action' => 'create', 'absensi_id' => $absensi->id, 'siswa_id' => $siswaId, 'new' => $statusNormalized, 'keterangan' => $payload['keterangan']]); } catch (\Throwable $e) {}
+                }
+
+                // store history
+                try {
+                    \App\Models\AbsensiSiswaHistory::create([
+                        'absensi_siswa_id' => $absensiSiswaId ?? null,
+                        'absensi_kelas_id' => $absensi->id,
+                        'siswa_id' => $siswaId,
+                        'previous_status' => $previousStatus,
+                        'new_status' => $statusNormalized,
+                        'previous_keterangan' => $previousKeterangan,
+                        'new_keterangan' => $payload['keterangan'],
+                        'changed_by' => $user->id,
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to write absensi_siswa_history: ' . $e->getMessage());
+                }
+
+                // remove pelanggaran if status changed to hadir/izin/sakit
+                if (Schema::hasTable('pelanggaran_siswa')) {
+                    if (in_array(strtolower($statusNormalized), ['hadir','izin','sakit'], true)) {
+                        DB::table('pelanggaran_siswa')->where('siswa_id', $siswaId)
+                            ->whereDate('tanggal', $absensi->tanggal)
+                            ->where('kelas_id', $absensi->kelas_id)
+                            ->delete();
+                    }
+                }
+            }
+
+            // ensure related agenda is updated after student changes
+            $this->updateAgendaGuruAttendanceNote($absensi);
+        }
 
         return redirect()->route('absensi.show', $absensi->id)
             ->with('success', 'Absensi kelas berhasil diperbarui.');
@@ -1614,8 +1795,8 @@ class AbsensiController extends Controller
     public function destroy($id)
     {
         $absensi = AbsensiKelas::findOrFail($id);
-        if ($this->isPastDate($absensi->tanggal) && ! $this->canEditPastAttendance(auth()->user())) {
-            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat dihapus oleh Admin, Wali Kelas, atau Guru BK.');
+        if (! $this->canEditAttendanceDate(auth()->user(), $absensi->tanggal)) {
+            return back()->with('error', 'Akses ditolak. Absensi tanggal lampau hanya dapat dihapus sesuai pengaturan admin.');
         }
 
         $absensi->delete();

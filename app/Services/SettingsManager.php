@@ -7,7 +7,7 @@ class SettingsManager
 
     public function __construct()
     {
-        $this->path = storage_path('app/settings.json');
+        $this->path = dirname(__DIR__, 2) . '/storage/app/settings.json';
     }
 
     public function all()

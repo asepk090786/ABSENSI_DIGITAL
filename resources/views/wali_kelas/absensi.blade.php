@@ -3,7 +3,7 @@
 @section('title', 'Absensi Kelas - Wali Kelas')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid wali-kelas-absensi">
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
@@ -122,4 +122,7 @@
         </div>
     </div>
 </div>
+<style>
+.wali-kelas-absensi .badge { color: #fff !important; }
+</style>
 @endsection
