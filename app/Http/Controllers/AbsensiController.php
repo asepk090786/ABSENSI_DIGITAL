@@ -1883,6 +1883,11 @@ class AbsensiController extends Controller
                 ->get()
                 ->map(function ($siswa) {
                     $fotoPath = $siswa->user?->foto;
+                    // fallback: if siswa.nama is empty, prefer related user.name
+                    $nama = $siswa->nama;
+                    if (empty($nama) && isset($siswa->user) && !empty($siswa->user->name)) {
+                        $nama = $siswa->user->name;
+                    }
                     $fotoUrl = null;
 
                     if ($fotoPath) {
@@ -1895,7 +1900,7 @@ class AbsensiController extends Controller
                         'id' => $siswa->id,
                         'nis' => $siswa->nis,
                         'nisn' => $siswa->nisn,
-                        'nama' => $siswa->nama,
+                        'nama' => $nama,
                         'jenis_kelamin' => $siswa->jenis_kelamin,
                         'foto' => $fotoPath,
                         'foto_url' => $fotoUrl,

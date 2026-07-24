@@ -153,6 +153,10 @@
     .combo-box-select {
         display: none;
     }
+
+    /* Grid/card styles for siswa grid view */
+    .student-card { border: 1px solid #e9ecef; border-radius: 6px; }
+    .student-photo-grid { width: 90px; height: 120px; object-fit: cover; border-radius: 6px; }
 </style>
 
 <div class="container-fluid">
@@ -379,16 +383,21 @@
                                 <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
                                     <h5 class="mb-0"><i class="ti ti-users me-2"></i>Daftar Siswa & Absensi</h5>
                                     <div class="ms-auto d-flex flex-wrap gap-2">
-                                            <button type="button" class="btn btn-sm btn-success btn-modern" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
-                                        <button type="button" class="btn btn-sm btn-orange" onclick="setAllStatus('terlambat')" style="background:#f59e0b;color:#fff;">Ceklis Semua Terlambat</button>
-                                        <button type="button" class="btn btn-sm btn-warning" onclick="setAllStatus('sakit')">Ceklis Semua Sakit</button>
-                                        <button type="button" class="btn btn-sm btn-info btn-modern" onclick="setAllStatus('izin')">Ceklis Semua Izin</button>
-                                        <input type="text" id="searchSiswa" class="form-control form-control-sm" placeholder="Cari nama / NIS" style="min-width: 200px;">
+                                                <button type="button" class="btn btn-sm btn-success btn-modern" onclick="setAllStatus('hadir')">Ceklis Semua Hadir</button>
+                                            <button type="button" class="btn btn-sm btn-orange" onclick="setAllStatus('terlambat')" style="background:#f59e0b;color:#fff;">Ceklis Semua Terlambat</button>
+                                            <button type="button" class="btn btn-sm btn-warning" onclick="setAllStatus('sakit')">Ceklis Semua Sakit</button>
+                                            <button type="button" class="btn btn-sm btn-info btn-modern" onclick="setAllStatus('izin')">Ceklis Semua Izin</button>
+                                            <div class="btn-group btn-group-sm" role="group" aria-label="View toggle">
+                                                <button type="button" id="viewListBtn" class="btn btn-outline-secondary active">List</button>
+                                                <button type="button" id="viewGridBtn" class="btn btn-outline-secondary">Grid</button>
+                                            </div>
+                                            <input type="text" id="searchSiswa" class="form-control form-control-sm" placeholder="Cari nama / NIS" style="min-width: 200px;">
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive siswa-list">
-                                        <table class="table table-bordered table-hover table-absensi">
+                                        <div id="siswaListWrapper">
+                                            <table id="siswaTable" class="table table-bordered table-hover table-absensi">
                                             <thead class="table-light sticky-top">
                                                 <tr>
                                                     <th rowspan="2" class="align-middle text-center" width="3%">No</th>
@@ -415,7 +424,12 @@
                                                     </td>
                                                 </tr>
                                             </tbody>
-                                        </table>
+                                            </table>
+
+                                            <div id="siswaGrid" class="row g-3 mt-2" style="display:none;">
+                                                <!-- grid cards will be injected here -->
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -746,6 +760,21 @@
         if (tanggalInput) tanggalInput.addEventListener('change', function(){ renderJamOptionsByGuru(); });
 
         var ambilAbsensiToggle = document.getElementById('ambilAbsensiToggle');
+        var viewListBtn = document.getElementById('viewListBtn');
+        var viewGridBtn = document.getElementById('viewGridBtn');
+        var siswaGrid = document.getElementById('siswaGrid');
+        var siswaTable = document.getElementById('siswaTable');
+        var currentView = 'list';
+
+        // initialize view from query param
+        try {
+            var qv = (new URLSearchParams(window.location.search)).get('view');
+            if (qv === 'grid') currentView = 'grid';
+        } catch (e) {}
+        applyViewMode(currentView);
+
+        if (viewListBtn) viewListBtn.addEventListener('click', function(){ applyViewMode('list', true); });
+        if (viewGridBtn) viewGridBtn.addEventListener('click', function(){ applyViewMode('grid', true); });
 
         if (kelasSelect) {
             kelasSelect.addEventListener('change', function() {
@@ -785,100 +814,12 @@
                 .then(data => {
                     console.log('Response data:', data);
                     if (data.siswa && data.siswa.length > 0) {
-                        siswaContainer.style.display = 'block';
-                        let html = '';
-                        data.siswa.forEach((siswa, index) => {
-                            let statusHadirCell =
-                                '<td class="text-center">' +
-                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir" data-siswa-id="' + siswa.id + '">' +
-                                '</td>';
-
-                            html += '<tr data-siswa-id="' + siswa.id + '">' +
-                                '<td class="text-center">' + (index + 1) + '</td>' +
-                                '<td class="text-center">' + escapeHtml(siswa.nis || '-') + '</td>' +
-                                '<td class="text-center">' + escapeHtml(siswa.nisn || '-') + '</td>' +
-                                '<td class="text-center">' + (siswa.foto_url ? '<img src="' + escapeHtml(siswa.foto_url) + '" alt="Foto ' + escapeHtml(siswa.nama || '-') + '" class="student-photo">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>') + '</td>' +
-                                '<td>' + escapeHtml(siswa.nama || '-') + '</td>' +
-                                '<td class="text-center">' + escapeHtml(siswa.jenis_kelamin || '-') + '</td>' +
-                                statusHadirCell +
-                                '<td class="text-center">' +
-                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="terlambat" data-siswa-id="' + siswa.id + '">' +
-                                '</td>' +
-                                '<td class="text-center">' +
-                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="sakit" data-siswa-id="' + siswa.id + '">' +
-                                '</td>' +
-                                '<td class="text-center">' +
-                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="izin" data-siswa-id="' + siswa.id + '">' +
-                                '</td>' +
-                                '<td class="text-center">' +
-                                    '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="alpa" data-siswa-id="' + siswa.id + '">' +
-                                '</td>' +
-                                '<td>' +
-                                    '<input type="text" name="keterangan_siswa[' + siswa.id + ']" class="form-control form-control-sm" placeholder="Keterangan (opsional)">' +
-                                '</td>' +
-                            '</tr>';
-                        });
-                        siswaTableBody.innerHTML = html;
+                        // cache fetched siswa and existing absensi map
+                        window._siswaCache = data.siswa;
+                        window._existingAbsensiCache = data.existing_absensi || {};
                         siswaContainer.style.display = 'block';
                         btnSubmit.disabled = false;
-
-                        var loadExisting = ambilAbsensiToggle ? ambilAbsensiToggle.checked : false;
-                        // If there is existing_absensi returned and toggle is enabled, prefill statuses
-                        if (loadExisting && data.existing_absensi) {
-                            // choose appropriate jam to use for prefilling
-                            var preferJamId = null;
-                            var selGuru = guruSelect ? guruSelect.value : '';
-                            // if a specific guru selected, prefer absensi by that guru
-                            if (selGuru && selGuru !== 'all') {
-                                // find absensi entry where guru_id == selGuru
-                                for (var jid in data.existing_absensi) {
-                                    if (String(data.existing_absensi[jid].guru_id) === String(selGuru)) {
-                                        preferJamId = jid; break;
-                                    }
-                                }
-                            }
-                            // fallback: choose lowest jam urutan
-                            if (!preferJamId) {
-                                var lowest = null; var lowestJid = null;
-                                for (var jid in data.existing_absensi) {
-                                    var ur = data.existing_absensi[jid].jam_urutan || 999;
-                                    if (lowest === null || ur < lowest) { lowest = ur; lowestJid = jid; }
-                                }
-                                preferJamId = lowestJid;
-                            }
-
-                            if (preferJamId) {
-                                var map = data.existing_absensi[preferJamId].statuses || {};
-                                // iterate rows and set radios
-                                document.querySelectorAll('#siswaTableBody tr').forEach(function(row){
-                                    var sid = row.getAttribute('data-siswa-id');
-                                    if (!sid) return;
-                                    var status = map[sid];
-                                    if (!status) return;
-                                    // find radio with value matching normalized status
-                                    var norm = status.toLowerCase();
-                                    if (norm === 'hadir') norm = 'hadir';
-                                    else if (['terlambat','telat'].includes(norm)) norm = 'terlambat';
-                                    else if (norm === 'sakit') norm = 'sakit';
-                                    else if (['izin','ijin'].includes(norm)) norm = 'izin';
-                                    else norm = 'alpa';
-
-                                    var radio = row.querySelector('.status-radio[value="' + norm + '"]');
-                                    if (radio) {
-                                        radio.checked = true;
-                                        updateStatusBadge(norm, row);
-                                    }
-                                });
-                            }
-                        }
-
-                        // Attach event listeners to update row highlight
-                        document.querySelectorAll('.status-radio').forEach(radio => {
-                            radio.addEventListener('change', function() {
-                                const row = this.closest('tr');
-                                updateStatusBadge(this.value, row);
-                            });
-                        });
+                        renderSiswaItems();
 
                         // Attach search filter
                         const searchInput = document.getElementById('searchSiswa');
@@ -888,11 +829,13 @@
                                 filterSiswaRows(this.value);
                             });
                         }
-
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
                         siswaContainer.style.display = 'block';
-                        siswaTableBody.innerHTML = '<tr><td colspan="12" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
+                        // show empty state
+                        var tblBody = document.getElementById('siswaTableBody');
+                        if (tblBody) tblBody.innerHTML = '<tr><td colspan="12" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
+                        if (siswaGrid) siswaGrid.innerHTML = '<div class="col-12 text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</div>';
                         btnSubmit.disabled = true;
                     }
                 })
@@ -933,6 +876,127 @@
         }
     }
 
+    function applyViewMode(mode, replaceUrl) {
+        currentView = (mode === 'grid') ? 'grid' : 'list';
+        if (currentView === 'grid') {
+            if (viewGridBtn) viewGridBtn.classList.add('active');
+            if (viewListBtn) viewListBtn.classList.remove('active');
+            if (siswaGrid) siswaGrid.style.display = '';
+            if (siswaTable) siswaTable.style.display = 'none';
+        } else {
+            if (viewGridBtn) viewGridBtn.classList.remove('active');
+            if (viewListBtn) viewListBtn.classList.add('active');
+            if (siswaGrid) siswaGrid.style.display = 'none';
+            if (siswaTable) siswaTable.style.display = '';
+        }
+        if (replaceUrl) {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                params.set('view', currentView);
+                var newUrl = window.location.pathname + '?' + params.toString();
+                history.replaceState({}, '', newUrl);
+            } catch (e) {}
+        }
+        // re-render using cached data if present
+        if (window._siswaCache) renderSiswaItems();
+    }
+
+    function renderSiswaItems() {
+        var data = window._siswaCache || [];
+        var existing = window._existingAbsensiCache || {};
+        // render table body
+        var tbody = document.getElementById('siswaTableBody');
+        if (tbody) {
+            var html = '';
+            data.forEach(function(siswa, index){
+                html += '<tr data-siswa-id="' + siswa.id + '">';
+                html += '<td class="text-center">' + (index+1) + '</td>';
+                html += '<td class="text-center">' + escapeHtml(siswa.nis || '-') + '</td>';
+                html += '<td class="text-center">' + escapeHtml(siswa.nisn || '-') + '</td>';
+                html += '<td class="text-center">' + (siswa.foto_url ? '<img src="' + escapeHtml(siswa.foto_url) + '" alt="Foto ' + escapeHtml(siswa.nama || '-') + '" class="student-photo">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>') + '</td>';
+                html += '<td>' + escapeHtml(siswa.nama || '-') + '</td>';
+                html += '<td class="text-center">' + escapeHtml(siswa.jenis_kelamin || '-') + '</td>';
+                ['hadir','terlambat','sakit','izin','alpa'].forEach(function(val){
+                    html += '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa['+siswa.id+']" value="'+val+'" data-siswa-id="'+siswa.id+'"></td>';
+                });
+                html += '<td><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan (opsional)"></td>';
+                html += '</tr>';
+            });
+            tbody.innerHTML = html;
+        }
+
+        // render grid cards
+        if (siswaGrid) {
+            siswaGrid.innerHTML = '';
+            data.forEach(function(siswa, index){
+                var foto = siswa.foto_url ? ('<img src="'+escapeHtml(siswa.foto_url)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:90px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"><i class="ti ti-user"></i></div>';
+                var card = document.createElement('div');
+                card.className = 'col-6 col-sm-4 col-md-3';
+                card.innerHTML = '<div class="card student-card p-2 h-100" data-siswa-id="'+siswa.id+'">' +
+                    '<div class="d-flex flex-column align-items-center text-center">' + foto +
+                    '<div class="mt-2 fw-semibold">'+escapeHtml(siswa.nama || '-')+'</div>' +
+                    '<div class="text-muted small">'+escapeHtml(siswa.nis || '')+'</div>' +
+                    '</div>' +
+                    '<div class="mt-2 d-flex justify-content-around">' +
+                        '<label class="btn btn-sm btn-outline-success"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="hadir" data-siswa-id="'+siswa.id+'">H</label>' +
+                        '<label class="btn btn-sm btn-outline-warning"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="terlambat" data-siswa-id="'+siswa.id+'">T</label>' +
+                        '<label class="btn btn-sm btn-outline-secondary"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="sakit" data-siswa-id="'+siswa.id+'">S</label>' +
+                    '</div>' +
+                    '<div class="mt-2 d-flex justify-content-around">' +
+                        '<label class="btn btn-sm btn-outline-info"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="izin" data-siswa-id="'+siswa.id+'">I</label>' +
+                        '<label class="btn btn-sm btn-outline-danger"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="alpa" data-siswa-id="'+siswa.id+'">A</label>' +
+                    '</div>' +
+                    '<div class="mt-2"><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan"></div>' +
+                '</div>';
+                siswaGrid.appendChild(card);
+            });
+        }
+
+        // prefill existing absensi if present
+        try {
+            var preferJamId = null;
+            var selGuruElem = document.getElementById('guru_id');
+            var selGuru = selGuruElem ? selGuruElem.value : '';
+            if (selGuru && selGuru !== 'all') {
+                for (var jid in existing) { if (String(existing[jid].guru_id) === String(selGuru)) { preferJamId = jid; break; } }
+            }
+            if (!preferJamId) {
+                var lowest = null; var lowestJ = null;
+                for (var jid in existing) { var ur = existing[jid].jam_urutan || 999; if (lowest===null||ur<lowest){lowest=ur;lowestJ=jid;} }
+                preferJamId = lowestJ;
+            }
+            if (preferJamId && existing[preferJamId]) {
+                var map = existing[preferJamId].statuses || {};
+                Object.keys(map).forEach(function(sid){
+                    var status = map[sid]; if (!status) return;
+                    var norm = status.toLowerCase(); if (['terlambat','telat'].includes(norm)) norm='terlambat'; if (['izin','ijin'].includes(norm)) norm='izin'; if (!['hadir','terlambat','sakit','izin','alpa'].includes(norm)) norm='alpa';
+                    var selector = '[data-siswa-id="'+sid+'"]';
+                    // table radios
+                    var tRow = document.querySelector('#siswaTableBody tr'+selector);
+                    if (tRow) {
+                        var r = tRow.querySelector('.status-radio[value="'+norm+'"]'); if (r) { r.checked=true; updateStatusBadge(norm, tRow); }
+                    }
+                    // grid radios
+                    var gCard = document.querySelector('.student-card'+selector);
+                    if (gCard) {
+                        var rg = gCard.querySelector('.status-radio[value="'+norm+'"]'); if (rg) rg.checked=true;
+                    }
+                });
+            }
+        } catch (e) { console.warn('Prefill error', e); }
+
+        // Attach change listeners for status radios to update badges on table rows
+        document.querySelectorAll('.status-radio').forEach(function(radio){
+            radio.removeEventListener('change', statusRadioHandler);
+            radio.addEventListener('change', statusRadioHandler);
+        });
+    }
+
+    function statusRadioHandler() {
+        var row = this.closest('tr');
+        if (row) updateStatusBadge(this.value, row);
+    }
+
     function setAllStatus(status) {
         document.querySelectorAll('.status-radio').forEach(radio => {
             if (radio.value === status) {
@@ -944,12 +1008,21 @@
     }
 
     function filterSiswaRows(keyword) {
-        const rows = document.querySelectorAll('#siswaTableBody tr');
         const lower = (keyword || '').toLowerCase();
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(lower) ? '' : 'none';
-        });
+        if (currentView === 'grid') {
+            // filter grid cards
+            const cards = document.querySelectorAll('#siswaGrid .student-card');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.parentElement.style.display = text.includes(lower) ? '' : 'none';
+            });
+        } else {
+            const rows = document.querySelectorAll('#siswaTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(lower) ? '' : 'none';
+            });
+        }
     }
 </script>
 @endsection

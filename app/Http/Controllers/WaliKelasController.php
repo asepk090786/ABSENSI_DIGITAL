@@ -64,9 +64,11 @@ class WaliKelasController extends Controller
         }
         
         // Get siswa di kelas binaan
-        $siswa = DB::table('siswa')
-            ->where('kelas_id', $kelasBinaan->id)
-            ->orderBy('nama')
+        $siswa = DB::table('siswa as s')
+            ->leftJoin('users as u', 'u.siswa_id', '=', 's.id')
+            ->where('s.kelas_id', $kelasBinaan->id)
+            ->orderBy('s.nama')
+            ->select('s.*', DB::raw('COALESCE(NULLIF(s.nama, \'\'), u.name, s.nama) as nama'))
             ->get();
         
         return view('wali_kelas.siswa', compact('kelasBinaan', 'siswa', 'guru'));
@@ -275,7 +277,7 @@ class WaliKelasController extends Controller
             ->leftJoin('users as u', 'u.siswa_id', '=', 's.id')
             ->where('s.kelas_id', $kelasBinaan->id)
             ->orderBy('s.nama')
-            ->select('s.id', 's.nama', 's.nis', DB::raw('COALESCE(u.foto, null) as foto'))
+            ->select('s.id', DB::raw('COALESCE(NULLIF(s.nama, \'\'), u.name, s.nama) as nama'), 's.nis', DB::raw('COALESCE(u.foto, null) as foto'))
             ->get();
 
         $dailyStatusRows = DB::table('absensi_siswa as asw')
@@ -311,8 +313,10 @@ class WaliKelasController extends Controller
 
         $siswaList = DB::table('siswa')
             ->where('kelas_id', $kelasBinaan->id)
-            ->orderBy('nama')
-            ->get(['id', 'nama', 'nis']);
+            ->leftJoin('users as u', 'u.siswa_id', '=', 'siswa.id')
+            ->orderBy('siswa.nama')
+            ->select('siswa.id', DB::raw('COALESCE(NULLIF(siswa.nama, \'\'), u.name, siswa.nama) as nama'), 'siswa.nis')
+            ->get();
 
         $laporanGuru = DB::table('laporan_siswa_guru as lsg')
             ->leftJoin('siswa as s', 's.id', '=', 'lsg.siswa_id')
