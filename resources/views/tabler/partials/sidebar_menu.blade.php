@@ -26,7 +26,7 @@
     </div>
     @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
     <div class="nav-item">
-        <a href="{{ route('agenda_kelas.index', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="nav-link {{ request()->routeIs('agenda_kelas.index') && request()->get('jenis_kegiatan') === 'pengembangan_diri' ? 'active' : '' }}">
+        <a href="{{ route('pengembangan.index') }}" class="nav-link {{ request()->routeIs('pengembangan.*') ? 'active' : '' }}">
             <i class="ti ti-heart-handshake me-2"></i> Pengembangan Diri
         </a>
     </div>

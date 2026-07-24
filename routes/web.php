@@ -260,6 +260,16 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('rencana_pembelajaran', 'App\Http\Controllers\RencanaPembelajaranController');
     
     Route::resource('kegiatan', 'App\Http\Controllers\KegiatanController');
+
+    // Pengembangan Diri module
+    Route::get('pengembangan', [App\Http\Controllers\PengembanganController::class, 'index'])->name('pengembangan.index');
+    Route::get('pengembangan/create', [App\Http\Controllers\PengembanganController::class, 'create'])->name('pengembangan.create');
+    Route::post('pengembangan', [App\Http\Controllers\PengembanganController::class, 'store'])->name('pengembangan.store');
+    Route::get('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'show'])->name('pengembangan.show');
+    Route::post('pengembangan/{id}/generate-certificates', [App\Http\Controllers\PengembanganController::class, 'generateCertificates'])->name('pengembangan.generate_certificates');
+    Route::get('pengembangan/sertifikat/my', [App\Http\Controllers\PengembanganController::class, 'myCertificates'])->name('pengembangan.my_certificates');
+    Route::get('pengembangan/sertifikat/{id}/download', [App\Http\Controllers\PengembanganController::class, 'downloadCertificate'])->name('pengembangan.certificates.download');
+    Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
     
     // ASC Timetable routes
     Route::get('asc-timetable', ['App\Http\Controllers\AscTimetableController', 'index'])->name('asc_timetable.index');

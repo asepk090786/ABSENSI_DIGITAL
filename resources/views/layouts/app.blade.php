@@ -829,7 +829,7 @@
                                 <li class="nav-item"><a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengaturan Jam</a></li>
                             @endif
                                 @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
-                                    <li class="nav-item"><a href="{{ route('agenda_kelas.index', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="nav-link {{ request()->routeIs('agenda_kelas.index') && request()->get('jenis_kegiatan') === 'pengembangan_diri' ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengembangan Diri</a></li>
+                                    <li class="nav-item"><a href="{{ route('pengembangan.index') }}" class="nav-link {{ request()->routeIs('pengembangan.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengembangan Diri</a></li>
                                 @endif
                             @if(!auth()->user()->hasRole('Siswa'))
                                 <li class="nav-item"><a href="{{ route('tugas_guru.index') }}" class="nav-link {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Beban Kerja Guru</a></li>
