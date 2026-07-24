@@ -15,7 +15,7 @@
                         <p class="text-muted mb-0">Kelas: <strong>{{ $kelasBinaan->nama_kelas ?? '-' }}</strong></p>
                     </div>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id, 'tanggal' => $selectedTanggal ?? now()->format('Y-m-d')]) }}" class="btn btn-primary">
+                        <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id, 'tanggal' => $selectedTanggal ?? now()->format('Y-m-d'), 'back' => route('wali_kelas.absensi')]) }}" class="btn btn-primary">
                             <i class="ti ti-pencil me-1"></i>Input Absensi
                         </a>
                         <a href="{{ route('wali_kelas.index') }}" class="btn btn-secondary">
@@ -79,42 +79,66 @@
                         @endif
                     </div>
 
-                    @if($absensi->isEmpty())
+                    @if(isset($siswa) && $siswa->isEmpty())
                         <div class="alert alert-info">
-                            <i class="ti ti-info-circle me-2"></i>Belum ada data absensi untuk kelas ini pada tanggal yang dipilih.
+                            <i class="ti ti-info-circle me-2"></i>Tidak ada siswa di kelas ini.
                         </div>
                     @else
-                        <div class="table-responsive">
-                            <table class="table table-vcenter table-hover table-tabler">
-                                <thead>
-                                    <tr>
-                                        <th width="5%">No</th>
-                                        <th>Jam Ke</th>
-                                        <th>Jam KBM</th>
-                                        <th>Mapel</th>
-                                        <th>Guru Mapel</th>
-                                        <th>Hadir</th>
-                                        <th>Sakit</th>
-                                        <th>Izin</th>
-                                        <th>Alpa</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($absensi as $index => $a)
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>{{ $a->jam_ke ? 'Jam ke-' . $a->jam_ke : ($a->jam_urutan ? 'Jam ke-' . $a->jam_urutan : '-') }}</td>
-                                        <td>{{ $a->jam_mulai ?? '-' }} - {{ $a->jam_selesai ?? '-' }}</td>
-                                        <td>{{ $a->mapel_nama ?? '-' }}</td>
-                                        <td>{{ $a->mapel_guru ?? '-' }}</td>
-                                        <td><span class="badge bg-success">{{ $rekapCounts[$a->id]->hadir ?? 0 }}</span></td>
-                                        <td><span class="badge bg-warning">{{ $rekapCounts[$a->id]->sakit ?? 0 }}</span></td>
-                                        <td><span class="badge bg-info">{{ $rekapCounts[$a->id]->izin ?? 0 }}</span></td>
-                                        <td><span class="badge bg-danger">{{ $rekapCounts[$a->id]->alpa ?? 0 }}</span></td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                        <div class="row">
+                            @foreach($siswa as $st)
+                                @php
+                                    $statusRow = $dailyStatusMap->has($st->id) ? $dailyStatusMap->get($st->id) : null;
+                                    $status = $statusRow->status ?? null;
+                                @endphp
+                                <div class="student-card mb-3">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="text-center mb-2">
+                                                @if(!empty($st->foto) && \Storage::disk('public')->exists($st->foto))
+                                                    <img src="{{ asset('storage/' . $st->foto) }}" alt="Foto {{ $st->nama }}" class="student-photo img-fluid rounded mx-auto d-block">
+                                                @else
+                                                    <div class="student-photo-placeholder bg-light d-flex align-items-center justify-content-center mx-auto">
+                                                        <i class="ti ti-user" style="font-size:32px; color:#ccd6df"></i>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <h6 class="text-center mb-2">{{ $st->nama }}</h6>
+                                            <div class="d-flex flex-wrap gap-2 justify-content-center mb-2">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" disabled {{ strtolower($status) === 'hadir' ? 'checked' : '' }}>
+                                                    <label class="form-check-label">Hadir</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" disabled {{ in_array(strtolower($status ?? ''), ['alpa','alpha','alfa','absen','tidak_hadir']) ? 'checked' : '' }}>
+                                                    <label class="form-check-label">Alpa</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" disabled {{ in_array(strtolower($status ?? ''), ['izin','ijin']) ? 'checked' : '' }}>
+                                                    <label class="form-check-label">Izin</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" disabled {{ strtolower($status) === 'sakit' ? 'checked' : '' }}>
+                                                    <label class="form-check-label">Sakit</label>
+                                                </div>
+                                            </div>
+                                            <div class="mt-auto text-center">
+                                                @php
+                                                    $badgeClass = 'btn-secondary';
+                                                    if($status) {
+                                                        $s = strtolower($status);
+                                                        if(in_array($s, ['alpa','alpha','alfa','absen','tidak_hadir'])) $badgeClass = 'btn-danger';
+                                                        elseif(in_array($s, ['terlambat','telat'])) $badgeClass = 'btn-warning';
+                                                        elseif($s === 'hadir') $badgeClass = 'btn-success';
+                                                        elseif(in_array($s, ['izin','ijin'])) $badgeClass = 'btn-info';
+                                                        elseif($s === 'sakit') $badgeClass = 'btn-warning';
+                                                    }
+                                                @endphp
+                                                <button class="btn {{ $badgeClass }} btn-sm">{{ $status ? ucfirst($status) : 'Belum ada' }}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     @endif
                 </div>
@@ -124,5 +148,48 @@
 </div>
 <style>
 .wali-kelas-absensi .badge { color: #fff !important; }
+</style>
+
+<style>
+/* Student photo 3:4 aspect ratio, modest size */
+.wali-kelas-absensi .student-photo {
+    width: 150px;
+    height: 200px;
+    object-fit: cover;
+}
+.wali-kelas-absensi .student-photo-placeholder {
+    width: 150px;
+    height: 200px;
+    border-radius: 6px;
+}
+@media (max-width: 576px) {
+    .wali-kelas-absensi .student-photo,
+    .wali-kelas-absensi .student-photo-placeholder {
+        width: 120px;
+        height: 160px;
+    }
+}
+</style>
+
+<style>
+/* Grid: responsive number of columns for student cards
+   - xs: 2 columns
+   - sm (>=576px): 3 columns
+   - md (>=768px): 4 columns
+   - lg (>=992px): 5 columns
+*/
+.wali-kelas-absensi .row { display: flex; flex-wrap: wrap; margin-left: -8px; margin-right: -8px; }
+.wali-kelas-absensi .student-card { flex: 0 0 50%; max-width: 50%; padding: 0 8px; box-sizing: border-box; }
+.wali-kelas-absensi .student-card .card { height: 100%; }
+
+@media (min-width: 576px) {
+    .wali-kelas-absensi .student-card { flex: 0 0 33.3333%; max-width: 33.3333%; }
+}
+@media (min-width: 768px) {
+    .wali-kelas-absensi .student-card { flex: 0 0 25%; max-width: 25%; }
+}
+@media (min-width: 992px) {
+    .wali-kelas-absensi .student-card { flex: 0 0 20%; max-width: 20%; }
+}
 </style>
 @endsection

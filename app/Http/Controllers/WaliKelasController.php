@@ -270,8 +270,26 @@ class WaliKelasController extends Controller
                 ->unique('siswa_id')
                 ->count();
         }
-        
-        return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester', 'akumulasiTerlambatBulanan', 'selectedTanggal', 'absensiSummary'));
+        // Load siswa list for kelas binaan and map daily status (one status per siswa for the selected date)
+        $siswa = DB::table('siswa as s')
+            ->leftJoin('users as u', 'u.siswa_id', '=', 's.id')
+            ->where('s.kelas_id', $kelasBinaan->id)
+            ->orderBy('s.nama')
+            ->select('s.id', 's.nama', 's.nis', DB::raw('COALESCE(u.foto, null) as foto'))
+            ->get();
+
+        $dailyStatusRows = DB::table('absensi_siswa as asw')
+            ->join('absensi_kelas as ak', 'ak.id', '=', 'asw.absensi_kelas_id')
+            ->where('ak.kelas_id', $kelasBinaan->id)
+            ->whereDate('ak.tanggal', $selectedTanggal)
+            ->select('asw.*')
+            ->get();
+
+        $dailyStatusMap = $dailyStatusRows->groupBy('siswa_id')->map(function ($rows) {
+            return $rows->last();
+        });
+
+        return view('wali_kelas.absensi', compact('kelasBinaan', 'absensi', 'rekapCounts', 'guru', 'tahunAjaran', 'semester', 'akumulasiTerlambatBulanan', 'selectedTanggal', 'absensiSummary', 'siswa', 'dailyStatusMap'));
     }
 
     public function laporanGuru()

@@ -565,8 +565,7 @@ class AgendaGuruController extends Controller
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
 
-        // Generate PDF view
-        return view('agenda_guru.export', compact(
+        $viewData = compact(
             'guru',
             'agendaList',
             'mataPelajaran',
@@ -577,6 +576,17 @@ class AgendaGuruController extends Controller
             'bulan',
             'tahunFilter',
             'monthName'
-        ));
+        );
+
+        // If requested format is PDF, generate PDF download using Dompdf
+        if (strtolower($request->get('format', '')) === 'pdf') {
+            $filename = 'agenda_guru_' . ($guru->id ?? 'guru') . '_' . ($bulan ?? now()->month) . '.pdf';
+            $pdf = \PDF::loadView('agenda_guru.export_pdf', $viewData);
+            $pdf->setPaper('a4', 'landscape');
+            return $pdf->download($filename);
+        }
+
+        // Render normal HTML view
+        return view('agenda_guru.export', array_merge($viewData, ['forPdf' => false]));
     }
 }

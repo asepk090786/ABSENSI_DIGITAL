@@ -38,13 +38,15 @@
         border-collapse: collapse;
         margin-top: 12px;
         font-size: 12px;
+        table-layout: fixed;
     }
     
     .journal-table th, .journal-table td {
-        border: 1px solid #000;
-        padding: 6px;
+        border: 1px solid #222;
+        padding: 6px 8px;
         text-align: left;
         vertical-align: middle;
+        word-wrap: break-word;
     }
     
     .journal-table th {
@@ -61,7 +63,7 @@
     }
 
     .journal-table tbody td {
-        height: 42px;
+        height: 46px;
         line-height: 1.25;
     }
 
@@ -82,6 +84,15 @@
         text-align: center;
         margin-bottom: 8px;
     }
+
+    /* Center printable content and give it a white background so it looks like a page */
+    .print-wrapper {
+        max-width: 1120px;
+        margin: 8px auto 40px auto;
+        background: #fff;
+        padding: 10px 18px 24px 18px;
+        box-shadow: 0 0 0 rgba(0,0,0,0);
+    }
     
     .header-info h3 {
         margin: 3px 0;
@@ -94,27 +105,36 @@
     }
     
     .signature-section {
-        margin-top: 16px;
+        margin-top: 24px;
         display: flex;
         justify-content: space-between;
-        padding-right: 30px;
+        padding: 0 30px;
+        align-items: flex-end;
     }
-    
+
     .signature-block {
-        text-align: center;
-        width: 150px;
+        width: 45%;
+        box-sizing: border-box;
     }
+    .signature-block.left { text-align: left; }
+    .signature-block.right { text-align: right; }
 
     .signature-name {
         margin: 28px 0 6px 0;
         font-size: 12px;
         min-height: 18px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        max-width: 100%;
     }
 
     .signature-line {
         border-top: 1px solid #000;
-        width: 100%;
-        margin: 0;
+        width: 220px;
+        margin: 6px 0 12px 0;
+        display: inline-block;
     }
 
     .signature-nip {
@@ -124,6 +144,7 @@
     }
 </style>
 
+@unless(!empty($forPdf) && $forPdf)
 <div class="container-fluid no-print">
     <div class="col-12">
         <div class="card">
@@ -135,6 +156,9 @@
                     <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
                         <i class="ti ti-printer me-1"></i>Print
                     </button>
+                    <a href="{{ route('agenda_guru.export', ['bulan' => $bulan, 'tahun' => $tahunFilter, 'format' => 'pdf']) }}" class="btn btn-success btn-sm">
+                        <i class="ti ti-download me-1"></i>Export PDF
+                    </a>
                     <a href="{{ route('agenda_guru.index') }}" class="btn btn-secondary btn-sm">
                         <i class="ti ti-x me-1"></i>Kembali
                     </a>
@@ -143,8 +167,9 @@
         </div>
     </div>
 </div>
+@endunless
 
-<div style="margin-top: 10px;">
+<div class="print-wrapper" style="margin-top: 10px;">
     <div class="header-info">
         <h3 style="font-weight: bold;">AGENDA MENGAJAR GURU</h3>
         <h4 style="font-weight: bold;">(JURNAL HARIAN)</h4>
@@ -222,13 +247,13 @@
         </table>
 
         <div class="signature-section">
-            <div class="signature-block">
+            <div class="signature-block left">
                 <strong>Guru Mata Pelajaran</strong>
                 <div class="signature-name">{{ $guru->nama ?? '' }}</div>
                 <div class="signature-line"></div>
                 <div class="signature-nip">{{ !empty($nipGuru) ? 'NIP. ' . $nipGuru : '' }}</div>
             </div>
-            <div class="signature-block">
+            <div class="signature-block right">
                 <strong>Kepala Sekolah</strong>
                 <div class="signature-name">{{ $namaKepalaSekolah ?? '-' }}</div>
                 <div class="signature-line"></div>

@@ -170,7 +170,16 @@
                 <div class="card-header border-0 pt-3 pb-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <h3 class="card-title fw-semibold m-0">Tambah Absensi Kelas</h3>
-                        <a href="{{ route('absensi.index') }}" class="btn btn-secondary">
+                        @php
+                            $backUrl = request()->get('back');
+                            if (empty($backUrl)) {
+                                $backUrl = url()->previous();
+                            }
+                            if (empty($backUrl)) {
+                                $backUrl = route('absensi.index');
+                            }
+                        @endphp
+                        <a href="{{ $backUrl }}" class="btn btn-secondary">
                             <i class="ti ti-arrow-left me-1"></i> Kembali
                         </a>
                     </div>
