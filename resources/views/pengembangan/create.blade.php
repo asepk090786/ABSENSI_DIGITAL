@@ -12,7 +12,12 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Jenis Kegiatan</label>
-            <input name="jenis_kegiatan" class="form-control" />
+            <select name="jenis_kegiatan" class="form-control">
+                <option value="">-- Pilih Jenis Kegiatan --</option>
+                @foreach($jenisList as $jk)
+                    <option value="{{ $jk->kode }}">{{ $jk->nama }} ({{ $jk->kode }})</option>
+                @endforeach
+            </select>
         </div>
         <div class="mb-3">
             <label class="form-label">Pilih Pemateri (Guru) — bisa pilih lebih dari satu</label>

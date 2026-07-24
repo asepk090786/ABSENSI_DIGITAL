@@ -28,14 +28,15 @@ class PengembanganController extends Controller
     {
         $gurus = \DB::table('guru')->select('id','nama')->get();
         $siswas = \DB::table('siswa')->select('id','nama')->get();
-        return view('pengembangan.create', compact('gurus','siswas'));
+        $jenisList = \App\Models\JenisKegiatan::orderBy('nama')->get();
+        return view('pengembangan.create', compact('gurus','siswas','jenisList'));
     }
 
     public function store(Request $r)
     {
         $data = $r->validate([
             'nama_kegiatan'=>'required|string',
-            'jenis_kegiatan'=>'nullable|string',
+            'jenis_kegiatan'=>'nullable|exists:jenis_kegiatan,kode',
             'deskripsi'=>'nullable|string',
             'pemateri_guru_ids'=>'nullable|array',
             'pemateri_names'=>'nullable|string',

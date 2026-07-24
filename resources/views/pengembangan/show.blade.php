@@ -4,7 +4,7 @@
 
 @section('content')
     <h3>{{ $item->nama_kegiatan }}</h3>
-    <p><strong>Jenis:</strong> {{ $item->jenis_kegiatan }}</p>
+    <p><strong>Jenis:</strong> {{ \App\Models\JenisKegiatan::where('kode', $item->jenis_kegiatan)->value('nama') ?? $item->jenis_kegiatan }}</p>
     <p><strong>Pemateri:</strong>
         @if(is_array($item->pemateri))
             {{ implode(', ', $item->pemateri) }}
