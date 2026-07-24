@@ -29,7 +29,8 @@ class PengembanganController extends Controller
         $gurus = \DB::table('guru')->select('id','nama')->get();
         $siswas = \DB::table('siswa')->select('id','nama')->get();
         $jenisList = \App\Models\JenisKegiatan::orderBy('nama')->get();
-        return view('pengembangan.create', compact('gurus','siswas','jenisList'));
+        $kegiatanList = \App\Models\Kegiatan::orderBy('nama_kegiatan')->get();
+        return view('pengembangan.create', compact('gurus','siswas','jenisList','kegiatanList'));
     }
 
     public function store(Request $r)
@@ -37,6 +38,7 @@ class PengembanganController extends Controller
         $data = $r->validate([
             'nama_kegiatan'=>'required|string',
             'jenis_kegiatan'=>'nullable|exists:jenis_kegiatan,kode',
+            'kegiatan_id'=>'nullable|exists:kegiatan,id',
             'deskripsi'=>'nullable|string',
             'pemateri_guru_ids'=>'nullable|array',
             'pemateri_names'=>'nullable|string',
@@ -57,8 +59,14 @@ class PengembanganController extends Controller
             $pemateri = array_merge($pemateri, $parts);
         }
 
+        // if kegiatan_id provided, fetch its nama_kegiatan
+        $namaKegiatan = $data['nama_kegiatan'] ?? null;
+        if ($r->filled('kegiatan_id')) {
+            $namaKegiatan = \App\Models\Kegiatan::where('id', $r->input('kegiatan_id'))->value('nama_kegiatan');
+        }
+
         $p = Pengembangan::create([
-            'nama_kegiatan' => $data['nama_kegiatan'],
+            'nama_kegiatan' => $namaKegiatan,
             'jenis_kegiatan' => $data['jenis_kegiatan'] ?? null,
             'deskripsi' => $data['deskripsi'] ?? null,
             'pemateri' => $pemateri,

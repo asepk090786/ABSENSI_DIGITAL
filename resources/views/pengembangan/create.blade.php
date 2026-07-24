@@ -7,8 +7,18 @@
     <form method="POST" action="{{ route('pengembangan.store') }}">
         @csrf
         <div class="mb-3">
-            <label class="form-label">Nama Kegiatan</label>
-            <input name="nama_kegiatan" class="form-control" required />
+            <label class="form-label">Pilih Kegiatan (dari /kegiatan) atau ketik manual</label>
+            <select name="kegiatan_id" id="kegiatanSelect" class="form-control">
+                <option value="">-- Pilih dari daftar kegiatan --</option>
+                @foreach($kegiatanList as $kg)
+                    <option value="{{ $kg->id }}">{{ $kg->nama_kegiatan }} ({{ $kg->kode_kegiatan ?? '' }})</option>
+                @endforeach
+            </select>
+            <small class="text-muted">Jika tidak memilih, isi manual di bawah.</small>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nama Kegiatan (manual)</label>
+            <input name="nama_kegiatan" class="form-control" />
         </div>
         <div class="mb-3">
             <label class="form-label">Jenis Kegiatan</label>
