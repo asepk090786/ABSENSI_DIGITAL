@@ -5,7 +5,13 @@
 @section('content')
     <h3>{{ $item->nama_kegiatan }}</h3>
     <p><strong>Jenis:</strong> {{ $item->jenis_kegiatan }}</p>
-    <p><strong>Pemateri:</strong> {{ $item->pemateri }}</p>
+    <p><strong>Pemateri:</strong>
+        @if(is_array($item->pemateri))
+            {{ implode(', ', $item->pemateri) }}
+        @else
+            {{ $item->pemateri }}
+        @endif
+    </p>
     <p>{{ $item->deskripsi }}</p>
     <h5>Peserta</h5>
     <ul>

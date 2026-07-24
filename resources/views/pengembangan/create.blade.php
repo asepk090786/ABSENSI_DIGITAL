@@ -15,8 +15,16 @@
             <input name="jenis_kegiatan" class="form-control" />
         </div>
         <div class="mb-3">
-            <label class="form-label">Pemateri</label>
-            <input name="pemateri" class="form-control" />
+            <label class="form-label">Pilih Pemateri (Guru) — bisa pilih lebih dari satu</label>
+            <select name="pemateri_guru_ids[]" class="form-control" multiple>
+                @foreach($gurus as $g)
+                    <option value="{{ $g->id }}">{{ $g->nama }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Pemateri lain (nama, pisahkan dengan koma)</label>
+            <input name="pemateri_names" class="form-control" placeholder="Nama Pemateri Tambahan, Contoh: Narasumber A, Narasumber B" />
         </div>
         <div class="mb-3">
             <label class="form-label">Tanggal Mulai</label>

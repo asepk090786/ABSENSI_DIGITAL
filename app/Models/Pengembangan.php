@@ -10,6 +10,12 @@ class Pengembangan extends Model
     protected $table = 'pengembangan_diri';
     protected $fillable = ['nama_kegiatan','jenis_kegiatan','deskripsi','pemateri','tanggal_mulai','tanggal_selesai'];
 
+    protected $casts = [
+        'pemateri' => 'array',
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+    ];
+
     public function peserta(): HasMany
     {
         return $this->hasMany(PengembanganPeserta::class, 'pengembangan_id');

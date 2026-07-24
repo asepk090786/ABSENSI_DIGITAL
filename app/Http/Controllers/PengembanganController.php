@@ -37,12 +37,33 @@ class PengembanganController extends Controller
             'nama_kegiatan'=>'required|string',
             'jenis_kegiatan'=>'nullable|string',
             'deskripsi'=>'nullable|string',
-            'pemateri'=>'nullable|string',
+            'pemateri_guru_ids'=>'nullable|array',
+            'pemateri_names'=>'nullable|string',
             'tanggal_mulai'=>'nullable|date',
             'tanggal_selesai'=>'nullable|date',
         ]);
 
-        $p = Pengembangan::create($data);
+        // Build pemateri array from selected guru ids and extra names
+        $pemateri = [];
+        $guruIds = $r->input('pemateri_guru_ids', []);
+        if (!empty($guruIds)) {
+            $rows = \DB::table('guru')->whereIn('id', $guruIds)->pluck('nama')->all();
+            $pemateri = array_merge($pemateri, $rows);
+        }
+        $extra = $r->input('pemateri_names');
+        if ($extra) {
+            $parts = array_filter(array_map('trim', explode(',', $extra)));
+            $pemateri = array_merge($pemateri, $parts);
+        }
+
+        $p = Pengembangan::create([
+            'nama_kegiatan' => $data['nama_kegiatan'],
+            'jenis_kegiatan' => $data['jenis_kegiatan'] ?? null,
+            'deskripsi' => $data['deskripsi'] ?? null,
+            'pemateri' => $pemateri,
+            'tanggal_mulai' => $data['tanggal_mulai'] ?? null,
+            'tanggal_selesai' => $data['tanggal_selesai'] ?? null,
+        ]);
 
         // participants arrays: guru_ids[], siswa_ids[]
         foreach (($r->input('guru_ids',[]) ) as $gid) {

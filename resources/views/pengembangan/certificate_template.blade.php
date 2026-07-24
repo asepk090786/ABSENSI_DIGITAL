@@ -14,6 +14,13 @@
         <h2>{{ $name }}</h2>
         <p>Atas partisipasinya pada kegiatan:</p>
         <h3>{{ $kegiatan->nama_kegiatan }}</h3>
+        <p><strong>Pemateri:</strong>
+            @if(is_array($kegiatan->pemateri))
+                {{ implode(', ', $kegiatan->pemateri) }}
+            @else
+                {{ $kegiatan->pemateri }}
+            @endif
+        </p>
         <div class="barcode">Kode Verifikasi: {{ $barcode }}</div>
     </div>
 </body>
