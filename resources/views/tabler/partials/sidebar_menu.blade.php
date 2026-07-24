@@ -26,6 +26,13 @@
     </div>
     @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
     <div class="nav-item">
+        <a href="{{ route('agenda_kelas.index', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="nav-link {{ request()->routeIs('agenda_kelas.index') && request()->get('jenis_kegiatan') === 'pengembangan_diri' ? 'active' : '' }}">
+            <i class="ti ti-heart-handshake me-2"></i> Pengembangan Diri
+        </a>
+    </div>
+    @endif
+    @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
+    <div class="nav-item">
         <a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}">
             <i class="ti ti-clock me-2"></i> Pengaturan Jam
         </a>
