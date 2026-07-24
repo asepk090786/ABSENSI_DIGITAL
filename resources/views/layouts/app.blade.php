@@ -254,7 +254,7 @@
             padding: 0 1.25rem;
             position: sticky;
             top: 0;
-            z-index: 1030;
+            z-index: 1060;
             gap: 0.75rem;
         }
         .topbar-toggle {
@@ -666,6 +666,7 @@
             border: 1px solid var(--card-border);
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 10px -6px rgba(0,0,0,0.05);
             padding: 0.35rem 0;
+            z-index: 1100;
         }
         .dropdown-item {
             font-size: 0.82rem;

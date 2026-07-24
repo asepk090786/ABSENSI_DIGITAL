@@ -37,7 +37,21 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('agenda_kelas.store') }}">
+                @if($isSiswaOfficer ?? false)
+                    @if(($existingTeacherAgenda ?? null))
+                        <div class="alert alert-warning">
+                            <i class="ti ti-alert-circle me-2"></i>
+                            Guru sudah mengisi agenda kelas untuk tanggal ini. Anda hanya dapat melihat data yang sudah dibuat guru dan tidak dapat mengubahnya.
+                        </div>
+                    @elseif(!($allowStudentInput ?? true))
+                        <div class="alert alert-info">
+                            <i class="ti ti-info-circle me-2"></i>
+                            Saat ini belum ada agenda dari guru untuk kelas ini. Anda dapat mengisi agenda kelas.
+                        </div>
+                    @endif
+                @endif
+
+                <form id="agendaForm" method="POST" action="{{ route('agenda_kelas.store') }}">
                     @csrf
                     @if(isset($agenda))
                         <input type="hidden" name="agenda_id" value="{{ $agenda->id }}">
@@ -214,9 +228,15 @@
                             <a href="{{ route('agenda_kelas.index') }}" class="btn btn-outline-secondary btn-modern">
                                 <i class="ti ti-arrow-left me-1"></i>Batal
                             </a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Simpan Agenda' }}
-                            </button>
+                            @if(($isSiswaOfficer ?? false) && !empty($existingTeacherAgenda))
+                                <button type="button" class="btn btn-secondary px-4" disabled>
+                                    <i class="ti ti-lock me-1"></i>Agenda Sudah Diisi Guru
+                                </button>
+                            @else
+                                <button id="submitAgendaButton" type="submit" class="btn btn-primary px-4">
+                                    <i class="ti ti-check me-1"></i>{{ isset($agenda) ? 'Simpan Perubahan Agenda' : 'Simpan Agenda' }}
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </form>
@@ -249,6 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const hiddenGuruId = document.getElementById('hiddenGuruId');
     const guruSelect = document.getElementById('guruSelect');
+    const agendaForm = document.getElementById('agendaForm');
+    const submitAgendaButton = document.getElementById('submitAgendaButton');
+    const isTeacherAgendaLocked = {{ ($isSiswaOfficer ?? false) && !empty($existingTeacherAgenda) ? 'true' : 'false' }};
 
     function syncGuruId() {
         if (hiddenGuruId && guruSelect) {
@@ -518,6 +541,19 @@ document.addEventListener('DOMContentLoaded', function() {
         renderJamOptions(selectedJamBelajarId);
     } else {
         checkMultipleJam();
+    }
+
+    if (isTeacherAgendaLocked && agendaForm) {
+        agendaForm.querySelectorAll('input, select, textarea').forEach(function(element) {
+            if (element.type === 'hidden' || element.type === 'submit' || element.type === 'button') {
+                return;
+            }
+            element.disabled = true;
+        });
+
+        if (submitAgendaButton) {
+            submitAgendaButton.disabled = true;
+        }
     }
 
     syncGuruId();

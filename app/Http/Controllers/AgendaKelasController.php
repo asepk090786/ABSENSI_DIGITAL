@@ -315,6 +315,29 @@ class AgendaKelasController extends Controller
         $selectedHari = $this->getHariIndonesiaFromDate($selectedDate);
         $selectedGuruId = $request->get('guru_id', $guru->id ?? null);
 
+        $existingTeacherAgenda = null;
+        $allowStudentInput = true;
+        if ($isSiswaOfficer && $selectedKelasId && $selectedDate) {
+            $existingTeacherAgenda = AgendaKelas::where('kelas_id', $selectedKelasId)
+                ->whereDate('tanggal', $selectedDate)
+                ->where('tahun_ajaran_id', $tahun->id)
+                ->where('semester_id', $semester->id)
+                ->whereNotNull('guru_id')
+                ->where('guru_id', '!=', 0)
+                ->orderBy('jam_belajar_id')
+                ->first();
+
+            if ($existingTeacherAgenda) {
+                $allowStudentInput = false;
+                $selectedJenisKegiatan = old('jenis_kegiatan', $existingTeacherAgenda->jenis_kegiatan ?? $selectedJenisKegiatan);
+                $selectedKelasId = old('kelas_id', $existingTeacherAgenda->kelas_id ?? $selectedKelasId);
+                $selectedGuruId = old('guru_id', $existingTeacherAgenda->guru_id ?? $selectedGuruId);
+                $selectedDate = old('tanggal', $existingTeacherAgenda->tanggal ?? $selectedDate);
+                $selectedJamBelajarId = old('jam_belajar_id', $existingTeacherAgenda->jam_belajar_id ?? $selectedJamBelajarId);
+                $selectedHari = $this->getHariIndonesiaFromDate($selectedDate);
+            }
+        }
+
         if (! $isSiswaOfficer && empty(old('tanggal')) && ! $request->has('tanggal') && $selectedKelasId && isset($jadwalByKelas[(string) $selectedKelasId])) {
             $jadwalHariGuru = collect($jadwalByKelas[(string) $selectedKelasId])
                 ->when($selectedGuruId, function ($query) use ($selectedGuruId) {
@@ -392,7 +415,10 @@ class AgendaKelasController extends Controller
             'jadwalByKelas',
             'jamBelajarList',
             'initialJamOptions',
-            'kegiatanList'
+            'kegiatanList',
+            'existingTeacherAgenda',
+            'allowStudentInput',
+            'isSiswaOfficer'
         ));
     }
 
@@ -504,6 +530,20 @@ class AgendaKelasController extends Controller
         }
 
         $hariAgenda = $this->getHariIndonesiaFromDate($data['tanggal']);
+
+        if ($isSiswaOfficer) {
+            $existingTeacherAgenda = AgendaKelas::where('kelas_id', $data['kelas_id'])
+                ->whereDate('tanggal', $data['tanggal'])
+                ->where('tahun_ajaran_id', $tahun->id)
+                ->where('semester_id', $semester->id)
+                ->whereNotNull('guru_id')
+                ->where('guru_id', '!=', 0)
+                ->first();
+
+            if ($existingTeacherAgenda && (! $agendaId || (int) $existingTeacherAgenda->id !== (int) $agendaId)) {
+                return back()->withInput()->withErrors('Guru sudah mengisi agenda kelas untuk tanggal ini. Anda tidak dapat mengubah data yang sudah dibuat guru.');
+            }
+        }
 
         // Hapus agenda_id dari data jika ada (jika dari form show)
         $agendaId = $data['agenda_id'] ?? null;

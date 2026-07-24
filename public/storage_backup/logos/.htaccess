@@ -1,0 +1,9 @@
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# Allow access to all image files
+<FilesMatch ".*\.(jpg|jpeg|png|gif|webp)$">
+    Allow from all
+    Header set Cache-Control "public, max-age=3600"
+</FilesMatch>
