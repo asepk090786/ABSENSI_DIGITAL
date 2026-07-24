@@ -1873,11 +1873,34 @@ class AbsensiController extends Controller
                 ], 400);
             }
 
-            $siswa = \App\Models\Siswa::where('kelas_id', $kelasId)
+            $siswa = \App\Models\Siswa::with(['user' => function ($query) {
+                    $query->select('id', 'siswa_id', 'foto');
+                }])
+                ->where('kelas_id', $kelasId)
                 ->where('status_aktif', 1)
                 ->orderBy('nama')
                 ->select('id', 'nis', 'nisn', 'nama', 'jenis_kelamin')
-                ->get();
+                ->get()
+                ->map(function ($siswa) {
+                    $fotoPath = $siswa->user?->foto;
+                    $fotoUrl = null;
+
+                    if ($fotoPath) {
+                        $fotoUrl = str_contains($fotoPath, '://')
+                            ? $fotoPath
+                            : \Storage::disk('public')->url($fotoPath);
+                    }
+
+                    return [
+                        'id' => $siswa->id,
+                        'nis' => $siswa->nis,
+                        'nisn' => $siswa->nisn,
+                        'nama' => $siswa->nama,
+                        'jenis_kelamin' => $siswa->jenis_kelamin,
+                        'foto' => $fotoPath,
+                        'foto_url' => $fotoUrl,
+                    ];
+                });
 
             $existing = [];
             if ($tanggal && $loadExisting) {

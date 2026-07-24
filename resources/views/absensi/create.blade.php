@@ -26,6 +26,27 @@
         overflow-y: auto;
     }
 
+    .student-photo {
+        width: 42px;
+        height: 42px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .student-photo-placeholder {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px dashed #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        background: #f8fafc;
+    }
+
     /* Custom Combo Box Styling */
     .combo-box-wrapper {
         position: relative;
@@ -364,6 +385,7 @@
                                                     <th rowspan="2" class="align-middle text-center" width="3%">No</th>
                                                     <th rowspan="2" class="align-middle text-center" width="8%">NIS</th>
                                                     <th rowspan="2" class="align-middle text-center" width="8%">NISN</th>
+                                                    <th rowspan="2" class="align-middle text-center" width="8%">FOTO</th>
                                                     <th rowspan="2" class="align-middle text-center" width="20%">NAMA</th>
                                                     <th rowspan="2" class="align-middle text-center" width="10%">JENIS KELAMIN</th>
                                                     <th colspan="5" class="text-center">STATUS</th>
@@ -379,7 +401,7 @@
                                             </thead>
                                             <tbody id="siswaTableBody">
                                                 <tr>
-                                                    <td colspan="{{ ($isGuruPiket ?? false) ? 10 : 11 }}" class="text-center text-muted">
+                                                    <td colspan="12" class="text-center text-muted">
                                                         <i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa
                                                     </td>
                                                 </tr>
@@ -764,10 +786,11 @@
 
                             html += '<tr data-siswa-id="' + siswa.id + '">' +
                                 '<td class="text-center">' + (index + 1) + '</td>' +
-                                '<td class="text-center">' + (siswa.nis || '-') + '</td>' +
-                                '<td class="text-center">' + (siswa.nisn || '-') + '</td>' +
-                                '<td>' + siswa.nama + '</td>' +
-                                '<td class="text-center">' + (siswa.jenis_kelamin || '-') + '</td>' +
+                                '<td class="text-center">' + escapeHtml(siswa.nis || '-') + '</td>' +
+                                '<td class="text-center">' + escapeHtml(siswa.nisn || '-') + '</td>' +
+                                '<td class="text-center">' + (siswa.foto_url ? '<img src="' + escapeHtml(siswa.foto_url) + '" alt="Foto ' + escapeHtml(siswa.nama || '-') + '" class="student-photo">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>') + '</td>' +
+                                '<td>' + escapeHtml(siswa.nama || '-') + '</td>' +
+                                '<td class="text-center">' + escapeHtml(siswa.jenis_kelamin || '-') + '</td>' +
                                 statusHadirCell +
                                 '<td class="text-center">' +
                                     '<input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="terlambat" data-siswa-id="' + siswa.id + '">' +
@@ -860,17 +883,26 @@
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
                         siswaContainer.style.display = 'block';
-                        siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
+                        siswaTableBody.innerHTML = '<tr><td colspan="12" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
                         btnSubmit.disabled = true;
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching siswa:', error);
-                    siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
+                    siswaTableBody.innerHTML = '<tr><td colspan="12" class="text-center text-danger"><i class="ti ti-alert-triangle me-1"></i>Terjadi kesalahan saat memuat data siswa</td></tr>';
                     btnSubmit.disabled = true;
                 });
         }
     });
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 
     function updateStatusBadge(value, row) {
         if (!row) return;
