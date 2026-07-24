@@ -75,6 +75,14 @@
         </li>
         @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
         <li>
+            <a href="{{ route('agenda_kelas.index', ['jenis_kegiatan' => 'pengembangan_diri']) }}" class="menu-item {{ request()->routeIs('agenda_kelas.index') && request()->get('jenis_kegiatan') === 'pengembangan_diri' ? 'active' : '' }}">
+                <i class="material-icons">self_improvement</i>
+                <span>Pengembangan Diri</span>
+            </a>
+        </li>
+        @endif
+        @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
+        <li>
             <a href="{{ url('/pengaturan-jam') }}" class="menu-item {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}">
                 <i class="material-icons">settings</i>
                 <span>Pengaturan Jam</span>
