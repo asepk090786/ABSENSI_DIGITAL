@@ -51,8 +51,11 @@
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td>
-                                                @if($item->foto)
-                                                    <img src="{{ asset('storage/' . $item->foto) }}" alt="Foto" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                                @php
+                                                    $fotoPath = $item->foto ?: ($item->user->foto ?? null);
+                                                @endphp
+                                                @if($fotoPath)
+                                                    <img src="{{ asset('storage/' . $fotoPath) }}" alt="Foto {{ $item->nama }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
                                                 @else
                                                     <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                                         <i class="ti ti-user" style="font-size: 24px; color: #999;"></i>
@@ -124,8 +127,11 @@
                                     <div class="card h-100 shadow-sm">
                                         <div class="card-body d-flex flex-column">
                                             <div class="overflow-hidden rounded mb-3" style="width:100%;aspect-ratio:3/4;">
-                                                @if($item->foto)
-                                                    <img src="{{ asset('storage/' . $item->foto) }}" alt="Foto {{ $item->nama }}" class="w-100 h-100" style="object-fit:cover;">
+                                                @php
+                                                    $fotoPath = $item->foto ?: ($item->user->foto ?? null);
+                                                @endphp
+                                                @if($fotoPath)
+                                                    <img src="{{ asset('storage/' . $fotoPath) }}" alt="Foto {{ $item->nama }}" class="w-100 h-100" style="object-fit:cover;">
                                                 @else
                                                     <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="width:100%;height:100%;font-size:2rem;">
                                                         {{ mb_substr($item->nama, 0, 1) }}
