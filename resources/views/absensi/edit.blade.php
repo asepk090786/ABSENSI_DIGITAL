@@ -154,6 +154,7 @@
                                                     <th class="align-middle text-center" width="3%">No</th>
                                                     <th class="align-middle text-center" width="8%">NIS</th>
                                                     <th class="align-middle text-center" width="8%">NISN</th>
+                                                    <th class="align-middle text-center" width="8%">FOTO</th>
                                                     <th class="align-middle text-center" width="20%">NAMA</th>
                                                     <th class="align-middle text-center" width="10%">JENIS KELAMIN</th>
                                                     <th class="text-center" width="5%">Hadir</th>
@@ -166,7 +167,7 @@
                                             </thead>
                                             <tbody id="siswaTableBody">
                                                 <tr>
-                                                    <td colspan="11" class="text-center text-muted">
+                                                    <td colspan="12" class="text-center text-muted">
                                                         <i class="ti ti-info-circle me-1"></i>Memuat daftar siswa...
                                                     </td>
                                                 </tr>
@@ -220,11 +221,15 @@
                                             }
 
                                             var html = '';
+                                            var defaultFemale = '{{ asset('images/default-avatar-female.svg') }}';
+                                            var defaultMale = '{{ asset('images/default-avatar-male.svg') }}';
                                             data.siswa.forEach(function(siswa, idx){
+                                                var fotoSrc = siswa.foto_url ? siswa.foto_url : (siswa.jenis_kelamin === 'P' ? defaultFemale : defaultMale);
                                                 html += '<tr data-siswa-id="' + siswa.id + '">'
                                                     + '<td class="text-center">' + (idx+1) + '</td>'
                                                     + '<td class="text-center">' + (siswa.nis || '-') + '</td>'
                                                     + '<td class="text-center">' + (siswa.nisn || '-') + '</td>'
+                                                    + '<td class="text-center"><img src="' + fotoSrc + '" alt="foto" style="width:40px;height:60px;object-fit:cover;border-radius:4px"></td>'
                                                     + '<td>' + siswa.nama + '</td>'
                                                     + '<td class="text-center">' + (siswa.jenis_kelamin || '-') + '</td>'
                                                     + '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa[' + siswa.id + ']" value="hadir"></td>'
