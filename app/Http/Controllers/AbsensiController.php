@@ -610,13 +610,30 @@ class AbsensiController extends Controller
 
         $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        $isGuruPiket = !empty((array) ($user->guru->hari_piket ?? []));
+        // Determine selected date early so we can evaluate piket for that specific day
+        $selectedDate = $request->get('tanggal', date('Y-m-d'));
+        // Compute whether the current user is acting as "guru piket" on the selected date.
+        // Previously the code treated any guru with a non-empty hari_piket as guru piket
+        // for all dates. Change behavior to only enable guru-piket UI when the selected
+        // date matches one of the guru's assigned piket days, or the user explicitly
+        // has the role 'Guru Piket'.
+        $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+        $map = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+        ];
+        try {
+            $hariEnglish = \Carbon\Carbon::parse($selectedDate)->format('l');
+            $hariIndo = $map[$hariEnglish] ?? $hariEnglish;
+        } catch (\Throwable $e) {
+            $hariIndo = null;
+        }
+        $isGuruPiket = $user->hasRole('Guru Piket') || ($hariIndo && in_array($hariIndo, $hariPiketArr, true));
         $isGuruBk = $user->hasRole('Guru BK');
         $isWaliKelas = $user->hasRole('Wali Kelas');
         $selectedKelasId = $request->get('kelas_id');
         $selectedJamBelajarId = null;
         $isQuickAccess = false;
-        $selectedDate = $request->get('tanggal', date('Y-m-d'));
 
         $hariIndonesia = [
             'Monday' => 'Senin',
