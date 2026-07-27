@@ -13,7 +13,11 @@
                 <div class="text-muted mt-1">Kelola data siswa sekolah</div>
             </div>
             <div class="col-auto ms-auto d-print-none">
-                <div >
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="View toggle">
+                        <button type="button" id="siswaListViewBtn" class="btn btn-outline-secondary active">List</button>
+                        <button type="button" id="siswaGridViewBtn" class="btn btn-outline-secondary">Grid</button>
+                    </div>
                     <button type="button" id="deleteSelectedBtn" class="btn btn-outline-danger d-none d-sm-inline-block me-2" style="display:none;">
                         <i class="ti ti-trash me-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
                     </button>
@@ -70,12 +74,13 @@
         </div>
 
         <div class="card">
-            <div class="table-responsive">
+            <div id="siswaListViewContainer" class="table-responsive">
                 <table class="table table-vcenter table-hover" id="dataTable">
                     <thead>
                         <tr>
                             <th style="width:40px"><input type="checkbox" id="selectAllCheckbox" class="form-check-input"></th>
                             <th style="width:40px">#</th>
+                            <th style="width:80px">Foto</th>
                             <th>Nama</th>
                             <th>NIS</th>
                             <th>NISN</th>
@@ -92,8 +97,17 @@
                                 <td><input type="checkbox" class="form-check-input siswa-checkbox" data-siswa-id="{{ $item->id }}"></td>
                                 <td>{{ $no++ }}</td>
                                 <td>
+                                    @php $fotoPath = $item->user->foto ?? null; @endphp
+                                    @if($fotoPath)
+                                        <img src="{{ asset('storage/' . $fotoPath) }}" alt="Foto {{ $item->nama }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                    @else
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                            <span class="text-muted" style="font-size: 0.9rem;">{{ mb_substr($item->nama, 0, 1) }}</span>
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="avatar avatar-sm" style="background-color: #206bc4; color: #fff; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">{{ mb_substr($item->nama, 0, 1) }}</span>
                                         <div>
                                             <div class="fw-medium">{{ $item->nama }}</div>
                                         </div>
@@ -145,6 +159,63 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div id="siswaGridViewContainer" class="row row-cols-1 row-cols-sm-2 row-cols-xl-3 g-3 d-none">
+                @forelse($items as $item)
+                    @php $fotoPath = $item->user->foto ?? null; @endphp
+                    <div class="col">
+                        <div class="card h-100 shadow-sm" data-search="{{ strtolower($item->nama . ' ' . $item->nis . ' ' . $item->nisn . ' ' . ($item->kelas->nama_kelas ?? '')) }}">
+                            <div class="card-body d-flex flex-column">
+                                <div class="overflow-hidden rounded mb-3" style="width:100%; aspect-ratio:4/6;">
+                                    @if($fotoPath)
+                                        <img src="{{ asset('storage/' . $fotoPath) }}" alt="Foto {{ $item->nama }}" class="w-100 h-100" style="object-fit: cover;">
+                                    @else
+                                        <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="width:100%; height:100%; font-size: 2rem;">
+                                            {{ mb_substr($item->nama, 0, 1) }}
+                                        </div>
+                                    @endif
+                                </div>
+                                <h5 class="mb-1">{{ $item->nama }}</h5>
+                                <div class="text-muted mb-2">NIS: {{ $item->nis }}</div>
+                                <div class="text-muted mb-2">NISN: {{ $item->nisn ?: '-' }}</div>
+                                <div class="text-muted mb-2">Kelas: {{ $item->kelas->nama_kelas ?? '-' }}</div>
+                                <div class="mb-3">
+                                    @if($item->jabatan_kelas === 'ketua')
+                                        <span class="badge bg-primary me-1">Ketua</span>
+                                    @elseif($item->jabatan_kelas === 'wakil')
+                                        <span class="badge bg-info me-1">Wakil Ketua Kelas</span>
+                                    @elseif($item->jabatan_kelas === 'sekretaris')
+                                        <span class="badge bg-warning me-1">Sekretaris</span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </div>
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ ($item->user && $item->user->is_active) ? 'success' : ($item->user ? 'secondary' : 'warning') }}">
+                                        @if($item->user)
+                                            {{ $item->user->is_active ? 'Aktif' : 'Nonaktif' }}
+                                        @else
+                                            Tanpa Akun
+                                        @endif
+                                    </span>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ route('siswa.edit', $item->id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="ti ti-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete('{{ $item->id }}')">
+                                            <i class="ti ti-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12 text-center text-muted py-6" data-search="">
+                        <i class="ti ti-inbox d-block mb-2" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                        Belum ada data siswa.
+                    </div>
+                @endforelse
             </div>
             @if(isset($items) && method_exists($items, 'hasPages') && $items->hasPages())
             <div class="card-footer d-flex align-items-center justify-content-between">
@@ -211,6 +282,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (row.cells.length <= 1) return;
             row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
         });
+        document.querySelectorAll('#siswaGridViewContainer .card').forEach(function(card) {
+            const searchText = card.getAttribute('data-search') || '';
+            card.closest('.col').style.display = searchText.includes(q) ? '' : 'none';
+        });
     });
     const selAll = document.getElementById('selectAllCheckbox');
     const boxes = document.querySelectorAll('.siswa-checkbox');
@@ -243,6 +318,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d?.message || 'Gagal'); if (d.success) { alert(d.message); location.reload(); } else { alert('Error: ' + d.message); } })
         .catch(e => { console.error(e); alert('Terjadi kesalahan saat menghapus data siswa.'); });
     });
+
+    function setSiswaView(mode) {
+        const listView = document.getElementById('siswaListViewContainer');
+        const gridView = document.getElementById('siswaGridViewContainer');
+        const listBtn = document.getElementById('siswaListViewBtn');
+        const gridBtn = document.getElementById('siswaGridViewBtn');
+        if (!listView || !gridView || !listBtn || !gridBtn) return;
+        if (mode === 'grid') {
+            listView.classList.add('d-none');
+            gridView.classList.remove('d-none');
+            gridBtn.classList.remove('btn-outline-secondary');
+            gridBtn.classList.add('btn-primary');
+            listBtn.classList.remove('btn-primary');
+            listBtn.classList.add('btn-outline-secondary');
+        } else {
+            gridView.classList.add('d-none');
+            listView.classList.remove('d-none');
+            listBtn.classList.remove('btn-outline-secondary');
+            listBtn.classList.add('btn-primary');
+            gridBtn.classList.remove('btn-primary');
+            gridBtn.classList.add('btn-outline-secondary');
+        }
+    }
+
+    const listViewBtn = document.getElementById('siswaListViewBtn');
+    const gridViewBtn = document.getElementById('siswaGridViewBtn');
+    if (listViewBtn) listViewBtn.addEventListener('click', function() { setSiswaView('list'); });
+    if (gridViewBtn) gridViewBtn.addEventListener('click', function() { setSiswaView('grid'); });
+    setSiswaView('list');
 });
 </script>
 @endpush
