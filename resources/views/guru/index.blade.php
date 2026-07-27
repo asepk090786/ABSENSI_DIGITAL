@@ -147,13 +147,13 @@
                 <div class="card h-100 shadow-sm">
                     <div class="card-body d-flex flex-column">
                         <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="overflow-hidden rounded" style="width:64px;height:64px;">
+                            <div class="overflow-hidden rounded" style="width:80px;height:120px;">
                                 @if(!empty($it->foto))
                                     <img src="{{ asset('storage/' . $it->foto) }}" alt="Foto {{ $it->nama }}" class="w-100 h-100" style="object-fit:cover;">
                                 @elseif($it->user && !empty($it->user->foto))
                                     <img src="{{ asset('storage/' . $it->user->foto) }}" alt="Foto {{ $it->nama }}" class="w-100 h-100" style="object-fit:cover;">
                                 @else
-                                    <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="width:64px;height:64px;">
+                                    <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="width:80px;height:120px;">
                                         {{ mb_substr($it->nama, 0, 1) }}
                                     </div>
                                 @endif
