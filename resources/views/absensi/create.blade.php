@@ -1103,6 +1103,7 @@
         }
 
         bindStatusRadioHandlers();
+        refreshAllStatusButtonStates();
 
         // prefill existing absensi if present
         try {
@@ -1134,19 +1135,22 @@
                         var rg = gCard.querySelector('.status-radio[value="'+norm+'"]'); if (rg) rg.checked=true;
                     }
                 });
+                refreshAllStatusButtonStates();
             }
         } catch (e) { console.warn('Prefill error', e); }
 
-        // Attach change listeners for status radios to update badges on table rows
+        // Attach change listeners for status radios for table/grid state updates
         document.querySelectorAll('.status-radio').forEach(function(radio){
             radio.removeEventListener('change', statusRadioHandler);
             radio.addEventListener('change', statusRadioHandler);
         });
+        refreshAllStatusButtonStates();
     }
 
     function statusRadioHandler() {
         var row = this.closest('tr');
         if (row) updateStatusBadge(this.value, row);
+        syncStatusButtonStates(this.name);
     }
 
     function bindStatusRadioHandlers() {
@@ -1156,16 +1160,66 @@
         });
     }
 
+    function syncStatusButtonStates(groupName) {
+        var radios = document.getElementsByName(groupName);
+        radios.forEach(function(radio) {
+            var label = radio.closest('label');
+            if (!label) return;
+            if (radio.checked) {
+                label.classList.add('active');
+            } else {
+                label.classList.remove('active');
+            }
+        });
+    }
+
+    function refreshAllStatusButtonStates() {
+        document.querySelectorAll('.status-radio').forEach(function(radio) {
+            var label = radio.closest('label');
+            if (!label) return;
+            if (radio.checked) {
+                label.classList.add('active');
+            } else {
+                label.classList.remove('active');
+            }
+        });
+    }
+
+    function isVisibleElement(el) {
+        if (!el) return false;
+        if (el.offsetWidth || el.offsetHeight || el.getClientRects().length) return true;
+        var label = el.closest('label');
+        return !!(label && (label.offsetWidth || label.offsetHeight || label.getClientRects().length));
+    }
+
     function setAllStatus(status) {
-        var radios = document.querySelectorAll('.status-radio');
+        var radios = Array.from(document.querySelectorAll('.status-radio'));
         if (!radios.length) return;
 
+        var handledNames = {};
         radios.forEach(function(radio) {
-            if (radio.value === status) {
-                radio.checked = true;
-                var row = radio.closest('tr');
+            var groupName = radio.name;
+            if (handledNames[groupName] || radio.value !== status) return;
+
+            var group = Array.from(document.getElementsByName(groupName));
+            // Prefer a radio with the requested value that is visible in the current view (table or grid).
+            // Fallback to any radio with the requested value, then any visible radio, then first in group.
+            var target = group.find(function(r) { return r.value === status && isVisibleElement(r); })
+                      || group.find(function(r) { return r.value === status; })
+                      || group.find(function(r) { return isVisibleElement(r); })
+                      || group[0];
+            if (!target) return;
+
+            if (!target.checked) {
+                target.checked = true;
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+                syncStatusButtonStates(groupName);
+            } else {
+                var row = target.closest('tr');
                 if (row) updateStatusBadge(status, row);
+                syncStatusButtonStates(groupName);
             }
+            handledNames[groupName] = true;
         });
     }
 
