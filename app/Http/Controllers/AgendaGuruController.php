@@ -38,7 +38,8 @@ class AgendaGuruController extends Controller
             $daftarGuru = Guru::query()
                 ->where('is_active', 1)
                 ->orderBy('nama')
-                ->get(['id', 'nama', 'nip']);
+                ->get(['id', 'nama', 'nip', 'foto'])
+                ->load('user');
 
             $absensiHariIni = AbsensiGuru::query()
                 ->whereDate('tanggal', $selectedTanggal)
