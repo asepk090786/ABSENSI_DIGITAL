@@ -1110,6 +1110,11 @@
                                     <i class="ti ti-circle-filled"></i> Backup Database
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('help.index') }}" class="nav-link {{ request()->routeIs('help.*') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> Help
+                                </a>
+                            </li>
                             @endif
                         </ul>
                     </div>
