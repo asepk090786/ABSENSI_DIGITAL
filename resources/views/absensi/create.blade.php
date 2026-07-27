@@ -599,13 +599,18 @@
         function renderGuruItems() {
             var data = guruPiketList || [];
             if (!Array.isArray(data)) data = (data || []).slice ? data : [];
+            var storageBase = '{{ asset('storage') }}';
             // render table
             if (guruTableBody) {
                 var html = '';
                 data.forEach(function(guru, idx){
+                    var fotoSrc = null;
+                    if (guru.foto) {
+                        fotoSrc = /^https?:\/\//i.test(guru.foto) ? guru.foto : storageBase + '/' + guru.foto;
+                    }
+                    var foto = fotoSrc ? '<img src="'+escapeHtml(fotoSrc)+'" class="student-photo" alt="Foto">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>';
                     html += '<tr data-guru-id="'+guru.id+'">';
                     html += '<td class="text-center">'+(idx+1)+'</td>';
-                    var foto = guru.foto ? '<img src="'+escapeHtml(guru.foto)+'" class="student-photo" alt="Foto">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>';
                     html += '<td class="text-center">'+foto+'</td>';
                     html += '<td>'+escapeHtml(guru.nama || '-')+'</td>';
                     ['hadir','sakit','izin','alpa'].forEach(function(val){
@@ -622,7 +627,11 @@
             if (guruGrid) {
                 guruGrid.innerHTML = '';
                 data.forEach(function(guru, idx){
-                    var foto = guru.foto ? ('<img src="'+escapeHtml(guru.foto)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:80px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"></div>';
+                    var fotoSrc = null;
+                    if (guru.foto) {
+                        fotoSrc = /^https?:\/\//i.test(guru.foto) ? guru.foto : storageBase + '/' + guru.foto;
+                    }
+                    var foto = fotoSrc ? ('<img src="'+escapeHtml(fotoSrc)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:80px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"></div>';
                     var col = document.createElement('div'); col.className = 'col-6 col-sm-4 col-md-3';
                     col.innerHTML = '<div class="card student-card p-2 h-100" data-guru-id="'+guru.id+'">' +
                         '<div class="d-flex flex-column align-items-center text-center">'+foto + '<div class="mt-2 fw-semibold">'+escapeHtml(guru.nama||'-')+'</div></div>' +
