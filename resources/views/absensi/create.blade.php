@@ -1102,6 +1102,8 @@
             });
         }
 
+        bindStatusRadioHandlers();
+
         // prefill existing absensi if present
         try {
             var preferJamId = null;
@@ -1147,12 +1149,22 @@
         if (row) updateStatusBadge(this.value, row);
     }
 
+    function bindStatusRadioHandlers() {
+        document.querySelectorAll('.status-radio').forEach(function(radio) {
+            radio.removeEventListener('change', statusRadioHandler);
+            radio.addEventListener('change', statusRadioHandler);
+        });
+    }
+
     function setAllStatus(status) {
-        document.querySelectorAll('.status-radio').forEach(radio => {
+        var radios = document.querySelectorAll('.status-radio');
+        if (!radios.length) return;
+
+        radios.forEach(function(radio) {
             if (radio.value === status) {
                 radio.checked = true;
-                const row = radio.closest('tr');
-                updateStatusBadge(status, row);
+                var row = radio.closest('tr');
+                if (row) updateStatusBadge(status, row);
             }
         });
     }
