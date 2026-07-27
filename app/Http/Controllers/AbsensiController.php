@@ -11,6 +11,7 @@ use App\Models\Guru;
 use App\Models\JamBelajar;
 use App\Models\Siswa;
 use App\Models\AbsensiSiswa;
+use App\Models\AbsensiGuru;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\JadwalKbm;
@@ -933,6 +934,43 @@ class AbsensiController extends Controller
             'status_sisa' => 'nullable|in:hadir,terlambat,sakit,izin,alpa',
             'overwrite_existing' => 'nullable|boolean',
         ]);
+
+        // handle absensi guru inputs (if present) - upsert per guru per tanggal
+        try {
+            $absensiGuruInputs = $request->input('absensi_guru', []);
+            $keteranganGuruInputs = $request->input('keterangan_guru', []);
+            foreach ($absensiGuruInputs as $gId => $statusRaw) {
+                $status = strtolower(trim($statusRaw ?? ''));
+                // normalize frontend values to DB enum
+                if (in_array($status, ['alpa','absen','alpha','alfa','tidak_hadir','tidak hadir'], true)) {
+                    $status = 'tidak_hadir';
+                } elseif ($status === 'hadir' || $status === 'sakit' || $status === 'izin') {
+                    // keep as-is
+                } else {
+                    // default to tidak_hadir for unknown values
+                    $status = 'tidak_hadir';
+                }
+
+                $keterangan = isset($keteranganGuruInputs[$gId]) ? trim($keteranganGuruInputs[$gId]) : null;
+
+                AbsensiGuru::updateOrCreate(
+                    [
+                        'guru_id' => $gId,
+                        'tanggal' => $validated['tanggal'],
+                        'tahun_ajaran_id' => $validated['tahun_ajaran_id'],
+                        'semester_id' => $validated['semester_id'],
+                    ],
+                    [
+                        'status' => $status,
+                        'keterangan' => $keterangan,
+                        'pencatat_guru_id' => auth()->user()->guru_id ?? null,
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            // don't block main flow; log and continue
+            Log::warning('absensi.store.absensi_guru_failed', ['error' => $e->getMessage(), 'input' => $request->input('absensi_guru')]);
+        }
 
         $statusCounts = [
             'hadir' => (int) ($validated['jumlah_hadir'] ?? 0),
