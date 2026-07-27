@@ -63,4 +63,9 @@ class Guru extends Model implements AuthenticatableContract
     {
         return $this->hasMany(Kelas::class, 'guru_bk_id');
     }
+
+    public function materiPembelajaran()
+    {
+        return $this->hasMany(MateriPembelajaran::class);
+    }
 }

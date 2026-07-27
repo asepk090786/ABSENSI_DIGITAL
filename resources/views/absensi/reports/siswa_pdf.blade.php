@@ -21,155 +21,57 @@
     $end = $endDate ?? $selectedTanggal;
 @endphp
 
-<div class="header">
-    <h2>
-        @if($period === 'daily')
-            Tabel Rekap Absensi Siswa Harian
-        @elseif($period === 'weekly')
-            Tabel Rekap Absensi Mingguan
-        @else
-            Tabel Rekap Absensi Bulanan
-        @endif
-    </h2>
-    <div class="small">Kelas: {{ $kelasLabel ?? '-' }} &nbsp;|&nbsp; Periode: {{ $period === 'daily' ? \Carbon\Carbon::parse($selectedTanggal)->format('d-m-Y') : (\Carbon\Carbon::parse($start)->format('d-m-Y') . ' s/d ' . \Carbon\Carbon::parse($end)->format('d-m-Y')) }}</div>
-</div>
-
 @if($period === 'daily')
-    <table>
-        <thead>
-            <tr>
-                <th style="width:4%">No</th>
-                <th>Nama Siswa</th>
-                @if(!empty($jamColumns) && is_array($jamColumns))
-                    @foreach($jamColumns as $jc)
-                        <th style="width:6%" class="center">J{{ $loop->iteration }}</th>
-                    @endforeach
-                @else
-                    <th style="width:6%" class="center">Hadir</th>
-                    <th style="width:6%" class="center">Sakit</th>
-                    <th style="width:6%" class="center">Izin</th>
-                    <th style="width:6%" class="center">Alpa</th>
-                @endif
-                <th style="width:8%" class="center">Total Absen</th>
-                <th style="width:12%" class="center">% Kehadiran</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($laporanRows as $i => $row)
-                <tr>
-                    <td class="center">{{ $i + 1 }}</td>
-                    <td>{{ $row->nama_siswa }}</td>
-                    @if(!empty($jamColumns) && is_array($jamColumns))
-                        @php
-                            $absenCount = 0;
-                            $hadirCount = 0;
-                            $totalJams = count($jamColumns);
-                        @endphp
-                        @foreach($jamColumns as $jc)
-                            @php
-                                $st = $row->statuses[$jc['id']] ?? '-';
-                                if ($st === 'Absen') $absenCount++;
-                                if ($st === 'Hadir') $hadirCount++;
-                                $display = '-';
-                                if ($st === 'Hadir') $display = 'H';
-                                elseif ($st === 'Terlambat') $display = 'T';
-                                elseif ($st === 'Sakit') $display = 'S';
-                                elseif ($st === 'Izin') $display = 'I';
-                                elseif ($st === 'Absen') $display = 'A';
-                            @endphp
-                            <td class="center">{{ $display }}</td>
-                        @endforeach
-                        @php $attendancePercent = $totalJams ? round(($hadirCount / $totalJams) * 100, 1) : 0; @endphp
-                        <td class="center">{{ $absenCount }}</td>
-                        <td class="center">{{ $attendancePercent }}%</td>
-                    @else
-                        <td class="center">{!! $row->status === 'Hadir' ? '&#10003;' : '' !!}</td>
-                        <td class="center">{!! $row->status === 'Sakit' ? '&#10003;' : '' !!}</td>
-                        <td class="center">{!! $row->status === 'Izin' ? '&#10003;' : '' !!}</td>
-                        <td class="center">{!! in_array($row->status, ['Absen','-']) ? '&#10003;' : '' !!}</td>
-                        <td class="center">-</td>
-                        <td class="center">-</td>
-                    @endif
-                </tr>
-            @endforeach
+    @php $grouped = $laporanRows->groupBy('nama_kelas'); @endphp
 
-            @if(!empty($jamColumns) && is_array($jamColumns))
-                {{-- Totals per jam (Hadir counts) --}}
-                <tr style="font-weight:700;background:#f8f9fa">
-                    <td class="center">-</td>
-                    <td></td>
-                    <td class="center">Total Hadir</td>
-                    <td></td>
-                    @foreach($jamColumns as $jc)
-                        @php
-                            $count = 0;
-                            foreach($laporanRows as $r) {
-                                if(isset($r->statuses[$jc['id']]) && $r->statuses[$jc['id']] === 'Hadir') $count++;
-                            }
-                        @endphp
-                        <td class="center">{{ $count }}</td>
-                    @endforeach
-                    <td></td>
-                </tr>
-
-                {{-- Summary --}}
-                @php
-                    $totalStudents = $laporanRows->count();
-                    $sumHadir = 0;
-                    foreach($jamColumns as $jc) {
-                        foreach($laporanRows as $r) {
-                            if(isset($r->statuses[$jc['id']]) && $r->statuses[$jc['id']] === 'Hadir') $sumHadir++;
-                        }
-                    }
-                    $totalPossible = $totalStudents * count($jamColumns);
-                    $attendancePercent = $totalPossible ? round(($sumHadir / $totalPossible) * 100, 1) : 0;
-                @endphp
+    @foreach($grouped as $kelasName => $rows)
+        <h4 style="margin:10px 0 4px 0">Kelas: {{ $kelasName }}</h4>
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="{{ 4 + count($jamColumns) }}" style="border:none;padding-top:10px">
-                        <div style="font-weight:600">Ringkasan Kehadiran: &nbsp;
-                            Jumlah Siswa: {{ $totalStudents }} &nbsp;|&nbsp;
-                            Total Hadir (semua jam): {{ $sumHadir }} &nbsp;|&nbsp;
-                            Persentase Kehadiran: {{ $attendancePercent }}%
-                        </div>
-                    </td>
+                    <th style="width:4%">No</th>
+                    <th style="width:12%">NIS</th>
+                    <th style="width:12%">NISN</th>
+                    <th>Nama Siswa</th>
+                    <th style="width:12%">Jenis Kelamin</th>
+                    <th style="width:12%" class="center">Kehadiran</th>
                 </tr>
-            @else
-                {{-- existing totals when no jamColumns --}}
+            </thead>
+            <tbody>
+                @foreach($rows as $i => $row)
+                    <tr>
+                        <td class="center">{{ $i + 1 }}</td>
+                        <td class="center">{{ $row->nis ?? '-' }}</td>
+                        <td class="center">{{ $row->nisn ?? '-' }}</td>
+                        <td>{{ $row->nama_siswa }}</td>
+                        <td class="center">{{ $row->jenis_kelamin ?? '-' }}</td>
+                        <td class="center">{{ $row->status ?? '-' }}</td>
+                    </tr>
+                @endforeach
+
                 @php
-                    $totalHadir = $laporanRows->where('status','Hadir')->count();
-                    $totalTerlambat = $laporanRows->where('status','Terlambat')->count();
-                    $totalSakit = $laporanRows->where('status','Sakit')->count();
-                    $totalIzin = $laporanRows->where('status','Izin')->count();
-                    $totalAlpa = $laporanRows->where('status','Absen')->count();
-                    $totalStudents = $laporanRows->count();
-                    $totalNotPresent = $totalStudents - $totalHadir;
+                    $totalHadir = $rows->where('status','Hadir')->count();
+                    $totalTerlambat = $rows->where('status','Terlambat')->count();
+                    $totalSakit = $rows->where('status','Sakit')->count();
+                    $totalIzin = $rows->where('status','Izin')->count();
+                    $totalAlpa = $rows->where('status','Absen')->count();
+                    $totalStudents = $rows->count();
                     $attendancePercent = $totalStudents ? round(($totalHadir / $totalStudents) * 100, 1) : 0;
                 @endphp
-                <tr style="font-weight:700;background:#f8f9fa">
-                    <td class="center">-</td>
-                    <td></td>
-                    <td class="center">Total</td>
-                    <td></td>
-                    <td class="center">{{ $totalHadir }}</td>
-                    <td class="center">{{ $totalSakit }}</td>
-                    <td class="center">{{ $totalIzin }}</td>
-                    <td class="center">{{ $totalAlpa }}</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="9" style="border:none;padding-top:10px">
-                        <div style="font-weight:600">Ringkasan Kehadiran: &nbsp;
-                            Jumlah Siswa: {{ $totalStudents }} &nbsp;|&nbsp;
-                            Hadir: {{ $totalHadir }} &nbsp;|&nbsp;
-                            Tidak Hadir: {{ $totalNotPresent }} &nbsp;|&nbsp;
-                            Persentase Kehadiran: {{ $attendancePercent }}%
-                        </div>
-                    </td>
-                </tr>
-            @endif
-        </tbody>
-    </table>
 
+                <tr style="font-weight:700;background:#f8f9fa">
+                    <td colspan="2">&nbsp;</td>
+                    <td colspan="1">Total</td>
+                    <td class="center">Hadir: {{ $totalHadir }}</td>
+                    <td class="center">Tidak Hadir: {{ $totalStudents - $totalHadir }}</td>
+                    <td class="center">Persentase: {{ $attendancePercent }}%</td>
+                </tr>
+                <tr style="font-size:11px">
+                    <td colspan="6">Rincian: Hadir {{ $totalHadir }} &nbsp;|&nbsp; Terlambat {{ $totalTerlambat }} &nbsp;|&nbsp; Sakit {{ $totalSakit }} &nbsp;|&nbsp; Izin {{ $totalIzin }} &nbsp;|&nbsp; Alpa {{ $totalAlpa }}</td>
+                </tr>
+            </tbody>
+        </table>
+    @endforeach
 @else
     @php
         $firstRow = $laporanRows->first();

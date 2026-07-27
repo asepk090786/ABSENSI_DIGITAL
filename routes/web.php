@@ -259,17 +259,37 @@ Route::middleware(['auth'])->group(function(){
     Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-word', 'App\Http\Controllers\RencanaPembelajaranController@export')->name('rencana_pembelajaran.export_word');
     Route::resource('rencana_pembelajaran', 'App\Http\Controllers\RencanaPembelajaranController');
     
+    // Materi Pembelajaran routes
+    Route::resource('materi_pembelajaran', 'App\Http\Controllers\MateriPembelajaranController');
+
+    // Siswa Pembelajaran routes
+    Route::prefix('siswa/pembelajaran')->name('siswa.pembelajaran.')->middleware('auth')->group(function () {
+        Route::get('materi', [App\Http\Controllers\SiswaPembelajaranController::class, 'index'])->name('materi');
+        Route::get('materi/{id}', [App\Http\Controllers\SiswaPembelajaranController::class, 'show'])->name('show');
+    });
+    
     Route::resource('kegiatan', 'App\Http\Controllers\KegiatanController');
 
     // Pengembangan Diri module
     Route::get('pengembangan', [App\Http\Controllers\PengembanganController::class, 'index'])->name('pengembangan.index');
     Route::get('pengembangan/create', [App\Http\Controllers\PengembanganController::class, 'create'])->name('pengembangan.create');
     Route::post('pengembangan', [App\Http\Controllers\PengembanganController::class, 'store'])->name('pengembangan.store');
-    Route::get('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'show'])->name('pengembangan.show');
-    Route::post('pengembangan/{id}/generate-certificates', [App\Http\Controllers\PengembanganController::class, 'generateCertificates'])->name('pengembangan.generate_certificates');
+    // Pengembangan template sertifikat
+    Route::get('pengembangan/templates', [App\Http\Controllers\PengembanganTemplateController::class, 'index'])->name('pengembangan.templates.index');
+    Route::get('pengembangan/templates/create', [App\Http\Controllers\PengembanganTemplateController::class, 'create'])->name('pengembangan.templates.create');
+    Route::post('pengembangan/templates', [App\Http\Controllers\PengembanganTemplateController::class, 'store'])->name('pengembangan.templates.store');
+    Route::get('pengembangan/templates/{id}/edit', [App\Http\Controllers\PengembanganTemplateController::class, 'edit'])->name('pengembangan.templates.edit');
+    Route::put('pengembangan/templates/{id}', [App\Http\Controllers\PengembanganTemplateController::class, 'update'])->name('pengembangan.templates.update');
+    Route::delete('pengembangan/templates/{id}', [App\Http\Controllers\PengembanganTemplateController::class, 'destroy'])->name('pengembangan.templates.destroy');
     Route::get('pengembangan/sertifikat/my', [App\Http\Controllers\PengembanganController::class, 'myCertificates'])->name('pengembangan.my_certificates');
     Route::get('pengembangan/sertifikat/{id}/download', [App\Http\Controllers\PengembanganController::class, 'downloadCertificate'])->name('pengembangan.certificates.download');
     Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
+    Route::get('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'show'])->name('pengembangan.show');
+    Route::post('pengembangan/{id}/generate-certificates', [App\Http\Controllers\PengembanganController::class, 'generateCertificates'])->name('pengembangan.generate_certificates');
+    Route::get('pengembangan/{id}/edit', [App\Http\Controllers\PengembanganController::class, 'edit'])->name('pengembangan.edit');
+    Route::put('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'update'])->name('pengembangan.update');
+    Route::delete('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'destroy'])->name('pengembangan.destroy');
+    Route::get('pengembangan/{id}/preview-certificate', [App\Http\Controllers\PengembanganController::class, 'previewCertificate'])->name('pengembangan.preview_certificate');
     
     // ASC Timetable routes
     Route::get('asc-timetable', ['App\Http\Controllers\AscTimetableController', 'index'])->name('asc_timetable.index');

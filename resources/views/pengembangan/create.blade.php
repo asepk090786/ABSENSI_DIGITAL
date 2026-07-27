@@ -11,7 +11,7 @@
             <select name="kegiatan_id" id="kegiatanSelect" class="form-control">
                 <option value="">-- Pilih dari daftar kegiatan --</option>
                 @foreach($kegiatanList as $kg)
-                    <option value="{{ $kg->id }}">{{ $kg->nama_kegiatan }} ({{ $kg->kode_kegiatan ?? '' }})</option>
+                    <option value="{{ $kg->id }}" data-kategori="{{ $kg->kategori }}">{{ $kg->nama_kegiatan }} ({{ $kg->kode_kegiatan ?? '' }})</option>
                 @endforeach
             </select>
             <small class="text-muted">Jika tidak memilih, isi manual di bawah.</small>
@@ -19,6 +19,10 @@
         <div class="mb-3">
             <label class="form-label">Nama Kegiatan (manual)</label>
             <input name="nama_kegiatan" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Tema Kegiatan</label>
+            <input name="tema_kegiatan" class="form-control" value="{{ old('tema_kegiatan') }}" />
         </div>
         <div class="mb-3">
             <label class="form-label">Jenis Kegiatan</label>
@@ -68,3 +72,22 @@
         <button class="btn btn-primary">Simpan</button>
     </form>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const jenisSelect = document.querySelector('select[name="jenis_kegiatan"]');
+    const kegiatanSelect = document.getElementById('kegiatanSelect');
+    if(!jenisSelect || !kegiatanSelect) return;
+    function filterKegiatan(){
+        const kode = jenisSelect.value || '';
+        for(const opt of kegiatanSelect.options){
+            const kat = opt.getAttribute('data-kategori') || '';
+            opt.style.display = (kode === '' || kat === kode) ? '' : 'none';
+        }
+    }
+    jenisSelect.addEventListener('change', filterKegiatan);
+    filterKegiatan();
+});
+</script>
+</push>

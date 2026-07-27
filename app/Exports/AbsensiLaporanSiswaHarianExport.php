@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -19,35 +20,70 @@ class AbsensiLaporanSiswaHarianExport implements FromCollection, WithHeadings, W
 
     public function collection(): Collection
     {
-        return $this->rows;
+        // Produce a class-level summary for each class present in the rows
+        $grouped = $this->rows->groupBy('nama_kelas');
+        $out = collect();
+
+        foreach ($grouped as $kelasName => $rows) {
+            $hadir = $rows->where('status', 'Hadir')->count();
+            $sakit = $rows->where('status', 'Sakit')->count();
+            $izin = $rows->where('status', 'Izin')->count();
+            $alpa = $rows->where('status', 'Absen')->count();
+            $total = $rows->count();
+            $percent = $total ? round(($hadir / $total) * 100, 1) : 0;
+
+            // attempt to resolve kelas id and wali kelas name
+            $kelasId = $rows->first()->kelas_id ?? null;
+            $waliName = '-';
+            if ($kelasId) {
+                $waliName = DB::table('kelas')
+                    ->leftJoin('guru', 'kelas.wali_kelas_id', '=', 'guru.id')
+                    ->where('kelas.id', $kelasId)
+                    ->value('guru.nama') ?? '-';
+            }
+
+            $keterangan = $rows->pluck('keterangan')->filter()->unique()->values()->join(' | ');
+
+            $out->push((object) [
+                'is_summary' => true,
+                'nama_kelas' => $kelasName,
+                'summary_hadir' => $hadir,
+                'summary_sakit' => $sakit,
+                'summary_izin' => $izin,
+                'summary_alpa' => $alpa,
+                'summary_total' => $total,
+                'summary_percent' => $percent,
+                'nama_wali_kelas' => $waliName,
+                'keterangan' => $keterangan ?: '-',
+            ]);
+        }
+
+        return $out;
     }
 
     public function headings(): array
     {
         return [
             'NO',
-            'TANGGAL',
             'KELAS',
-            'NAMA SISWA',
-            'NIS',
-            'NISN',
-            'STATUS HARIAN',
-            'GURU PENGINPUT',
+            'KEHADIRAN (Hadir | Sakit | Izin | Alpa)',
+            'JUMLAH HADIR',
+            'PERSENTASE KEHADIRAN',
+            'NAMA WALI KELAS',
             'KETERANGAN',
         ];
     }
 
     public function map($row): array
     {
+        // Only summary rows are produced by collection()
         return [
             $this->rowNumber++,
-            !empty($row->tanggal) ? Carbon::parse($row->tanggal)->format('d/m/Y') : '-',
             $row->nama_kelas ?? '-',
-            $row->nama_siswa ?? '-',
-            $row->nis ?? '-',
-            $row->nisn ?? '-',
-            $row->status ?? '-',
-            $row->nama_guru ?? '-',
+            'Hadir: ' . ($row->summary_hadir ?? 0) . ' | Sakit: ' . ($row->summary_sakit ?? 0) . ' | Izin: ' . ($row->summary_izin ?? 0) . ' | Alpa: ' . ($row->summary_alpa ?? 0),
+            $row->summary_hadir ?? 0,
+            ($row->summary_percent ?? 0) . '%',
+            $row->nama_wali_kelas ?? '-',
             $row->keterangan ?? '-',
         ];
     }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Pengembangan extends Model
 {
     protected $table = 'pengembangan_diri';
-    protected $fillable = ['nama_kegiatan','jenis_kegiatan','deskripsi','pemateri','tanggal_mulai','tanggal_selesai'];
+    protected $fillable = ['nama_kegiatan','tema_kegiatan','jenis_kegiatan','deskripsi','pemateri','tanggal_mulai','tanggal_selesai'];
 
     protected $casts = [
         'pemateri' => 'array',

@@ -251,16 +251,40 @@ class AbsensiController extends Controller
             abort(403, 'Akses ditolak. Silakan login.');
         }
 
-        // Allow Admin/Kepala Sekolah and Siswa with class position to print student recap
-        $canAdminPrint = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
-        if (! $canAdminPrint && ! $isSiswaOfficer) {
-            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah atau siswa dengan jabatan kelas.');
-        }
-
         $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
         $kelasId = $request->get('kelas_id');
+        $guruId = $request->get('guru_id');
         $period = $request->get('period', 'daily'); // daily, weekly, monthly
+
+        // Access is allowed for Admin/Kepala Sekolah, Guru Piket role, guru with piket schedule on selected date, and siswa officer.
+        $canAdminPrint = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruPiketRole = $user->hasRole('Guru Piket');
+        $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
+        $isGuruPiketSchedule = false;
+
+        if ($user->guru_id && ! $canAdminPrint && ! $isGuruPiketRole && ! $isSiswaOfficer) {
+            $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+            if (! empty($hariPiketArr)) {
+                $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
+                $map = [
+                    'Monday' => 'Senin',
+                    'Tuesday' => 'Selasa',
+                    'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis',
+                    'Friday' => 'Jumat',
+                    'Saturday' => 'Sabtu',
+                    'Sunday' => 'Minggu',
+                ];
+                $selectedDay = $map[$hariEnglish] ?? null;
+                if ($selectedDay && in_array($selectedDay, $hariPiketArr, true)) {
+                    $isGuruPiketSchedule = true;
+                }
+            }
+        }
+
+        if (! $canAdminPrint && ! $isGuruPiketRole && ! $isGuruPiketSchedule && ! $isSiswaOfficer) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah, Guru Piket atau siswa dengan jabatan kelas.');
+        }
 
         // If the user is a siswa officer, force kelasId to their kelas
         if ($isSiswaOfficer) {
@@ -293,15 +317,15 @@ class AbsensiController extends Controller
         $jamColumns = [];
         if ($period === 'daily') {
             // build per-jam matrix if kelas specified
-            $perJam = $this->getDailyStudentReportRowsPerJam($selectedTanggal, $kelasId, $tahun, $semester);
+            $perJam = $this->getDailyStudentReportRowsPerJam($selectedTanggal, $kelasId, $tahun, $semester, $guruId);
             if (is_array($perJam) && isset($perJam['rows'])) {
                 $laporanRows = $perJam['rows'];
                 $jamColumns = $perJam['jamColumns'];
             } else {
-                $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester);
+                $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester, $guruId);
             }
         } else {
-            $laporanRows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester);
+            $laporanRows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester, $guruId);
         }
 
         // Support two shapes of $laporanRows:
@@ -368,16 +392,45 @@ class AbsensiController extends Controller
     public function exportLaporanSiswa(Request $request)
     {
         $user = auth()->user();
-        if (! $user || ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
-            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin dan Kepala Sekolah.');
+        if (! $user) {
+            abort(403, 'Akses ditolak. Silakan login.');
         }
 
         $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
         $kelasId = $request->get('kelas_id');
+        $guruId = $request->get('guru_id');
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
-        $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester);
+        $canAdminExport = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruPiketRole = $user->hasRole('Guru Piket');
+        $isGuruPiketSchedule = false;
+
+        if ($user->guru_id && ! $canAdminExport && ! $isGuruPiketRole) {
+            $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+            if (! empty($hariPiketArr)) {
+                $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
+                $map = [
+                    'Monday' => 'Senin',
+                    'Tuesday' => 'Selasa',
+                    'Wednesday' => 'Rabu',
+                    'Thursday' => 'Kamis',
+                    'Friday' => 'Jumat',
+                    'Saturday' => 'Sabtu',
+                    'Sunday' => 'Minggu',
+                ];
+                $selectedDay = $map[$hariEnglish] ?? null;
+                if ($selectedDay && in_array($selectedDay, $hariPiketArr, true)) {
+                    $isGuruPiketSchedule = true;
+                }
+            }
+        }
+
+        if (! $canAdminExport && ! $isGuruPiketRole && ! $isGuruPiketSchedule) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah, Guru Piket atau guru dengan jadwal piket pada tanggal yang dipilih.');
+        }
+
+        $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester, $guruId);
 
         $filename = 'Laporan-Kehadiran-Siswa-Harian-' . Carbon::parse($selectedTanggal)->format('Ymd') . '.xlsx';
 
@@ -2086,8 +2139,14 @@ class AbsensiController extends Controller
             ->get();
     }
 
-    private function getDailyStudentReportRows(string $selectedTanggal, $kelasId, $tahun, $semester)
+    private function getDailyStudentReportRows(string $selectedTanggal, $kelasId, $tahun, $semester, $guruId = null)
     {
+        // ensure selectedTanggal is a Y-m-d string to avoid raw SQL injection/format issues
+        try {
+            $selectedTanggal = Carbon::parse($selectedTanggal)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            $selectedTanggal = date('Y-m-d');
+        }
         // If kelasId provided, attempt to limit to jadwal_kbm (jam) that apply to that class on the selected date
         $scheduledJamIds = null;
         if ($kelasId) {
@@ -2131,6 +2190,9 @@ class AbsensiController extends Controller
             ->when($kelasId, function ($query) use ($kelasId) {
                 $query->where('abs_k.kelas_id', $kelasId);
             })
+            ->when($guruId, function ($query) use ($guruId) {
+                $query->where('abs_k.guru_id', $guruId);
+            })
             ->when($tahun, function ($query) use ($tahun) {
                 $query->where('abs_k.tahun_ajaran_id', $tahun->id);
             })
@@ -2143,6 +2205,7 @@ class AbsensiController extends Controller
                 DB::raw('DATE(abs_k.tanggal) as tanggal'),
                 DB::raw("COALESCE(k.nama_kelas, '-') as nama_kelas"),
                 DB::raw("COALESCE(s.nama, '-') as nama_siswa"),
+                    DB::raw("COALESCE(s.jenis_kelamin, '-') as jenis_kelamin"),
                 DB::raw("COALESCE(s.nis, '-') as nis"),
                 DB::raw("COALESCE(s.nisn, '-') as nisn"),
                 DB::raw("GROUP_CONCAT(DISTINCT COALESCE(g.nama, '-') ORDER BY g.nama SEPARATOR ', ') as nama_guru"),
@@ -2162,6 +2225,7 @@ class AbsensiController extends Controller
                 DB::raw('DATE(abs_k.tanggal)'),
                 'k.nama_kelas',
                 's.nama',
+                's.jenis_kelamin',
                 's.nis',
                 's.nisn'
             );
@@ -2191,7 +2255,7 @@ class AbsensiController extends Controller
             ->get();
     }
 
-    private function getDailyStudentReportRowsPerJam(string $selectedTanggal, $kelasId, $tahun, $semester)
+    private function getDailyStudentReportRowsPerJam(string $selectedTanggal, $kelasId, $tahun, $semester, $guruId = null)
     {
         if (!$kelasId) {
             return null;
@@ -2241,6 +2305,9 @@ class AbsensiController extends Controller
             ->join('absensi_kelas as ak', 'asw.absensi_kelas_id', '=', 'ak.id')
             ->whereDate('ak.tanggal', $selectedTanggal)
             ->where('ak.kelas_id', $kelasId)
+            ->when($guruId, function ($query) use ($guruId) {
+                $query->where('ak.guru_id', $guruId);
+            })
             ->whereIn('ak.jam_belajar_id', $scheduledJamIds)
             ->select('asw.siswa_id', 'ak.jam_belajar_id', 'asw.status', 'asw.keterangan')
             ->get();
@@ -2316,7 +2383,7 @@ class AbsensiController extends Controller
             ->get();
     }
 
-    private function getRangeStudentReportRows(string $startDate, string $endDate, $kelasId, $tahun, $semester)
+    private function getRangeStudentReportRows(string $startDate, string $endDate, $kelasId, $tahun, $semester, $guruId = null)
     {
         // If kelasId provided, return aggregated rows for all students in the class
         if ($kelasId) {
@@ -2339,6 +2406,7 @@ class AbsensiController extends Controller
                 ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
                 ->whereBetween(DB::raw('DATE(abs_k.tanggal)'), [$startDate, $endDate])
                 ->when($kelasId, fn($q) => $q->where('abs_k.kelas_id', $kelasId))
+                ->when($guruId, fn($q) => $q->where('abs_k.guru_id', $guruId))
                 ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
                 ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
                 ->select(

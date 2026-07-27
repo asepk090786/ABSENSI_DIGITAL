@@ -268,10 +268,42 @@
                                 value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}"
                             >
                         </div>
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="kelas_id" class="form-label mb-1">Kelas</label>
+                            <select id="kelas_id" name="kelas_id" class="form-select">
+                                <option value="">Semua Kelas</option>
+                                @foreach($kelasList as $kelas)
+                                    <option value="{{ $kelas->id }}" {{ (string) $kelas->id === (string) ($filterKelasId ?? '') ? 'selected' : '' }}>
+                                        {{ $kelas->nama_kelas }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label for="guru_id" class="form-label mb-1">Guru</label>
+                            <select id="guru_id" name="guru_id" class="form-select">
+                                <option value="">Semua Guru</option>
+                                @foreach($guruList as $guru)
+                                    <option value="{{ $guru->id }}" {{ (string) $guru->id === (string) ($filterGuruId ?? '') ? 'selected' : '' }}>
+                                        {{ $guru->nama }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-auto">
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-search me-1"></i>Tampilkan
                             </button>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ route('absensi.laporan-siswa.print', ['tanggal' => $selectedTanggal ?? now()->format('Y-m-d'), 'kelas_id' => $filterKelasId, 'guru_id' => $filterGuruId]) }}" class="btn btn-outline-secondary" target="_blank">
+                                <i class="ti ti-file-text me-1"></i>Cetak PDF
+                            </a>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ route('absensi.laporan-siswa.export', ['tanggal' => $selectedTanggal ?? now()->format('Y-m-d'), 'kelas_id' => $filterKelasId, 'guru_id' => $filterGuruId]) }}" class="btn btn-outline-success">
+                                <i class="ti ti-file-export me-1"></i>Export Excel
+                            </a>
                         </div>
                         @unless($isSiswaWithoutClassPosition)
                         <div class="col-auto">

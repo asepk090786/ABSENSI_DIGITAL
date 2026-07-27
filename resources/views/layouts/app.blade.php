@@ -661,12 +661,26 @@
         }
 
         /* ========== DROPDOWN ========== */
+        .dropdown {
+            position: relative;
+        }
         .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
             border-radius: 0.65rem;
             border: 1px solid var(--card-border);
             box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 10px -6px rgba(0,0,0,0.05);
             padding: 0.35rem 0;
             z-index: 1100;
+            display: none;
+        }
+        .dropdown-menu.dropdown-menu-end {
+            right: 0;
+            left: auto;
+        }
+        .dropdown-menu.show {
+            display: block;
         }
         .dropdown-item {
             font-size: 0.82rem;
@@ -850,17 +864,33 @@
                 <!-- Pembelajaran (Guru) -->
                 @if($isGuru)
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-book"></i> Pembelajaran
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*']) ? 'show' : '' }}" id="subPembelajaran">
+                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*']) ? 'show' : '' }}" id="subPembelajaran">
                         <ul class="sidebar-subnav">
                             <li class="nav-item"><a href="{{ route('absensi.index', ['mode' => 'academic']) }}" class="nav-link {{ request()->routeIs('absensi.*') && $isModeAcademic ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
                             <li class="nav-item"><a href="{{ route('agenda_kelas.index') }}" class="nav-link {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Kelas</a></li>
                             <li class="nav-item"><a href="{{ route('agenda_guru.index', ['mode' => 'academic']) }}" class="nav-link {{ request()->routeIs('agenda_guru.*') && $isModeAcademic ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Guru</a></li>
                             <li class="nav-item"><a href="{{ route('nilai.index') }}" class="nav-link {{ request()->routeIs('nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Nilai</a></li>
                             <li class="nav-item"><a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rekap Nilai</a></li>
+                            <li class="nav-item"><a href="{{ route('materi_pembelajaran.index') }}" class="nav-link {{ request()->routeIs('materi_pembelajaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Materi</a></li>
+                        </ul>
+                    </div>
+                </li>
+                @endif
+
+                <!-- Pembelajaran (Siswa) -->
+                @if($user->hasRole('Siswa'))
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaranSiswa" aria-expanded="{{ request()->routeIs('siswa.pembelajaran.*') ? 'true' : 'false' }}">
+                        <i class="ti ti-book"></i> Pembelajaran
+                        <i class="ti ti-chevron-right nav-arrow"></i>
+                    </a>
+                    <div class="collapse {{ request()->routeIs('siswa.pembelajaran.*') ? 'show' : '' }}" id="subPembelajaranSiswa">
+                        <ul class="sidebar-subnav">
+                            <li class="nav-item"><a href="{{ route('siswa.pembelajaran.materi') }}" class="nav-link {{ request()->routeIs('siswa.pembelajaran.materi') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Materi</a></li>
                         </ul>
                     </div>
                 </li>
@@ -1176,7 +1206,7 @@
 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
 
 <!-- Scripts -->
-<!-- Load local Tabler bundle (includes Bootstrap) to avoid CDN blocking -->
+<script src="{{ asset('vendor/bootstrap/dist/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('vendor/tabler/dist/js/tabler.min.js') }}"></script>
 @stack('js')
 
@@ -1235,7 +1265,7 @@
         }
     });
 
-    // Initialize Toast
+    // Initialize Toast and Topbar interactions
     document.addEventListener('DOMContentLoaded', function() {
         var toastElList = [].slice.call(document.querySelectorAll('.toast'));
         toastElList.forEach(function(toastEl) {
@@ -1248,6 +1278,64 @@
                 if (toast) toast.hide();
             });
         });
+
+        var profileToggle = document.getElementById('userDropdown');
+        if (profileToggle) {
+            var profileMenu = profileToggle.nextElementSibling;
+            // Debug logs to help diagnose dropdown issues
+            console.log('Topbar: profileToggle', !!profileToggle, 'profileMenu', !!profileMenu);
+            console.log('Topbar: bootstrap defined?', typeof bootstrap !== 'undefined');
+
+            // If Bootstrap Dropdown is available, use its instance for proper show/hide handling
+            if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                var dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(profileToggle);
+
+                profileToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Topbar: avatar clicked — toggling Bootstrap dropdown');
+                    try {
+                        dropdownInstance.toggle();
+                    } catch (err) {
+                        console.error('Topbar: dropdownInstance.toggle error', err);
+                    }
+                    console.log('Topbar: menu classes after toggle', profileMenu ? profileMenu.className : null);
+                });
+
+                // Click outside should hide the dropdown via the Bootstrap instance
+                document.addEventListener('click', function(event) {
+                    if (!profileToggle.contains(event.target) && profileMenu && !profileMenu.contains(event.target)) {
+                        try {
+                            dropdownInstance.hide();
+                            console.log('Topbar: clicked outside — hid dropdown via Bootstrap');
+                        } catch (err) {
+                            profileMenu.classList.remove('show');
+                            profileToggle.setAttribute('aria-expanded', 'false');
+                            console.warn('Topbar: fallback hide applied', err);
+                        }
+                    }
+                });
+            } else {
+                // Fallback: simple class toggle when Bootstrap is not present
+                console.warn('Topbar: Bootstrap Dropdown not available — using fallback toggle');
+                profileToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Topbar: avatar clicked — using fallback toggle');
+                    if (profileMenu && profileMenu.classList.contains('dropdown-menu')) {
+                        profileMenu.classList.toggle('show');
+                        profileToggle.setAttribute('aria-expanded', profileMenu.classList.contains('show') ? 'true' : 'false');
+                        console.log('Topbar: menu classes after fallback toggle', profileMenu.className);
+                    }
+                });
+
+                document.addEventListener('click', function(event) {
+                    if (!profileToggle.contains(event.target) && profileMenu && !profileMenu.contains(event.target)) {
+                        profileMenu.classList.remove('show');
+                        profileToggle.setAttribute('aria-expanded', 'false');
+                        console.log('Topbar: clicked outside — fallback hide applied');
+                    }
+                });
+            }
+        }
     });
 </script>
 </body>
