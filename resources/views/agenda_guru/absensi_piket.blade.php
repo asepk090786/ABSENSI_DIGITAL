@@ -108,7 +108,7 @@
 
                         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                             <div class="form-check form-switch m-0">
-                                <input class="form-check-input" type="checkbox" id="checkAllHadir" onclick="handleCheckAllHadir(this)">
+                                <input class="form-check-input" type="checkbox" id="checkAllHadir" onchange="handleCheckAllHadir(this)">
                                 <label class="form-check-label" for="checkAllHadir">Ceklis hadir semua</label>
                             </div>
                             <div class="btn-group btn-group-sm" role="group">
@@ -252,6 +252,28 @@
             applyBulkStatus('hadir');
         }
     }
+
+    function updateCheckAllHadirStatus() {
+        const checkbox = document.getElementById('checkAllHadir');
+        if (!checkbox) return;
+
+        const selects = Array.from(document.querySelectorAll('.status-select'));
+        if (!selects.length) return;
+
+        const allPresent = selects.every(select => select.value === 'hadir');
+        const nonePresent = selects.every(select => select.value !== 'hadir');
+
+        checkbox.checked = allPresent;
+        checkbox.indeterminate = !allPresent && !nonePresent;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setView('list');
+        document.querySelectorAll('.status-select').forEach(function(select) {
+            select.addEventListener('change', updateCheckAllHadirStatus);
+        });
+        updateCheckAllHadirStatus();
+    });
 
     function setView(mode) {
         const listContainer = document.getElementById('listViewContainer');
