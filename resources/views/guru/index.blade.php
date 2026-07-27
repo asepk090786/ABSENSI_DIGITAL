@@ -18,7 +18,11 @@
                 <input type="search" class="form-control form-control-sm" id="searchInput" placeholder="Cari nama, kode, NIP, email, telepon...">
             </div>
         </div>
-        <div >
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="View toggle">
+                <button type="button" id="listViewBtn" class="btn btn-outline-secondary active">List</button>
+                <button type="button" id="gridViewBtn" class="btn btn-outline-secondary">Grid</button>
+            </div>
             <button type="button" id="deleteSelectedBtn" class="btn btn-sm btn-danger btn-modern me-2" style="display:none;">
                 <i class="ti ti-trash me-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
             </button>
@@ -44,12 +48,13 @@
     </div>
     @endif
 
-    <div class="table-responsive table-tabler">
+    <div id="listViewContainer" class="table-responsive table-tabler">
         <table class="table card-table table-vcenter table-hover" id="dataTable">
             <thead>
                 <tr>
                     <th style="width:36px;"><input type="checkbox" class="form-check-input" id="selectAllCheckbox"></th>
                     <th style="width:50px;">No</th>
+                    <th style="width:72px;">Foto</th>
                     <th>Nama Lengkap</th>
                     <th>Kode Guru</th>
                     <th>NIP</th>
@@ -66,10 +71,20 @@
                     <td><input type="checkbox" class="form-check-input guru-checkbox" data-guru-id="{{ $it->id }}"></td>
                     <td>{{ $idx + 1 }}</td>
                     <td>
+                        <div class="overflow-hidden rounded" style="width:48px;height:48px;">
+                            @if(!empty($it->foto))
+                                <img src="{{ asset('storage/' . $it->foto) }}" alt="Foto {{ $it->nama }}" class="w-100 h-100" style="object-fit:cover;">
+                            @elseif($it->user && !empty($it->user->foto))
+                                <img src="{{ asset('storage/' . $it->user->foto) }}" alt="Foto {{ $it->nama }}" class="w-100 h-100" style="object-fit:cover;">
+                            @else
+                                <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="width:48px;height:48px;">
+                                    {{ mb_substr($it->nama, 0, 1) }}
+                                </div>
+                            @endif
+                        </div>
+                    </td>
+                    <td>
                         <div class="d-flex align-items-center gap-2">
-                            <span class="avatar avatar-sm" style="background:var(--tblr-success-light);color:var(--tblr-success);border-radius:50%;width:2.2rem;height:2.2rem;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.8rem;">
-                                {{ mb_substr($it->nama, 0, 1) }}
-                            </span>
                             <span class="fw-medium">{{ $it->nama }}</span>
                         </div>
                     </td>
@@ -125,6 +140,67 @@
             @endforelse
             </tbody>
         </table>
+    </div>
+    <div id="gridViewContainer" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 d-none">
+        @forelse($items as $idx => $it)
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="overflow-hidden rounded" style="width:64px;height:64px;">
+                                @if(!empty($it->foto))
+                                    <img src="{{ asset('storage/' . $it->foto) }}" alt="Foto {{ $it->nama }}" class="w-100 h-100" style="object-fit:cover;">
+                                @elseif($it->user && !empty($it->user->foto))
+                                    <img src="{{ asset('storage/' . $it->user->foto) }}" alt="Foto {{ $it->nama }}" class="w-100 h-100" style="object-fit:cover;">
+                                @else
+                                    <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="width:64px;height:64px;">
+                                        {{ mb_substr($it->nama, 0, 1) }}
+                                    </div>
+                                @endif
+                            </div>
+                            <div>
+                                <h5 class="mb-1">{{ $it->nama }}</h5>
+                                <small class="text-muted">{{ $it->kode_guru ?? '-' }} · {{ $it->nip ?? '-' }}</small>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div><strong>Email:</strong> {{ $it->email ?? '-' }}</div>
+                            <div><strong>Telepon:</strong> {{ $it->telepon ?? '-' }}</div>
+                            <div><strong>Jenis Kelamin:</strong> {{ $it->jenis_kelamin === 'L' ? 'Laki-laki' : ($it->jenis_kelamin === 'P' ? 'Perempuan' : '-') }}</div>
+                        </div>
+                        <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+                            <div>
+                                @if($it->user)
+                                    <span class="badge bg-{{ $it->user->is_active ? 'success' : 'secondary' }}">{{ $it->user->is_active ? 'Aktif' : 'Non-Aktif' }}</span>
+                                @else
+                                    <span class="badge bg-warning">Belum Ada Akun</span>
+                                @endif
+                            </div>
+                            <div class="btn-group" role="group">
+                                @if(!$it->user)
+                                    <form action="{{ route('guru.generate-account', $it->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate akun otomatis untuk guru ini?')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-success btn-modern" title="Generate Akun">
+                                            <i class="ti ti-key"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('guru.edit', $it->id) }}" class="btn btn-sm btn-outline-primary btn-modern">
+                                    <i class="ti ti-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-modern" onclick="confirmDelete('{{ $it->id }}')">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="col-12 text-center py-8 text-muted">
+                <i class="ti ti-inbox ti-3x d-block mb-2 opacity-50"></i>Belum ada data guru.
+            </div>
+        @endforelse
     </div>
 </div>
 
@@ -228,6 +304,39 @@ document.addEventListener('DOMContentLoaded', function() {
             body: JSON.stringify({guru_ids: ids})
         }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d?.message || 'Gagal'); if (d.success) { alert(d.message); location.reload(); } else { alert('Error: ' + d.message); } })
         .catch(e => { console.error(e); alert('Terjadi kesalahan saat menghapus data guru.'); });
+    });
+
+    function setView(mode) {
+        const listView = document.getElementById('listViewContainer');
+        const gridView = document.getElementById('gridViewContainer');
+        const listBtn = document.getElementById('listViewBtn');
+        const gridBtn = document.getElementById('gridViewBtn');
+        if (!listView || !gridView || !listBtn || !gridBtn) return;
+        if (mode === 'grid') {
+            listView.classList.add('d-none');
+            gridView.classList.remove('d-none');
+            gridBtn.classList.remove('btn-outline-secondary');
+            gridBtn.classList.add('btn-primary');
+            listBtn.classList.remove('btn-primary');
+            listBtn.classList.add('btn-outline-secondary');
+        } else {
+            gridView.classList.add('d-none');
+            listView.classList.remove('d-none');
+            listBtn.classList.remove('btn-outline-secondary');
+            listBtn.classList.add('btn-primary');
+            gridBtn.classList.remove('btn-primary');
+            gridBtn.classList.add('btn-outline-secondary');
+        }
+    }
+
+    if (document.getElementById('listViewBtn')) {
+        document.getElementById('listViewBtn').addEventListener('click', function() { setView('list'); });
+    }
+    if (document.getElementById('gridViewBtn')) {
+        document.getElementById('gridViewBtn').addEventListener('click', function() { setView('grid'); });
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        setView('list');
     });
 });
 </script>
