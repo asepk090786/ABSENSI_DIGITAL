@@ -180,6 +180,9 @@
                             <div class="dropdown-menu">
                                 <a href="#" class="dropdown-item"><i class="ti ti-user me-2"></i>Profil</a>
                                 <a href="{{ route('setting.index') }}" class="dropdown-item"><i class="ti ti-settings-cog me-2"></i>Pengaturan</a>
+                                @if(auth()->user()?->hasAnyRole(['Admin','Kepala Sekolah']))
+                                    <a href="{{ route('help.admin.index') }}" class="dropdown-item"><i class="ti ti-help me-2"></i>Help</a>
+                                @endif
                             </div>
                         </li>
                     </ul>

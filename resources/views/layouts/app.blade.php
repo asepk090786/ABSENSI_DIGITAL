@@ -1110,11 +1110,13 @@
                                     <i class="ti ti-circle-filled"></i> Backup Database
                                 </a>
                             </li>
+                            @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
                             <li class="nav-item">
-                                <a href="{{ route('help.index') }}" class="nav-link {{ request()->routeIs('help.*') ? 'active' : '' }}">
+                                <a href="{{ route('help.admin.index') }}" class="nav-link {{ request()->routeIs('help.admin.*') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Help
                                 </a>
                             </li>
+                            @endif
                             @endif
                         </ul>
                     </div>

@@ -6,9 +6,13 @@ use App\Models\AgendaGuru;
 use App\Models\AbsensiGuru;
 use App\Models\Guru;
 use App\Models\JamBelajar;
+use App\Exports\GuruPiketAbsensiExport;
+use App\Exports\GuruPiketAbsensiMonthExport;
+use App\Exports\GuruPiketAbsensiRangeExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AgendaGuruController extends Controller
 {
@@ -589,5 +593,421 @@ class AgendaGuruController extends Controller
 
         // Render normal HTML view
         return view('agenda_guru.export', array_merge($viewData, ['forPdf' => false]));
+    }
+
+    public function exportAbsensiGuruPdf(Request $request)
+    {
+        $user = auth()->user();
+        $pencatatGuru = $user?->guru;
+
+        if (!$pencatatGuru) {
+            abort(403, 'Akun guru tidak ditemukan.');
+        }
+
+        $hariPiketArr = (array) ($pencatatGuru->hari_piket ?? []);
+        $todayIndo = $this->getHariIndonesiaFromDate($request->get('tanggal', now()->format('Y-m-d')));
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        if (!$isGuruPiket) {
+            abort(403, 'Anda tidak memiliki akses rekap absensi guru.');
+        }
+
+        $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
+
+        $daftarGuru = Guru::query()
+            ->where('is_active', 1)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nip']);
+
+        $absensiHariIni = DB::table('absensi_guru')
+            ->whereDate('tanggal', $selectedTanggal)
+            ->get()
+            ->keyBy('guru_id');
+
+        $agendaHariIni = DB::table('agenda_guru')
+            ->whereDate('tanggal', $selectedTanggal)
+            ->get()
+            ->pluck('id', 'guru_id')
+            ->toArray();
+
+        $hariAgenda = $this->getHariIndonesiaFromDate($selectedTanggal);
+
+        $jadwalQuery = DB::table('jadwal_kbm')
+            ->join('kelas', 'jadwal_kbm.kelas_id', '=', 'kelas.id')
+            ->join('jam_belajar', 'jadwal_kbm.jam_belajar_id', '=', 'jam_belajar.id')
+            ->where('jadwal_kbm.guru_id', '!=', 0)
+            ->where('jadwal_kbm.hari', $hariAgenda)
+            ->select(
+                'jadwal_kbm.guru_id',
+                'kelas.nama_kelas',
+                'jam_belajar.urutan',
+                'jam_belajar.jam_mulai',
+                'jam_belajar.jam_selesai'
+            )
+            ->orderBy('jam_belajar.urutan')
+            ->get();
+
+        $jadwalPerGuru = [];
+        $semuaJamUrutan = [];
+        foreach ($jadwalQuery as $jadwal) {
+            $jadwalPerGuru[$jadwal->guru_id][] = $jadwal;
+            $semuaJamUrutan[$jadwal->urutan] = (int) $jadwal->urutan;
+        }
+        $jamColumns = array_values($semuaJamUrutan);
+        $jamColumns = array_values(array_unique($jamColumns));
+        sort($jamColumns);
+
+        $rows = [];
+        $no = 1;
+        $summary = [
+            'hadir' => 0,
+            'izin' => 0,
+            'sakit' => 0,
+            'tidak_hadir' => 0,
+            'total' => 0,
+        ];
+        foreach ($daftarGuru as $item) {
+            $record = $absensiHariIni->get($item->id);
+            $status = $record->status ?? '';
+            $isHadir = $status === 'hadir';
+
+            $hasAgenda = isset($agendaHariIni[$item->id]);
+            $hasAbsensi = !empty($status);
+
+            if ($hasAbsensi && $hasAgenda) {
+                $rowColor = 'green';
+            } elseif ($hasAbsensi || $hasAgenda) {
+                $rowColor = 'yellow';
+            } else {
+                $rowColor = 'red';
+            }
+
+            $jadwalList = $jadwalPerGuru[$item->id] ?? [];
+            $jamStatus = [];
+            $jamColors = [];
+            foreach ($jamColumns as $urutan) {
+                $matched = collect($jadwalList)->firstWhere('urutan', $urutan);
+                if ($matched) {
+                    $cellValue = $isHadir ? $matched->nama_kelas : 'X';
+                    $jamStatus[$urutan] = $cellValue;
+                    if ($hasAbsensi && $hasAgenda) {
+                        $jamColors[$urutan] = '#d4edda';
+                    } elseif ($hasAbsensi || $hasAgenda) {
+                        $jamColors[$urutan] = '#fff3cd';
+                    } else {
+                        $jamColors[$urutan] = '#f8d7da';
+                    }
+                } else {
+                    $jamStatus[$urutan] = '';
+                    $jamColors[$urutan] = '#ffffff';
+                }
+            }
+
+            $keteranganParts = [];
+            foreach ($jadwalList as $jadwal) {
+                if ($isHadir) {
+                    $keteranganParts[] = 'Hadir: ' . $jadwal->nama_kelas;
+                }
+            }
+            $keterangan = $keteranganParts ? implode(', ', $keteranganParts) : '-';
+
+            $rows[] = [
+                'no' => $no++,
+                'nama' => $item->nama,
+                'nip' => $item->nip ?: '-',
+                'jam_status' => $jamStatus,
+                'jam_colors' => $jamColors,
+                'keterangan' => $keterangan,
+            ];
+
+            if ($status && isset($summary[$status])) {
+                $summary[$status]++;
+            }
+            $summary['total']++;
+        }
+
+        $sekolah = DB::table('sekolah')->first();
+        $sekolahNama = $sekolah->nama_sekolah ?? '';
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        $tahunAjaran = $tahun->nama_tahun ?? $tahun->nama_tahun_ajaran ?? '';
+        $semesterNama = $semester->nama_semester ?? '';
+
+        $namaGuruPiket = $pencatatGuru->nama ?? '-';
+        $kepalaSekolah = DB::table('kepala_sekolah')
+            ->where('status', 'Aktif')
+            ->orderBy('tanggal_mulai_jabatan', 'desc')
+            ->first();
+        if (!$kepalaSekolah) {
+            $kepalaSekolah = DB::table('kepala_sekolah')
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+        $namaKepalaSekolah = $kepalaSekolah->nama ?? '-';
+
+        $pdf = \PDF::loadView('agenda_guru.absensi_piket_pdf', compact(
+            'rows', 'selectedTanggal', 'sekolahNama', 'tahunAjaran', 'semesterNama', 'summary',
+            'namaGuruPiket', 'namaKepalaSekolah', 'pencatatGuru', 'kepalaSekolah', 'jamColumns'
+        ));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Rekap-Absensi-Guru-' . Carbon::parse($selectedTanggal)->format('Ymd') . '.pdf');
+    }
+
+    public function exportAbsensiGuruExcel(Request $request)
+    {
+        $user = auth()->user();
+        $pencatatGuru = $user?->guru;
+
+        if (!$pencatatGuru) {
+            abort(403, 'Akun guru tidak ditemukan.');
+        }
+
+        $hariPiketArr = (array) ($pencatatGuru->hari_piket ?? []);
+        $todayIndo = $this->getHariIndonesiaFromDate($request->get('tanggal', now()->format('Y-m-d')));
+        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        if (!$isGuruPiket) {
+            abort(403, 'Anda tidak memiliki akses rekap absensi guru.');
+        }
+
+        $selectedTanggal = $request->get('tanggal', now()->format('Y-m-d'));
+
+        $filename = 'Rekap-Absensi-Guru-' . Carbon::parse($selectedTanggal)->format('Ymd') . '.xlsx';
+
+        return Excel::download(new GuruPiketAbsensiExport($selectedTanggal), $filename);
+    }
+
+    public function exportAbsensiGuruRange(Request $request, $type)
+    {
+        $user = auth()->user();
+        $pencatatGuru = $user?->guru;
+
+        if (!$pencatatGuru) {
+            abort(403, 'Akun guru tidak ditemukan.');
+        }
+
+        $validated = $request->validate([
+            'start' => 'required|date',
+            'end' => 'required|date|after_or_equal:start',
+        ]);
+
+        $startDate = Carbon::parse($validated['start']);
+        $endDate = Carbon::parse($validated['end']);
+
+        $daftarGuru = Guru::query()
+            ->where('is_active', 1)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nip']);
+
+        $absensiRange = DB::table('absensi_guru')
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->get()
+            ->groupBy('guru_id');
+
+        $agendaRange = DB::table('agenda_guru')
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->get()
+            ->groupBy('guru_id')
+            ->map(fn($items) => $items->pluck('id')->toArray());
+
+        $dates = [];
+        for ($d = $startDate->copy(); $d->lte($endDate); $d->addDay()) {
+            $dates[] = $d->format('Y-m-d');
+        }
+
+        $rows = [];
+        $no = 1;
+        $summary = [
+            'hadir' => 0,
+            'izin' => 0,
+            'sakit' => 0,
+            'tidak_hadir' => 0,
+            'total' => 0,
+        ];
+
+        foreach ($daftarGuru as $item) {
+            $absensiMap = $absensiRange->get($item->id, collect())->keyBy('tanggal');
+            $hasAgenda = !empty($agendaRange->get($item->id, []));
+
+            $row = [
+                $no++,
+                $item->nama,
+                $item->nip ?: '-',
+            ];
+
+            foreach ($dates as $date) {
+                $record = $absensiMap->get($date);
+                $status = $record->status ?? '';
+                $row[] = $status ? match ($status) {
+                    'hadir' => 'H',
+                    'tidak_hadir' => 'A',
+                    'izin' => 'I',
+                    'sakit' => 'S',
+                    default => '-',
+                } : '-';
+            }
+
+            $row[] = $absensiMap->where('status', 'hadir')->count() ?? 0;
+            $row[] = $absensiMap->where('status', 'tidak_hadir')->count() ?? 0;
+            $row[] = $absensiMap->whereIn('status', ['izin', 'sakit'])->count() ?? 0;
+
+            $rows[] = $row;
+
+            foreach ($absensiMap as $record) {
+                $status = $record->status;
+                if ($status && isset($summary[$status])) {
+                    $summary[$status]++;
+                }
+            }
+            $summary['total']++;
+        }
+
+        $sekolah = DB::table('sekolah')->first();
+        $sekolahNama = $sekolah->nama_sekolah ?? '';
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        $tahunAjaran = $tahun->nama_tahun ?? $tahun->nama_tahun_ajaran ?? '';
+        $semesterNama = $semester->nama_semester ?? '';
+
+        $namaGuruPiket = $pencatatGuru->nama ?? '-';
+        $kepalaSekolah = DB::table('kepala_sekolah')
+            ->where('status', 'Aktif')
+            ->orderBy('tanggal_mulai_jabatan', 'desc')
+            ->first();
+        if (!$kepalaSekolah) {
+            $kepalaSekolah = DB::table('kepala_sekolah')
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+        $namaKepalaSekolah = $kepalaSekolah->nama ?? '-';
+
+        if ($type === 'pdf') {
+            $pdf = \PDF::loadView('agenda_guru.absensi_piket_range_pdf', compact(
+                'rows', 'dates', 'startDate', 'endDate', 'sekolahNama', 'tahunAjaran', 'semesterNama', 'summary',
+                'namaGuruPiket', 'namaKepalaSekolah', 'pencatatGuru', 'kepalaSekolah'
+            ));
+            $pdf->setPaper('a4', 'landscape');
+            return $pdf->stream('Rekap-Absensi-Guru-Range-' . $startDate->format('Ymd') . '.pdf');
+        }
+
+        return Excel::download(new GuruPiketAbsensiRangeExport($startDate, $endDate), 'Rekap-Absensi-Guru-Range-' . $startDate->format('Ymd') . '.xlsx');
+    }
+
+    public function exportAbsensiGuruMonth(Request $request, $type)
+    {
+        $user = auth()->user();
+        $pencatatGuru = $user?->guru;
+
+        if (!$pencatatGuru) {
+            abort(403, 'Akun guru tidak ditemukan.');
+        }
+
+        $validated = $request->validate([
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $month = (int) $validated['month'];
+        $year = (int) $validated['year'];
+
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+
+        $daftarGuru = Guru::query()
+            ->where('is_active', 1)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nip']);
+
+        $absensiRange = DB::table('absensi_guru')
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->get()
+            ->groupBy('guru_id');
+
+        $agendaRange = DB::table('agenda_guru')
+            ->whereBetween('tanggal', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->get()
+            ->groupBy('guru_id')
+            ->map(fn($items) => $items->pluck('id')->toArray());
+
+        $dates = [];
+        for ($d = $startDate->copy(); $d->lte($endDate); $d->addDay()) {
+            $dates[] = $d->format('Y-m-d');
+        }
+
+        $rows = [];
+        $no = 1;
+        $summary = [
+            'hadir' => 0,
+            'izin' => 0,
+            'sakit' => 0,
+            'tidak_hadir' => 0,
+            'total' => 0,
+        ];
+
+        foreach ($daftarGuru as $item) {
+            $absensiMap = $absensiRange->get($item->id, collect())->keyBy('tanggal');
+            $hasAgenda = !empty($agendaRange->get($item->id, []));
+
+            $row = [
+                $no++,
+                $item->nama,
+                $item->nip ?: '-',
+            ];
+
+            foreach ($dates as $date) {
+                $record = $absensiMap->get($date);
+                $status = $record->status ?? '';
+                $row[] = $status ? match ($status) {
+                    'hadir' => 'H',
+                    'tidak_hadir' => 'A',
+                    'izin' => 'I',
+                    'sakit' => 'S',
+                    default => '-',
+                } : '-';
+            }
+
+            $row[] = $absensiMap->where('status', 'hadir')->count() ?? 0;
+            $row[] = $absensiMap->where('status', 'tidak_hadir')->count() ?? 0;
+            $row[] = $absensiMap->whereIn('status', ['izin', 'sakit'])->count() ?? 0;
+
+            $rows[] = $row;
+
+            foreach ($absensiMap as $record) {
+                $status = $record->status;
+                if ($status && isset($summary[$status])) {
+                    $summary[$status]++;
+                }
+            }
+            $summary['total']++;
+        }
+
+        $sekolah = DB::table('sekolah')->first();
+        $sekolahNama = $sekolah->nama_sekolah ?? '';
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        $tahunAjaran = $tahun->nama_tahun ?? $tahun->nama_tahun_ajaran ?? '';
+        $semesterNama = $semester->nama_semester ?? '';
+
+        $namaGuruPiket = $pencatatGuru->nama ?? '-';
+        $kepalaSekolah = DB::table('kepala_sekolah')
+            ->where('status', 'Aktif')
+            ->orderBy('tanggal_mulai_jabatan', 'desc')
+            ->first();
+        if (!$kepalaSekolah) {
+            $kepalaSekolah = DB::table('kepala_sekolah')
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+        $namaKepalaSekolah = $kepalaSekolah->nama ?? '-';
+
+        if ($type === 'pdf') {
+            $pdf = \PDF::loadView('agenda_guru.absensi_piket_month_pdf', compact(
+                'rows', 'dates', 'month', 'year', 'sekolahNama', 'tahunAjaran', 'semesterNama', 'summary',
+                'namaGuruPiket', 'namaKepalaSekolah', 'pencatatGuru', 'kepalaSekolah'
+            ));
+            $pdf->setPaper('a4', 'landscape');
+            return $pdf->stream('Rekap-Absensi-Guru-Bulan-' . $month . '-' . $year . '.pdf');
+        }
+
+        return Excel::download(new GuruPiketAbsensiMonthExport($month, $year), 'Rekap-Absensi-Guru-Bulan-' . $month . '-' . $year . '.xlsx');
     }
 }

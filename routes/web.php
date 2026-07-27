@@ -24,6 +24,7 @@ Route::middleware('guest')->group(function () {
     Route::get('login',[AuthController::class,'showLogin'])->name('login');
     Route::post('login',[AuthController::class,'login'])->name('login.post');
 });
+// Note: public Help page removed temporarily. Admin editor remains under /help/admin
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
@@ -185,6 +186,10 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store','show','edit','update','destroy']);
     
     Route::get('agenda_guru/export', [AgendaGuruController::class, 'export'])->name('agenda_guru.export');
+    Route::get('agenda_guru/absensi/export/pdf', [AgendaGuruController::class, 'exportAbsensiGuruPdf'])->name('agenda_guru.absensi.export.pdf');
+    Route::get('agenda_guru/absensi/export/excel', [AgendaGuruController::class, 'exportAbsensiGuruExcel'])->name('agenda_guru.absensi.export.excel');
+    Route::get('agenda_guru/absensi/export/range/{type}', [AgendaGuruController::class, 'exportAbsensiGuruRange'])->name('agenda_guru.absensi.export.range');
+    Route::get('agenda_guru/absensi/export/month/{type}', [AgendaGuruController::class, 'exportAbsensiGuruMonth'])->name('agenda_guru.absensi.export.month');
     Route::post('agenda_guru/absensi', [AgendaGuruController::class, 'storeAbsensiGuru'])->name('agenda_guru.absensi.store');
     Route::resource('agenda_guru', AgendaGuruController::class)->only(['index','create','store','edit','update','destroy']);
     
@@ -340,14 +345,27 @@ Route::middleware(['auth'])->group(function(){
         Route::post('/setting/backup/settings', [SettingController::class, 'backupUpdateSettings'])->name('setting.backup.settings');
         Route::get('/setting/backup/download/{name}', [SettingController::class, 'backupDownload'])->name('setting.backup.download');
         Route::delete('/setting/backup/{name}', [SettingController::class, 'backupDelete'])->name('setting.backup.delete');
+        // Admin Help page management (list/create/edit/delete)
+        Route::get('/help/admin', [App\Http\Controllers\HelpController::class, 'adminIndex'])->name('help.admin.index');
+        Route::get('/help/admin/create', [App\Http\Controllers\HelpController::class, 'create'])->name('help.admin.create');
+        Route::post('/help/admin', [App\Http\Controllers\HelpController::class, 'storeAdmin'])->name('help.admin.store');
+        Route::get('/help/admin/{slug}/edit', [App\Http\Controllers\HelpController::class, 'edit'])->name('help.admin.edit');
+        Route::put('/help/admin/{slug}', [App\Http\Controllers\HelpController::class, 'update'])->name('help.admin.update');
+        Route::delete('/help/admin/{slug}', [App\Http\Controllers\HelpController::class, 'destroy'])->name('help.admin.destroy');
     });
     
     // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::get('/panduan', [ProfileController::class, 'panduan'])->name('profile.panduan');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::get('/panduan', [ProfileController::class, 'panduan'])->name('profile.panduan');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.updatePassword');
+    });
 });
+
+// Public Help pages (no auth required)
+Route::get('/help', [App\Http\Controllers\HelpController::class, 'publicIndex'])->name('help.public.index');
+Route::get('/help/{slug}', [App\Http\Controllers\HelpController::class, 'show'])->name('help.show');
 
 // File serving route - serve storage files via controller instead of direct symlink
 Route::get('/storage/{path}', [App\Http\Controllers\FileServeController::class, 'serve'])->where('path', '.*');

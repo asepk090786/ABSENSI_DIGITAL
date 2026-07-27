@@ -297,6 +297,8 @@
 
         <div class="login-footer">
             &copy; {{ date('Y') }} SIMADIS — SMAN 1 Pontang
+            <br>
+            <a href="{{ url('/help') }}" class="forgot-link" target="_blank">Butuh bantuan? Lihat Help</a>
         </div>
     </div>
 </div>

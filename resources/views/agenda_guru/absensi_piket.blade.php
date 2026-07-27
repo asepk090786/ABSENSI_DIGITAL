@@ -102,6 +102,74 @@
                         </div>
                     </div>
 
+                    <div class="d-flex justify-content-end mb-2 gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#exportModal" data-export-type="pdf">
+                            <i class="ti ti-file-pdf me-1"></i>Export PDF
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#exportModal" data-export-type="excel">
+                            <i class="ti ti-file-spreadsheet me-1"></i>Export Excel
+                        </button>
+                    </div>
+
+                    <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Pilih Jenis Export</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="exportForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">Jenis Export</label>
+                                            <select id="exportType" class="form-select">
+                                                <option value="single">Tanggal Tertentu</option>
+                                                <option value="range">Rentang Waktu</option>
+                                                <option value="month">Bulan</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3" id="singleDateField">
+                                            <label class="form-label">Tanggal</label>
+                                            <input type="date" class="form-control" id="exportSingleDate" value="{{ $selectedTanggal }}">
+                                        </div>
+
+                                        <div class="mb-3 d-none" id="rangeDateField">
+                                            <label class="form-label">Dari Tanggal</label>
+                                            <input type="date" class="form-control" id="exportRangeStart" value="{{ $selectedTanggal }}">
+                                            <label class="form-label mt-2">Sampai Tanggal</label>
+                                            <input type="date" class="form-control" id="exportRangeEnd" value="{{ $selectedTanggal }}">
+                                        </div>
+
+                                        <div class="mb-3 d-none" id="monthField">
+                                            <label class="form-label">Bulan</label>
+                                            <select class="form-select" id="exportMonth">
+                                                <option value="1">Januari</option>
+                                                <option value="2">Februari</option>
+                                                <option value="3">Maret</option>
+                                                <option value="4">April</option>
+                                                <option value="5">Mei</option>
+                                                <option value="6">Juni</option>
+                                                <option value="7">Juli</option>
+                                                <option value="8">Agustus</option>
+                                                <option value="9">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
+                                            <label class="form-label mt-2">Tahun</label>
+                                            <input type="number" class="form-control" id="exportYear" value="{{ now()->year }}" min="2000" max="2100">
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-primary" id="confirmExport">Export</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <form method="POST" action="{{ route('agenda_guru.absensi.store') }}">
                         @csrf
                         <input type="hidden" name="tanggal" value="{{ $selectedTanggal }}">
@@ -237,6 +305,79 @@
 </div>
 
 <script>
+    let currentExportType = 'pdf';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportModal = document.getElementById('exportModal');
+        const exportTypeSelect = document.getElementById('exportType');
+        const singleDateField = document.getElementById('singleDateField');
+        const rangeDateField = document.getElementById('rangeDateField');
+        const monthField = document.getElementById('monthField');
+        const confirmExportBtn = document.getElementById('confirmExport');
+
+        document.querySelectorAll('[data-export-type]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentExportType = this.getAttribute('data-export-type');
+            });
+        });
+
+        exportTypeSelect.addEventListener('change', function() {
+            const val = this.value;
+            singleDateField.classList.toggle('d-none', val !== 'single');
+            rangeDateField.classList.toggle('d-none', val !== 'range');
+            monthField.classList.toggle('d-none', val !== 'month');
+        });
+
+        confirmExportBtn.addEventListener('click', function() {
+            const exportType = exportTypeSelect.value;
+            const tanggal = document.getElementById('exportSingleDate').value;
+            const rangeStart = document.getElementById('exportRangeStart').value;
+            const rangeEnd = document.getElementById('exportRangeEnd').value;
+            const month = document.getElementById('exportMonth').value;
+            const year = document.getElementById('exportYear').value;
+
+            let url = '';
+
+            if (exportType === 'single') {
+                const baseUrl = currentExportType === 'pdf'
+                    ? '{{ route('agenda_guru.absensi.export.pdf') }}'
+                    : '{{ route('agenda_guru.absensi.export.excel') }}';
+                url = baseUrl + '?tanggal=' + encodeURIComponent(tanggal);
+            } else if (exportType === 'range') {
+                const baseUrl = currentExportType === 'pdf'
+                    ? '{{ route('agenda_guru.absensi.export.range', ['type' => 'pdf']) }}'
+                    : '{{ route('agenda_guru.absensi.export.range', ['type' => 'excel']) }}';
+                url = baseUrl + '?start=' + encodeURIComponent(rangeStart) + '&end=' + encodeURIComponent(rangeEnd);
+            } else if (exportType === 'month') {
+                const baseUrl = currentExportType === 'pdf'
+                    ? '{{ route('agenda_guru.absensi.export.month', ['type' => 'pdf']) }}'
+                    : '{{ route('agenda_guru.absensi.export.month', ['type' => 'excel']) }}';
+                url = baseUrl + '?month=' + encodeURIComponent(month) + '&year=' + encodeURIComponent(year);
+            }
+
+            if (url) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            setTimeout(() => {
+                const modalEl = document.getElementById('exportModal');
+                if (modalEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const instance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    if (instance) {
+                        instance.hide();
+                    }
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                }
+            }, 100);
+        });
+    });
+</script>
     function applyBulkStatus(statusValue) {
         const selects = document.querySelectorAll('.status-select');
         if (!selects.length) return;
