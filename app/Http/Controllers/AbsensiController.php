@@ -846,6 +846,16 @@ class AbsensiController extends Controller
             $jadwalList = collect();
         }
 
+        // If current user is a guru piket, provide the list of guru assigned piket for the selected day
+        $guruPiketList = collect();
+        if ($isGuruPiket) {
+            try {
+                $guruPiketList = Guru::whereJsonContains('hari_piket', $hariQuery)->orderBy('nama')->get();
+            } catch (\Throwable $e) {
+                $guruPiketList = collect();
+            }
+        }
+
         return view('absensi.create', compact(
             'kelasList',
             'guruList',
@@ -859,6 +869,7 @@ class AbsensiController extends Controller
             'selectedDate',
             'multiSlotJadwal',
             'isGuruPiket',
+            'guruPiketList',
             'isWaliKelas'
         ));
     }

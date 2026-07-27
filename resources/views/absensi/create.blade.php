@@ -380,6 +380,15 @@
                         </div>
 
                         
+                        @if($isGuruPiket ?? false)
+                        <div class="d-flex gap-2 mb-3">
+                            <div class="btn-group" role="group" aria-label="Absensi Type">
+                                <button type="button" id="tabSiswaBtn" class="btn btn-sm btn-primary active">Siswa</button>
+                                <button type="button" id="tabGuruBtn" class="btn btn-sm btn-outline-secondary">Guru</button>
+                            </div>
+                        </div>
+                        @endif
+
                         <div id="siswaContainer" style="display: none;">
                             <div class="card mt-4">
                                 <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
@@ -436,6 +445,43 @@
                                 </div>
                             </div>
                         </div>
+
+                        @if($isGuruPiket ?? false)
+                        <div id="guruContainer" style="display: none;">
+                            <div class="card mt-4">
+                                <div class="card-header bg-info-subtle d-flex flex-wrap align-items-center gap-3">
+                                    <h5 class="mb-0"><i class="ti ti-chalkboard-teacher me-2"></i>Daftar Guru Piket</h5>
+                                    <div class="ms-auto d-flex flex-wrap gap-2">
+                                        <button type="button" id="guruViewListBtn" class="btn btn-outline-secondary btn-sm active">List</button>
+                                        <button type="button" id="guruViewGridBtn" class="btn btn-outline-secondary btn-sm">Grid</button>
+                                        <input type="text" id="searchGuru" class="form-control form-control-sm" placeholder="Cari nama guru" style="min-width: 200px;">
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="guruTable" class="table table-bordered table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width:4%">No</th>
+                                                    <th style="width:12%">Foto</th>
+                                                    <th>Nama Guru</th>
+                                                    <th style="width:10%" class="text-center">Hadir</th>
+                                                    <th style="width:10%" class="text-center">Sakit</th>
+                                                    <th style="width:10%" class="text-center">Izin</th>
+                                                    <th style="width:10%" class="text-center">Alpa</th>
+                                                    <th style="width:20%">Keterangan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="guruTableBody">
+                                                <tr><td colspan="8" class="text-center text-muted">Memuat daftar guru piket...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div id="guruGrid" class="row g-3 mt-2" style="display:none;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
 
                         <div class="mt-4 d-flex gap-2">
                             <button type="submit" class="btn btn-primary" id="btnSubmit" disabled>
@@ -506,6 +552,99 @@
         console.log('jadwalList (from server):', jadwalList);
         console.log('jamBelajarServerRaw (from server):', jamBelajarServerRaw);
         console.log('jamBelajarServer (mapped by id):', jamBelajarServer);
+
+        // guru piket list (for guru piket users)
+        var guruPiketList = @json($guruPiketList ?? collect());
+        var tabSiswaBtn = document.getElementById('tabSiswaBtn');
+        var tabGuruBtn = document.getElementById('tabGuruBtn');
+        var guruContainerElem = document.getElementById('guruContainer');
+        var guruTableBody = document.getElementById('guruTableBody');
+        var guruGrid = document.getElementById('guruGrid');
+        var guruViewListBtn = document.getElementById('guruViewListBtn');
+        var guruViewGridBtn = document.getElementById('guruViewGridBtn');
+        var searchGuru = document.getElementById('searchGuru');
+
+        if (tabSiswaBtn) tabSiswaBtn.addEventListener('click', function(){
+            tabSiswaBtn.classList.add('btn-primary'); tabSiswaBtn.classList.remove('btn-outline-secondary');
+            tabGuruBtn.classList.remove('btn-primary'); tabGuruBtn.classList.add('btn-outline-secondary');
+            document.getElementById('siswaContainer').style.display = '';
+            if (guruContainerElem) guruContainerElem.style.display = 'none';
+        });
+
+        if (tabGuruBtn) tabGuruBtn.addEventListener('click', function(){
+            tabGuruBtn.classList.add('btn-primary'); tabGuruBtn.classList.remove('btn-outline-secondary');
+            tabSiswaBtn.classList.remove('btn-primary'); tabSiswaBtn.classList.add('btn-outline-secondary');
+            document.getElementById('siswaContainer').style.display = 'none';
+            if (guruContainerElem) {
+                guruContainerElem.style.display = '';
+                renderGuruItems();
+            }
+        });
+
+        if (guruViewListBtn) guruViewListBtn.addEventListener('click', function(){
+            guruViewListBtn.classList.add('active'); guruViewGridBtn.classList.remove('active');
+            if (guruGrid) guruGrid.style.display = 'none';
+            var gTable = document.getElementById('guruTable'); if (gTable) gTable.style.display = '';
+        });
+        if (guruViewGridBtn) guruViewGridBtn.addEventListener('click', function(){
+            guruViewGridBtn.classList.add('active'); guruViewListBtn.classList.remove('active');
+            if (guruGrid) guruGrid.style.display = ''; var gTable = document.getElementById('guruTable'); if (gTable) gTable.style.display = 'none';
+        });
+
+        if (searchGuru && !searchGuru.dataset.bound) {
+            searchGuru.dataset.bound = '1';
+            searchGuru.addEventListener('input', function(){ filterGuruRows(this.value); });
+        }
+
+        function renderGuruItems() {
+            var data = guruPiketList || [];
+            if (!Array.isArray(data)) data = (data || []).slice ? data : [];
+            // render table
+            if (guruTableBody) {
+                var html = '';
+                data.forEach(function(guru, idx){
+                    html += '<tr data-guru-id="'+guru.id+'">';
+                    html += '<td class="text-center">'+(idx+1)+'</td>';
+                    var foto = guru.foto ? '<img src="'+escapeHtml(guru.foto)+'" class="student-photo" alt="Foto">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>';
+                    html += '<td class="text-center">'+foto+'</td>';
+                    html += '<td>'+escapeHtml(guru.nama || '-')+'</td>';
+                    ['hadir','sakit','izin','alpa'].forEach(function(val){
+                        html += '<td class="text-center"><input type="radio" name="absensi_guru['+guru.id+']" value="'+val+'"></td>';
+                    });
+                    html += '<td><input type="text" name="keterangan_guru['+guru.id+']" class="form-control form-control-sm" placeholder="Keterangan"></td>';
+                    html += '</tr>';
+                });
+                if (data.length === 0) html = '<tr><td colspan="8" class="text-center text-muted">Tidak ada guru piket untuk hari ini.</td></tr>';
+                guruTableBody.innerHTML = html;
+            }
+
+            // render grid
+            if (guruGrid) {
+                guruGrid.innerHTML = '';
+                data.forEach(function(guru, idx){
+                    var foto = guru.foto ? ('<img src="'+escapeHtml(guru.foto)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:80px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"></div>';
+                    var col = document.createElement('div'); col.className = 'col-6 col-sm-4 col-md-3';
+                    col.innerHTML = '<div class="card student-card p-2 h-100" data-guru-id="'+guru.id+'">' +
+                        '<div class="d-flex flex-column align-items-center text-center">'+foto + '<div class="mt-2 fw-semibold">'+escapeHtml(guru.nama||'-')+'</div></div>' +
+                        '<div class="mt-2 d-flex justify-content-around">' +
+                        '<label class="btn btn-sm btn-outline-success"><input type="radio" name="absensi_guru['+guru.id+']" value="hadir">H</label>' +
+                        '<label class="btn btn-sm btn-outline-secondary"><input type="radio" name="absensi_guru['+guru.id+']" value="sakit">S</label>' +
+                        '<label class="btn btn-sm btn-outline-info"><input type="radio" name="absensi_guru['+guru.id+']" value="izin">I</label>' +
+                        '<label class="btn btn-sm btn-outline-danger"><input type="radio" name="absensi_guru['+guru.id+']" value="alpa">A</label>' +
+                        '</div>' + '<div class="mt-2"><input type="text" name="keterangan_guru['+guru.id+']" class="form-control form-control-sm" placeholder="Keterangan"></div>' +
+                    '</div>';
+                    guruGrid.appendChild(col);
+                });
+            }
+        }
+
+        function filterGuruRows(keyword) {
+            const lower = (keyword || '').toLowerCase();
+            const rows = document.querySelectorAll('#guruTableBody tr');
+            rows.forEach(r => { r.style.display = r.textContent.toLowerCase().includes(lower) ? '' : 'none'; });
+            const cards = document.querySelectorAll('#guruGrid .card');
+            cards.forEach(c => { c.parentElement.style.display = c.textContent.toLowerCase().includes(lower) ? '' : 'none'; });
+        }
 
         function renderJamOptionsByGuru() {
             if (!jamBelajarSelect) {
