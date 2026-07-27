@@ -26,19 +26,20 @@
         overflow-y: auto;
     }
 
+    /* List thumbnail: portrait 2:3 for clearer visibility */
     .student-photo {
-        width: 42px;
-        height: 42px;
+        width: 60px; /* 2 */
+        height: 90px; /* 3 */
         object-fit: cover;
-        border-radius: 50%;
+        border-radius: 6px;
         border: 1px solid #e5e7eb;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
     }
 
     .student-photo-placeholder {
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
+        width: 60px;
+        height: 90px;
+        border-radius: 6px;
         border: 1px dashed #cbd5e1;
         display: inline-flex;
         align-items: center;
@@ -156,7 +157,8 @@
 
     /* Grid/card styles for siswa grid view */
     .student-card { border: 1px solid #e9ecef; border-radius: 6px; }
-    .student-photo-grid { width: 90px; height: 120px; object-fit: cover; border-radius: 6px; }
+    /* Grid/card thumbnails set to 2:3 ratio as well */
+    .student-photo-grid { width: 80px; height: 120px; object-fit: cover; border-radius: 6px; }
 </style>
 
 <div class="container-fluid">
