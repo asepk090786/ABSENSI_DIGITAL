@@ -107,8 +107,11 @@
                                                     @endif
                                                     <td class="text-center">{{ ++$no }}</td>
                                                     <td>
-                                                        @if($item->foto)
-                                                            <img src="{{ asset('storage/' . $item->foto) }}" alt="Foto" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                                        @php
+                                                            $fotoPath = $item->foto ?: ($item->user->foto ?? null);
+                                                        @endphp
+                                                        @if($fotoPath)
+                                                            <img src="{{ asset('storage/' . $fotoPath) }}" alt="Foto {{ $item->nama }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
                                                         @else
                                                             <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                                 <i class="ti ti-user" style="font-size: 18px; color: #999;"></i>
@@ -191,8 +194,11 @@
                                                     <tr>
                                                         <td>{{ $index + 1 }}</td>
                                                         <td>
-                                                            @if($item->foto)
-                                                                <img src="{{ asset('storage/' . $item->foto) }}" alt="Foto" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                                            @php
+                                                                $fotoPath = $item->foto ?: ($item->user->foto ?? null);
+                                                            @endphp
+                                                            @if($fotoPath)
+                                                                <img src="{{ asset('storage/' . $fotoPath) }}" alt="Foto {{ $item->nama }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
                                                             @else
                                                                 <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                                                     <i class="ti ti-user" style="font-size: 24px; color: #999;"></i>
