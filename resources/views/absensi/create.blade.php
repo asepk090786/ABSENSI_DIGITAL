@@ -289,6 +289,41 @@
                                     Jika nonaktif, guru akan menginput absensi sendiri secara manual. Pada mode manual, guru hanya dapat menyimpan jika memiliki jadwal mengajar di kelas ini pada tanggal tersebut.
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mt-3 pt-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="form-check form-switch m-0">
+                                            <input class="form-check-input" type="checkbox" id="verifikasiToggle" name="verifikasi_aktif" value="1" {{ old('verifikasi_aktif', ($verificationActive ?? false)) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="verifikasiToggle">Aktifkan Kode Verifikasi</label>
+                                        </div>
+                                        <button type="button" id="saveVerificationConfigBtn" class="btn btn-sm btn-primary">Simpan</button>
+                                        <div>
+                                            <label class="form-label mb-0 small">Masa berlaku</label>
+                                            <select id="verificationTimeoutSelect" name="verification_timeout_seconds" class="form-select form-select-sm">
+                                                <option value="60" {{ ($verificationTimeoutSeconds ?? 300) == 60 ? 'selected' : '' }}>1 menit</option>
+                                                <option value="120" {{ ($verificationTimeoutSeconds ?? 300) == 120 ? 'selected' : '' }}>2 menit</option>
+                                                <option value="300" {{ ($verificationTimeoutSeconds ?? 300) == 300 ? 'selected' : '' }}>5 menit</option>
+                                                <option value="600" {{ ($verificationTimeoutSeconds ?? 300) == 600 ? 'selected' : '' }}>10 menit</option>
+                                                <option value="1800" {{ ($verificationTimeoutSeconds ?? 300) == 1800 ? 'selected' : '' }}>30 menit</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text text-muted">
+                                    Jika aktif, sistem akan menampilkan kode verifikasi yang harus digunakan siswa saat absen.
+                                </div>
+                                <div class="form-text text-muted mt-1">
+                                    Kode akan otomatis direfresh setelah waktu habis.
+                                </div>
+                                <div id="verificationSaveAlert" class="alert d-none mt-2" role="alert"></div>
+                                <div id="verificationCodeBox" class="alert alert-success mt-3 p-2" style="display:none;">
+                                    <div><strong>Kode Verifikasi:</strong> <span id="verificationCodeLabel">-</span></div>
+                                    <div class="small text-muted" id="verificationCountdown">Kode akan kadaluarsa dalam --:--.</div>
+                                </div>
+                                <div id="verificationStatusMessage" class="form-text text-success mt-2" style="display:none;"></div>
+                                <input type="hidden" name="kode_verifikasi" id="kode_verifikasi" value="{{ old('kode_verifikasi', $verificationCode ?? '') }}">
+                                <input type="hidden" name="kode_verifikasi_expires_at" id="kode_verifikasi_expires_at" value="{{ old('kode_verifikasi_expires_at', $verificationExpiresAt ?? '') }}">
+                            </div>
                             @endif
 
                             @if($isGuruPiket ?? false)
@@ -334,7 +369,7 @@
                                     @php
                                         $jamSlotText = ($multiSlotJadwal ?? collect())->map(function($item) {
                                             return 'Jam ke-' . ($item->jamBelajar->urutan ?? $item->jam_ke);
-                                        })->implode(', ');
+                                        })->unique()->implode(', ');
                                     @endphp
                                     @if(($multiSlotJadwal ?? collect())->count() > 1)
                                     <div class="alert alert-warning mt-2 mb-0 py-2">
@@ -503,6 +538,79 @@
         var btnSubmit = document.getElementById('btnSubmit');
         var isQuickAccess = '{{ $isQuickAccess ?? 0 }}' === '1';
         var isGuruPiket = '{{ ($isGuruPiket ?? false) ? 1 : 0 }}' === '1';
+        var formAbsensi = document.getElementById('formAbsensi');
+        var attendanceDraftStoragePrefix = 'absensi-create-draft';
+
+        function getAttendanceDraftStorageKey() {
+            var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : '';
+            var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : '';
+            var guruId = document.getElementById('guru_id') ? document.getElementById('guru_id').value : '';
+            var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : '';
+            return attendanceDraftStoragePrefix + ':' + [kelasId, tanggalVal, guruId, jamId].join('|');
+        }
+
+        function saveAttendanceDraft() {
+            if (!formAbsensi || !window.localStorage) return;
+            var payload = { radios: {}, fields: {} };
+            var inputs = formAbsensi.querySelectorAll('input, select, textarea');
+            Array.prototype.forEach.call(inputs, function(input) {
+                if (!input.name) return;
+                if (input.type === 'radio') {
+                    if (input.checked) payload.radios[input.name] = input.value;
+                } else if (input.type === 'checkbox') {
+                    payload.fields[input.name] = input.checked ? '1' : '0';
+                } else if (input.tagName === 'SELECT' || input.tagName === 'TEXTAREA' || input.type === 'text' || input.type === 'search' || input.type === 'number' || input.type === 'date') {
+                    payload.fields[input.name] = input.value;
+                }
+            });
+            try { window.localStorage.setItem(getAttendanceDraftStorageKey(), JSON.stringify(payload)); } catch (e) {}
+        }
+
+        function restoreAttendanceDraft() {
+            if (!formAbsensi || !window.localStorage) return;
+            var stored = null;
+            try { stored = window.localStorage.getItem(getAttendanceDraftStorageKey()); } catch (e) { return; }
+            if (!stored) return;
+            try { stored = JSON.parse(stored); } catch (e) { return; }
+            if (!stored) return;
+
+            if (stored.fields) {
+                Object.keys(stored.fields).forEach(function(name) {
+                    var matches = formAbsensi.querySelectorAll('[name="' + name + '"]');
+                    Array.prototype.forEach.call(matches, function(el) {
+                        if (el.type === 'checkbox') {
+                            el.checked = stored.fields[name] === '1' || stored.fields[name] === true || stored.fields[name] === 'true';
+                        } else {
+                            el.value = stored.fields[name] || '';
+                        }
+                    });
+                });
+            }
+
+            if (stored.radios) {
+                Object.keys(stored.radios).forEach(function(name) {
+                    var matches = formAbsensi.querySelectorAll('input[type="radio"][name="' + name + '"]');
+                    Array.prototype.forEach.call(matches, function(radio) {
+                        var isMatch = String(radio.value) === String(stored.radios[name]);
+                        if (isMatch) {
+                            radio.checked = true;
+                            radio.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else {
+                            radio.checked = false;
+                        }
+                    });
+                });
+            }
+
+            if (typeof refreshAllStatusButtonStates === 'function') {
+                refreshAllStatusButtonStates();
+            }
+        }
+
+        function clearAttendanceDraft() {
+            if (!window.localStorage) return;
+            try { window.localStorage.removeItem(getAttendanceDraftStorageKey()); } catch (e) {}
+        }
 
         // Ensure query params (kelas_id, tanggal, jam_belajar_id) populate inputs when present
         try {
@@ -645,6 +753,7 @@
                     guruGrid.appendChild(col);
                 });
             }
+            restoreAttendanceDraft();
         }
 
         function filterGuruRows(keyword) {
@@ -725,12 +834,11 @@
             // expose added jam ids for other logic
             window._lastAddedJamIds = Object.keys(added);
 
-            if (Object.keys(added).length === 0) {
+            var jamInfoBox = document.getElementById('jamInfoBox');
+            if (Object.keys(added).length === 0 || filtered.length === 0) {
                 jamBelajarSelect.innerHTML = '<option value="">Tidak ada jam KBM aktif untuk pilihan ini</option>';
-                var jamInfoBox = document.getElementById('jamInfoBox');
                 if (jamInfoBox) jamInfoBox.innerHTML = '';
             } else {
-                var jamInfoBox = document.getElementById('jamInfoBox');
                 if (jamInfoBox) {
                     var keys = Object.keys(added);
                     var labels = keys.map(function(k){
@@ -885,8 +993,8 @@
         }
 
         // Handle form submit when 'Pilih semua guru' selected
-        var formAbsensi = document.getElementById('formAbsensi');
         formAbsensi.addEventListener('submit', function(e){
+            clearAttendanceDraft();
             // if guruSelect is 'all', create hidden input apply_to_all_guru=1 and clear guru_id so backend treats as not set
             if (guruSelect && guruSelect.value === 'all') {
                 var existing = document.querySelector('input[name="apply_to_all_guru"]');
@@ -931,6 +1039,7 @@
                 console.log('Kelas changed to:', this.value);
                 renderGuruOptionsByKelasTanggal();
                 renderJamOptionsByGuru();
+                updateVerificationUi();
                 if (this.value) {
                     loadSiswaByKelas(this.value);
                 } else {
@@ -941,6 +1050,273 @@
             });
         }
 
+        var verificationToggle = document.getElementById('verifikasiToggle');
+        var verificationCodeBox = document.getElementById('verificationCodeBox');
+        var verificationCodeLabel = document.getElementById('verificationCodeLabel');
+        var verificationCountdown = document.getElementById('verificationCountdown');
+        var verificationHidden = document.getElementById('kode_verifikasi');
+        var verificationSaveAlert = document.getElementById('verificationSaveAlert');
+        var verificationStatusMessage = document.getElementById('verificationStatusMessage');
+        var saveVerificationConfigBtn = document.getElementById('saveVerificationConfigBtn');
+        var verificationTimeoutSeconds = {{ $verificationTimeoutSeconds ?? 300 }};
+        var verificationRemainingSeconds = verificationTimeoutSeconds;
+        var verificationTimerInterval = null;
+        var verificationIsRefreshing = false;
+        window._pendingAttendanceUpdates = window._pendingAttendanceUpdates || {};
+
+        function formatCountdown(seconds) {
+            var mins = Math.floor(seconds / 60);
+            var secs = seconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+        function startVerificationTimer() {
+            if (verificationTimerInterval) {
+                clearInterval(verificationTimerInterval);
+            }
+            verificationRemainingSeconds = Math.max(0, parseInt(verificationRemainingSeconds ?? verificationTimeoutSeconds, 10));
+            if (verificationCountdown) {
+                verificationCountdown.textContent = 'Kode akan kadaluarsa dalam ' + formatCountdown(verificationRemainingSeconds) + '.';
+            }
+            verificationTimerInterval = setInterval(function() {
+                verificationRemainingSeconds -= 1;
+                if (verificationRemainingSeconds <= 0) {
+                    if (!verificationIsRefreshing) {
+                        refreshVerificationCode();
+                    }
+                    return;
+                }
+                if (verificationCountdown) {
+                    verificationCountdown.textContent = 'Kode akan kadaluarsa dalam ' + formatCountdown(verificationRemainingSeconds) + '.';
+                }
+            }, 1000);
+        }
+
+        function refreshVerificationCode() {
+            // call server endpoint to generate and persist code
+            var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
+            var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
+            var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
+            var guruId = document.getElementById('guru_id') ? document.getElementById('guru_id').value : null;
+            var timeoutSelect = document.getElementById('verificationTimeoutSelect');
+            var timeoutSeconds = timeoutSelect ? parseInt(timeoutSelect.value, 10) : verificationTimeoutSeconds;
+
+            if (!kelasId || !tanggalVal) {
+                // fallback to client generation if not enough context
+                var fallback = '';
+                var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                for (var i = 0; i < 6; i++) fallback += chars.charAt(Math.floor(Math.random() * chars.length));
+                setVerificationCodeLocal(fallback, verificationTimeoutSeconds);
+                return;
+            }
+
+            var payload = {
+                kelas_id: kelasId,
+                jam_belajar_id: jamId || null,
+                tanggal: tanggalVal,
+                guru_id: guruId || null,
+                timeout_seconds: timeoutSeconds
+            };
+
+            verificationIsRefreshing = true;
+            fetch('{{ route('absensi.verification.refresh') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(payload)
+            }).then(function(res){ return res.json(); }).then(function(data){
+                if (data && data.success) {
+                    setVerificationCodeLocal(data.kode, data.timeout_seconds, data.expires_at);
+                } else {
+                    console.warn('Failed to refresh verification code', data);
+                }
+            }).catch(function(err){
+                console.error('Error refreshing verification code', err);
+            });
+        }
+
+        function setVerificationCodeLocal(code, timeoutSeconds, expiresAt) {
+            verificationIsRefreshing = false;
+            if (verificationHidden) verificationHidden.value = code;
+            if (verificationCodeLabel) verificationCodeLabel.textContent = code;
+            if (verificationCodeBox) verificationCodeBox.style.display = 'block';
+            if (typeof expiresAt !== 'undefined' && document.getElementById('kode_verifikasi_expires_at')) {
+                document.getElementById('kode_verifikasi_expires_at').value = expiresAt;
+            }
+            verificationTimeoutSeconds = parseInt(timeoutSeconds || verificationTimeoutSeconds, 10);
+            if (typeof expiresAt !== 'undefined' && expiresAt) {
+                var now = new Date();
+                var expiresAtDate = new Date(expiresAt);
+                if (!isNaN(expiresAtDate.getTime())) {
+                    verificationRemainingSeconds = Math.max(0, Math.round((expiresAtDate - now) / 1000));
+                } else {
+                    verificationRemainingSeconds = verificationTimeoutSeconds;
+                }
+            } else {
+                verificationRemainingSeconds = verificationTimeoutSeconds;
+            }
+            startVerificationTimer();
+        }
+
+        function showVerificationSaveAlert(message, type) {
+            if (!verificationSaveAlert) return;
+            verificationSaveAlert.classList.remove('d-none','alert-success','alert-danger','alert-warning','alert-info');
+            verificationSaveAlert.classList.add('alert-' + (type || 'info'));
+            verificationSaveAlert.textContent = message;
+        }
+
+        function isGuruAttendanceChecked() {
+            var guruRadios = Array.from(document.querySelectorAll('input[type="radio"][name^="absensi_guru"]'));
+            return guruRadios.some(function(radio) { return radio.checked; });
+        }
+
+        function setVerificationDisabledByGuruAttendance(disabled) {
+            if (verificationToggle) {
+                if (disabled) {
+                    verificationToggle.checked = false;
+                }
+                verificationToggle.disabled = disabled;
+            }
+            if (saveVerificationConfigBtn) {
+                saveVerificationConfigBtn.disabled = disabled;
+                if (disabled) {
+                    saveVerificationConfigBtn.classList.add('disabled');
+                } else {
+                    saveVerificationConfigBtn.classList.remove('disabled');
+                }
+            }
+            if (verificationCodeBox) {
+                if (disabled) {
+                    verificationCodeBox.style.display = 'none';
+                }
+            }
+            if (verificationHidden && disabled) {
+                verificationHidden.value = '';
+            }
+            if (verificationCountdown && disabled) {
+                verificationCountdown.textContent = '';
+            }
+            if (verificationStatusMessage) {
+                if (disabled) {
+                    verificationStatusMessage.style.display = 'block';
+                    verificationStatusMessage.textContent = 'Sudah ter verifikasi';
+                } else {
+                    verificationStatusMessage.style.display = 'none';
+                    verificationStatusMessage.textContent = '';
+                }
+            }
+        }
+
+        function updateVerificationStatusFromGuruAttendance() {
+            var guruAttendanceSelected = isGuruAttendanceChecked();
+            setVerificationDisabledByGuruAttendance(guruAttendanceSelected);
+            return guruAttendanceSelected;
+        }
+
+        function updateVerificationUi() {
+            if (!verificationToggle) {
+                return;
+            }
+
+            var guruAttendanceSelected = isGuruAttendanceChecked();
+            setVerificationDisabledByGuruAttendance(guruAttendanceSelected);
+            if (guruAttendanceSelected) {
+                return;
+            }
+
+            if (verificationToggle.checked) {
+                if (!verificationHidden || !verificationHidden.value) {
+                    refreshVerificationCode();
+                } else {
+                    if (verificationCodeLabel) {
+                        verificationCodeLabel.textContent = verificationHidden.value;
+                    }
+                    if (verificationCodeBox) {
+                        verificationCodeBox.style.display = 'block';
+                    }
+                    var expiresAtInput = document.getElementById('kode_verifikasi_expires_at');
+                    if (expiresAtInput && expiresAtInput.value) {
+                        var now = new Date();
+                        var expiresAt = new Date(expiresAtInput.value);
+                        if (!isNaN(expiresAt.getTime())) {
+                            verificationRemainingSeconds = Math.max(0, Math.round((expiresAt - now) / 1000));
+                        }
+                    }
+                    startVerificationTimer();
+                }
+            } else {
+                if (verificationTimerInterval) {
+                    clearInterval(verificationTimerInterval);
+                    verificationTimerInterval = null;
+                }
+                if (verificationCodeBox) {
+                    verificationCodeBox.style.display = 'none';
+                }
+                if (verificationHidden) {
+                    verificationHidden.value = '';
+                }
+                if (verificationCountdown) {
+                    verificationCountdown.textContent = '';
+                }
+            }
+        }
+
+        function saveVerificationConfig() {
+            if (!saveVerificationConfigBtn) return;
+            saveVerificationConfigBtn.disabled = true;
+            showVerificationSaveAlert('Menyimpan konfigurasi...', 'info');
+
+            var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
+            var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
+            var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
+            var active = verificationToggle ? verificationToggle.checked : false;
+            var timeout = document.getElementById('verificationTimeoutSelect') ? parseInt(document.getElementById('verificationTimeoutSelect').value, 10) : verificationTimeoutSeconds;
+
+            fetch('{{ route('absensi.verification.save') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    kelas_id: kelasId,
+                    tanggal: tanggalVal,
+                    jam_belajar_id: jamId || null,
+                    verifikasi_aktif: active ? 1 : 0,
+                    timeout_seconds: timeout
+                })
+            }).then(function(resp){ return resp.json(); }).then(function(json){
+                saveVerificationConfigBtn.disabled = false;
+                if (json && json.success) {
+                    showVerificationSaveAlert(json.message || 'Konfigurasi verifikasi berhasil disimpan.', 'success');
+                    if (active) {
+                        if (json.kode) {
+                            setVerificationCodeLocal(json.kode, json.timeout_seconds || timeout, json.expires_at);
+                        } else {
+                            refreshVerificationCode();
+                        }
+                    } else {
+                        if (verificationCodeBox) {
+                            verificationCodeBox.style.display = 'none';
+                        }
+                        if (verificationHidden) {
+                            verificationHidden.value = '';
+                        }
+                        if (verificationCountdown) {
+                            verificationCountdown.textContent = '';
+                        }
+                    }
+                } else {
+                    showVerificationSaveAlert(json.message || 'Gagal menyimpan konfigurasi verifikasi.', 'danger');
+                }
+            }).catch(function(err){
+                saveVerificationConfigBtn.disabled = false;
+                console.error(err);
+                showVerificationSaveAlert('Terjadi kesalahan saat menyimpan konfigurasi.', 'danger');
+            });
+        }
+
         if (ambilAbsensiToggle) {
             ambilAbsensiToggle.addEventListener('change', function() {
                 if (kelasSelect && kelasSelect.value) {
@@ -948,6 +1324,198 @@
                 }
             });
         }
+        if (verificationToggle) {
+            verificationToggle.addEventListener('change', updateVerificationUi);
+        }
+        if (saveVerificationConfigBtn) {
+            saveVerificationConfigBtn.addEventListener('click', saveVerificationConfig);
+        }
+        if (formAbsensi) {
+            formAbsensi.addEventListener('change', function(event) {
+                if (event.target && (event.target.matches('input[type="radio"]') || event.target.matches('select') || event.target.matches('textarea') || event.target.matches('input[type="checkbox"]'))) {
+                    saveAttendanceDraft();
+                }
+                if (event.target && event.target.matches('input[type="radio"][name^="absensi_guru"]')) {
+                    updateVerificationStatusFromGuruAttendance();
+                }
+            });
+            formAbsensi.addEventListener('input', function(event) {
+                if (event.target && (event.target.matches('input[type="text"]') || event.target.matches('input[type="number"]') || event.target.matches('input[type="search"]') || event.target.matches('textarea'))) {
+                    saveAttendanceDraft();
+                }
+            });
+        }
+        document.addEventListener('change', function(event) {
+            if (event.target && event.target.matches('input[type="radio"][name^="absensi_guru"]')) {
+                updateVerificationStatusFromGuruAttendance();
+            }
+        });
+        updateVerificationUi();
+
+        // Teacher-side polling: refresh existing absensi statuses periodically
+        var teacherPollingInterval = null;
+        var teacherPollingIntervalMs = 7000; // 7 seconds
+        function normalizeAttendanceStatus(status) {
+            var norm = String(status || '').toLowerCase().trim();
+            if (norm === 'telat') norm = 'terlambat';
+            if (norm === 'ijin') norm = 'izin';
+            if (!['hadir','terlambat','sakit','izin','alpa'].includes(norm)) norm = 'alpa';
+            return norm;
+        }
+
+        function getExistingStatuses(existing) {
+            if (!existing || typeof existing !== 'object') {
+                return {};
+            }
+            if (existing.daily && existing.daily.statuses && Object.keys(existing.daily.statuses).length > 0) {
+                return existing.daily.statuses;
+            }
+            var selJam = (document.getElementById('jam_belajar_id') && document.getElementById('jam_belajar_id').value) || null;
+            if (selJam && existing[selJam] && existing[selJam].statuses && Object.keys(existing[selJam].statuses).length > 0) {
+                return existing[selJam].statuses;
+            }
+            for (var k in existing) {
+                if (existing[k] && existing[k].statuses && Object.keys(existing[k].statuses).length > 0) {
+                    return existing[k].statuses;
+                }
+            }
+            return {};
+        }
+
+        function applyPendingAttendanceUpdates() {
+            if (!window._pendingAttendanceUpdates || !window._siswaCache) {
+                return;
+            }
+            Object.keys(window._pendingAttendanceUpdates).forEach(function(sid) {
+                var status = window._pendingAttendanceUpdates[sid];
+                var norm = normalizeAttendanceStatus(status);
+                var row = document.querySelector('#siswaTableBody tr[data-siswa-id="'+sid+'"]');
+                var radios = [];
+                if (row) {
+                    radios = Array.from(row.querySelectorAll('.status-radio[value="'+norm+'"]'));
+                }
+                if (radios.length === 0) {
+                    var card = document.querySelector('.student-card[data-siswa-id="'+sid+'"]');
+                    if (card) {
+                        radios = Array.from(card.querySelectorAll('.status-radio[value="'+norm+'"]'));
+                    }
+                }
+                radios.forEach(function(radio) {
+                    if (!radio.checked) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    var rrow = radio.closest('tr');
+                    if (rrow) updateStatusBadge(norm, rrow);
+                    var label = radio.closest('label');
+                    if (label) label.classList.add('active');
+                });
+                if (radios.length > 0) {
+                    delete window._pendingAttendanceUpdates[sid];
+                }
+            });
+            refreshAllStatusButtonStates();
+        }
+
+        function applyPolledStatuses(existing) {
+            try {
+                if (!existing) return;
+
+                if (!window._pendingAttendanceUpdates) {
+                    window._pendingAttendanceUpdates = {};
+                }
+
+                var statuses = getExistingStatuses(existing);
+                Object.keys(statuses).forEach(function(sid) {
+                    var norm = normalizeAttendanceStatus(statuses[sid]);
+                    var radios = [];
+                    var row = document.querySelector('#siswaTableBody tr[data-siswa-id="'+sid+'"]');
+                    if (row) {
+                        radios = Array.from(row.querySelectorAll('.status-radio[value="'+norm+'"]'));
+                    }
+                    if (radios.length === 0) {
+                        var card = document.querySelector('.student-card[data-siswa-id="'+sid+'"]');
+                        if (card) {
+                            radios = Array.from(card.querySelectorAll('.status-radio[value="'+norm+'"]'));
+                        }
+                    }
+                    if (radios.length === 0) {
+                        radios = Array.from(document.querySelectorAll('input.status-radio[data-siswa-id="'+sid+'"]')).filter(function(radio) {
+                            return radio.value === norm;
+                        });
+                    }
+                    if (radios.length === 0) {
+                        radios = Array.from(document.querySelectorAll('input.status-radio[name="absensi_siswa['+sid+']"][value="'+norm+'"]'));
+                    }
+
+                    if (radios.length === 0) {
+                        window._pendingAttendanceUpdates[sid] = norm;
+                        return;
+                    }
+
+                    radios.forEach(function(radio) {
+                        if (!radio.checked) {
+                            radio.checked = true;
+                            radio.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        var row = radio.closest('tr');
+                        if (row) updateStatusBadge(norm, row);
+                        var label = radio.closest('label');
+                        if (label) label.classList.add('active');
+                    });
+                });
+
+                refreshAllStatusButtonStates();
+            } catch (e) { console.warn('applyPolledStatuses error', e); }
+        }
+
+        function startTeacherPolling() {
+            if (teacherPollingInterval) return;
+            teacherPollingInterval = setInterval(function(){
+                try {
+                    var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
+                    var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
+                    if (!kelasId || !tanggalVal) return;
+                    var url = '{{ route("absensi.get-siswa") }}?kelas_id='+encodeURIComponent(kelasId)+'&tanggal='+encodeURIComponent(tanggalVal)+'&load_existing=1';
+                    fetch(url).then(r=>r.json()).then(function(json){ if (json && json.existing_absensi) applyPolledStatuses(json.existing_absensi); }).catch(function(e){ /*ignore*/ });
+                } catch (e) {}
+            }, teacherPollingIntervalMs);
+        }
+
+        function stopTeacherPolling() { if (teacherPollingInterval) { clearInterval(teacherPollingInterval); teacherPollingInterval = null; } }
+
+        // Start/stop polling based on verification toggle state
+        if (verificationToggle) {
+            verificationToggle.addEventListener('change', function(){ if (verificationToggle.checked) startTeacherPolling(); else stopTeacherPolling(); });
+        }
+        // If verification is currently active on load, start polling
+        if (verificationToggle && verificationToggle.checked) startTeacherPolling();
+
+        // Real-time push via Laravel Echo (Pusher / Echo server). If Echo is available, subscribe to class channel.
+        try {
+            if (window.Echo) {
+                var subscribeToRealtime = function() {
+                    try {
+                        var kelasIdRt = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
+                        var tanggalRt = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
+                        if (!kelasIdRt || !tanggalRt) return;
+                        var channelName = 'absensi-kelas.' + kelasIdRt + '.' + tanggalRt;
+                        // listen for StudentVerified events
+                        window.Echo.channel(channelName).listen('.StudentVerified', function(e) {
+                            try {
+                                var payload = {};
+                                payload['daily'] = { statuses: {} };
+                                payload['daily'].statuses[e.siswa_id] = e.status;
+                                applyPolledStatuses(payload);
+                            } catch (er) { console.warn('echo event handler error', er); }
+                        });
+                    } catch (e) { console.warn('Realtime subscribe failed', e); }
+                };
+                // subscribe initially and re-subscribe on kelas/tanggal change
+                subscribeToRealtime();
+                ['kelas_id','tanggal'].forEach(function(id){ var el = document.getElementById(id); if (el) el.addEventListener('change', function(){ subscribeToRealtime(); }); });
+            }
+        } catch (e) { /* ignore */ }
 
         function loadSiswaByKelas(kelasId) {
             console.log('Fetching siswa for kelas:', kelasId);
@@ -979,6 +1547,9 @@
                                 filterSiswaRows(this.value);
                             });
                         }
+                        renderSiswaItems();
+                        restoreAttendanceDraft();
+                        applyPendingAttendanceUpdates();
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
                         siswaContainer.style.display = 'block';
@@ -1104,6 +1675,7 @@
 
         bindStatusRadioHandlers();
         refreshAllStatusButtonStates();
+        restoreAttendanceDraft();
 
         // prefill existing absensi if present
         try {
@@ -1136,6 +1708,7 @@
                     }
                 });
                 refreshAllStatusButtonStates();
+                applyPendingAttendanceUpdates();
             }
         } catch (e) { console.warn('Prefill error', e); }
 
