@@ -713,6 +713,7 @@
 
                         var activeKelasId = '{{ $filterKelasId ?? '' }}';
                         var activeGuruId = '{{ $filterGuruId ?? '' }}';
+                        var roleFlags = {!! json_encode(['isAdminOrKepala' => $isAdminOrKepala, 'isGuruBk' => $isGuruBk]) !!};
                         var btn = document.getElementById('btn_print_rekap');
                         if (!btn) return;
                         btn.addEventListener('click', function(e){
@@ -753,6 +754,11 @@
                                 '&range_start=' + encodeURIComponent(rangeStart) +
                                 '&range_end=' + encodeURIComponent(rangeEnd);
 
+                            // require kelas selection for non-admin / non-Guru BK users
+                            if (!roleFlags.isAdminOrKepala && !roleFlags.isGuruBk && !activeKelasId) {
+                                alert('Pilih kelas yang Anda ampu sebelum mencetak rekap. Jika Anda bukan admin atau Guru BK, pilihlah kelas Anda pada filter Kelas.');
+                                return;
+                            }
                             if (activeKelasId) {
                                 url += '&kelas_id=' + encodeURIComponent(activeKelasId);
                             }
@@ -803,6 +809,11 @@
                                     '&range_start=' + encodeURIComponent(rangeStart) +
                                     '&range_end=' + encodeURIComponent(rangeEnd);
 
+                                // require kelas selection for non-admin / non-Guru BK users
+                                if (!roleFlags.isAdminOrKepala && !roleFlags.isGuruBk && !activeKelasId) {
+                                    alert('Pilih kelas yang Anda ampu sebelum melakukan export. Jika Anda bukan admin atau Guru BK, pilihlah kelas Anda pada filter Kelas.');
+                                    return;
+                                }
                                 if (activeKelasId) {
                                     url += '&kelas_id=' + encodeURIComponent(activeKelasId);
                                 }
