@@ -22,6 +22,7 @@
                         <div class="card h-100 border">
                             <div class="card-body">
                                 <div class="form-check form-switch">
+                                    <input type="hidden" name="allow_edit_past_for_guru" value="0">
                                     <input class="form-check-input" type="checkbox" id="allow_edit_past_for_guru" name="allow_edit_past_for_guru" value="1" {{ old('allow_edit_past_for_guru', $settings['allow_edit_past_for_guru']) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="allow_edit_past_for_guru">Izinkan guru mengedit absensi tanggal lampau</label>
                                 </div>
@@ -33,6 +34,7 @@
                         <div class="card h-100 border">
                             <div class="card-body">
                                 <div class="form-check form-switch">
+                                    <input type="hidden" name="allow_edit_past_for_siswa_officer" value="0">
                                     <input class="form-check-input" type="checkbox" id="allow_edit_past_for_siswa_officer" name="allow_edit_past_for_siswa_officer" value="1" {{ old('allow_edit_past_for_siswa_officer', $settings['allow_edit_past_for_siswa_officer']) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="allow_edit_past_for_siswa_officer">Izinkan siswa dengan jabatan mengedit absensi tanggal lampau</label>
                                 </div>

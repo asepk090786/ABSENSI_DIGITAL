@@ -39,13 +39,13 @@ class SettingController extends Controller
     public function updateAbsensi(Request $request)
     {
         $validated = $request->validate([
-            'allow_edit_past_for_guru' => 'required|boolean',
-            'allow_edit_past_for_siswa_officer' => 'required|boolean',
+            'allow_edit_past_for_guru' => 'nullable|boolean',
+            'allow_edit_past_for_siswa_officer' => 'nullable|boolean',
         ]);
 
         $settings = new SettingsManager();
-        $settings->set('attendance.allow_edit_past_for_guru', (bool) $validated['allow_edit_past_for_guru']);
-        $settings->set('attendance.allow_edit_past_for_siswa_officer', (bool) $validated['allow_edit_past_for_siswa_officer']);
+        $settings->set('attendance.allow_edit_past_for_guru', (bool) ($validated['allow_edit_past_for_guru'] ?? false));
+        $settings->set('attendance.allow_edit_past_for_siswa_officer', (bool) ($validated['allow_edit_past_for_siswa_officer'] ?? false));
 
         return redirect()->route('setting.absensi')->with('success', 'Pengaturan absensi disimpan.');
     }

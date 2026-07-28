@@ -295,6 +295,7 @@
                                 <i class="ti ti-search me-1"></i>Tampilkan
                             </button>
                         </div>
+                        @if($canPrintExport ?? false)
                         <div class="col-auto">
                             <a href="{{ route('absensi.laporan-siswa.print', ['tanggal' => $selectedTanggal ?? now()->format('Y-m-d'), 'kelas_id' => $filterKelasId, 'guru_id' => $filterGuruId]) }}" class="btn btn-outline-secondary" target="_blank">
                                 <i class="ti ti-file-text me-1"></i>Cetak PDF
@@ -305,6 +306,7 @@
                                 <i class="ti ti-file-export me-1"></i>Export Excel
                             </a>
                         </div>
+                        @endif
                         @unless($isSiswaWithoutClassPosition)
                         <div class="col-auto">
                             <a href="{{ route('absensi.create') }}" class="btn btn-success">
@@ -425,9 +427,8 @@
                             Data Absensi Kelas
                         @endif
                     </h3>
-                    @if(!($isAdminOrKepala || ($isGuruPiket ?? false)))
+                    @if($canPrintExport ?? false)
                         <div class="d-flex align-items-center">
-                            @php $currentUser = auth()->user(); @endphp
                             <div class="d-flex align-items-center gap-2 me-3">
                                 <label class="mb-0">Periode:</label>
                                 <select id="print_period" class="form-select form-select-sm" style="width:140px;">
@@ -444,6 +445,9 @@
                             <div class="ms-auto d-flex align-items-center gap-2">
                                 <button id="btn_print_rekap" class="btn btn-sm btn-success btn-modern">
                                     <i class="ti ti-file-text me-1"></i> Cetak Rekap Absensi
+                                </button>
+                                <button id="btn_export_rekap" class="btn btn-sm btn-outline-success btn-modern">
+                                    <i class="ti ti-file-export me-1"></i> Export Excel Rekap
                                 </button>
 
                                 @unless($isSiswaWithoutClassPosition)
@@ -707,6 +711,8 @@
                             }
                         });
 
+                        var activeKelasId = '{{ $filterKelasId ?? '' }}';
+                        var activeGuruId = '{{ $filterGuruId ?? '' }}';
                         var btn = document.getElementById('btn_print_rekap');
                         if (!btn) return;
                         btn.addEventListener('click', function(e){
@@ -723,15 +729,12 @@
                                 tanggal = msel ? msel.value : initialDate;
                             }
 
-                            var url = '';
-                            // compute explicit range_start and range_end to avoid backend ambiguity
                             var rangeStart = '';
                             var rangeEnd = '';
                             if (period === 'daily') {
                                 rangeStart = tanggal;
                                 rangeEnd = tanggal;
                             } else if (period === 'weekly') {
-                                // tanggal holds the monday start-of-week value
                                 var s = new Date(tanggal + 'T00:00:00');
                                 var e = new Date(s);
                                 e.setDate(s.getDate() + 6);
@@ -744,13 +747,72 @@
                                 rangeEnd = e.toISOString().slice(0,10);
                             }
 
-                            if (user.siswa) {
-                                url = '{{ route('absensi.laporan-siswa.print') }}' + '?tanggal=' + encodeURIComponent(tanggal) + '&period=' + encodeURIComponent(period) + '&kelas_id=' + encodeURIComponent(user.kelas_id) + '&range_start=' + encodeURIComponent(rangeStart) + '&range_end=' + encodeURIComponent(rangeEnd);
-                            } else {
-                                url = '{{ route('absensi.guru.print') }}' + '?tanggal=' + encodeURIComponent(tanggal) + '&period=' + encodeURIComponent(period) + '&range_start=' + encodeURIComponent(rangeStart) + '&range_end=' + encodeURIComponent(rangeEnd);
+                            var url = '{{ route('absensi.laporan-siswa.print') }}' +
+                                '?tanggal=' + encodeURIComponent(tanggal) +
+                                '&period=' + encodeURIComponent(period) +
+                                '&range_start=' + encodeURIComponent(rangeStart) +
+                                '&range_end=' + encodeURIComponent(rangeEnd);
+
+                            if (activeKelasId) {
+                                url += '&kelas_id=' + encodeURIComponent(activeKelasId);
                             }
+                            if (activeGuruId) {
+                                url += '&guru_id=' + encodeURIComponent(activeGuruId);
+                            }
+
                             window.open(url, '_blank');
                         });
+
+                        var exportBtn = document.getElementById('btn_export_rekap');
+                        if (exportBtn) {
+                            exportBtn.addEventListener('click', function(e){
+                                e.preventDefault();
+                                var period = document.getElementById('print_period').value;
+                                var tanggal = '';
+                                if (period === 'daily') {
+                                    tanggal = (document.getElementById('print_tanggal') || {value: initialDate}).value;
+                                } else if (period === 'weekly') {
+                                    var sel = document.getElementById('print_week');
+                                    tanggal = sel ? sel.value : initialDate;
+                                } else if (period === 'monthly') {
+                                    var msel = document.getElementById('print_month');
+                                    tanggal = msel ? msel.value : initialDate;
+                                }
+
+                                var rangeStart = '';
+                                var rangeEnd = '';
+                                if (period === 'daily') {
+                                    rangeStart = tanggal;
+                                    rangeEnd = tanggal;
+                                } else if (period === 'weekly') {
+                                    var s = new Date(tanggal + 'T00:00:00');
+                                    var e = new Date(s);
+                                    e.setDate(s.getDate() + 6);
+                                    rangeStart = s.toISOString().slice(0,10);
+                                    rangeEnd = e.toISOString().slice(0,10);
+                                } else if (period === 'monthly') {
+                                    var s = new Date(tanggal + 'T00:00:00');
+                                    var e = new Date(s.getFullYear(), s.getMonth()+1, 0);
+                                    rangeStart = s.toISOString().slice(0,10);
+                                    rangeEnd = e.toISOString().slice(0,10);
+                                }
+
+                                var url = '{{ route('absensi.laporan-siswa.export') }}' +
+                                    '?tanggal=' + encodeURIComponent(tanggal) +
+                                    '&period=' + encodeURIComponent(period) +
+                                    '&range_start=' + encodeURIComponent(rangeStart) +
+                                    '&range_end=' + encodeURIComponent(rangeEnd);
+
+                                if (activeKelasId) {
+                                    url += '&kelas_id=' + encodeURIComponent(activeKelasId);
+                                }
+                                if (activeGuruId) {
+                                    url += '&guru_id=' + encodeURIComponent(activeGuruId);
+                                }
+
+                                window.location.href = url;
+                            });
+                        }
                     });
                     </script>
                 </div>

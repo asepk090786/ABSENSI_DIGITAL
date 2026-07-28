@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\AbsensiKelas;
 use App\Models\AgendaGuru;
 use App\Models\Kelas;
@@ -18,6 +19,7 @@ use App\Models\JadwalKbm;
 use App\Models\LaporanSiswaGuru;
 use App\Exports\AbsensiBkMonitoringExport;
 use App\Exports\AbsensiLaporanSiswaHarianExport;
+use App\Exports\AbsensiLaporanSiswaRangeExport;
 use App\Services\SettingsManager;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
@@ -221,7 +223,9 @@ class AbsensiController extends Controller
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         $guruList = Guru::orderBy('nama')->get();
 
-        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer'));
+        $canPrintExport = $isAdminOrKepala || $this->isGuruPiketUser(auth()->user()) || $isSiswaOfficer;
+
+        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer', 'canPrintExport'));
     }
 
     public function exportBkMonitoring(Request $request)
@@ -260,30 +264,10 @@ class AbsensiController extends Controller
         // Access is allowed for Admin/Kepala Sekolah, Guru Piket role, guru with piket schedule on selected date, and siswa officer.
         $canAdminPrint = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruPiketRole = $user->hasRole('Guru Piket');
+        $isGuruPiketUser = $this->isGuruPiketUser($user);
         $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
-        $isGuruPiketSchedule = false;
 
-        if ($user->guru_id && ! $canAdminPrint && ! $isGuruPiketRole && ! $isSiswaOfficer) {
-            $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
-            if (! empty($hariPiketArr)) {
-                $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
-                $map = [
-                    'Monday' => 'Senin',
-                    'Tuesday' => 'Selasa',
-                    'Wednesday' => 'Rabu',
-                    'Thursday' => 'Kamis',
-                    'Friday' => 'Jumat',
-                    'Saturday' => 'Sabtu',
-                    'Sunday' => 'Minggu',
-                ];
-                $selectedDay = $map[$hariEnglish] ?? null;
-                if ($selectedDay && in_array($selectedDay, $hariPiketArr, true)) {
-                    $isGuruPiketSchedule = true;
-                }
-            }
-        }
-
-        if (! $canAdminPrint && ! $isGuruPiketRole && ! $isGuruPiketSchedule && ! $isSiswaOfficer) {
+        if (! $canAdminPrint && ! $isGuruPiketRole && ! $isGuruPiketUser && ! $isSiswaOfficer) {
             abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah, Guru Piket atau siswa dengan jabatan kelas.');
         }
 
@@ -316,6 +300,56 @@ class AbsensiController extends Controller
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
         $jamColumns = [];
+
+        // Check cache presence for this report request and log it (helps verify Redis vs DB)
+        try {
+            $cacheStore = Cache::getStore();
+            $checkKeys = [];
+            if ($period === 'daily') {
+                $checkKeys[] = $this->buildStudentReportCacheKey('daily', [
+                    'tanggal' => $selectedTanggal,
+                    'kelas_id' => $kelasId,
+                    'guru_id' => $guruId,
+                    'tahun_id' => $tahun?->id,
+                    'semester_id' => $semester?->id,
+                ]);
+                if ($kelasId) {
+                    $checkKeys[] = $this->buildStudentReportCacheKey('daily_jam', [
+                        'tanggal' => $selectedTanggal,
+                        'kelas_id' => $kelasId,
+                        'guru_id' => $guruId,
+                        'tahun_id' => $tahun?->id,
+                        'semester_id' => $semester?->id,
+                    ]);
+                }
+            } else {
+                $checkKeys[] = $this->buildStudentReportCacheKey('range', [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'kelas_id' => $kelasId,
+                    'guru_id' => $guruId,
+                    'tahun_id' => $tahun?->id,
+                    'semester_id' => $semester?->id,
+                ]);
+            }
+
+            foreach ($checkKeys as $ck) {
+                $exists = false;
+                if (method_exists($cacheStore, 'supportsTags') && $cacheStore->supportsTags()) {
+                    try {
+                        $exists = Cache::tags(['absensi_laporan_siswa'])->has($ck);
+                    } catch (\Throwable $e) {
+                        $exists = Cache::has($ck);
+                    }
+                } else {
+                    $exists = Cache::has($ck);
+                }
+
+                Log::info('absensi.laporan.cache_check', ['key' => $ck, 'cache_hit' => $exists, 'period' => $period, 'start' => $startDate, 'end' => $endDate]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('absensi.laporan.cache_check_failed', ['error' => $e->getMessage()]);
+        }
         if ($period === 'daily') {
             // build per-jam matrix if kelas specified
             $perJam = $this->getDailyStudentReportRowsPerJam($selectedTanggal, $kelasId, $tahun, $semester, $guruId);
@@ -400,42 +434,205 @@ class AbsensiController extends Controller
         $selectedTanggal = $request->get('tanggal', Carbon::today()->format('Y-m-d'));
         $kelasId = $request->get('kelas_id');
         $guruId = $request->get('guru_id');
+        $period = $request->get('period', 'daily');
+        $rangeStart = $request->get('range_start');
+        $rangeEnd = $request->get('range_end');
         $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
         $canAdminExport = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruPiketRole = $user->hasRole('Guru Piket');
-        $isGuruPiketSchedule = false;
+        $isGuruPiketUser = $this->isGuruPiketUser($user);
 
-        if ($user->guru_id && ! $canAdminExport && ! $isGuruPiketRole) {
-            $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
-            if (! empty($hariPiketArr)) {
-                $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
-                $map = [
-                    'Monday' => 'Senin',
-                    'Tuesday' => 'Selasa',
-                    'Wednesday' => 'Rabu',
-                    'Thursday' => 'Kamis',
-                    'Friday' => 'Jumat',
-                    'Saturday' => 'Sabtu',
-                    'Sunday' => 'Minggu',
-                ];
-                $selectedDay = $map[$hariEnglish] ?? null;
-                if ($selectedDay && in_array($selectedDay, $hariPiketArr, true)) {
-                    $isGuruPiketSchedule = true;
+        $isGuruBk = $user->hasRole('Guru BK');
+
+        // Restrict exports for normal teachers: they can only export for classes they teach.
+        if (! $canAdminExport && ! $isGuruBk) {
+            // If a specific class is provided, ensure the teacher actually teaches it
+            if (! empty($selectedTanggal) && empty($request->get('kelas_id')) && ! $request->has('kelas_id')) {
+                // No kelas selected: require teacher to choose a kelas when not admin/gbk
+                abort(403, 'Pilih kelas yang Anda ampu untuk melakukan rekap.');
+            }
+            $requestedKelasId = $request->get('kelas_id');
+            if ($requestedKelasId) {
+                $teaches = JadwalKbm::where('guru_id', $user->guru_id)
+                    ->where('kelas_id', $requestedKelasId)
+                    ->where('tahun_ajaran_id', $tahun?->id)
+                    ->where('semester_id', $semester?->id)
+                    ->exists();
+                if (! $teaches) {
+                    abort(403, 'Akses ditolak. Anda hanya bisa merekap untuk kelas yang Anda ampu.');
                 }
             }
         }
 
-        if (! $canAdminExport && ! $isGuruPiketRole && ! $isGuruPiketSchedule) {
-            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah, Guru Piket atau guru dengan jadwal piket pada tanggal yang dipilih.');
+        if (! $canAdminExport && ! $isGuruPiketRole && ! $isGuruPiketUser) {
+            abort(403, 'Akses ditolak. Fitur ini hanya untuk Admin, Kepala Sekolah, Guru Piket atau guru piket.');
         }
 
-        $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester, $guruId);
+        if ($rangeStart && $rangeEnd) {
+            $startDate = Carbon::parse($rangeStart)->format('Y-m-d');
+            $endDate = Carbon::parse($rangeEnd)->format('Y-m-d');
+        } else {
+            $startDate = $selectedTanggal;
+            $endDate = $selectedTanggal;
+            if ($period === 'weekly') {
+                $dt = Carbon::parse($selectedTanggal);
+                $startDate = $dt->startOfWeek()->format('Y-m-d');
+                $endDate = $dt->endOfWeek()->format('Y-m-d');
+            } elseif ($period === 'monthly') {
+                $dt = Carbon::parse($selectedTanggal);
+                $startDate = $dt->startOfMonth()->format('Y-m-d');
+                $endDate = $dt->endOfMonth()->format('Y-m-d');
+            }
+        }
 
-        $filename = 'Laporan-Kehadiran-Siswa-Harian-' . Carbon::parse($selectedTanggal)->format('Ymd') . '.xlsx';
+        // If kelas_id is not provided and caller is admin or guru BK, produce one file per kelas into a zip
+        $canCreatePerKelasZip = $canAdminExport || $isGuruBk;
 
-        return Excel::download(new AbsensiLaporanSiswaHarianExport($laporanRows), $filename);
+        if ($period === 'daily') {
+            $laporanRows = $this->getDailyStudentReportRows($selectedTanggal, $kelasId, $tahun, $semester, $guruId);
+            $laporanRows = $laporanRows->sortBy('nama_kelas')->values();
+
+            if ($canCreatePerKelasZip && empty($kelasId)) {
+                // group by kelas and create separate files
+                $grouped = $laporanRows->groupBy('nama_kelas');
+                $tempFiles = [];
+                $tmpDir = storage_path('app/temp_exports_' . time());
+                if (! file_exists($tmpDir)) mkdir($tmpDir, 0777, true);
+
+                foreach ($grouped as $kelasName => $rows) {
+                    $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $kelasName ?: 'kelas');
+                    $fileName = "absensi_harian_{$safeName}_" . Carbon::parse($selectedTanggal)->format('Ymd') . '.xlsx';
+                    $filePath = $tmpDir . DIRECTORY_SEPARATOR . $fileName;
+                    Excel::store(new AbsensiLaporanSiswaHarianExport($rows->values()), basename($tmpDir) . '/' . $fileName);
+                    $tempFiles[] = storage_path('app/' . basename($tmpDir) . '/' . $fileName);
+                }
+
+                // create zip
+                $zipName = 'Laporan-Absensi-Harian-PerKelas-' . Carbon::parse($selectedTanggal)->format('Ymd') . '.zip';
+                $zipPath = $tmpDir . DIRECTORY_SEPARATOR . $zipName;
+                $zip = new \ZipArchive();
+                if ($zip->open($zipPath, \ZipArchive::CREATE) === true) {
+                        foreach ($tempFiles as $f) {
+                            if (file_exists($f)) {
+                                $zip->addFile($f, basename($f));
+                            }
+                        }
+                        $zip->close();
+                        // stream zip and clean up temp files after sending
+                        return response()->streamDownload(function() use ($zipPath, $tempFiles, $tmpDir) {
+                            $handle = fopen($zipPath, 'rb');
+                            if ($handle) {
+                                while (!feof($handle)) {
+                                    echo fread($handle, 8192);
+                                    flush();
+                                }
+                                fclose($handle);
+                            }
+                            // cleanup
+                            foreach ($tempFiles as $tf) {
+                                if (file_exists($tf)) @unlink($tf);
+                            }
+                            if (file_exists($zipPath)) @unlink($zipPath);
+                            // attempt to remove the temp directory
+                            @rmdir($tmpDir);
+                        }, $zipName, ['Content-Type' => 'application/zip']);
+                    }
+                // fallback to single file if zip failed
+            }
+
+            $filename = 'Laporan-Kehadiran-Siswa-Harian-' . Carbon::parse($selectedTanggal)->format('Ymd') . '.xlsx';
+            return Excel::download(new AbsensiLaporanSiswaHarianExport($laporanRows), $filename);
+        }
+
+        $laporanRows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester, $guruId);
+        $laporanRows = $laporanRows->sortBy('nama_kelas')->values();
+
+        if ($canCreatePerKelasZip && empty($kelasId)) {
+            $grouped = $laporanRows->groupBy('nama_kelas');
+            $tempFiles = [];
+            $tmpDir = storage_path('app/temp_exports_' . time());
+            if (! file_exists($tmpDir)) mkdir($tmpDir, 0777, true);
+
+            foreach ($grouped as $kelasName => $rows) {
+                $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $kelasName ?: 'kelas');
+                $fileName = "absensi_range_{$safeName}_" . Carbon::parse($startDate)->format('Ymd') . '_to_' . Carbon::parse($endDate)->format('Ymd') . '.xlsx';
+                Excel::store(new \App\Exports\AbsensiLaporanSiswaRangeExport($rows->values()), basename($tmpDir) . '/' . $fileName);
+                $tempFiles[] = storage_path('app/' . basename($tmpDir) . '/' . $fileName);
+            }
+
+            $zipName = 'Laporan-Absensi-' . ucfirst($period) . '-PerKelas-' . Carbon::parse($startDate)->format('Ymd') . '_to_' . Carbon::parse($endDate)->format('Ymd') . '.zip';
+            $zipPath = $tmpDir . DIRECTORY_SEPARATOR . $zipName;
+            $zip = new \ZipArchive();
+            if ($zip->open($zipPath, \ZipArchive::CREATE) === true) {
+                foreach ($tempFiles as $f) {
+                    if (file_exists($f)) {
+                        $zip->addFile($f, basename($f));
+                    }
+                }
+                $zip->close();
+                return response()->streamDownload(function() use ($zipPath, $tempFiles, $tmpDir) {
+                    $handle = fopen($zipPath, 'rb');
+                    if ($handle) {
+                        while (!feof($handle)) {
+                            echo fread($handle, 8192);
+                            flush();
+                        }
+                        fclose($handle);
+                    }
+                    foreach ($tempFiles as $tf) {
+                        if (file_exists($tf)) @unlink($tf);
+                    }
+                    if (file_exists($zipPath)) @unlink($zipPath);
+                    @rmdir($tmpDir);
+                }, $zipName, ['Content-Type' => 'application/zip']);
+            }
+            // fallback
+        }
+
+        $filename = 'Laporan-Kehadiran-Siswa-' . ucfirst($period) . '-' . Carbon::parse($startDate)->format('Ymd') . '_to_' . Carbon::parse($endDate)->format('Ymd') . '.xlsx';
+        return Excel::download(new \App\Exports\AbsensiLaporanSiswaRangeExport($laporanRows), $filename);
+    }
+
+    private function isGuruPiketByDate($user, $selectedTanggal)
+    {
+        if (! $user || ! $user->guru_id) {
+            return false;
+        }
+
+        $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
+        if (empty($hariPiketArr)) {
+            return false;
+        }
+
+        try {
+            $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $map = [
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu',
+        ];
+
+        $selectedDay = $map[$hariEnglish] ?? null;
+        return $selectedDay && in_array($selectedDay, $hariPiketArr, true);
+    }
+
+    private function isGuruPiketUser($user)
+    {
+        if (! $user || ! $user->guru_id) {
+            return false;
+        }
+
+        return $user->hasRole('Guru Piket') || ! empty((array) ($user->guru->hari_piket ?? []));
     }
 
     public function printLaporanGuru(Request $request)
@@ -1495,7 +1692,7 @@ class AbsensiController extends Controller
                     }
                 }
 
-                $this->syncAbsensiToAgendaGuru($absensi);
+                    $this->syncAbsensiToAgendaGuru($absensi);
                 $this->updateAgendaGuruAttendanceNote($absensi);
 
                 $createdAbsensi[] = $absensi;
@@ -1503,6 +1700,7 @@ class AbsensiController extends Controller
             }
 
             DB::commit();
+            $this->flushStudentReportCache();
 
             $jamBelajarLabels = JamBelajar::whereIn('id', array_values(array_unique($appliedJamIds)))
                 ->orderBy('urutan')
@@ -1740,6 +1938,7 @@ class AbsensiController extends Controller
 
         // Sync to agenda guru
         $this->updateAgendaGuruAttendanceNote($absensi);
+        $this->flushStudentReportCache();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -1809,6 +2008,7 @@ class AbsensiController extends Controller
         
         // Update attendance note in agenda guru
         $this->updateAgendaGuruAttendanceNote($absensi);
+        $this->flushStudentReportCache();
 
         // Process per-siswa status updates if provided
         $absensiSiswa = $request->input('absensi_siswa', []);
@@ -1919,6 +2119,7 @@ class AbsensiController extends Controller
         }
 
         $absensi->delete();
+        $this->flushStudentReportCache();
 
         return redirect()->route('absensi.index')
             ->with('success', 'Absensi kelas berhasil dihapus.');
@@ -1967,6 +2168,7 @@ class AbsensiController extends Controller
             $deletedKelas = AbsensiKelas::whereIn('id', $absensiIds)->delete();
 
             DB::commit();
+            $this->flushStudentReportCache();
 
             return redirect()->route('absensi.index', ['tanggal' => $tanggal])
                 ->with('success', 'Berhasil menghapus ' . $deletedKelas . ' data absensi kelas dan ' . $deletedSiswa . ' data absensi siswa pada tanggal ' . Carbon::parse($tanggal)->format('d/m/Y') . '.');
@@ -2213,9 +2415,141 @@ class AbsensiController extends Controller
         } catch (\Throwable $e) {
             $selectedTanggal = date('Y-m-d');
         }
-        // If kelasId provided, attempt to limit to jadwal_kbm (jam) that apply to that class on the selected date
-        $scheduledJamIds = null;
-        if ($kelasId) {
+
+        $cacheKey = $this->buildStudentReportCacheKey('daily', [
+            'tanggal' => $selectedTanggal,
+            'kelas_id' => $kelasId,
+            'guru_id' => $guruId,
+            'tahun_id' => $tahun?->id,
+            'semester_id' => $semester?->id,
+        ]);
+
+        return $this->rememberStudentReportCache($cacheKey, 900, function () use ($selectedTanggal, $kelasId, $tahun, $semester, $guruId) {
+            // If kelasId provided, attempt to limit to jadwal_kbm (jam) that apply to that class on the selected date
+            $scheduledJamIds = null;
+            if ($kelasId) {
+                try {
+                    $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
+                    $hariMap = [
+                        'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                        'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                    ];
+                    $hariQuery = $hariMap[$hariEnglish] ?? $hariEnglish;
+
+                    $tahunCond = $tahun ? $tahun->id : null;
+                    $semesterCond = $semester ? $semester->id : null;
+
+                    $scheduledJamIds = JadwalKbm::query()
+                        ->where('kelas_id', $kelasId)
+                        ->where('hari', $hariQuery)
+                        ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
+                        ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
+                        ->pluck('jam_belajar_id')
+                        ->unique()
+                        ->values()
+                        ->all();
+
+                    if (empty($scheduledJamIds)) {
+                        $scheduledJamIds = null; // fallback: don't filter
+                    }
+                } catch (\Throwable $e) {
+                    $scheduledJamIds = null;
+                }
+            }
+            $dailySubQuery = DB::table('absensi_siswa as abs_s')
+                ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
+                ->leftJoin('siswa as s', 'abs_s.siswa_id', '=', 's.id')
+                ->leftJoin('kelas as k', 'abs_k.kelas_id', '=', 'k.id')
+                ->leftJoin('guru as g', 'abs_k.guru_id', '=', 'g.id')
+                ->whereDate('abs_k.tanggal', $selectedTanggal)
+                ->when($scheduledJamIds, function ($q) use ($scheduledJamIds) {
+                    $q->whereIn('abs_k.jam_belajar_id', $scheduledJamIds);
+                })
+                ->when($kelasId, function ($query) use ($kelasId) {
+                    $query->where('abs_k.kelas_id', $kelasId);
+                })
+                ->when($guruId, function ($query) use ($guruId) {
+                    $query->where('abs_k.guru_id', $guruId);
+                })
+                ->when($tahun, function ($query) use ($tahun) {
+                    $query->where('abs_k.tahun_ajaran_id', $tahun->id);
+                })
+                ->when($semester, function ($query) use ($semester) {
+                    $query->where('abs_k.semester_id', $semester->id);
+                })
+                ->select(
+                    'abs_k.kelas_id',
+                    'abs_s.siswa_id',
+                    DB::raw('DATE(abs_k.tanggal) as tanggal'),
+                    DB::raw("COALESCE(k.nama_kelas, '-') as nama_kelas"),
+                    DB::raw("COALESCE(s.nama, '-') as nama_siswa"),
+                        DB::raw("COALESCE(s.jenis_kelamin, '-') as jenis_kelamin"),
+                    DB::raw("COALESCE(s.nis, '-') as nis"),
+                    DB::raw("COALESCE(s.nisn, '-') as nisn"),
+                    DB::raw("GROUP_CONCAT(DISTINCT COALESCE(g.nama, '-') ORDER BY g.nama SEPARATOR ', ') as nama_guru"),
+                    DB::raw("MAX(NULLIF(abs_s.keterangan, '')) as keterangan"),
+                    DB::raw("MAX(CASE
+                        WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
+                        WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                        WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
+                        WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
+                        WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                        ELSE 0
+                    END) as status_rank")
+                )
+                ->groupBy(
+                    'abs_k.kelas_id',
+                    'abs_s.siswa_id',
+                    DB::raw('DATE(abs_k.tanggal)'),
+                    'k.nama_kelas',
+                    's.nama',
+                    's.jenis_kelamin',
+                    's.nis',
+                    's.nisn'
+                );
+
+            return DB::query()
+                ->fromSub($dailySubQuery, 'daily_siswa')
+                ->select(
+                    'daily_siswa.tanggal',
+                    'daily_siswa.kelas_id',
+                    'daily_siswa.nama_kelas',
+                    'daily_siswa.nama_siswa',
+                    'daily_siswa.nis',
+                    'daily_siswa.nisn',
+                    DB::raw("COALESCE(daily_siswa.nama_guru, '-') as nama_guru"),
+                    DB::raw("CASE
+                        WHEN daily_siswa.status_rank = 5 THEN 'Absen'
+                        WHEN daily_siswa.status_rank = 4 THEN 'Sakit'
+                        WHEN daily_siswa.status_rank = 3 THEN 'Izin'
+                        WHEN daily_siswa.status_rank = 2 THEN 'Terlambat'
+                        WHEN daily_siswa.status_rank = 1 THEN 'Hadir'
+                        ELSE '-'
+                    END as status"),
+                    DB::raw("COALESCE(daily_siswa.keterangan, '-') as keterangan")
+                )
+                ->orderBy('daily_siswa.nama_kelas')
+                ->orderBy('daily_siswa.nama_siswa')
+                ->get();
+        });
+    }
+
+    private function getDailyStudentReportRowsPerJam(string $selectedTanggal, $kelasId, $tahun, $semester, $guruId = null)
+    {
+        if (!$kelasId) {
+            return null;
+        }
+
+        $cacheKey = $this->buildStudentReportCacheKey('daily_jam', [
+            'tanggal' => $selectedTanggal,
+            'kelas_id' => $kelasId,
+            'guru_id' => $guruId,
+            'tahun_id' => $tahun?->id,
+            'semester_id' => $semester?->id,
+        ]);
+
+        return $this->rememberStudentReportCache($cacheKey, 900, function () use ($selectedTanggal, $kelasId, $tahun, $semester, $guruId) {
+            // determine scheduled jam ids for the kelas on that day
             try {
                 $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
                 $hariMap = [
@@ -2232,183 +2566,72 @@ class AbsensiController extends Controller
                     ->where('hari', $hariQuery)
                     ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
                     ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
+                    ->orderBy('jam_ke')
                     ->pluck('jam_belajar_id')
                     ->unique()
                     ->values()
                     ->all();
-
-                if (empty($scheduledJamIds)) {
-                    $scheduledJamIds = null; // fallback: don't filter
-                }
             } catch (\Throwable $e) {
-                $scheduledJamIds = null;
+                $scheduledJamIds = [];
             }
-        }
-        $dailySubQuery = DB::table('absensi_siswa as abs_s')
-            ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
-            ->leftJoin('siswa as s', 'abs_s.siswa_id', '=', 's.id')
-            ->leftJoin('kelas as k', 'abs_k.kelas_id', '=', 'k.id')
-            ->leftJoin('guru as g', 'abs_k.guru_id', '=', 'g.id')
-            ->whereDate('abs_k.tanggal', $selectedTanggal)
-            ->when($scheduledJamIds, function ($q) use ($scheduledJamIds) {
-                $q->whereIn('abs_k.jam_belajar_id', $scheduledJamIds);
-            })
-            ->when($kelasId, function ($query) use ($kelasId) {
-                $query->where('abs_k.kelas_id', $kelasId);
-            })
-            ->when($guruId, function ($query) use ($guruId) {
-                $query->where('abs_k.guru_id', $guruId);
-            })
-            ->when($tahun, function ($query) use ($tahun) {
-                $query->where('abs_k.tahun_ajaran_id', $tahun->id);
-            })
-            ->when($semester, function ($query) use ($semester) {
-                $query->where('abs_k.semester_id', $semester->id);
-            })
-            ->select(
-                'abs_k.kelas_id',
-                'abs_s.siswa_id',
-                DB::raw('DATE(abs_k.tanggal) as tanggal'),
-                DB::raw("COALESCE(k.nama_kelas, '-') as nama_kelas"),
-                DB::raw("COALESCE(s.nama, '-') as nama_siswa"),
-                    DB::raw("COALESCE(s.jenis_kelamin, '-') as jenis_kelamin"),
-                DB::raw("COALESCE(s.nis, '-') as nis"),
-                DB::raw("COALESCE(s.nisn, '-') as nisn"),
-                DB::raw("GROUP_CONCAT(DISTINCT COALESCE(g.nama, '-') ORDER BY g.nama SEPARATOR ', ') as nama_guru"),
-                DB::raw("MAX(NULLIF(abs_s.keterangan, '')) as keterangan"),
-                DB::raw("MAX(CASE
-                    WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
-                    WHEN LOWER(abs_s.status) = 'sakit' THEN 4
-                    WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
-                    WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
-                    WHEN LOWER(abs_s.status) = 'hadir' THEN 1
-                    ELSE 0
-                END) as status_rank")
-            )
-            ->groupBy(
-                'abs_k.kelas_id',
-                'abs_s.siswa_id',
-                DB::raw('DATE(abs_k.tanggal)'),
-                'k.nama_kelas',
-                's.nama',
-                's.jenis_kelamin',
-                's.nis',
-                's.nisn'
-            );
 
-        return DB::query()
-            ->fromSub($dailySubQuery, 'daily_siswa')
-            ->select(
-                'daily_siswa.tanggal',
-                'daily_siswa.kelas_id',
-                'daily_siswa.nama_kelas',
-                'daily_siswa.nama_siswa',
-                'daily_siswa.nis',
-                'daily_siswa.nisn',
-                DB::raw("COALESCE(daily_siswa.nama_guru, '-') as nama_guru"),
-                DB::raw("CASE
-                    WHEN daily_siswa.status_rank = 5 THEN 'Absen'
-                    WHEN daily_siswa.status_rank = 4 THEN 'Sakit'
-                    WHEN daily_siswa.status_rank = 3 THEN 'Izin'
-                    WHEN daily_siswa.status_rank = 2 THEN 'Terlambat'
-                    WHEN daily_siswa.status_rank = 1 THEN 'Hadir'
-                    ELSE '-'
-                END as status"),
-                DB::raw("COALESCE(daily_siswa.keterangan, '-') as keterangan")
-            )
-            ->orderBy('daily_siswa.nama_kelas')
-            ->orderBy('daily_siswa.nama_siswa')
-            ->get();
-    }
-
-    private function getDailyStudentReportRowsPerJam(string $selectedTanggal, $kelasId, $tahun, $semester, $guruId = null)
-    {
-        if (!$kelasId) {
-            return null;
-        }
-
-        // determine scheduled jam ids for the kelas on that day
-        try {
-            $hariEnglish = Carbon::parse($selectedTanggal)->format('l');
-            $hariMap = [
-                'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
-                'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
-            ];
-            $hariQuery = $hariMap[$hariEnglish] ?? $hariEnglish;
-
-            $tahunCond = $tahun ? $tahun->id : null;
-            $semesterCond = $semester ? $semester->id : null;
-
-            $scheduledJamIds = JadwalKbm::query()
-                ->where('kelas_id', $kelasId)
-                ->where('hari', $hariQuery)
-                ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
-                ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
-                ->orderBy('jam_ke')
-                ->pluck('jam_belajar_id')
-                ->unique()
-                ->values()
-                ->all();
-        } catch (\Throwable $e) {
-            $scheduledJamIds = [];
-        }
-
-        if (empty($scheduledJamIds)) {
-            return null; // fallback to default daily row builder
-        }
-
-        // fetch jam details
-        $jamRows = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get()->keyBy('id');
-
-        // fetch students in class
-        $students = DB::table('siswa')->where('kelas_id', $kelasId)->where('status_aktif', 1)->orderBy('nama')->get();
-        if ($students->isEmpty()) {
-            return ['rows' => collect(), 'jamColumns' => []];
-        }
-
-        // fetch absensi entries for that date, class and scheduled jams
-        $absensi = DB::table('absensi_siswa as asw')
-            ->join('absensi_kelas as ak', 'asw.absensi_kelas_id', '=', 'ak.id')
-            ->whereDate('ak.tanggal', $selectedTanggal)
-            ->where('ak.kelas_id', $kelasId)
-            ->when($guruId, function ($query) use ($guruId) {
-                $query->where('ak.guru_id', $guruId);
-            })
-            ->whereIn('ak.jam_belajar_id', $scheduledJamIds)
-            ->select('asw.siswa_id', 'ak.jam_belajar_id', 'asw.status', 'asw.keterangan')
-            ->get();
-
-        // map absensi by siswa_id and jam_id
-        $map = [];
-        foreach ($absensi as $a) {
-            $status = $this->normalizeAttendanceStatus($a->status) ?? null;
-            $map[$a->siswa_id][$a->jam_belajar_id] = $status;
-        }
-
-        $rows = collect();
-        foreach ($students as $s) {
-            $statuses = [];
-            foreach ($scheduledJamIds as $jid) {
-                $statuses[$jid] = $map[$s->id][$jid] ?? '-';
+            if (empty($scheduledJamIds)) {
+                return null; // fallback to default daily row builder
             }
-            $rows->push((object)[
-                'siswa_id' => $s->id,
-                'nama_siswa' => $s->nama,
-                'nama_kelas' => DB::table('kelas')->where('id', $kelasId)->value('nama_kelas') ?? '-',
-                'nis' => $s->nis,
-                'nisn' => $s->nisn,
-                'statuses' => $statuses,
-            ]);
-        }
 
-        // build jamColumns array with id and label
-        $jamColumns = array_map(function($jid) use ($jamRows) {
-            $jb = $jamRows[$jid] ?? null;
-            $label = $jb ? ('Jam ke-' . ($jb->urutan ?? '?') . ' (' . ($jb->jam_mulai ?? '') . ' - ' . ($jb->jam_selesai ?? '') . ')') : ('Jam ' . $jid);
-            return ['id' => $jid, 'label' => $label];
-        }, $scheduledJamIds);
+            // fetch jam details
+            $jamRows = JamBelajar::whereIn('id', $scheduledJamIds)->orderBy('urutan')->get()->keyBy('id');
 
-        return ['rows' => $rows, 'jamColumns' => $jamColumns];
+            // fetch students in class
+            $students = DB::table('siswa')->where('kelas_id', $kelasId)->where('status_aktif', 1)->orderBy('nama')->get();
+            if ($students->isEmpty()) {
+                return ['rows' => collect(), 'jamColumns' => []];
+            }
+
+            // fetch absensi entries for that date, class and scheduled jams
+            $absensi = DB::table('absensi_siswa as asw')
+                ->join('absensi_kelas as ak', 'asw.absensi_kelas_id', '=', 'ak.id')
+                ->whereDate('ak.tanggal', $selectedTanggal)
+                ->where('ak.kelas_id', $kelasId)
+                ->when($guruId, function ($query) use ($guruId) {
+                    $query->where('ak.guru_id', $guruId);
+                })
+                ->whereIn('ak.jam_belajar_id', $scheduledJamIds)
+                ->select('asw.siswa_id', 'ak.jam_belajar_id', 'asw.status', 'asw.keterangan')
+                ->get();
+
+            // map absensi by siswa_id and jam_id
+            $map = [];
+            foreach ($absensi as $a) {
+                $status = $this->normalizeAttendanceStatus($a->status) ?? null;
+                $map[$a->siswa_id][$a->jam_belajar_id] = $status;
+            }
+
+            $rows = collect();
+            foreach ($students as $s) {
+                $statuses = [];
+                foreach ($scheduledJamIds as $jid) {
+                    $statuses[$jid] = $map[$s->id][$jid] ?? '-';
+                }
+                $rows->push((object)[
+                    'siswa_id' => $s->id,
+                    'nama_siswa' => $s->nama,
+                    'nama_kelas' => DB::table('kelas')->where('id', $kelasId)->value('nama_kelas') ?? '-',
+                    'nis' => $s->nis,
+                    'nisn' => $s->nisn,
+                    'statuses' => $statuses,
+                ]);
+            }
+
+            // build jamColumns array with id and label
+            $jamColumns = array_map(function($jid) use ($jamRows) {
+                $jb = $jamRows[$jid] ?? null;
+                $label = $jb ? ('Jam ke-' . ($jb->urutan ?? '?') . ' (' . ($jb->jam_mulai ?? '') . ' - ' . ($jb->jam_selesai ?? '') . ')') : ('Jam ' . $jid);
+                return ['id' => $jid, 'label' => $label];
+            }, $scheduledJamIds);
+
+            return ['rows' => $rows, 'jamColumns' => $jamColumns];
+        });
     }
 
     private function getDailyAttendanceSummaryPerClass($kelasIds, int $tahunAjaranId, int $semesterId, string $selectedTanggal)
@@ -2451,26 +2674,31 @@ class AbsensiController extends Controller
 
     private function getRangeStudentReportRows(string $startDate, string $endDate, $kelasId, $tahun, $semester, $guruId = null)
     {
-        // If kelasId provided, return aggregated rows for all students in the class
-        if ($kelasId) {
-            $tahunCond = $tahun ? $tahun->id : null;
-            $semesterCond = $semester ? $semester->id : null;
+        $tahunCond = $tahun ? $tahun->id : null;
+        $semesterCond = $semester ? $semester->id : null;
 
-            // count distinct dates (days with absensi_kelas records) in range for the class
-            $distinctDates = DB::table('absensi_kelas')
-                ->whereBetween(DB::raw('DATE(tanggal)'), [$startDate, $endDate])
-                ->when($kelasId, fn($q) => $q->where('kelas_id', $kelasId))
-                ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
-                ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
-                ->select(DB::raw('DATE(tanggal) as d'))
-                ->distinct()
-                ->pluck('d')
-                ->count();
+        // count distinct dates (days with absensi_kelas records) in range for the class
+        $distinctDatesQuery = DB::table('absensi_kelas')
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->when($kelasId, fn($q) => $q->where('kelas_id', $kelasId))
+            ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
+            ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond));
 
-            // aggregate attendance counts per siswa
-            $attendance = DB::table('absensi_siswa as abs_s')
+        $distinctDates = $distinctDatesQuery->distinct()->count(DB::raw('DATE(tanggal)'));
+
+        $cacheKey = $this->buildStudentReportCacheKey('range', [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'kelas_id' => $kelasId,
+            'guru_id' => $guruId,
+            'tahun_id' => $tahunCond,
+            'semester_id' => $semesterCond,
+        ]);
+
+        return $this->rememberStudentReportCache($cacheKey, 900, function () use ($startDate, $endDate, $kelasId, $tahunCond, $semesterCond, $guruId, $distinctDates) {
+            $attendanceQuery = DB::table('absensi_siswa as abs_s')
                 ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
-                ->whereBetween(DB::raw('DATE(abs_k.tanggal)'), [$startDate, $endDate])
+                ->whereBetween('abs_k.tanggal', [$startDate, $endDate])
                 ->when($kelasId, fn($q) => $q->where('abs_k.kelas_id', $kelasId))
                 ->when($guruId, fn($q) => $q->where('abs_k.guru_id', $guruId))
                 ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
@@ -2483,11 +2711,93 @@ class AbsensiController extends Controller
                     DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
                     DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa_count")
                 )
-                ->groupBy('abs_s.siswa_id')
-                ->get()
-                ->keyBy('siswa_id');
+                ->groupBy('abs_s.siswa_id');
 
-            // get all active students in kelas
+            $attendance = $attendanceQuery->get()->keyBy('siswa_id');
+
+            if ($kelasId) {
+                $students = DB::table('siswa')
+                    ->where('kelas_id', $kelasId)
+                    ->where('status_aktif', 1)
+                    ->select('id','nama','nis','nisn')
+                    ->orderBy('nama')
+                    ->get();
+
+                $kelasName = DB::table('kelas')->where('id', $kelasId)->value('nama_kelas');
+
+                $rows = collect();
+                foreach ($students as $s) {
+                    $att = $attendance->get($s->id);
+                    $hadir = $att->hadir_count ?? 0;
+                    $terlambat = $att->terlambat_count ?? 0;
+                    $sakit = $att->sakit_count ?? 0;
+                    $izin = $att->izin_count ?? 0;
+                    $alfa = $att->alpa_count ?? $att->alfa_count ?? 0;
+
+                    $rows->push((object) [
+                        'siswa_id' => $s->id,
+                        'nama_siswa' => $s->nama,
+                        'nama_kelas' => $kelasName ?? '-',
+                        'nis' => $s->nis,
+                        'nisn' => $s->nisn,
+                        'hadir_count' => (int) $hadir,
+                        'terlambat_count' => (int) $terlambat,
+                        'sakit_count' => (int) $sakit,
+                        'izin_count' => (int) $izin,
+                        'alfa_count' => (int) $alfa,
+                        'total_days' => (int) max(1, $distinctDates),
+                    ]);
+                }
+
+                return $rows;
+            }
+
+            $attendanceAll = DB::table('absensi_siswa as abs_s')
+                ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
+                ->join('siswa as s', 's.id', '=', 'abs_s.siswa_id')
+                ->join('kelas as k', 'k.id', '=', 's.kelas_id')
+                ->whereBetween('abs_k.tanggal', [$startDate, $endDate])
+                ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
+                ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
+                ->when($guruId, fn($q) => $q->where('abs_k.guru_id', $guruId))
+                ->where('s.status_aktif', 1)
+                ->select(
+                    's.id as siswa_id',
+                    's.nama as nama_siswa',
+                    's.nis',
+                    's.nisn',
+                    'k.nama_kelas',
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa_count")
+                )
+                ->groupBy('s.id','s.nama','s.nis','s.nisn','k.nama_kelas')
+                ->orderBy('s.nama')
+                ->get();
+
+            $rowsAll = collect();
+            foreach ($attendanceAll as $att) {
+                $rowsAll->push((object) [
+                    'siswa_id' => $att->siswa_id,
+                    'nama_siswa' => $att->nama_siswa,
+                    'nama_kelas' => $att->nama_kelas ?? '-',
+                    'nis' => $att->nis,
+                    'nisn' => $att->nisn,
+                    'hadir_count' => (int) ($att->hadir_count ?? 0),
+                    'terlambat_count' => (int) ($att->terlambat_count ?? 0),
+                    'sakit_count' => (int) ($att->sakit_count ?? 0),
+                    'izin_count' => (int) ($att->izin_count ?? 0),
+                    'alpa_count' => (int) ($att->alpa_count ?? 0),
+                    'total_days' => (int) max(1, $distinctDates),
+                ]);
+            }
+
+            return $rowsAll;
+        });
+
+        if ($kelasId) {
             $students = DB::table('siswa')
                 ->where('kelas_id', $kelasId)
                 ->where('status_aktif', 1)
@@ -2524,71 +2834,77 @@ class AbsensiController extends Controller
             return $rows;
         }
 
-        // Fallback: if no kelasId, aggregate attendance across all classes (per student)
-        $tahunCond = $tahun ? $tahun->id : null;
-        $semesterCond = $semester ? $semester->id : null;
-
-        // count distinct dates in range
-        $distinctDatesAll = DB::table('absensi_kelas')
-            ->whereBetween(DB::raw('DATE(tanggal)'), [$startDate, $endDate])
-            ->when($tahunCond, fn($q) => $q->where('tahun_ajaran_id', $tahunCond))
-            ->when($semesterCond, fn($q) => $q->where('semester_id', $semesterCond))
-            ->select(DB::raw('DATE(tanggal) as d'))
-            ->distinct()
-            ->pluck('d')
-            ->count();
-
         $attendanceAll = DB::table('absensi_siswa as abs_s')
             ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
-            ->whereBetween(DB::raw('DATE(abs_k.tanggal)'), [$startDate, $endDate])
+            ->join('siswa as s', 's.id', '=', 'abs_s.siswa_id')
+            ->join('kelas as k', 'k.id', '=', 's.kelas_id')
+            ->whereBetween('abs_k.tanggal', [$startDate, $endDate])
             ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
             ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
+            ->when($guruId, fn($q) => $q->where('abs_k.guru_id', $guruId))
+            ->where('s.status_aktif', 1)
             ->select(
-                'abs_s.siswa_id',
+                's.id as siswa_id',
+                's.nama as nama_siswa',
+                's.nis',
+                's.nisn',
+                'k.nama_kelas',
                 DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir_count"),
                 DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
                 DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
                 DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
-                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alfa_count")
+                DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa_count")
             )
-            ->groupBy('abs_s.siswa_id')
-            ->get()
-            ->keyBy('siswa_id');
-
-        // get all active students
-        $studentsAll = DB::table('siswa')
-            ->where('status_aktif', 1)
-            ->select('id','nama','nis','nisn','kelas_id')
-            ->orderBy('nama')
+            ->groupBy('s.id','s.nama','s.nis','s.nisn','k.nama_kelas')
+            ->orderBy('s.nama')
             ->get();
 
-        $kelasMap = DB::table('kelas')->select('id','nama_kelas')->get()->keyBy('id')->map(fn($r) => $r->nama_kelas)->toArray();
-
         $rowsAll = collect();
-        foreach ($studentsAll as $s) {
-            $att = $attendanceAll->get($s->id);
-            $hadir = $att->hadir_count ?? 0;
-            $terlambat = $att->terlambat_count ?? 0;
-            $sakit = $att->sakit_count ?? 0;
-            $izin = $att->izin_count ?? 0;
-            $alfa = $att->alfa_count ?? 0;
-
+        foreach ($attendanceAll as $att) {
             $rowsAll->push((object) [
-                'siswa_id' => $s->id,
-                'nama_siswa' => $s->nama,
-                'nama_kelas' => $kelasMap[$s->kelas_id] ?? '-',
-                'nis' => $s->nis,
-                'nisn' => $s->nisn,
-                'hadir_count' => (int) $hadir,
-                'terlambat_count' => (int) $terlambat,
-                'sakit_count' => (int) $sakit,
-                'izin_count' => (int) $izin,
-                'alpa_count' => (int) $alfa,
-                'total_days' => (int) max(1, $distinctDatesAll),
+                'siswa_id' => $att->siswa_id,
+                'nama_siswa' => $att->nama_siswa,
+                'nama_kelas' => $att->nama_kelas ?? '-',
+                'nis' => $att->nis,
+                'nisn' => $att->nisn,
+                'hadir_count' => (int) ($att->hadir_count ?? 0),
+                'terlambat_count' => (int) ($att->terlambat_count ?? 0),
+                'sakit_count' => (int) ($att->sakit_count ?? 0),
+                'izin_count' => (int) ($att->izin_count ?? 0),
+                'alpa_count' => (int) ($att->alpa_count ?? 0),
+                'total_days' => (int) max(1, $distinctDates),
             ]);
         }
 
         return $rowsAll;
+    }
+
+    private function buildStudentReportCacheKey(string $type, array $params): string
+    {
+        ksort($params);
+        return 'absensi:laporan_siswa:' . $type . ':' . sha1(json_encode($params));
+    }
+
+    private function rememberStudentReportCache(string $cacheKey, int $ttlSeconds, \Closure $callback)
+    {
+        $store = Cache::getStore();
+        if (method_exists($store, 'supportsTags') && $store->supportsTags()) {
+            return Cache::tags(['absensi_laporan_siswa'])->remember($cacheKey, $ttlSeconds, $callback);
+        }
+
+        return Cache::remember($cacheKey, $ttlSeconds, $callback);
+    }
+
+    private function flushStudentReportCache(): void
+    {
+        try {
+            $store = Cache::getStore();
+            if (method_exists($store, 'supportsTags') && $store->supportsTags()) {
+                Cache::tags(['absensi_laporan_siswa'])->flush();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('absensi.cache.flush_failed', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

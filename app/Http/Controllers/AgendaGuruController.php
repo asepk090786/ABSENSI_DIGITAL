@@ -606,7 +606,7 @@ class AgendaGuruController extends Controller
 
         $hariPiketArr = (array) ($pencatatGuru->hari_piket ?? []);
         $todayIndo = $this->getHariIndonesiaFromDate($request->get('tanggal', now()->format('Y-m-d')));
-        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        $isGuruPiket = $user->hasRole('Guru Piket') || in_array($todayIndo, $hariPiketArr, true);
         if (!$isGuruPiket) {
             abort(403, 'Anda tidak memiliki akses rekap absensi guru.');
         }
@@ -764,7 +764,7 @@ class AgendaGuruController extends Controller
 
         $hariPiketArr = (array) ($pencatatGuru->hari_piket ?? []);
         $todayIndo = $this->getHariIndonesiaFromDate($request->get('tanggal', now()->format('Y-m-d')));
-        $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
+        $isGuruPiket = $user->hasRole('Guru Piket') || in_array($todayIndo, $hariPiketArr, true);
         if (!$isGuruPiket) {
             abort(403, 'Anda tidak memiliki akses rekap absensi guru.');
         }

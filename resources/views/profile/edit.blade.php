@@ -135,7 +135,7 @@
                 <div class="card-header border-0 pt-3 pb-2">
                     <h5 class="title">{{ __('Password') }}</h5>
                 </div>
-                <form method="post" action="{{ route('profile.password') }}" autocomplete="off">
+<form method="post" action="{{ route('profile.updatePassword') }}" autocomplete="off">
                     <div class="card-body">
                         @csrf
                         @method('put')
