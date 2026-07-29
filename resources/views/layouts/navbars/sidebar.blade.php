@@ -42,6 +42,12 @@
                 <span>Agenda Guru</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('ekskul.index') }}" class="menu-item {{ request()->routeIs('ekskul.*') ? 'active' : '' }}">
+                <i class="material-icons">group_work</i>
+                <span>Pembina Ekskul</span>
+            </a>
+        </li>
     </ul>
     @endif
 
