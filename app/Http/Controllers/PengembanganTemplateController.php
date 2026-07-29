@@ -67,6 +67,19 @@ class PengembanganTemplateController extends Controller
             'updated_at' => now(),
         ];
 
+        // If preview mode, return JSON with preview URL
+        if ($r->has('preview') && $r->input('preview') == '1') {
+            $tpl = (object) array_merge($insertData, ['id' => 0]);
+            // Generate preview using CertificateService
+            try {
+                $certService = app(\App\Services\CertificateService::class);
+                $previewUrl = $certService->previewFromFile($r->file('background_image'), $positionsJson);
+                return response()->json(['preview_url' => $previewUrl]);
+            } catch (\Throwable $e) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+        }
+
         DB::table('pengembangan_sertifikat_templates')->insert($insertData);
         return redirect()->route('pengembangan.templates.index')->with('success','Template dibuat');
     }

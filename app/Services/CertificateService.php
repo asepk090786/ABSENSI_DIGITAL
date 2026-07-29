@@ -133,6 +133,41 @@ class CertificateService
         return $pdfPath;
     }
 
+    public function previewFromFile($uploadedFile, $positionsJson): string
+    {
+        $img = $this->image->read($uploadedFile->getRealPath());
+        $positions = json_decode($positionsJson, true) ?? [];
+
+        $placeholders = [
+            'name' => 'Nama Peserta',
+            'kegiatan->nama_kegiatan' => 'Nama Kegiatan',
+            'kegiatan->tema_kegiatan' => 'Tema Kegiatan',
+            'barcode' => 'ABC123',
+            'nomor_surat' => 'No. Sertifikat',
+        ];
+
+        foreach ($placeholders as $key => $text) {
+            $pos = $positions[$key] ?? null;
+            if (!$pos) continue;
+            $x = $pos['x'] ?? ($img->width() / 2);
+            $y = $pos['y'] ?? ($img->height() / 2);
+            $fontSize = $pos['font_size'] ?? 24;
+            $color = $pos['color'] ?? '#000000';
+            $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
+
+            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $alignment) {
+                $font->size($fontSize);
+                $font->color($color);
+                $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
+                $font->valign('middle');
+            });
+        }
+
+        $outPath = 'certificates/preview_' . uniqid() . '.jpg';
+        $img->toJpeg(90)->save(Storage::disk('public')->path($outPath));
+        return url('storage/' . $outPath);
+    }
+
     public function streamPreview($template, Pengembangan $item, string $name, string $barcode)
     {
         $bgPath = $template->background_image ?? null;
