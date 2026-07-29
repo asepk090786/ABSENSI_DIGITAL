@@ -234,7 +234,7 @@ class AgendaGuruController extends Controller
             'tanggal' => 'required|date',
             'jam_belajar_id' => 'required|exists:jam_belajar,id',
             'kegiatan' => 'required|string|max:1000',
-            'rencana_pembelajaran_id' => 'nullable|exists:rencana_pembelajaran,id',
+            'rencana_pembelajaran_id' => 'nullable|exists:rencana_pembelajarans,id',
         ], [
             'tanggal.required' => 'Tanggal harus diisi',
             'jam_belajar_id.required' => 'Jam pelajaran harus dipilih',
@@ -357,7 +357,7 @@ class AgendaGuruController extends Controller
             'tanggal' => 'required|date',
             'jam_belajar_id' => 'required|exists:jam_belajar,id',
             'kegiatan' => 'required|string|max:1000',
-            'rencana_pembelajaran_id' => 'nullable|exists:rencana_pembelajaran,id',
+            'rencana_pembelajaran_id' => 'nullable|exists:rencana_pembelajarans,id',
         ], [
             'tanggal.required' => 'Tanggal harus diisi',
             'jam_belajar_id.required' => 'Jam pelajaran harus dipilih',
