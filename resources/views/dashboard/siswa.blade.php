@@ -178,9 +178,142 @@
                             </a>
                         </div>
                     @endif
+                    @if(isset($activeVerification) && $activeVerification)
+                        <div class="col-6 col-md-3">
+                            <button id="quickVerifyBtn" class="quick-menu-card btn btn-ghost {{ (!empty($studentAlreadyVerifiedToday) ? 'disabled' : '') }}" type="button" {{ (!empty($studentAlreadyVerifiedToday) ? 'disabled' : '') }}>
+                                <div class="qm-icon" style="background:#06b6d4;"><i class="ti ti-lock-open"></i></div>
+                                <div class="qm-label">{{ (!empty($studentAlreadyVerifiedToday) ? 'Sudah Verifikasi' : 'Verifikasi Absen Hari ini') }}</div>
+                            </button>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 </div>
+@if(isset($activeVerification) && $activeVerification)
+    @push('js')
+    <!-- Modal for verification code input -->
+    <div class="modal fade" id="verifyCodeModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Verifikasi Absen</h5>
+                        <button type="button" class="btn-close close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close">&times;</button>
+                    </div>
+          <div class="modal-body">
+            <div class="mb-2">
+              <label for="verifyCodeInput" class="form-label small">Masukkan kode verifikasi</label>
+              <input id="verifyCodeInput" class="form-control" maxlength="20" autocomplete="off" />
+            </div>
+            <div id="verifyCodeAlert" class="alert d-none" role="alert"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="verifyCodeSubmit" class="btn btn-primary">Verifikasi</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            var btn = document.getElementById('quickVerifyBtn');
+            var modalEl = document.getElementById('verifyCodeModal');
+            var verifyInput = document.getElementById('verifyCodeInput');
+            var verifySubmit = document.getElementById('verifyCodeSubmit');
+            var verifyAlert = document.getElementById('verifyCodeAlert');
+            var bootstrapModal = null;
+            var usingJQueryModal = false;
+
+            if (modalEl) {
+                if (window.bootstrap && typeof window.bootstrap.Modal === 'function') {
+                    try { bootstrapModal = new bootstrap.Modal(modalEl); } catch (e) { bootstrapModal = null; }
+                } else if (window.jQuery || window.$) {
+                    try { if (typeof jQuery(modalEl).modal === 'function') usingJQueryModal = true; } catch (e) { usingJQueryModal = false; }
+                }
+            }
+
+            if(!btn || !modalEl) return;
+
+            btn.addEventListener('click', function(){
+                if (verifyInput) verifyInput.value = '';
+                if (verifyAlert) verifyAlert.classList.add('d-none');
+                if (bootstrapModal) {
+                    bootstrapModal.show();
+                } else if (usingJQueryModal) {
+                    jQuery(modalEl).modal('show');
+                } else {
+                    // fallback: simple prompt
+                    var kodeFallback = prompt('Masukkan kode verifikasi');
+                    if (!kodeFallback) return;
+                    submitVerificationCode(kodeFallback);
+                    return;
+                }
+                setTimeout(function(){ if (verifyInput) verifyInput.focus(); }, 250);
+            });
+
+            function showAlert(message, type){
+                if (!verifyAlert) return;
+                verifyAlert.classList.remove('d-none','alert-success','alert-danger','alert-warning');
+                verifyAlert.classList.add('alert-' + (type || 'danger'));
+                verifyAlert.textContent = message;
+            }
+
+            function hideModal() {
+                if (bootstrapModal) { try { bootstrapModal.hide(); } catch (e) {} }
+                else if (usingJQueryModal) { try { jQuery(modalEl).modal('hide'); } catch (e) {} }
+            }
+
+            function submitVerificationCode(kode) {
+                if (!kode) { showAlert('Masukkan kode verifikasi terlebih dahulu.', 'warning'); if (verifyInput) verifyInput.focus(); return; }
+                verifySubmit.disabled = true;
+                fetch('{{ route('absensi.verify.student') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ kode: kode, kelas_id: '{{ auth()->user()->siswa->kelas_id ?? '' }}', tanggal: '{{ date('Y-m-d') }}' })
+                }).then(function(resp){ return resp.json(); }).then(function(json){
+                    verifySubmit.disabled = false;
+                    if (json && json.success) {
+                        showAlert(json.message || 'Verifikasi berhasil.', 'success');
+                        // disable quick verify button immediately so user cannot re-submit
+                        try {
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.classList.add('disabled');
+                                btn.setAttribute('aria-disabled', 'true');
+                                btn.style.pointerEvents = 'none';
+                                var lbl = btn.querySelector('.qm-label');
+                                if (lbl) lbl.textContent = 'Sudah Verifikasi';
+                            }
+                            if (verifySubmit) {
+                                verifySubmit.disabled = true;
+                                verifySubmit.classList.add('disabled');
+                            }
+                        } catch (e) { /* ignore */ }
+                        setTimeout(function(){ hideModal(); window.location.reload(); }, 700);
+                    } else {
+                        showAlert(json.message || 'Kode verifikasi tidak valid atau kadaluarsa.', 'danger');
+                    }
+                }).catch(function(err){
+                    verifySubmit.disabled = false;
+                    console.error(err);
+                    showAlert('Terjadi kesalahan jaringan.', 'danger');
+                });
+            }
+
+            verifySubmit.addEventListener('click', function(){
+                var kode = (verifyInput && verifyInput.value) ? verifyInput.value.trim() : '';
+                submitVerificationCode(kode);
+            });
+
+            // allow enter key to submit if input exists
+            if (verifyInput) verifyInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); verifySubmit.click(); } });
+        });
+    </script>
+    @endpush
+@endif
 @endsection

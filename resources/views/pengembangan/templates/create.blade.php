@@ -110,6 +110,14 @@
         </div>
         <div id="removedPlaceholderButtons" class="mb-3"></div>
         <div class="mb-3">
+            <label class="form-label">Jenis Editor</label>
+            <select id="editorModeSelect" name="editor_mode" class="form-control">
+                <option value="image" {{ old('editor_mode', 'image') == 'image' ? 'selected' : '' }}>Editor Gambar (Drag & Drop)</option>
+                <option value="html" {{ old('editor_mode', 'image') == 'html' ? 'selected' : '' }}>Editor HTML</option>
+            </select>
+            <small class="text-muted">Pilih editor gambar untuk menata placeholder secara visual, atau HTML untuk menulis markup langsung.</small>
+        </div>
+        <div id="htmlEditorContainer" class="mb-3">
             <label class="form-label">HTML Template</label>
             <textarea id="templateHtml" name="template_html" class="form-control" rows="12">{{ old('template_html') }}</textarea>
             <div class="d-flex justify-content-between align-items-center mt-2">
@@ -118,7 +126,7 @@
             </div>
         </div>
 
-        <div class="card mb-3">
+        <div id="imageEditorContainer" class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>Editor Sertifikat</strong>
                 <button type="button" id="resetTemplatePositions" class="btn btn-sm btn-secondary">Reset Posisi</button>
@@ -246,6 +254,9 @@
         const preview = document.getElementById('templatePreview');
         const btn = document.getElementById('previewTemplateBtn');
         const editor = document.getElementById('templateEditor');
+        const editorModeSelect = document.getElementById('editorModeSelect');
+        const imageEditorContainer = document.getElementById('imageEditorContainer');
+        const htmlEditorContainer = document.getElementById('htmlEditorContainer');
         const imgInput = document.getElementById('backgroundImageInput');
         const backgroundPreviewContainer = document.getElementById('backgroundPreviewContainer');
         const backgroundPreview = document.getElementById('backgroundPreview');
@@ -615,12 +626,27 @@
             });
         }
 
+        function updateEditorModeUI() {
+            const mode = editorModeSelect?.value || 'image';
+            if (imageEditorContainer) {
+                imageEditorContainer.style.display = mode === 'image' ? '' : 'none';
+            }
+            if (htmlEditorContainer) {
+                htmlEditorContainer.style.display = mode === 'html' ? '' : 'none';
+            }
+            if (mode === 'image') {
+                syncModalPreview();
+            }
+        }
+
         const form = document.querySelector('form');
         form?.addEventListener('submit', function () {
             if (ckEditorInstance) {
                 textarea.value = ckEditorInstance.getData();
             }
         });
+
+        editorModeSelect?.addEventListener('change', updateEditorModeUI);
 
         preset?.addEventListener('change', function () {
             const selected = presets[this.value];
@@ -718,6 +744,7 @@
         syncModalPreview();
         loadEditorBackground();
         updateEditorAspectRatio();
+        updateEditorModeUI();
         initCkeditor().then(renderTemplatePreview);
     });
 </script>

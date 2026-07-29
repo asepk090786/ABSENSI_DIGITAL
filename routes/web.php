@@ -87,6 +87,8 @@ Route::middleware(['auth'])->group(function(){
     Route::post('kelas/{kela}/siswa-bulk-deactivate', ['App\Http\Controllers\KelasController', 'bulkDeactivateStudent'])->name('kelas.siswa.bulk-deactivate');
     Route::post('kelas/{kela}/siswa-bulk-activate', ['App\Http\Controllers\KelasController', 'bulkActivateStudent'])->name('kelas.siswa.bulk-activate');
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
+    Route::post('absensi/verification/refresh', ['App\Http\Controllers\AbsensiController', 'refreshVerification'])->name('absensi.verification.refresh');
+    Route::post('absensi/verification/save', ['App\Http\Controllers\AbsensiController', 'saveVerificationConfig'])->name('absensi.verification.save');
     Route::get('absensi/generate', ['App\Http\Controllers\AbsensiController', 'generateForm'])->name('absensi.generate.form');
     Route::post('absensi/generate', ['App\Http\Controllers\AbsensiController', 'generateStore'])->name('absensi.generate.store');
     Route::delete('absensi/delete-by-date', ['App\Http\Controllers\AbsensiController', 'destroyByDate'])->name('absensi.destroy-by-date');
@@ -100,6 +102,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('absensi/{absensi}/laporan-siswa', ['App\Http\Controllers\AbsensiController', 'storeLaporanSiswa'])->name('absensi.laporan-siswa.store');
     // Pikret: allow update status for a student in an absensi record
     Route::post('absensi/{absensi}/siswa/{siswa}/status', ['App\Http\Controllers\AbsensiController', 'updateSiswaStatus'])->name('absensi.siswa.update_status');
+    Route::post('absensi/verify-student', ['App\Http\Controllers\AbsensiController', 'verifyStudent'])->name('absensi.verify.student');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index', 'store']);
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');

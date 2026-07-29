@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -522,6 +523,34 @@ class DashboardController extends Controller
                 }
             }
 
+            // check if there is active verification code for student's kelas today
+            $activeVerification = null;
+            $studentAlreadyVerifiedToday = false;
+            try {
+                if ($user->siswa && ! empty($user->siswa->kelas_id) && \Illuminate\Support\Facades\Schema::hasTable('attendance_verification_codes')) {
+                    $activeVerification = \App\Models\AttendanceVerificationCode::where('kelas_id', $user->siswa->kelas_id)
+                        ->where('tanggal', date('Y-m-d'))
+                        ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', \Carbon\Carbon::now()); })
+                        ->orderByDesc('id')
+                        ->first();
+
+                    if ($activeVerification && \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') && \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas')) {
+                        $studentAlreadyVerifiedToday = \App\Models\AbsensiSiswa::where('siswa_id', $user->siswa->id)
+                            ->where('status', 'hadir')
+                            ->whereHas('absensiKelas', function ($q) use ($activeVerification) {
+                                $q->whereDate('tanggal', date('Y-m-d'));
+                                if (! empty($activeVerification->jam_belajar_id)) {
+                                    $q->where('jam_belajar_id', $activeVerification->jam_belajar_id);
+                                }
+                            })
+                            ->exists();
+                    }
+                }
+            } catch (\Throwable $e) {
+                $activeVerification = null;
+                $studentAlreadyVerifiedToday = false;
+            }
+
             return view('dashboard.siswa', compact(
                 'guru',
                 'siswa',
@@ -532,7 +561,9 @@ class DashboardController extends Controller
                 'classPositionLabel',
                 'isSiswaOfficer',
                 'attendanceSummary'
-            ));
+            ))->with('activeVerification', $activeVerification)
+            ->with('studentAlreadyVerifiedToday', $studentAlreadyVerifiedToday);
+            
         } elseif ($isKepalaSekolah) {
             $kelasLaporanOptions = collect();
             if (\Illuminate\Support\Facades\Schema::hasTable('kelas')) {

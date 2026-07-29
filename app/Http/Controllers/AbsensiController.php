@@ -16,16 +16,19 @@ use App\Models\AbsensiGuru;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\JadwalKbm;
+use App\Models\AttendanceVerificationCode;
 use App\Models\LaporanSiswaGuru;
 use App\Exports\AbsensiBkMonitoringExport;
 use App\Exports\AbsensiLaporanSiswaHarianExport;
+use App\Events\StudentVerified;
 use App\Exports\AbsensiLaporanSiswaRangeExport;
 use App\Services\SettingsManager;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AbsensiController extends Controller
 {
@@ -924,7 +927,9 @@ class AbsensiController extends Controller
                     ->where('tahun_ajaran_id', $tahunAjaran->id)
                     ->where('semester_id', $semester->id)
                     ->orderBy('jam_ke')
-                    ->get();
+                    ->get()
+                    ->unique(fn ($item) => $item->jam_belajar_id ?? $item->jam_ke)
+                    ->values();
 
                 $scheduledJamIds = $multiSlotJadwal->pluck('jam_belajar_id')->unique();
                 if ($scheduledJamIds->isNotEmpty()) {
@@ -986,7 +991,9 @@ class AbsensiController extends Controller
                 ->where('tahun_ajaran_id', $tahunAjaran->id)
                 ->where('semester_id', $semester->id)
                 ->orderBy('jam_ke')
-                ->get() : collect();
+                ->get()
+                ->unique(fn ($item) => $item->jam_belajar_id ?? $item->jam_ke)
+                ->values() : collect();
 
             $multiSlotJadwal = $jadwalForKelas;
             $scheduledJamIds = $jadwalForKelas->pluck('jam_belajar_id')->unique();
@@ -1034,7 +1041,9 @@ class AbsensiController extends Controller
                     ->where('tahun_ajaran_id', $tahunAjaran->id)
                     ->where('semester_id', $semester->id)
                     ->orderBy('jam_ke')
-                    ->get();
+                    ->get()
+                    ->unique(fn ($item) => $item->jam_belajar_id ?? $item->jam_ke)
+                    ->values();
 
                 $multiSlotJadwal = $jadwalForKelas;
 
@@ -1071,6 +1080,50 @@ class AbsensiController extends Controller
             }
         }
 
+        $settings = new SettingsManager();
+        $verificationTimeoutSeconds = (int) $settings->get('attendance.verification_timeout_seconds', 300);
+
+        $verificationActive = false;
+        $verificationCode = null;
+        $verificationExpiresAt = null;
+        $verificationRecord = null;
+
+        if ($selectedKelasId && $selectedDate) {
+            $verificationQuery = AttendanceVerificationCode::where('kelas_id', $selectedKelasId)
+                ->where('tanggal', $selectedDate)
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>=', Carbon::now());
+                });
+
+            if ($selectedJamBelajarId) {
+                $verificationQuery->where('jam_belajar_id', $selectedJamBelajarId);
+            }
+
+            $verificationRecord = $verificationQuery->orderByDesc('id')->first();
+
+            if (! $verificationRecord) {
+                // fallback: any active verification for this class/date, even if jam differs
+                $verificationRecord = AttendanceVerificationCode::where('kelas_id', $selectedKelasId)
+                    ->where('tanggal', $selectedDate)
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')->orWhere('expires_at', '>=', Carbon::now());
+                    })
+                    ->orderByDesc('id')
+                    ->first();
+            }
+
+            if ($verificationRecord) {
+                $verificationActive = true;
+                $verificationCode = $verificationRecord->kode;
+                $verificationExpiresAt = $verificationRecord->expires_at
+                    ? Carbon::parse($verificationRecord->expires_at)->format('Y-m-d\TH:i:sP')
+                    : null;
+                if (! $selectedJamBelajarId && $verificationRecord->jam_belajar_id) {
+                    $selectedJamBelajarId = $verificationRecord->jam_belajar_id;
+                }
+            }
+        }
+
         return view('absensi.create', compact(
             'kelasList',
             'guruList',
@@ -1085,8 +1138,311 @@ class AbsensiController extends Controller
             'multiSlotJadwal',
             'isGuruPiket',
             'guruPiketList',
-            'isWaliKelas'
+            'isWaliKelas',
+            'verificationTimeoutSeconds',
+            'verificationActive',
+            'verificationCode',
+            'verificationExpiresAt',
+            'isAdminOrKepala'
         ));
+    }
+
+    public function refreshVerification(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'kelas_id' => 'required|exists:kelas,id',
+            'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
+            'tanggal' => 'required|date',
+            'guru_id' => 'nullable|exists:guru,id',
+            'timeout_seconds' => 'nullable|integer|min:10|max:3600'
+        ]);
+
+        $guruId = $validated['guru_id'] ?? $user->guru_id ?? null;
+        $timeout = (int) ($validated['timeout_seconds'] ?? (new \App\Services\SettingsManager())->get('attendance.verification_timeout_seconds', 300));
+        $timeout = max(10, min(3600, $timeout));
+
+        if ($request->filled('timeout_seconds')) {
+            (new \App\Services\SettingsManager())->set('attendance.verification_timeout_seconds', $timeout);
+        }
+
+        $code = $this->generateVerificationCode();
+        $expiresAt = Carbon::now()->addSeconds($timeout);
+
+        // Upsert verification record
+        $record = AttendanceVerificationCode::updateOrCreate(
+            [
+                'guru_id' => $guruId,
+                'kelas_id' => $validated['kelas_id'],
+                'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                'tanggal' => $validated['tanggal'],
+            ],
+            [
+                'kode' => $code,
+                'expires_at' => $expiresAt,
+            ]
+        );
+
+            return response()->json([
+                'success' => true,
+                'kode' => $record->kode,
+                'expires_at' => $record->expires_at ? Carbon::parse($record->expires_at)->format('Y-m-d\TH:i:sP') : null,
+                'timeout_seconds' => $timeout,
+            ]);
+    }
+
+    public function saveVerificationConfig(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'kelas_id' => 'required|exists:kelas,id',
+            'tanggal' => 'required|date',
+            'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
+            'verifikasi_aktif' => 'nullable|boolean',
+            'timeout_seconds' => 'nullable|integer|min:10|max:3600',
+        ]);
+
+        $guruId = $user->guru_id ?? null;
+        if (! $guruId) {
+            $guruId = DB::table('kelas')->where('id', $validated['kelas_id'])->value('wali_kelas_id');
+        }
+
+        $active = (bool) ($validated['verifikasi_aktif'] ?? false);
+
+        if (! $active) {
+            try {
+                AttendanceVerificationCode::where('kelas_id', $validated['kelas_id'])
+                    ->where('tanggal', $validated['tanggal'])
+                    ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                    ->when($guruId, fn($q) => $q->where('guru_id', $guruId))
+                    ->delete();
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'message' => 'Gagal menyimpan konfigurasi verifikasi.'], 500);
+            }
+
+            return response()->json(['success' => true, 'message' => 'Konfigurasi verifikasi berhasil disimpan.']);
+        }
+
+        $timeout = (int) ($validated['timeout_seconds'] ?? (new \App\Services\SettingsManager())->get('attendance.verification_timeout_seconds', 300));
+        $timeout = max(10, min(3600, $timeout));
+
+        if ($request->filled('timeout_seconds')) {
+            (new \App\Services\SettingsManager())->set('attendance.verification_timeout_seconds', $timeout);
+        }
+
+        $code = $this->generateVerificationCode();
+        $expiresAt = Carbon::now()->addSeconds($timeout);
+
+        try {
+            $record = AttendanceVerificationCode::updateOrCreate(
+                [
+                    'guru_id' => $guruId,
+                    'kelas_id' => $validated['kelas_id'],
+                    'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                    'tanggal' => $validated['tanggal'],
+                ],
+                [
+                    'kode' => $code,
+                    'expires_at' => $expiresAt,
+                ]
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan konfigurasi verifikasi.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Konfigurasi verifikasi berhasil disimpan.',
+            'kode' => $record->kode,
+            'expires_at' => $record->expires_at ? Carbon::parse($record->expires_at)->format('Y-m-d\TH:i:sP') : null,
+            'timeout_seconds' => $timeout,
+        ]);
+    }
+
+    public function verifyStudent(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->hasRole('Siswa') || empty($user->siswa_id)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
+
+        $validated = $request->validate([
+            'kode' => 'required|string',
+            'kelas_id' => 'nullable|exists:kelas,id',
+            'tanggal' => 'nullable|date',
+            'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
+        ]);
+
+        $tanggal = $validated['tanggal'] ?? date('Y-m-d');
+        $kode = trim($validated['kode']);
+        $kelasId = $validated['kelas_id'] ?? ($user->siswa->kelas_id ?? null);
+        $jamId = $validated['jam_belajar_id'] ?? null;
+
+        if (! $kelasId) {
+            return response()->json(['success' => false, 'message' => 'Kelas tidak ditemukan untuk siswa ini.'], 400);
+        }
+
+        $now = Carbon::now();
+
+        // Try find by verification table first (active code generated by teacher)
+        $verif = AttendanceVerificationCode::where('kelas_id', $kelasId)
+            ->where('tanggal', $tanggal)
+            ->where('kode', $kode)
+            ->where(function($q) use ($now) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
+            })
+            ->when($jamId, function ($q) use ($jamId) { return $q->where('jam_belajar_id', $jamId); })
+            ->first();
+
+        // If not found, try match against AbsensiKelas.kode_verifikasi (in case code was stored in absensi record)
+        $absensi = null;
+        if ($verif) {
+            // find an AbsensiKelas record that matches the scope (if exists)
+            $absensi = AbsensiKelas::where('kelas_id', $kelasId)
+                ->whereDate('tanggal', $tanggal)
+                ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
+                ->where(function($q) use ($kode) {
+                    $q->where('kode_verifikasi', $kode)->orWhereNull('kode_verifikasi');
+                })
+                ->orderByDesc('id')
+                ->first();
+        } else {
+            $absensi = AbsensiKelas::where('kelas_id', $kelasId)
+                ->whereDate('tanggal', $tanggal)
+                ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
+                ->where('kode_verifikasi', $kode)
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if (! $verif && ! $absensi) {
+            return response()->json(['success' => false, 'message' => 'Kode verifikasi tidak valid atau sudah kadaluarsa.'], 400);
+        }
+
+        // Determine absensi_kelas id to attach student's hadir
+        $absensiKelas = $absensi ?? null;
+
+        // If no AbsensiKelas exists, create a minimal one so student can be recorded
+        if (! $absensiKelas) {
+            // ensure we have active tahun/semester (table constraints require non-null)
+            $tahunAjaran = TahunAjaran::where('is_active', 1)->first();
+            $semesterActive = Semester::where('is_active', 1)->first();
+            if (! $tahunAjaran || ! $semesterActive) {
+                return response()->json(['success' => false, 'message' => 'Tidak dapat membuat entri absensi: Tahun ajaran / semester aktif belum diset. Hubungi admin.'], 500);
+            }
+
+            // determine a guru_id to attach: prefer verification record's guru, then scheduled teacher for the kelas/jam, then kelas.wali_kelas_id
+            $guruIdToUse = null;
+            if ($verif && ! empty($verif->guru_id)) {
+                $guruIdToUse = $verif->guru_id;
+            }
+
+            if (! $guruIdToUse) {
+                $jadwalQuery = JadwalKbm::where('kelas_id', $kelasId)
+                    ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
+                    ->when($tahunAjaran, fn($q) => $q->where('tahun_ajaran_id', $tahunAjaran->id))
+                    ->when($semesterActive, fn($q) => $q->where('semester_id', $semesterActive->id));
+
+                $guruIdToUse = $jadwalQuery->value('guru_id');
+            }
+
+            if (! $guruIdToUse) {
+                $guruIdToUse = DB::table('kelas')->where('id', $kelasId)->value('wali_kelas_id');
+            }
+
+            // determine a jam_belajar_id to attach: prefer verification record's jam, then scheduled jam for the kelas on that date, then any scheduled jam, then master JamBelajar fallback
+            $jamIdToUse = $jamId;
+            if (empty($jamIdToUse) && $verif && ! empty($verif->jam_belajar_id)) {
+                $jamIdToUse = $verif->jam_belajar_id;
+            }
+
+            if (empty($jamIdToUse)) {
+                try {
+                    $hariEnglish = Carbon::parse($tanggal)->format('l');
+                    $mapHari = [
+                        'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+                        'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
+                    ];
+                    $hariQuery = $mapHari[$hariEnglish] ?? $hariEnglish;
+
+                    $jadwalQuery = JadwalKbm::where('kelas_id', $kelasId)
+                        ->when($hariQuery, fn($q) => $q->where('hari', $hariQuery))
+                        ->when($tahunAjaran, fn($q) => $q->where('tahun_ajaran_id', $tahunAjaran->id))
+                        ->when($semesterActive, fn($q) => $q->where('semester_id', $semesterActive->id));
+
+                    $jamIdToUse = $jadwalQuery->value('jam_belajar_id');
+                } catch (\Throwable $_) {
+                    $jamIdToUse = null;
+                }
+            }
+
+            if (empty($jamIdToUse)) {
+                // try any schedule for the kelas in current tahun/semester
+                $jamIdToUse = JadwalKbm::where('kelas_id', $kelasId)
+                    ->when($tahunAjaran, fn($q) => $q->where('tahun_ajaran_id', $tahunAjaran->id))
+                    ->when($semesterActive, fn($q) => $q->where('semester_id', $semesterActive->id))
+                    ->value('jam_belajar_id');
+            }
+
+            if (empty($jamIdToUse)) {
+                // final fallback to first master JamBelajar
+                $jamIdToUse = JamBelajar::orderBy('urutan')->value('id');
+            }
+
+            if (! $guruIdToUse) {
+                return response()->json(['success' => false, 'message' => 'Tidak dapat membuat entri absensi: tidak ditemukan guru terkait untuk kelas ini. Hubungi admin.'], 500);
+            }
+
+            try {
+                $absensiKelas = AbsensiKelas::create([
+                    'kelas_id' => $kelasId,
+                    'guru_id' => $guruIdToUse,
+                    'jam_belajar_id' => $jamIdToUse,
+                    'tanggal' => $tanggal,
+                    'status_kelas' => null,
+                    'tahun_ajaran_id' => $tahunAjaran->id,
+                    'semester_id' => $semesterActive->id,
+                    'verifikasi_aktif' => true,
+                    'kode_verifikasi' => $kode,
+                    'kode_verifikasi_expires_at' => $verif ? $verif->expires_at : null,
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'message' => 'Gagal membuat entri absensi: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // Upsert AbsensiSiswa record for this student as 'hadir'
+        try {
+            $siswaId = $user->siswa_id;
+            $as = AbsensiSiswa::updateOrCreate(
+                ['absensi_kelas_id' => $absensiKelas->id, 'siswa_id' => $siswaId],
+                ['status' => 'hadir', 'keterangan' => null]
+            );
+            // Update agenda/guru note
+            $this->updateAgendaGuruAttendanceNote($absensiKelas);
+            $this->flushStudentReportCache();
+
+            // Broadcast real-time notification so teacher view can update
+            try {
+                $siswaName = null;
+                try { $siswaName = \App\Models\Siswa::find($siswaId)->nama ?? null; } catch (\Throwable $_) { $siswaName = null; }
+                event(new StudentVerified($absensiKelas->kelas_id, $absensiKelas->tanggal, $siswaId, 'hadir', $siswaName));
+            } catch (\Throwable $__e) {
+                Log::warning('broadcast.student_verified.failed', ['error' => $__e->getMessage()]);
+            }
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan absensi siswa: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Verifikasi berhasil. Anda tercatat hadir.', 'absensi_kelas_id' => $absensiKelas->id]);
     }
 
     public function generateForm(Request $request)
@@ -1432,6 +1788,9 @@ class AbsensiController extends Controller
             'jam_belajar_id' => [Rule::requiredIf(!$applyAll), 'nullable', 'exists:jam_belajar,id'],
             'tanggal' => 'required|date',
             'status_kelas' => 'nullable|string|max:100',
+            'verifikasi_aktif' => 'nullable|boolean',
+            'kode_verifikasi' => 'nullable|string|max:32',
+            'kode_verifikasi_expires_at' => 'nullable|date',
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
             'semester_id' => 'required|exists:semester,id',
         ]);
@@ -1445,6 +1804,19 @@ class AbsensiController extends Controller
 
         if ($this->isPastDate($validated['tanggal']) && ! $this->canEditAttendanceDate($user, $validated['tanggal'])) {
             return back()->withInput()->withErrors(['tanggal' => 'Absensi tanggal lampau tidak diizinkan untuk peran Anda.']);
+        }
+
+        $verificationActive = $request->boolean('verifikasi_aktif');
+        $verificationCode = $request->input('kode_verifikasi');
+        $verificationExpiresAt = null;
+        if ($verificationActive) {
+            if (empty($verificationCode)) {
+                $verificationCode = $this->generateVerificationCode();
+            }
+
+            $timeoutSeconds = (int) (new SettingsManager())->get('attendance.verification_timeout_seconds', 300);
+            $timeoutSeconds = max(10, min(3600, $timeoutSeconds));
+            $verificationExpiresAt = Carbon::now()->addSeconds($timeoutSeconds);
         }
 
         $hasSelectedStatus = collect($absensiSiswa)->contains(function ($status) {
@@ -1675,9 +2047,24 @@ class AbsensiController extends Controller
                 $toCreate = array_merge($validated, [
                     'jam_belajar_id' => $jamId,
                     'guru_id' => $entryGuruId,
+                    'verifikasi_aktif' => $verificationActive,
+                    'kode_verifikasi' => $verificationActive ? $verificationCode : null,
+                    'kode_verifikasi_expires_at' => $verificationActive ? $verificationExpiresAt : null,
                 ]);
 
                 $absensi = AbsensiKelas::create($toCreate);
+
+                // remove any pending verification codes for this scope since absensi now created
+                try {
+                    AttendanceVerificationCode::where('kelas_id', $validated['kelas_id'])
+                        ->where('jam_belajar_id', $jamId)
+                        ->where('tanggal', $validated['tanggal'])
+                        ->when($entryGuruId, function ($q) use ($entryGuruId) { return $q->where('guru_id', $entryGuruId); })
+                        ->delete();
+                } catch (\Throwable $e) {
+                    // don't block saving absensi if cleanup fails
+                    \Log::warning('Failed to cleanup attendance_verification_codes: ' . $e->getMessage());
+                }
 
                 foreach ($absensiSiswa as $siswaId => $status) {
                     $normalizedStatus = $this->normalizeAttendanceStatus($status);
@@ -2893,6 +3280,11 @@ class AbsensiController extends Controller
         }
 
         return Cache::remember($cacheKey, $ttlSeconds, $callback);
+    }
+
+    private function generateVerificationCode(): string
+    {
+        return strtoupper(Str::random(6));
     }
 
     private function flushStudentReportCache(): void

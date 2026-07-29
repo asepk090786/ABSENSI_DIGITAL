@@ -19,10 +19,15 @@ class AbsensiKelas extends Model
         'status_kelas',
         'tahun_ajaran_id',
         'semester_id',
+        'verifikasi_aktif',
+        'kode_verifikasi',
+        'kode_verifikasi_expires_at',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
+        'verifikasi_aktif' => 'boolean',
+        'kode_verifikasi_expires_at' => 'datetime',
     ];
 
     public function kelas()
