@@ -73,7 +73,7 @@
     </form>
 @endsection
 
-@push('scripts')
+@push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function(){
     const jenisSelect = document.querySelector('select[name="jenis_kegiatan"]');
