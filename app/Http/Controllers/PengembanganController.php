@@ -263,10 +263,23 @@ class PengembanganController extends Controller
                     $html
                 );
             }
-            // Also handle src="..." references
             $publicUrl = asset('storage/' . $template->background_image);
             $html = str_replace($publicUrl, $storagePath, $html);
         }
+
+        // Convert any storage/... URLs to absolute paths
+        $html = preg_replace_callback(
+            '/(?:url\()?[\'"]?(?:https?:\/\/[^\/]+)?\/storage\/([^\'"\)\s]+)[\'"]?\)?/i',
+            function ($m) {
+                $path = storage_path('app/public/' . $m[1]);
+                if (file_exists($path)) {
+                    return $path;
+                }
+                return $m[0];
+            },
+            $html
+        );
+
         return $html;
     }
 

@@ -643,6 +643,42 @@
         form?.addEventListener('submit', function () {
             if (ckEditorInstance) {
                 textarea.value = ckEditorInstance.getData();
+            } else if (editorModeSelect?.value === 'image') {
+                // Generate HTML from image editor with background and positioned placeholders
+                var bgUrl = currentBackgroundUrl || '';
+                var positions = {};
+                try {
+                    positions = JSON.parse(placeholderPositionsInput.value || '{}');
+                } catch(e) { positions = getDefaultPlaceholderPositions(); }
+
+                var family = fontFamilySelect?.value || 'Arial';
+                var size = fontSizeSelect?.value || '16';
+                var color = placeholderFontColor?.value || '#000000';
+
+                var generatedHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0;font-family:' + family + ';}</style></head><body>';
+                if (bgUrl) {
+                    generatedHtml += '<div style="position:relative;width:100%;height:100vh;background:url(\'' + bgUrl + '\') no-repeat center / contain;">';
+                } else {
+                    generatedHtml += '<div style="position:relative;width:100%;height:100vh;">';
+                }
+
+                var labels = {
+                    dragName: '{{name}}',
+                    dragNamaKegiatan: '{{kegiatan->nama_kegiatan}}',
+                    dragTemaKegiatan: '{{kegiatan->tema_kegiatan}}',
+                    dragNomorSurat: '{{nomor_surat}}',
+                    dragBarcode: '{{barcode}}'
+                };
+
+                draggableItems.forEach(function(el) {
+                    var pid = el.id;
+                    var pos = positions[pid] || { left: '50%', top: '50%', transform: 'translate(-50%,-50%)' };
+                    var label = labels[pid] || pid;
+                    generatedHtml += '<div style="position:absolute;left:' + pos.left + ';top:' + pos.top + ';transform:' + (pos.transform || 'translate(-50%,-50%)') + ';font-family:' + family + ';font-size:' + size + 'px;color:' + color + ';text-align:center;">' + label + '</div>';
+                });
+
+                generatedHtml += '</div></body></html>';
+                textarea.value = generatedHtml;
             }
         });
 
