@@ -30,7 +30,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="card h-100 border">
                             <div class="card-body">
                                 <div class="form-check form-switch">
@@ -39,6 +39,17 @@
                                     <label class="form-check-label" for="allow_edit_past_for_siswa_officer">Izinkan siswa dengan jabatan mengedit absensi tanggal lampau</label>
                                 </div>
                                 <div class="form-text mt-2">Jika aktif, siswa yang memiliki jabatan kelas bisa mengubah absensi tanggal sebelumnya untuk kelasnya.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label" for="verification_timeout_seconds">Timeout Kode Verifikasi (detik)</label>
+                                    <input type="number" min="10" max="3600" class="form-control" id="verification_timeout_seconds" name="verification_timeout_seconds" value="{{ old('verification_timeout_seconds', $settings['verification_timeout_seconds'] ?? 300) }}">
+                                </div>
+                                <div class="form-text mt-2">Waktu dalam detik sebelum kode verifikasi otomatis diperbarui. Nilai yang disarankan antara 60-600 detik.</div>
                             </div>
                         </div>
                     </div>

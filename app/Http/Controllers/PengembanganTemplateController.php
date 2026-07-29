@@ -29,6 +29,7 @@ class PengembanganTemplateController extends Controller
             'page_orientation' => 'nullable|string|in:portrait,landscape',
             'background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10120',
             'placeholder_positions' => 'nullable|string',
+            'editor_mode' => 'nullable|string|in:image,html',
         ]);
 
         $backgroundPath = null;
@@ -44,6 +45,7 @@ class PengembanganTemplateController extends Controller
             'page_orientation' => $data['page_orientation'] ?? 'portrait',
             'background_image' => $backgroundPath,
             'placeholder_positions' => $data['placeholder_positions'] ?? null,
+            'editor_mode' => $data['editor_mode'] ?? 'image',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -80,6 +82,7 @@ class PengembanganTemplateController extends Controller
             'page_orientation' => 'nullable|string|in:portrait,landscape',
             'background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10120',
             'placeholder_positions' => 'nullable|string',
+            'editor_mode' => 'nullable|string|in:image,html',
         ]);
 
         $backgroundPath = null;
@@ -97,6 +100,7 @@ class PengembanganTemplateController extends Controller
             'page_size' => $data['page_size'] ?? 'A4',
             'page_orientation' => $data['page_orientation'] ?? 'portrait',
             'placeholder_positions' => $data['placeholder_positions'] ?? null,
+            'editor_mode' => $data['editor_mode'] ?? 'image',
             'updated_at' => now(),
         ];
         if ($backgroundPath) {

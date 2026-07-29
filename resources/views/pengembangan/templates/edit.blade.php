@@ -111,12 +111,20 @@
         </div>
         <div id="removedPlaceholderButtons" class="mb-3"></div>
         <div class="mb-3">
+            <label class="form-label">Jenis Editor</label>
+            <select id="editorModeSelect" name="editor_mode" class="form-control">
+                <option value="image" {{ old('editor_mode', $item->editor_mode ?? 'image') == 'image' ? 'selected' : '' }}>Editor Gambar (Drag & Drop)</option>
+                <option value="html" {{ old('editor_mode', $item->editor_mode ?? 'image') == 'html' ? 'selected' : '' }}>Editor HTML</option>
+            </select>
+            <small class="text-muted">Pilih editor gambar untuk menata placeholder secara visual, atau HTML untuk menulis markup langsung.</small>
+        </div>
+        <div id="htmlEditorContainer" class="mb-3">
             <label class="form-label">HTML Template</label>
             <textarea id="templateHtml" name="template_html" class="form-control" rows="12">{{ old('template_html', $item->template_html) }}</textarea>
             <small class="text-muted">Gunakan placeholder: <code>@{{name}}</code>, <code>@{{kegiatan->nama_kegiatan}}</code>, <code>@{{kegiatan->tema_kegiatan}}</code>, <code>@{{barcode}}</code></small>
         </div>
 
-        <div class="card mb-3">
+        <div id="imageEditorContainer" class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>Editor Sertifikat</strong>
                 <button type="button" id="resetTemplatePositions" class="btn btn-sm btn-secondary">Reset Posisi</button>
@@ -156,12 +164,16 @@
 
         <div class="mb-3">
             <div class="card bg-light border-secondary">
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="card-title mb-0">Contoh Template HTML</h6>
-                        <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#htmlTemplateHelpModal">Bantuan HTML</button>
-                    </div>
-                    <pre class="mb-0" style="font-size:0.9rem; white-space:pre-wrap; word-break:break-word;">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <strong class="small">Contoh Template HTML</strong>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#htmlExampleCollapse" aria-expanded="false" aria-controls="htmlExampleCollapse">Lihat</button>
+                </div>
+                <div id="htmlExampleCollapse" class="collapse">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-end mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#htmlTemplateHelpModal">Bantuan HTML</button>
+                        </div>
+                        <pre class="mb-0" style="font-size:0.9rem; white-space:pre-wrap; word-break:break-word;">
 &lt;div style="font-family: Arial; text-align:center; border:8px solid #0d6efd; padding:24px; max-width:900px; margin:auto;"&gt;
     &lt;h1 style="color:#0d6efd;"&gt;SERTIFIKAT&lt;/h1&gt;
     &lt;p&gt;Diberikan kepada&lt;/p&gt;
@@ -171,7 +183,8 @@
     &lt;p&gt;Tema: @{{kegiatan->tema_kegiatan}}&lt;/p&gt;
     &lt;div style="margin-top:24px; font-size:0.9rem; color:#555;"&gt;Kode verifikasi: @{{barcode}}&lt;/div&gt;
 &lt;/div&gt;
-                    </pre>
+                        </pre>
+                    </div>
                 </div>
             </div>
         </div>
@@ -253,6 +266,9 @@
         const preview = document.getElementById('templatePreview');
         const btn = document.getElementById('previewTemplateBtn');
         const editor = document.getElementById('templateEditor');
+        const editorModeSelect = document.getElementById('editorModeSelect');
+        const imageEditorContainer = document.getElementById('imageEditorContainer');
+        const htmlEditorContainer = document.getElementById('htmlEditorContainer');
         const imgInput = document.getElementById('backgroundImageInput');
         const backgroundPreviewContainer = document.getElementById('backgroundPreviewContainer');
         const backgroundPreview = document.getElementById('backgroundPreview');
@@ -353,12 +369,20 @@
         function setPlaceholderPositions(data) {
             if (!data) return;
             draggableItems.forEach(el => {
-                const pos = data[el.id];
-                if (!pos) return;
-                el.style.left = pos.left || el.style.left;
-                el.style.top = pos.top || el.style.top;
-                el.style.transform = pos.transform || el.style.transform || 'translate(-50%,-50%)';
+                const state = data[el.id];
+                if (!state) return;
+                const visible = state.visible !== false;
+                el.style.left = state.left || el.style.left;
+                el.style.top = state.top || el.style.top;
+                el.style.transform = state.transform || el.style.transform || 'translate(-50%,-50%)';
+                el.style.display = visible ? 'block' : 'none';
+                if (visible) {
+                    delete removedPlaceholders[el.id];
+                } else {
+                    removedPlaceholders[el.id] = el;
+                }
             });
+            renderRemovedPlaceholderButtons();
         }
 
         function getDefaultPlaceholderPositions() {
@@ -430,6 +454,7 @@
                     left: el.style.left,
                     top: el.style.top,
                     transform: el.style.transform,
+                    visible: el.style.display !== 'none',
                 };
                 return acc;
             }, {});
@@ -623,12 +648,25 @@
             });
         }
 
+        function updateEditorModeUI() {
+            const mode = editorModeSelect?.value || 'image';
+            if (imageEditorContainer) {
+                imageEditorContainer.style.display = mode === 'image' ? '' : 'none';
+            }
+            if (htmlEditorContainer) {
+                htmlEditorContainer.style.display = mode === 'html' ? '' : 'none';
+            }
+        }
+
         const form = document.querySelector('form');
         form?.addEventListener('submit', function () {
+            savePlaceholderPositions();
             if (ckEditorInstance) {
                 textarea.value = ckEditorInstance.getData();
             }
         });
+
+        editorModeSelect?.addEventListener('change', updateEditorModeUI);
 
         preset?.addEventListener('change', function () {
             const selected = presets[this.value];
@@ -726,6 +764,7 @@
         syncModalPreview();
         loadEditorBackground();
         updateEditorAspectRatio();
+        updateEditorModeUI();
         initCkeditor().then(renderTemplatePreview);
     });
 </script>
