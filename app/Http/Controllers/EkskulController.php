@@ -278,7 +278,7 @@ class EkskulController extends Controller
         $ekskul = Ekstrakurikuler::findOrFail($id);
         $siswa = EkskulAnggota::where('ekstrakurikuler_id', $id)
             ->where('status_pendaftaran', 'diterima')
-            ->with('siswa.kelas')
+            ->with(['siswa.kelas', 'siswa.user'])
             ->orderBy('tanggal_daftar')
             ->get();
         $agenda = null;
