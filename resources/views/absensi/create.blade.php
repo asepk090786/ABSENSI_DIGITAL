@@ -1548,7 +1548,6 @@
                             });
                         }
                         renderSiswaItems();
-                        restoreAttendanceDraft();
                         applyPendingAttendanceUpdates();
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
@@ -1675,7 +1674,6 @@
 
         bindStatusRadioHandlers();
         refreshAllStatusButtonStates();
-        restoreAttendanceDraft();
 
         // prefill existing absensi if present
         try {
