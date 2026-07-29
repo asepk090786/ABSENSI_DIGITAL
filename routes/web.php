@@ -59,6 +59,31 @@ Route::middleware(['auth'])->group(function(){
 
     Route::resource('ekstrakurikuler', EkstrakurikulerController::class)->only(['index', 'create', 'store']);
 
+    // Ekstrakurikuler Routes (full feature)
+    Route::prefix('ekskul')->name('ekskul.')->group(function () {
+        Route::get('/', [App\Http\Controllers\EkskulController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\EkskulController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\EkskulController::class, 'store'])->name('store');
+        Route::get('/{ekskul}/edit', [App\Http\Controllers\EkskulController::class, 'edit'])->name('edit');
+        Route::put('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'update'])->name('update');
+        Route::delete('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'destroy'])->name('destroy');
+        Route::get('/{ekskul}/anggota', [App\Http\Controllers\EkskulController::class, 'manageAnggota'])->name('anggota');
+        Route::post('/{ekskul}/anggota/status', [App\Http\Controllers\EkskulController::class, 'updateStatusAnggota'])->name('anggota.status');
+        Route::post('/{ekskul}/daftar', [App\Http\Controllers\EkskulController::class, 'daftar'])->name('daftar');
+        Route::get('/{ekskul}/jadwal', [App\Http\Controllers\EkskulController::class, 'jadwal'])->name('jadwal');
+        Route::post('/{ekskul}/jadwal', [App\Http\Controllers\EkskulController::class, 'storeJadwal'])->name('jadwal.store');
+        Route::delete('/{ekskul}/jadwal/{jadwal}', [App\Http\Controllers\EkskulController::class, 'deleteJadwal'])->name('jadwal.delete');
+        Route::get('/{ekskul}/agenda', [App\Http\Controllers\EkskulController::class, 'agenda'])->name('agenda');
+        Route::post('/{ekskul}/agenda', [App\Http\Controllers\EkskulController::class, 'storeAgenda'])->name('agenda.store');
+        Route::get('/{ekskul}/absensi/{agenda?}', [App\Http\Controllers\EkskulController::class, 'absensi'])->name('absensi');
+        Route::post('/{ekskul}/absensi', [App\Http\Controllers\EkskulController::class, 'storeAbsensi'])->name('absensi.store');
+        Route::get('/{ekskul}/absensi-pembina', [App\Http\Controllers\EkskulController::class, 'absensiPembina'])->name('absensi_pembina');
+        Route::post('/{ekskul}/absensi-pembina', [App\Http\Controllers\EkskulController::class, 'storeAbsensiPembina'])->name('absensi_pembina.store');
+        Route::get('/{ekskul}/bukti', [App\Http\Controllers\EkskulController::class, 'buktiKegiatan'])->name('bukti');
+        Route::post('/{ekskul}/bukti', [App\Http\Controllers\EkskulController::class, 'storeBuktiKegiatan'])->name('bukti.store');
+        Route::get('/{ekskul}/rekap', [App\Http\Controllers\EkskulController::class, 'rekap'])->name('rekap');
+    });
+
     Route::resource('kelas','App\Http\Controllers\KelasController');
     Route::get('kelas-export', ['App\Http\Controllers\KelasController', 'export'])->name('kelas.export');
     Route::get('kelas-template', ['App\Http\Controllers\KelasController', 'templateDownload'])->name('kelas.template');
