@@ -81,6 +81,18 @@
                                             <input id="propFontSize" type="number" class="form-control form-control-sm" min="8" max="200">
                                         </div>
                                         <div class="mb-1">
+                                            <label class="form-label small mb-0">Font</label>
+                                            <select id="propFontFamily" class="form-select form-select-sm">
+                                                <option value="Arial">Arial</option>
+                                                <option value="Times New Roman">Times New Roman</option>
+                                                <option value="Georgia">Georgia</option>
+                                                <option value="Verdana">Verdana</option>
+                                                <option value="Tahoma">Tahoma</option>
+                                                <option value="Courier New">Courier New</option>
+                                                <option value="Impact">Impact</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-1">
                                             <label class="form-label small mb-0">Warna</label>
                                             <input id="propColor" type="color" class="form-control form-control-color">
                                         </div>

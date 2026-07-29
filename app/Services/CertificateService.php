@@ -206,6 +206,7 @@ class CertificateService
             $y = $pos['y'] ?? ($height / 2);
             $fontSize = $pos['font_size'] ?? 24;
             $color = $pos['color'] ?? '#000000';
+            $fontFamily = $pos['font_family'] ?? 'Arial, sans-serif';
             $fontFile = null;
             if (!empty($pos['font_file']) && Storage::disk('public')->exists($pos['font_file'])) {
                 $fontFile = Storage::disk('public')->path($pos['font_file']);
@@ -214,7 +215,7 @@ class CertificateService
             }
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
 
-            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
+            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment, $fontFamily) {
                 if ($fontFile) $font->file($fontFile);
                 $font->size($fontSize);
                 $font->color($color);
