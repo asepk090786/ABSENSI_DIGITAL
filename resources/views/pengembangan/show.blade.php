@@ -85,6 +85,16 @@
                             </div>
                             <div class="col-md-5">
                                 <div class="mb-2">
+                                    <label class="form-label">Nomor Sertifikat</label>
+                                    <div class="input-group">
+                                        <input type="text" name="nomor_surat" id="nomorSurat" class="form-control" placeholder="Contoh: 421/SMA.01/Sket/2026" value="{{ old('nomor_surat', $item->nomor_surat ?? '') }}">
+                                        <button type="button" id="saveNomorBtn" class="btn btn-primary">
+                                            <i class="ti ti-device-floppy"></i>
+                                        </button>
+                                    </div>
+                                    <small id="nomorSuratStatus" class="text-muted"></small>
+                                </div>
+                                <div class="mb-2">
                                     <label class="form-label">Template Sertifikat</label>
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <label class="form-label mb-0">Template Sertifikat</label>
@@ -134,17 +144,56 @@ document.addEventListener('DOMContentLoaded', function(){
     const previewSelect = document.getElementById('previewParticipant');
     const previewBtn = document.getElementById('previewBtn');
     const templateSelect = document.querySelector('select[name="template_id"]');
+    const nomorSuratInput = document.getElementById('nomorSurat');
+    const saveNomorBtn = document.getElementById('saveNomorBtn');
+    const nomorSuratStatus = document.getElementById('nomorSuratStatus');
+
     function updatePreviewHref(){
         const pid = previewSelect.value;
         if(!pid){ previewBtn.href = '#'; previewBtn.classList.add('disabled'); return; }
         const tid = templateSelect ? templateSelect.value : '';
+        const ns = nomorSuratInput ? encodeURIComponent(nomorSuratInput.value) : '';
         let url = '/pengembangan/{{ $item->id }}/preview-certificate?participant_id=' + pid;
         if(tid) url += '&template_id=' + tid;
+        if(ns) url += '&nomor_surat=' + ns;
         previewBtn.classList.remove('disabled');
         previewBtn.href = url;
     }
+
+    // Save nomor_surat via AJAX
+    saveNomorBtn?.addEventListener('click', function() {
+        const val = nomorSuratInput.value;
+        nomorSuratStatus.textContent = 'Menyimpan...';
+        nomorSuratStatus.className = 'text-muted';
+        fetch('{{ route('pengembangan.save_nomor_surat', $item->id) }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ nomor_surat: val })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                nomorSuratStatus.textContent = 'Tersimpan';
+                nomorSuratStatus.className = 'text-success small';
+            } else {
+                nomorSuratStatus.textContent = 'Gagal simpan';
+                nomorSuratStatus.className = 'text-danger small';
+            }
+        })
+        .catch(function() {
+            nomorSuratStatus.textContent = 'Gagal simpan';
+            nomorSuratStatus.className = 'text-danger small';
+        });
+    });
+
+    // Auto-save on Enter key
+    nomorSuratInput?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveNomorBtn.click(); }
+    });
+
     previewSelect?.addEventListener('change', updatePreviewHref);
     templateSelect?.addEventListener('change', updatePreviewHref);
+    nomorSuratInput?.addEventListener('input', updatePreviewHref);
 });
 </script>
 @endpush

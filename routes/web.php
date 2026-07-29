@@ -324,6 +324,7 @@ Route::middleware(['auth'])->group(function(){
     Route::put('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'update'])->name('pengembangan.update');
     Route::delete('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'destroy'])->name('pengembangan.destroy');
     Route::get('pengembangan/{id}/preview-certificate', [App\Http\Controllers\PengembanganController::class, 'previewCertificate'])->name('pengembangan.preview_certificate');
+    Route::post('pengembangan/{id}/save-nomor-surat', [App\Http\Controllers\PengembanganController::class, 'saveNomorSurat'])->name('pengembangan.save_nomor_surat');
     
     // ASC Timetable routes
     Route::get('asc-timetable', ['App\Http\Controllers\AscTimetableController', 'index'])->name('asc_timetable.index');

@@ -30,6 +30,10 @@ class CertificateService
         $width = $img->width();
         $height = $img->height();
 
+        // Canvas editor Fabric.js menampilkan background dengan scale = min(900/w, 600/h)
+        // Maka untuk konversi koordinat canvas 900x600 ke gambar asli: scale = max(w/900, h/600)
+        $scale = max($width / 900, $height / 600);
+
         $positions = [];
         if (!empty($template->placeholder_positions)) {
             $positions = json_decode($template->placeholder_positions, true) ?? [];
@@ -40,16 +44,19 @@ class CertificateService
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
             'kegiatan->tema_kegiatan' => $item->tema_kegiatan ?? '',
             'barcode' => $barcode,
-            'nomor_surat' => $nomorSurat ?? '',
+            'nomor_surat' => $nomorSurat ?? $item->nomor_surat ?? '',
         ];
 
         foreach ($placeholders as $key => $text) {
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
 
-            $x = $pos['x'] ?? ($width / 2);
-            $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = ($pos['x'] ?? 450) * $scale;
+            $y = ($pos['y'] ?? 300) * $scale;
+            $fontSize = ($pos['font_size'] ?? 24) * $scale;
+            // Minimum font size agar selalu proporsional besar
+            if ($key === 'name' && $fontSize < 120) $fontSize = 120;
+            elseif ($key !== 'barcode' && $fontSize < 48) $fontSize = 48;
             $color = $pos['color'] ?? '#000000';
             $fontFile = null;
 
@@ -62,10 +69,7 @@ class CertificateService
 
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
 
-            // Parse color
-            $colorRgb = $this->hexToRgb($color);
-
-            // Add text to image - use hex color string, NOT array (Intervention v3 doesn't support array format)
+            // Add text to image
             $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
                 if ($fontFile) {
                     $font->file($fontFile);
@@ -138,6 +142,9 @@ class CertificateService
         $img = $this->image->read($uploadedFile->getRealPath());
         $positions = json_decode($positionsJson, true) ?? [];
 
+        // Canvas editor 900x600, scale ke ukuran gambar asli: max(w/900, h/600)
+        $scale = max($img->width() / 900, $img->height() / 600);
+
         $placeholders = [
             'name' => 'Nama Peserta',
             'kegiatan->nama_kegiatan' => 'Nama Kegiatan',
@@ -149,9 +156,12 @@ class CertificateService
         foreach ($placeholders as $key => $text) {
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
-            $x = $pos['x'] ?? ($img->width() / 2);
-            $y = $pos['y'] ?? ($img->height() / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = ($pos['x'] ?? 450) * $scale;
+            $y = ($pos['y'] ?? 300) * $scale;
+            $fontSize = ($pos['font_size'] ?? 24) * $scale;
+            // Minimum font size
+            if ($key === 'name' && $fontSize < 120) $fontSize = 120;
+            elseif ($key !== 'barcode' && $fontSize < 48) $fontSize = 48;
             $color = $pos['color'] ?? '#000000';
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
 
@@ -186,6 +196,9 @@ class CertificateService
         $width = $img->width();
         $height = $img->height();
 
+        // Canvas editor 900x600, scale ke ukuran gambar asli: max(w/900, h/600)
+        $scale = max($width / 900, $height / 600);
+
         $positions = [];
         if (!empty($template->placeholder_positions)) {
             $positions = json_decode($template->placeholder_positions, true) ?? [];
@@ -196,15 +209,19 @@ class CertificateService
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
             'kegiatan->tema_kegiatan' => $item->tema_kegiatan ?? '',
             'barcode' => $barcode,
+            'nomor_surat' => request()->input('nomor_surat', $item->nomor_surat ?? ''),
         ];
 
         foreach ($placeholders as $key => $text) {
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
 
-            $x = $pos['x'] ?? ($width / 2);
-            $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = ($pos['x'] ?? 450) * $scale;
+            $y = ($pos['y'] ?? 300) * $scale;
+            $fontSize = ($pos['font_size'] ?? 24) * $scale;
+            // Minimum font size agar selalu proporsional besar
+            if ($key === 'name' && $fontSize < 120) $fontSize = 120;
+            elseif ($key !== 'barcode' && $fontSize < 48) $fontSize = 48;
             $color = $pos['color'] ?? '#000000';
             $fontFamily = $pos['font_family'] ?? 'Arial, sans-serif';
             $fontFile = null;

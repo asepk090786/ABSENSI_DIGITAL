@@ -161,11 +161,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var updating = false;
 
     var defaults = {
-        name: { label: 'Nama Peserta', x: 450, y: 200, size: 36, color: '#000000' },
-        'kegiatan->nama_kegiatan': { label: 'Nama Kegiatan', x: 450, y: 290, size: 26, color: '#000000' },
-        'kegiatan->tema_kegiatan': { label: 'Tema Kegiatan', x: 450, y: 350, size: 20, color: '#000000' },
-        barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 16, color: '#000000' },
-        nomor_surat: { label: 'Nomor Sertifikat', x: 450, y: 430, size: 18, color: '#000000' },
+        name: { label: 'Nama Peserta', x: 450, y: 200, size: 80, color: '#000000' },
+        'kegiatan->nama_kegiatan': { label: 'Nama Kegiatan', x: 450, y: 290, size: 48, color: '#000000' },
+        'kegiatan->tema_kegiatan': { label: 'Tema Kegiatan', x: 450, y: 350, size: 36, color: '#000000' },
+        barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 24, color: '#000000' },
+        nomor_surat: { label: 'Nomor Sertifikat', x: 450, y: 430, size: 28, color: '#000000' },
     };
 
     @php
@@ -181,12 +181,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var d = defaults[key];
         if (!d) return;
         var t = new fabric.Text(opts.text || d.label, {
-            key: key, left: opts.x || d.x, top: opts.y || d.y,
+            name: key, left: opts.x || d.x, top: opts.y || d.y,
             fontSize: opts.fontSize || d.size, fill: opts.color || d.color,
-            originX: 'center', originY: 'center', fontFamily: 'Arial, sans-serif',
+            originX: 'center', originY: 'center', fontFamily: opts.fontFamily || 'Arial',
             fontWeight: 'bold', padding: 10, cornerSize: 8,
             transparentCorners: false, cornerColor: '#0d6efd',
             borderColor: '#0d6efd', hasRotatingPoint: false, lockRotation: true,
+            hoverCursor: 'move',
         });
         textObjects[key] = t;
         canvas.add(t);
@@ -216,45 +217,59 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showProps(obj) {
-        if (!obj || !obj.key) { propsPanel.style.display = 'none'; noSelection.style.display = ''; return; }
+        if (!obj || !obj.name) { propsPanel.style.display = 'none'; noSelection.style.display = ''; return; }
         updating = true;
         propsPanel.style.display = ''; noSelection.style.display = 'none';
-        propField.value = obj.key; propFontSize.value = obj.fontSize;
+        propField.value = obj.name; propFontSize.value = obj.fontSize;
         propColor.value = obj.fill; propX.value = Math.round(obj.left);
         propY.value = Math.round(obj.top);
+        if (propFontFamily) propFontFamily.value = obj.fontFamily || 'Arial';
         updating = false;
     }
 
-    canvas.on('selection:created', function(e) { if (e.selected[0] && e.selected[0].key) showProps(e.selected[0]); });
+    canvas.on('selection:created', function(e) { if (e.selected[0] && e.selected[0].name) showProps(e.selected[0]); });
     canvas.on('selection:cleared', function() { showProps(null); });
-    canvas.on('object:modified', function(e) { if (e.target && e.target.key) showProps(e.target); });
+    canvas.on('object:modified', function(e) { if (e.target && e.target.name) showProps(e.target); });
+    canvas.on('mouse:down', function(e) {
+        if (e.target && e.target.name) { showProps(e.target); }
+    });
     canvas.on('object:moving', function(e) {
         var o = e.target;
-        if (o && o.key && !updating) { propX.value = Math.round(o.left); propY.value = Math.round(o.top); }
+        if (o && o.name && !updating) { propX.value = Math.round(o.left); propY.value = Math.round(o.top); }
     });
 
     propFontSize.addEventListener('change', function() {
         var o = canvas.getActiveObject();
-        if (o && o.key) { o.set({ fontSize: parseInt(this.value) || 24 }); canvas.renderAll(); }
+        if (o && o.name) { o.set({ fontSize: parseInt(this.value) || 24 }); canvas.renderAll(); }
     });
     propColor.addEventListener('input', function() {
         var o = canvas.getActiveObject();
-        if (o && o.key) { o.set({ fill: this.value }); canvas.renderAll(); }
+        if (o && o.name) { o.set({ fill: this.value }); canvas.renderAll(); }
     });
+    if (propFontFamily) {
+        propFontFamily.addEventListener('change', function() {
+            var o = canvas.getActiveObject();
+            if (o && o.name) { o.set({ fontFamily: this.value }); canvas.renderAll(); }
+        });
+    }
     propX.addEventListener('change', function() {
         if (updating) return; var o = canvas.getActiveObject();
-        if (o && o.key) { o.set({ left: parseInt(this.value) || 0 }); canvas.renderAll(); }
+        if (o && o.name) { o.set({ left: parseInt(this.value) || 0 }); canvas.renderAll(); }
     });
     propY.addEventListener('change', function() {
         if (updating) return; var o = canvas.getActiveObject();
-        if (o && o.key) { o.set({ top: parseInt(this.value) || 0 }); canvas.renderAll(); }
+        if (o && o.name) { o.set({ top: parseInt(this.value) || 0 }); canvas.renderAll(); }
     });
 
     removeBtn.addEventListener('click', function() { removeSelected(); });
 
     function removeSelected() {
         var o = canvas.getActiveObject();
-        if (o && o.key) { canvas.remove(o); delete textObjects[o.key]; showProps(null); canvas.renderAll(); }
+        if (o && o.name) { var k = getKeyByObject(o); canvas.remove(o); if (k) delete textObjects[k]; showProps(null); canvas.renderAll(); }
+    }
+    function getKeyByObject(obj) {
+        for (var k in textObjects) { if (textObjects[k] === obj) return k; }
+        return null;
     }
 
     // Hapus via keyboard (Delete / Backspace)

@@ -200,6 +200,7 @@ class PengembanganController extends Controller
 
         $selected = request()->input('participant_ids', []);
         $templateId = request()->input('template_id');
+        $nomorSurat = request()->input('nomor_surat', $item->nomor_surat ?? '');
         $template = $templateId ? \DB::table('pengembangan_sertifikat_templates')->where('id', $templateId)->first() : null;
         $outputFormat = $template?->output_format ?? 'pdf';
 
@@ -221,7 +222,7 @@ class PengembanganController extends Controller
             $name = ($p->peserta_type === 'guru') ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
 
             if ($template && $template->background_image) {
-                $filePath = $certService->generatePdf($template, $item, $name, $barcode);
+                $filePath = $certService->generatePdf($template, $item, $name, $barcode, $nomorSurat ?: null);
             } else {
                 // Fallback: DomPDF
                 $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
@@ -402,6 +403,7 @@ class PengembanganController extends Controller
     {
         $participantRowId = $r->query('participant_id');
         $templateId = $r->query('template_id');
+        $nomorSurat = $r->query('nomor_surat', '');
         if (! $participantRowId) abort(404);
         $p = PengembanganPeserta::find($participantRowId);
         if (! $p || $p->pengembangan_id != $id) abort(404);
@@ -431,6 +433,13 @@ class PengembanganController extends Controller
         $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
         $pdf = PDF::loadHTML($html)->setPaper('a4','landscape');
         return response($pdf->output(), 200)->header('Content-Type', 'application/pdf');
+    }
+
+    public function saveNomorSurat(Request $r, $id)
+    {
+        $item = Pengembangan::findOrFail($id);
+        $item->update(['nomor_surat' => $r->input('nomor_surat', '')]);
+        return response()->json(['success' => true, 'nomor_surat' => $item->nomor_surat]);
     }
 
     public function verify($code)
