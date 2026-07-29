@@ -65,13 +65,13 @@ class CertificateService
             // Parse color
             $colorRgb = $this->hexToRgb($color);
 
-            // Add text to image
-            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $colorRgb, $fontFile, $alignment) {
+            // Add text to image - use hex color string, NOT array (Intervention v3 doesn't support array format)
+            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
                 if ($fontFile) {
                     $font->file($fontFile);
                 }
                 $font->size($fontSize);
-                $font->color([$colorRgb['r'], $colorRgb['g'], $colorRgb['b'], 1.0]);
+                $font->color($color);
                 $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
                 $font->valign('middle');
             });
@@ -178,12 +178,11 @@ class CertificateService
                 $fontFile = Storage::disk('public')->path($template->font_file);
             }
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
-            $colorRgb = $this->hexToRgb($color);
 
-            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $colorRgb, $fontFile, $alignment) {
+            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
                 if ($fontFile) $font->file($fontFile);
                 $font->size($fontSize);
-                $font->color([$colorRgb['r'], $colorRgb['g'], $colorRgb['b'], 1.0]);
+                $font->color($color);
                 $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
                 $font->valign('middle');
             });
