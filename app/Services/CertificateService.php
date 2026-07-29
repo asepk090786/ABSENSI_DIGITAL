@@ -12,9 +12,26 @@ class CertificateService
 {
     protected ImageManager $image;
 
+    // Default font sizes for each placeholder field
+    protected const FONT_SIZE_DEFAULTS = [
+        'name' => 36,
+        'kegiatan->nama_kegiatan' => 26,
+        'kegiatan->tema_kegiatan' => 20,
+        'nomor_surat' => 18,
+        'barcode' => 16,
+    ];
+
     public function __construct()
     {
         $this->image = new ImageManager(new Driver());
+    }
+
+    /**
+     * Get default font size for a placeholder field
+     */
+    protected function getDefaultFontSize(string $fieldKey): int
+    {
+        return self::FONT_SIZE_DEFAULTS[$fieldKey] ?? 24;
     }
 
     public function generate($template, Pengembangan $item, string $name, string $barcode, ?string $nomorSurat = null): string
@@ -49,7 +66,7 @@ class CertificateService
 
             $x = $pos['x'] ?? ($width / 2);
             $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $fontSize = $pos['font_size'] ?? $this->getDefaultFontSize($key);
             $color = $pos['color'] ?? '#000000';
             $fontFile = null;
 
@@ -151,7 +168,7 @@ class CertificateService
             if (!$pos) continue;
             $x = $pos['x'] ?? ($img->width() / 2);
             $y = $pos['y'] ?? ($img->height() / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $fontSize = $pos['font_size'] ?? $this->getDefaultFontSize($key);
             $color = $pos['color'] ?? '#000000';
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
 
@@ -204,7 +221,7 @@ class CertificateService
 
             $x = $pos['x'] ?? ($width / 2);
             $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $fontSize = $pos['font_size'] ?? $this->getDefaultFontSize($key);
             $color = $pos['color'] ?? '#000000';
             $fontFamily = $pos['font_family'] ?? 'Arial, sans-serif';
             $fontFile = null;
