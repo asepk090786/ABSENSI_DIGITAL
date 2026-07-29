@@ -41,11 +41,11 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'nip' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'jenis_kelamin' => ['required', 'in:L,P'],
-            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'nip' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'email' => ['sometimes', 'nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'jenis_kelamin' => ['sometimes', 'nullable', 'in:L,P'],
+            'foto' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
         ]);
 
         // Handle photo upload
@@ -54,15 +54,27 @@ class ProfileController extends Controller
             if ($user->foto && Storage::disk('public')->exists($user->foto)) {
                 Storage::disk('public')->delete($user->foto);
             }
-            
+
             $path = $request->file('foto')->store('user_photos', 'public');
             $user->foto = $path;
         }
 
-        $user->name = $validated['name'];
-        $user->nip = $validated['nip'];
-        $user->email = $validated['email'];
-        $user->jenis_kelamin = $validated['jenis_kelamin'];
+        if ($request->has('name')) {
+            $user->name = $validated['name'] ?? $user->name;
+        }
+
+        if ($request->has('nip')) {
+            $user->nip = $validated['nip'] ?? null;
+        }
+
+        if ($request->has('email')) {
+            $user->email = $validated['email'] ?? null;
+        }
+
+        if ($request->has('jenis_kelamin')) {
+            $user->jenis_kelamin = $validated['jenis_kelamin'] ?? $user->jenis_kelamin;
+        }
+
         $user->save();
 
         return redirect()->route('profile.edit')->with('success', 'Profile berhasil diperbarui!');
