@@ -12,6 +12,10 @@ class CertificateService
 {
     protected ImageManager $image;
 
+    /** Canvas dimensions used by the template editor */
+    private const CANVAS_WIDTH  = 900;
+    private const CANVAS_HEIGHT = 600;
+
     public function __construct()
     {
         $this->image = new ImageManager(new Driver());
@@ -35,6 +39,9 @@ class CertificateService
             $positions = json_decode($template->placeholder_positions, true) ?? [];
         }
 
+        // Positions are saved in canvas coordinates (900×600). Scale them to actual image size.
+        $scale = max($width / self::CANVAS_WIDTH, $height / self::CANVAS_HEIGHT);
+
         $placeholders = [
             'name' => $name,
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
@@ -47,9 +54,9 @@ class CertificateService
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
 
-            $x = $pos['x'] ?? ($width / 2);
-            $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = ($pos['x'] ?? (self::CANVAS_WIDTH / 2)) * $scale;
+            $y = ($pos['y'] ?? (self::CANVAS_HEIGHT / 2)) * $scale;
+            $fontSize = (int) round(($pos['font_size'] ?? 24) * $scale);
             $color = $pos['color'] ?? '#000000';
             $fontFile = null;
 
@@ -191,6 +198,9 @@ class CertificateService
             $positions = json_decode($template->placeholder_positions, true) ?? [];
         }
 
+        // Positions are saved in canvas coordinates (900×600). Scale them to actual image size.
+        $scale = max($width / self::CANVAS_WIDTH, $height / self::CANVAS_HEIGHT);
+
         $placeholders = [
             'name' => $name,
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
@@ -202,9 +212,9 @@ class CertificateService
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
 
-            $x = $pos['x'] ?? ($width / 2);
-            $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = ($pos['x'] ?? (self::CANVAS_WIDTH / 2)) * $scale;
+            $y = ($pos['y'] ?? (self::CANVAS_HEIGHT / 2)) * $scale;
+            $fontSize = (int) round(($pos['font_size'] ?? 24) * $scale);
             $color = $pos['color'] ?? '#000000';
             $fontFamily = $pos['font_family'] ?? 'Arial, sans-serif';
             $fontFile = null;
