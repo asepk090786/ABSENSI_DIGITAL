@@ -19,6 +19,7 @@ use PhpOffice\PhpWord\IOFactory as PhpWordIOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Shared\Html as PhpWordHtml;
 use PDF;
+use App\Services\CertificateService;
 use Storage;
 
 class PengembanganController extends Controller
@@ -191,7 +192,7 @@ class PengembanganController extends Controller
         return redirect()->route('pengembangan.index')->with('success','Kegiatan dihapus');
     }
 
-    public function generateCertificates($id)
+    public function generateCertificates($id, CertificateService $certService)
     {
         $item = Pengembangan::with('peserta')->findOrFail($id);
         $storagePath = 'public/certificates';
@@ -202,6 +203,14 @@ class PengembanganController extends Controller
         $template = $templateId ? \DB::table('pengembangan_sertifikat_templates')->where('id', $templateId)->first() : null;
         $outputFormat = $template?->output_format ?? 'pdf';
 
+        if (!$template || !$template->background_image) {
+            // Use first available template with background
+            $template = \DB::table('pengembangan_sertifikat_templates')
+                ->whereNotNull('background_image')
+                ->orderByDesc('id')
+                ->first();
+        }
+
         $toGenerate = $item->peserta->filter(function($p) use ($selected){
             if (empty($selected)) return true;
             return in_array($p->id, $selected);
@@ -210,19 +219,25 @@ class PengembanganController extends Controller
         foreach ($toGenerate as $p) {
             $barcode = (string) Str::uuid();
             $name = ($p->peserta_type === 'guru') ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
-            $renderedHtml = $this->renderTemplateContent($template, $item, $name, $barcode);
 
-            $pageSize = $template?->page_size ?? 'A4';
-            $pageOrientation = $template?->page_orientation ?? 'portrait';
-            $fileName = "pengembangan_{$item->id}_{$p->peserta_type}_{$p->peserta_id}_".time().".".$this->resolveExtension($outputFormat);
-            $filePath = $storagePath.'/'.$fileName;
-            $this->writeCertificateFile($filePath, $renderedHtml, $outputFormat, $pageSize, $pageOrientation);
+            if ($template && $template->background_image) {
+                $filePath = $certService->generatePdf($template, $item, $name, $barcode);
+            } else {
+                // Fallback: DomPDF
+                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
+                $pageSize = strtolower($template?->page_size ?? 'a4');
+                $orientation = ($template?->page_orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
+                $pdf = PDF::loadHTML($html)->setPaper($pageSize, $orientation);
+                $fileName = "pengembangan_{$item->id}_{$p->peserta_type}_{$p->peserta_id}_".time().".pdf";
+                $filePath = 'certificates/'.$fileName;
+                Storage::disk('public')->put($filePath, $pdf->output());
+            }
 
             PengembanganSertifikat::create([
                 'pengembangan_id'=>$item->id,
                 'peserta_type'=>$p->peserta_type,
                 'peserta_id'=>$p->peserta_id,
-                'file_path'=>str_replace('public/','storage/',$filePath),
+                'file_path'=> $filePath,
                 'barcode'=>$barcode,
                 'template_id'=>$templateId ?: null,
             ]);
@@ -383,7 +398,7 @@ class PengembanganController extends Controller
         return response()->download($path);
     }
 
-    public function previewCertificate(Request $r, $id)
+    public function previewCertificate(Request $r, $id, CertificateService $certService)
     {
         $participantRowId = $r->query('participant_id');
         $templateId = $r->query('template_id');
@@ -394,17 +409,26 @@ class PengembanganController extends Controller
         $item = Pengembangan::findOrFail($id);
         $name = $p->peserta_type === 'guru' ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
         $barcode = (string) Str::uuid();
+
         if ($templateId) {
-            $tplRow = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->first();
-            if ($tplRow && $tplRow->template_html) {
-                $html = $this->resolveTemplateImagePaths(html_entity_decode($tplRow->template_html), $tplRow);
-                $html = str_replace(['{{name}}','{{kegiatan->nama_kegiatan}}','{{kegiatan->tema_kegiatan}}','{{barcode}}'], [e($name), e($item->nama_kegiatan), e($item->tema_kegiatan ?? ''), $barcode], $html);
-            } else {
-                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
+            $template = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->first();
+            if ($template && $template->background_image) {
+                return $certService->streamPreview($template, $item, $name, $barcode);
             }
-        } else {
-            $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
         }
+
+        // Fallback: use default template or first available
+        $template = \DB::table('pengembangan_sertifikat_templates')
+            ->whereNotNull('background_image')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($template) {
+            return $certService->streamPreview($template, $item, $name, $barcode);
+        }
+
+        // Last fallback: DomPDF from HTML
+        $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
         $pdf = PDF::loadHTML($html)->setPaper('a4','landscape');
         return response($pdf->output(), 200)->header('Content-Type', 'application/pdf');
     }

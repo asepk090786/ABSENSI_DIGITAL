@@ -30,6 +30,8 @@ class PengembanganTemplateController extends Controller
             'background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10120',
             'placeholder_positions' => 'nullable|string',
             'editor_mode' => 'nullable|string|in:image,html',
+            'font_file' => 'nullable|file|mimes:ttf,otf|max:5120',
+            'pos' => 'nullable|array',
         ]);
 
         $backgroundPath = null;
@@ -37,18 +39,35 @@ class PengembanganTemplateController extends Controller
             $backgroundPath = $r->file('background_image')->store('certificate_templates', 'public');
         }
 
-        DB::table('pengembangan_sertifikat_templates')->insert([
+        // Build positions JSON from pos array
+        $positionsJson = null;
+        if ($r->filled('placeholder_positions')) {
+            $positionsJson = $r->input('placeholder_positions');
+        } elseif ($r->has('pos')) {
+            $positionsJson = json_encode($r->input('pos'));
+        }
+
+        // Handle font file upload
+        $fontPath = null;
+        if ($r->hasFile('font_file')) {
+            $fontPath = $r->file('font_file')->store('certificate_fonts', 'public');
+        }
+
+        $insertData = [
             'nama' => $data['nama'] ?? null,
             'template_html' => $data['template_html'] ?? null,
             'output_format' => $data['output_format'] ?? 'pdf',
             'page_size' => $data['page_size'] ?? 'A4',
             'page_orientation' => $data['page_orientation'] ?? 'portrait',
             'background_image' => $backgroundPath,
-            'placeholder_positions' => $data['placeholder_positions'] ?? null,
+            'placeholder_positions' => $positionsJson,
             'editor_mode' => $data['editor_mode'] ?? 'image',
+            'font_file' => $fontPath,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        DB::table('pengembangan_sertifikat_templates')->insert($insertData);
         return redirect()->route('pengembangan.templates.index')->with('success','Template dibuat');
     }
 
@@ -83,6 +102,8 @@ class PengembanganTemplateController extends Controller
             'background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:10120',
             'placeholder_positions' => 'nullable|string',
             'editor_mode' => 'nullable|string|in:image,html',
+            'font_file' => 'nullable|file|mimes:ttf,otf|max:5120',
+            'pos' => 'nullable|array',
         ]);
 
         $backgroundPath = null;
@@ -93,14 +114,32 @@ class PengembanganTemplateController extends Controller
             }
         }
 
+        // Build positions JSON from pos array
+        $positionsJson = null;
+        if ($r->filled('placeholder_positions')) {
+            $positionsJson = $r->input('placeholder_positions');
+        } elseif ($r->has('pos')) {
+            $positionsJson = json_encode($r->input('pos'));
+        }
+
+        // Handle font file upload
+        $fontPath = $item->font_file ?? null;
+        if ($r->hasFile('font_file')) {
+            $fontPath = $r->file('font_file')->store('certificate_fonts', 'public');
+            if (isset($item->font_file) && $item->font_file) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($item->font_file);
+            }
+        }
+
         $updateData = [
             'nama' => $data['nama'] ?? null,
             'template_html' => $data['template_html'] ?? null,
             'output_format' => $data['output_format'] ?? 'pdf',
             'page_size' => $data['page_size'] ?? 'A4',
             'page_orientation' => $data['page_orientation'] ?? 'portrait',
-            'placeholder_positions' => $data['placeholder_positions'] ?? null,
+            'placeholder_positions' => $positionsJson ?? $data['placeholder_positions'] ?? null,
             'editor_mode' => $data['editor_mode'] ?? 'image',
+            'font_file' => $fontPath,
             'updated_at' => now(),
         ];
         if ($backgroundPath) {
