@@ -797,7 +797,7 @@
         <nav class="sidebar-nav-wrap">
             @php
                 $user = auth()->user();
-                $isGuru = $user->hasAnyRole(['Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket']);
+                $isGuru = $user->hasAnyRole(['Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket','Pembina']);
                 $isGuruPiket = false;
                 if ($isGuru && $user->guru) {
                     $hrPkt = $user->guru->hari_piket ?? [];
@@ -864,11 +864,11 @@
                 <!-- Pembelajaran (Guru) -->
                 @if($isGuru)
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*','ekskul.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-book"></i> Pembelajaran
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*']) ? 'show' : '' }}" id="subPembelajaran">
+                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*','ekskul.*']) ? 'show' : '' }}" id="subPembelajaran">
                         <ul class="sidebar-subnav">
                             <li class="nav-item"><a href="{{ route('absensi.index', ['mode' => 'academic']) }}" class="nav-link {{ request()->routeIs('absensi.*') && $isModeAcademic ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
                             <li class="nav-item"><a href="{{ route('agenda_kelas.index') }}" class="nav-link {{ request()->routeIs('agenda_kelas.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Agenda Kelas</a></li>
@@ -876,6 +876,7 @@
                             <li class="nav-item"><a href="{{ route('nilai.index') }}" class="nav-link {{ request()->routeIs('nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Nilai</a></li>
                             <li class="nav-item"><a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rekap Nilai</a></li>
                             <li class="nav-item"><a href="{{ route('materi_pembelajaran.index') }}" class="nav-link {{ request()->routeIs('materi_pembelajaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Materi</a></li>
+                            <li class="nav-item"><a href="{{ route('ekskul.index') }}" class="nav-link {{ request()->routeIs('ekskul.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pembina Ekskul</a></li>
                         </ul>
                     </div>
                 </li>
@@ -1274,6 +1275,39 @@
 
     // Initialize Toast and Topbar interactions
     document.addEventListener('DOMContentLoaded', function() {
+        // Manual collapse toggle for sidebar nav to fix freeze issue
+        document.querySelectorAll('.sidebar-nav .nav-link[data-bs-toggle="collapse"]').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                var targetId = this.getAttribute('data-bs-target');
+                if (!targetId) return;
+                var target = document.querySelector(targetId);
+                if (!target) return;
+
+                // Toggle using Bootstrap Collapse API if available
+                if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                    var collapse = bootstrap.Collapse.getOrCreateInstance(target, { toggle: false });
+                    if (target.classList.contains('show')) {
+                        collapse.hide();
+                    } else {
+                        // Hide other open collapses in same parent to keep only one open
+                        var parent = this.closest('.sidebar-nav');
+                        if (parent) {
+                            parent.querySelectorAll('.collapse.show').forEach(function(other) {
+                                if (other.id !== targetId.replace('#', '')) {
+                                    bootstrap.Collapse.getOrCreateInstance(other, { toggle: false }).hide();
+                                }
+                            });
+                        }
+                        collapse.show();
+                    }
+                } else {
+                    // Fallback: manual toggle
+                    target.classList.toggle('show');
+                    this.setAttribute('aria-expanded', target.classList.contains('show'));
+                }
+            });
+        });
         var toastElList = [].slice.call(document.querySelectorAll('.toast'));
         toastElList.forEach(function(toastEl) {
             var toast = new bootstrap.Toast(toastEl, { delay: 4000, autohide: true });

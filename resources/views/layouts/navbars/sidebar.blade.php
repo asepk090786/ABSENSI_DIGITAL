@@ -4,7 +4,7 @@
         $user = auth()->user();
         $originalRoleName = $user->role->role_name ?? '';
         $roleName = strtolower(str_replace(' ', '_', $originalRoleName));
-        $isGuru = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
+        $isGuru = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket', 'Pembina']);
         
         // Cek apakah guru adalah wali kelas
         $isWaliKelas = false;
