@@ -402,6 +402,7 @@ class PengembanganController extends Controller
     {
         $participantRowId = $r->query('participant_id');
         $templateId = $r->query('template_id');
+        $nomorSurat = $r->query('nomor_surat');
         if (! $participantRowId) abort(404);
         $p = PengembanganPeserta::find($participantRowId);
         if (! $p || $p->pengembangan_id != $id) abort(404);
@@ -413,7 +414,7 @@ class PengembanganController extends Controller
         if ($templateId) {
             $template = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->first();
             if ($template && $template->background_image) {
-                return $certService->streamPreview($template, $item, $name, $barcode);
+                return $certService->streamPreview($template, $item, $name, $barcode, $nomorSurat);
             }
         }
 
@@ -424,7 +425,7 @@ class PengembanganController extends Controller
             ->first();
 
         if ($template) {
-            return $certService->streamPreview($template, $item, $name, $barcode);
+            return $certService->streamPreview($template, $item, $name, $barcode, $nomorSurat);
         }
 
         // Last fallback: DomPDF from HTML

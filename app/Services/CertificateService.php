@@ -43,13 +43,17 @@ class CertificateService
             'nomor_surat' => $nomorSurat ?? '',
         ];
 
+        // Canvas editor uses a 900×600 canvas with the background image scaled to fit.
+        // Stored positions are in canvas pixels; scale them back to actual image pixels.
+        $canvasScale = min(900 / $width, 600 / $height);
+
         foreach ($placeholders as $key => $text) {
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
 
-            $x = $pos['x'] ?? ($width / 2);
-            $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = isset($pos['x']) ? $pos['x'] / $canvasScale : $width / 2;
+            $y = isset($pos['y']) ? $pos['y'] / $canvasScale : $height / 2;
+            $fontSize = isset($pos['font_size']) ? (int) round($pos['font_size'] / $canvasScale) : 24;
             $color = $pos['color'] ?? '#000000';
             $fontFile = null;
 
@@ -146,12 +150,15 @@ class CertificateService
             'nomor_surat' => 'No. Sertifikat',
         ];
 
+        // Canvas editor uses a 900×600 canvas; scale positions back to actual image pixels.
+        $canvasScale = min(900 / $img->width(), 600 / $img->height());
+
         foreach ($placeholders as $key => $text) {
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
-            $x = $pos['x'] ?? ($img->width() / 2);
-            $y = $pos['y'] ?? ($img->height() / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = isset($pos['x']) ? $pos['x'] / $canvasScale : $img->width() / 2;
+            $y = isset($pos['y']) ? $pos['y'] / $canvasScale : $img->height() / 2;
+            $fontSize = isset($pos['font_size']) ? (int) round($pos['font_size'] / $canvasScale) : 24;
             $color = $pos['color'] ?? '#000000';
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
 
@@ -168,7 +175,7 @@ class CertificateService
         return url('storage/' . $outPath);
     }
 
-    public function streamPreview($template, Pengembangan $item, string $name, string $barcode)
+    public function streamPreview($template, Pengembangan $item, string $name, string $barcode, ?string $nomorSurat = null)
     {
         $bgPath = $template->background_image ?? null;
         if (!$bgPath || !Storage::disk('public')->exists($bgPath)) {
@@ -196,15 +203,19 @@ class CertificateService
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
             'kegiatan->tema_kegiatan' => $item->tema_kegiatan ?? '',
             'barcode' => $barcode,
+            'nomor_surat' => $nomorSurat ?? '',
         ];
+
+        // Canvas editor uses a 900×600 canvas; scale positions back to actual image pixels.
+        $canvasScale = min(900 / $width, 600 / $height);
 
         foreach ($placeholders as $key => $text) {
             $pos = $positions[$key] ?? null;
             if (!$pos) continue;
 
-            $x = $pos['x'] ?? ($width / 2);
-            $y = $pos['y'] ?? ($height / 2);
-            $fontSize = $pos['font_size'] ?? 24;
+            $x = isset($pos['x']) ? $pos['x'] / $canvasScale : $width / 2;
+            $y = isset($pos['y']) ? $pos['y'] / $canvasScale : $height / 2;
+            $fontSize = isset($pos['font_size']) ? (int) round($pos['font_size'] / $canvasScale) : 24;
             $color = $pos['color'] ?? '#000000';
             $fontFamily = $pos['font_family'] ?? 'Arial, sans-serif';
             $fontFile = null;
