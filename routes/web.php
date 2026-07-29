@@ -69,6 +69,7 @@ Route::middleware(['auth'])->group(function(){
         Route::delete('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'destroy'])->name('destroy');
         Route::get('/{ekskul}/anggota', [App\Http\Controllers\EkskulController::class, 'manageAnggota'])->name('anggota');
         Route::post('/{ekskul}/anggota/status', [App\Http\Controllers\EkskulController::class, 'updateStatusAnggota'])->name('anggota.status');
+        Route::post('/{ekskul}/anggota/bulk', [App\Http\Controllers\EkskulController::class, 'storeAnggotaBulk'])->name('anggota.bulk');
         Route::post('/{ekskul}/daftar', [App\Http\Controllers\EkskulController::class, 'daftar'])->name('daftar');
         Route::get('/{ekskul}/jadwal', [App\Http\Controllers\EkskulController::class, 'jadwal'])->name('jadwal');
         Route::post('/{ekskul}/jadwal', [App\Http\Controllers\EkskulController::class, 'storeJadwal'])->name('jadwal.store');

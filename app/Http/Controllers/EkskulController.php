@@ -13,6 +13,7 @@ use App\Models\EkskulAbsensiPembina;
 use App\Models\EkskulBuktiKegiatan;
 use App\Models\Guru;
 use App\Models\Siswa;
+use App\Models\Kelas;
 use Illuminate\Support\Facades\Storage;
 
 class EkskulController extends Controller
@@ -135,7 +136,39 @@ class EkskulController extends Controller
         $ekskul = Ekstrakurikuler::with(['anggota.siswa.kelas', 'pembina'])->findOrFail($id);
         $this->authorizePembinaOrAdmin($ekskul);
         $anggota = $ekskul->anggota()->with(['siswa.kelas'])->orderBy('tanggal_daftar', 'desc')->get();
-        return view('ekskul.anggota', compact('ekskul', 'anggota'));
+        $kelasList = Kelas::orderBy('nama_kelas')->get();
+        $existingSiswaIds = $ekskul->anggota()->pluck('siswa_id')->toArray();
+        return view('ekskul.anggota', compact('ekskul', 'anggota', 'kelasList', 'existingSiswaIds'));
+    }
+
+    public function storeAnggotaBulk(Request $request, $id)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($id);
+        $this->authorizePembinaOrAdmin($ekskul);
+
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array',
+            'siswa_ids.*' => 'exists:siswa,id',
+        ]);
+
+        $count = 0;
+        foreach ($validated['siswa_ids'] as $siswaId) {
+            $existing = EkskulAnggota::where('ekstrakurikuler_id', $id)
+                ->where('siswa_id', $siswaId)
+                ->first();
+            if (!$existing) {
+                EkskulAnggota::create([
+                    'ekstrakurikuler_id' => $id,
+                    'siswa_id' => $siswaId,
+                    'status_pendaftaran' => 'diterima',
+                    'tanggal_daftar' => now()->toDateString(),
+                ]);
+                $count++;
+            }
+        }
+
+        return redirect()->route('ekskul.anggota', $id)
+            ->with('success', "$count anggota berhasil ditambahkan.");
     }
 
     public function updateStatusAnggota(Request $request, $id)
