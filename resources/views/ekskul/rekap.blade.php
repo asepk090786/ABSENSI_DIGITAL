@@ -36,7 +36,7 @@
                                 <th class="text-center">Hadir</th>
                                 <th class="text-center">Izin</th>
                                 <th class="text-center">Sakit</th>
-                                <th class="text-center">Alpha</th>
+                                <th class="text-center">Alpa</th>
                                 <th class="text-center">Total</th>
                                 <th class="text-center">%</th>
                             </tr>

@@ -302,7 +302,7 @@ class EkskulController extends Controller
             'ekskul_agenda_id'     => 'nullable|exists:ekskul_agenda,id',
             'absensi'              => 'required|array',
             'absensi.*.siswa_id'   => 'required|exists:siswa,id',
-            'absensi.*.status'     => 'required|in:hadir,izin,sakit,alpha,tanpa_keterangan',
+            'absensi.*.status'     => 'required|in:hadir,izin,sakit,alpa,tanpa_keterangan',
             'absensi.*.keterangan' => 'nullable|string',
         ]);
         $guruId = auth()->user()->guru?->id;
@@ -403,7 +403,7 @@ class EkskulController extends Controller
             $totalHadir = $absensi->where('status', 'hadir')->count();
             $totalIzin = $absensi->where('status', 'izin')->count();
             $totalSakit = $absensi->where('status', 'sakit')->count();
-            $totalAlpha = $absensi->where('status', 'alpha')->count();
+            $totalAlpa = $absensi->where('status', 'alpa')->count();
             $totalPertemuan = $absensi->count();
             $persentase = $totalPertemuan > 0 ? round(($totalHadir / $totalPertemuan) * 100, 2) : 0;
             $rekap[] = (object) [
@@ -411,7 +411,7 @@ class EkskulController extends Controller
                 'total_hadir'     => $totalHadir,
                 'total_izin'      => $totalIzin,
                 'total_sakit'     => $totalSakit,
-                'total_alpha'     => $totalAlpha,
+                'total_alpha'     => $totalAlpa,
                 'total_pertemuan' => $totalPertemuan,
                 'persentase'      => $persentase,
             ];

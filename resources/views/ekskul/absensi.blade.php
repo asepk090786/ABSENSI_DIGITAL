@@ -135,7 +135,7 @@
                                             <option value="hadir" {{ $existingStatus === 'hadir' ? 'selected' : '' }}>Hadir</option>
                                             <option value="izin" {{ $existingStatus === 'izin' ? 'selected' : '' }}>Izin</option>
                                             <option value="sakit" {{ $existingStatus === 'sakit' ? 'selected' : '' }}>Sakit</option>
-                                            <option value="alpha" {{ $existingStatus === 'alpha' ? 'selected' : '' }}>Alpha</option>
+                                            <option value="alpa" {{ $existingStatus === 'alpa' ? 'selected' : '' }}>Alpa</option>
                                             <option value="tanpa_keterangan" {{ $existingStatus === 'tanpa_keterangan' ? 'selected' : '' }}>Tanpa Keterangan</option>
                                         </select>
                                     </td>
@@ -177,7 +177,7 @@
                                     <option value="hadir" {{ $existingStatus === 'hadir' ? 'selected' : '' }}>Hadir</option>
                                     <option value="izin" {{ $existingStatus === 'izin' ? 'selected' : '' }}>Izin</option>
                                     <option value="sakit" {{ $existingStatus === 'sakit' ? 'selected' : '' }}>Sakit</option>
-                                    <option value="alpha" {{ $existingStatus === 'alpha' ? 'selected' : '' }}>Alpha</option>
+                                    <option value="alpa" {{ $existingStatus === 'alpa' ? 'selected' : '' }}>Alpa</option>
                                     <option value="tanpa_keterangan" {{ $existingStatus === 'tanpa_keterangan' ? 'selected' : '' }}>Tanpa Keterangan</option>
                                 </select>
                                 <input type="text" name="absensi[{{ $index }}][keterangan]" class="form-control form-control-sm"
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnTidakHadirSemua) {
         btnTidakHadirSemua.addEventListener('click', function() {
             document.querySelectorAll('.status-select').forEach(function(sel) {
-                sel.value = 'alpha';
+                sel.value = 'alpa';
             });
         });
     }
