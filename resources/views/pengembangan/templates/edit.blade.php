@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'kegiatan->nama_kegiatan': { label: 'Nama Kegiatan', x: 450, y: 290, size: 26, color: '#000000' },
         'kegiatan->tema_kegiatan': { label: 'Tema Kegiatan', x: 450, y: 350, size: 20, color: '#000000' },
         barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 16, color: '#000000' },
-        nomor_surat: { label: 'Nomor Sertifikat', x: 450, y: 430, size: 18, color: '#000000' },
+        nomor_surat: { label: 'Nomor Surat', x: 450, y: 430, size: 18, color: '#000000' },
     };
 
     @php
@@ -177,12 +177,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var savedPos = @json($savedPositions);
 
+    function getCanvasScaleFactor() {
+        if (!bgImage || !bgImage.width || !bgImage.height) return 1;
+        var imgW = bgImage.width || 1;
+        var imgH = bgImage.height || 1;
+        return Math.min((canvas.width || 900) / imgW, (canvas.height || 600) / imgH);
+    }
+
     function addText(key, opts) {
         var d = defaults[key];
         if (!d) return;
+        var scale = getCanvasScaleFactor();
+        var previewFontSize = (opts.fontSize || d.size) * scale;
         var t = new fabric.Text(opts.text || d.label, {
             key: key, left: opts.x || d.x, top: opts.y || d.y,
-            fontSize: opts.fontSize || d.size, fill: opts.color || d.color,
+            fontSize: previewFontSize, fill: opts.color || d.color,
             originX: 'center', originY: 'center', fontFamily: 'Arial, sans-serif',
             fontWeight: 'bold', padding: 10, cornerSize: 8,
             transparentCorners: false, cornerColor: '#0d6efd',
@@ -195,10 +204,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function init() {
         Object.keys(defaults).forEach(function(k) {
             var saved = savedPos[k] || {};
+            var canvasW = canvas.width || 900;
+            var canvasH = canvas.height || 600;
+            var previewX = saved.x_ratio !== undefined ? (saved.x_ratio * canvasW) : (saved.x || defaults[k].x);
+            var previewY = saved.y_ratio !== undefined ? (saved.y_ratio * canvasH) : (saved.y || defaults[k].y);
+            var previewFontSize = saved.font_size !== undefined ? saved.font_size : (defaults[k].size);
             addText(k, {
-                x: saved.x || defaults[k].x,
-                y: saved.y || defaults[k].y,
-                fontSize: saved.font_size || defaults[k].size,
+                x: previewX,
+                y: previewY,
+                fontSize: previewFontSize,
                 color: saved.color || defaults[k].color,
             });
         });
@@ -207,10 +221,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toJSON() {
         var p = {};
+        var canvasW = canvas.width || 900;
+        var canvasH = canvas.height || 600;
+        var scale = getCanvasScaleFactor();
         Object.keys(textObjects).forEach(function(k) {
             var o = textObjects[k];
             if (!o || !o.canvas) return;
-            p[k] = { x: Math.round(o.left), y: Math.round(o.top), font_size: o.fontSize, color: o.fill, align: 'center' };
+            p[k] = {
+                x_ratio: Math.round((o.left / canvasW) * 1000) / 1000,
+                y_ratio: Math.round((o.top / canvasH) * 1000) / 1000,
+                font_size: Math.max(1, Math.round((o.fontSize || defaults[k].size) / (scale || 1))),
+                color: o.fill,
+                align: 'center'
+            };
         });
         return JSON.stringify(p);
     }
@@ -219,7 +242,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!obj || !obj.key) { propsPanel.style.display = 'none'; noSelection.style.display = ''; return; }
         updating = true;
         propsPanel.style.display = ''; noSelection.style.display = 'none';
-        propField.value = obj.key; propFontSize.value = obj.fontSize;
+        var scale = getCanvasScaleFactor();
+        propField.value = obj.key; propFontSize.value = Math.max(1, Math.round((obj.fontSize || 24) / (scale || 1)));
         propColor.value = obj.fill; propX.value = Math.round(obj.left);
         propY.value = Math.round(obj.top);
         updating = false;
@@ -235,7 +259,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     propFontSize.addEventListener('change', function() {
         var o = canvas.getActiveObject();
-        if (o && o.key) { o.set({ fontSize: parseInt(this.value) || 24 }); canvas.renderAll(); }
+        if (o && o.key) {
+            var scale = getCanvasScaleFactor();
+            o.set({ fontSize: (parseInt(this.value) || 24) * scale });
+            canvas.renderAll();
+        }
     });
     propColor.addEventListener('input', function() {
         var o = canvas.getActiveObject();

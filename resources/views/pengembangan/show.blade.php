@@ -91,13 +91,24 @@
                                             <a href="{{ route('pengembangan.templates.index') }}" class="small">Kelola Template</a>
                                         </div>
                                         <select name="template_id" class="form-select">
-                                        <option value="">-- Default Template --</option>
+                                        <option value="" {{ empty($defaultTemplateId) ? 'selected' : '' }}>-- Default Template --</option>
                                         @foreach($templates as $t)
-                                            <option value="{{ $t->id }}">{{ $t->nama }}</option>
+                                            <option value="{{ $t->id }}" {{ (string) $t->id === (string) ($defaultTemplateId ?? '') ? 'selected' : '' }}>{{ $t->nama }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="d-grid gap-2 mt-2">
+                                <div class="mb-2">
+                                    <label class="form-label">Nomor Sertifikat</label>
+                                    <input type="text" id="nomorSuratInput" name="nomor_surat" class="form-control" value="{{ old('nomor_surat', $defaultNomorSertifikat ?? '') }}" placeholder="Contoh: SRT-001/2026" />
+                                    <small class="text-muted">Nomor ini akan disimpan pada setiap sertifikat yang dibuat.</small>
+                                </div>
+                                <div class="text-muted small mt-2">
+                                    Gunakan tombol di bawah untuk menyimpan pengaturan nomor surat dan template yang dipilih tanpa langsung membuat sertifikat.
+                                </div>
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="submit" name="save_only" value="1" class="btn btn-outline-primary">
+                                        <i class="ti ti-device-floppy me-1"></i> Simpan Pengaturan
+                                    </button>
                                     <button type="submit" class="btn btn-success">
                                         <i class="ti ti-file-certificate me-1"></i> Generate Certificates
                                     </button>
@@ -138,13 +149,17 @@ document.addEventListener('DOMContentLoaded', function(){
         const pid = previewSelect.value;
         if(!pid){ previewBtn.href = '#'; previewBtn.classList.add('disabled'); return; }
         const tid = templateSelect ? templateSelect.value : '';
+        const nomorSuratInput = document.getElementById('nomorSuratInput');
+        const nomorSurat = nomorSuratInput ? nomorSuratInput.value : '';
         let url = '/pengembangan/{{ $item->id }}/preview-certificate?participant_id=' + pid;
         if(tid) url += '&template_id=' + tid;
+        if(nomorSurat) url += '&nomor_surat=' + encodeURIComponent(nomorSurat);
         previewBtn.classList.remove('disabled');
         previewBtn.href = url;
     }
     previewSelect?.addEventListener('change', updatePreviewHref);
     templateSelect?.addEventListener('change', updatePreviewHref);
+    document.getElementById('nomorSuratInput')?.addEventListener('input', updatePreviewHref);
 });
 </script>
 @endpush

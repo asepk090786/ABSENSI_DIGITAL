@@ -21,6 +21,9 @@
                 {{ $kegiatan->pemateri }}
             @endif
         </p>
+        @if(!empty($nomor_surat))
+            <p><strong>No. Sertifikat:</strong> {{ $nomor_surat }}</p>
+        @endif
         <div class="barcode">Kode Verifikasi: {{ $barcode }}</div>
     </div>
 </body>

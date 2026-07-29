@@ -116,7 +116,10 @@ class PengembanganController extends Controller
             $certMap[$key] = $c; // store model so we can get id/file_path
         }
 
-        return view('pengembangan.show', compact('item','templates','participants','certMap'));
+        $defaultTemplateId = $item->default_template_id ?? null;
+        $defaultNomorSertifikat = $item->default_nomor_sertifikat ?? null;
+
+        return view('pengembangan.show', compact('item','templates','participants','certMap','defaultTemplateId','defaultNomorSertifikat'));
     }
 
     public function edit($id)
@@ -200,6 +203,9 @@ class PengembanganController extends Controller
 
         $selected = request()->input('participant_ids', []);
         $templateId = request()->input('template_id');
+        $nomorSertifikat = request()->input('nomor_surat', request()->input('nomor_sertifikat'));
+        $saveOnly = request()->boolean('save_only');
+        $saveAsDefault = $saveOnly || request()->boolean('save_certificate_defaults');
         $template = $templateId ? \DB::table('pengembangan_sertifikat_templates')->where('id', $templateId)->first() : null;
         $outputFormat = $template?->output_format ?? 'pdf';
 
@@ -216,15 +222,26 @@ class PengembanganController extends Controller
             return in_array($p->id, $selected);
         });
 
+        if ($saveAsDefault) {
+            $item->update([
+                'default_nomor_sertifikat' => $saveOnly || request()->filled('nomor_surat') || request()->filled('nomor_sertifikat') ? $nomorSertifikat : null,
+                'default_template_id' => $saveOnly || request()->filled('template_id') ? $templateId : null,
+            ]);
+        }
+
+        if ($saveOnly) {
+            return redirect()->route('pengembangan.show', $id)->with('success', 'Pengaturan sertifikat disimpan');
+        }
+
         foreach ($toGenerate as $p) {
             $barcode = (string) Str::uuid();
             $name = ($p->peserta_type === 'guru') ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
 
             if ($template && $template->background_image) {
-                $filePath = $certService->generatePdf($template, $item, $name, $barcode);
+                $filePath = $certService->generatePdf($template, $item, $name, $barcode, $nomorSertifikat);
             } else {
                 // Fallback: DomPDF
-                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
+                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat])->render();
                 $pageSize = strtolower($template?->page_size ?? 'a4');
                 $orientation = ($template?->page_orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
                 $pdf = PDF::loadHTML($html)->setPaper($pageSize, $orientation);
@@ -239,6 +256,7 @@ class PengembanganController extends Controller
                 'peserta_id'=>$p->peserta_id,
                 'file_path'=> $filePath,
                 'barcode'=>$barcode,
+                'nomor_sertifikat'=>$nomorSertifikat ?: null,
                 'template_id'=>$templateId ?: null,
             ]);
         }
@@ -402,6 +420,7 @@ class PengembanganController extends Controller
     {
         $participantRowId = $r->query('participant_id');
         $templateId = $r->query('template_id');
+        $nomorSertifikat = $r->query('nomor_surat', $r->query('nomor_sertifikat'));
         if (! $participantRowId) abort(404);
         $p = PengembanganPeserta::find($participantRowId);
         if (! $p || $p->pengembangan_id != $id) abort(404);
@@ -413,7 +432,7 @@ class PengembanganController extends Controller
         if ($templateId) {
             $template = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->first();
             if ($template && $template->background_image) {
-                return $certService->streamPreview($template, $item, $name, $barcode);
+                return $certService->streamPreview($template, $item, $name, $barcode, $nomorSertifikat);
             }
         }
 
@@ -424,11 +443,11 @@ class PengembanganController extends Controller
             ->first();
 
         if ($template) {
-            return $certService->streamPreview($template, $item, $name, $barcode);
+            return $certService->streamPreview($template, $item, $name, $barcode, $nomorSertifikat);
         }
 
         // Last fallback: DomPDF from HTML
-        $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
+        $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat])->render();
         $pdf = PDF::loadHTML($html)->setPaper('a4','landscape');
         return response($pdf->output(), 200)->header('Content-Type', 'application/pdf');
     }
