@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class MobileApiController extends Controller
@@ -98,15 +99,33 @@ class MobileApiController extends Controller
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'name' => 'sometimes|nullable|string|max:255',
+            'email' => 'sometimes|nullable|email|max:255',
+            'foto' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
         ]);
 
         $user = $request->user();
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
+        $data = [];
+
+        if ($request->has('name')) {
+            $data['name'] = $request->name;
+        }
+
+        if ($request->has('email')) {
+            $data['email'] = $request->email;
+        }
+
+        if ($request->hasFile('foto')) {
+            if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+                Storage::disk('public')->delete($user->foto);
+            }
+
+            $data['foto'] = $request->file('foto')->store('user_photos', 'public');
+        }
+
+        if (! empty($data)) {
+            $user->update($data);
+        }
 
         return response()->json([
             'message' => 'Profil berhasil diperbarui.',
@@ -986,6 +1005,7 @@ class MobileApiController extends Controller
             'name' => $user->name,
             'username' => $user->username,
             'email' => $user->email,
+            'foto' => $user->foto ? (str_contains($user->foto, '://') ? $user->foto : Storage::disk('public')->url($user->foto)) : null,
             'role' => $user->role?->role_name,
             'roles' => $user->roleNames(),
             'guru_id' => $user->guru_id,
