@@ -526,6 +526,8 @@ class DashboardController extends Controller
             // check if there is active verification code for student's kelas today
             $activeVerification = null;
             $studentAlreadyVerifiedToday = false;
+            $verificationExpiresAt = null;
+            $verificationExpiresAtTimestamp = null;
             try {
                 if ($user->siswa && ! empty($user->siswa->kelas_id) && \Illuminate\Support\Facades\Schema::hasTable('attendance_verification_codes')) {
                     $activeVerification = \App\Models\AttendanceVerificationCode::where('kelas_id', $user->siswa->kelas_id)
@@ -533,6 +535,15 @@ class DashboardController extends Controller
                         ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', \Carbon\Carbon::now()); })
                         ->orderByDesc('id')
                         ->first();
+
+                    if ($activeVerification) {
+                        $verificationExpiresAt = $activeVerification->expires_at
+                            ? \Carbon\Carbon::parse($activeVerification->expires_at)->format('Y-m-d H:i:s')
+                            : null;
+                        $verificationExpiresAtTimestamp = $activeVerification->expires_at
+                            ? $activeVerification->expires_at->timestamp * 1000
+                            : null;
+                    }
 
                     if ($activeVerification && \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') && \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas')) {
                         $studentAlreadyVerifiedToday = \App\Models\AbsensiSiswa::where('siswa_id', $user->siswa->id)
@@ -562,7 +573,9 @@ class DashboardController extends Controller
                 'isSiswaOfficer',
                 'attendanceSummary'
             ))->with('activeVerification', $activeVerification)
-            ->with('studentAlreadyVerifiedToday', $studentAlreadyVerifiedToday);
+            ->with('studentAlreadyVerifiedToday', $studentAlreadyVerifiedToday)
+            ->with('verificationExpiresAt', $verificationExpiresAt ?? null)
+            ->with('verificationExpiresAtTimestamp', $verificationExpiresAtTimestamp ?? null);
             
         } elseif ($isKepalaSekolah) {
             $kelasLaporanOptions = collect();

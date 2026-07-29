@@ -299,13 +299,11 @@
                                         <button type="button" id="saveVerificationConfigBtn" class="btn btn-sm btn-primary">Simpan</button>
                                         <div>
                                             <label class="form-label mb-0 small">Masa berlaku</label>
-                                            <select id="verificationTimeoutSelect" name="verification_timeout_seconds" class="form-select form-select-sm">
-                                                <option value="60" {{ ($verificationTimeoutSeconds ?? 300) == 60 ? 'selected' : '' }}>1 menit</option>
-                                                <option value="120" {{ ($verificationTimeoutSeconds ?? 300) == 120 ? 'selected' : '' }}>2 menit</option>
-                                                <option value="300" {{ ($verificationTimeoutSeconds ?? 300) == 300 ? 'selected' : '' }}>5 menit</option>
-                                                <option value="600" {{ ($verificationTimeoutSeconds ?? 300) == 600 ? 'selected' : '' }}>10 menit</option>
-                                                <option value="1800" {{ ($verificationTimeoutSeconds ?? 300) == 1800 ? 'selected' : '' }}>30 menit</option>
-                                            </select>
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <input type="time" id="verificationValidFrom" name="verification_valid_from" class="form-control form-control-sm" value="{{ old('verification_valid_from', $verificationValidFrom ?? '') }}" placeholder="Dari">
+                                                <span class="text-muted">s.d.</span>
+                                                <input type="time" id="verificationValidTo" name="verification_valid_to" class="form-control form-control-sm" value="{{ old('verification_valid_to', $verificationValidTo ?? '') }}" placeholder="Sampai">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -317,12 +315,13 @@
                                 </div>
                                 <div id="verificationSaveAlert" class="alert d-none mt-2" role="alert"></div>
                                 <div id="verificationCodeBox" class="alert alert-success mt-3 p-2" style="display:none;">
-                                    <div><strong>Kode Verifikasi:</strong> <span id="verificationCodeLabel">-</span></div>
-                                    <div class="small text-muted" id="verificationCountdown">Kode akan kadaluarsa dalam --:--.</div>
+                                    <div><strong>Kode Verifikasi:</strong> <span id="verificationCodeLabel" class="fs-3 fw-bold" style="font-size:1.75rem; letter-spacing:0.12em;">-</span></div>
+                                    <div class="small text-muted mt-2" id="verificationCountdown">Kode akan kadaluarsa dalam --:--.</div>
                                 </div>
                                 <div id="verificationStatusMessage" class="form-text text-success mt-2" style="display:none;"></div>
                                 <input type="hidden" name="kode_verifikasi" id="kode_verifikasi" value="{{ old('kode_verifikasi', $verificationCode ?? '') }}">
                                 <input type="hidden" name="kode_verifikasi_expires_at" id="kode_verifikasi_expires_at" value="{{ old('kode_verifikasi_expires_at', $verificationExpiresAt ?? '') }}">
+                                <input type="hidden" id="kode_verifikasi_expires_at_timestamp" value="{{ $verificationExpiresAtTimestamp ?? '' }}">
                             </div>
                             @endif
 
@@ -640,6 +639,14 @@
 
         console.log('Initializing form...', { kelasValue: kelasSelect ? kelasSelect.value : null, isQuickAccess: isQuickAccess });
 
+        var verificationFromInput = document.getElementById('verificationValidFrom');
+        if (verificationFromInput && !verificationFromInput.value) {
+            var now = new Date();
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            verificationFromInput.value = hours + ':' + minutes;
+        }
+
         // Trigger load siswa jika ada kelas yang sudah dipilih saat page load
         if (kelasSelect && kelasSelect.value) {
             console.log('Preselected kelas detected, refreshing guru/jam and loading siswa for kelas:', kelasSelect.value);
@@ -786,10 +793,12 @@
 
             // Filter jadwalList for kelas, hari and optionally guru
             var filtered = jadwalList.filter(function(item) {
-                if (kelasId && String(item.kelas_id || item.kelasId || '') !== String(kelasId)) return false;
+                var itemKelasId = item.kelas_id || item.kelasId || (item.kelas && item.kelas.id) || '';
+                var itemGuruId = item.guru_id || (item.guru && item.guru.id) || item.guruId || '';
+                if (kelasId && String(itemKelasId) !== String(kelasId)) return false;
                 if (hariName && String((item.hari || '').trim()) !== String(hariName)) return false;
                 if (guruId && String(guruId) !== 'all') {
-                    return String(item.guru_id || '') === String(guruId);
+                    return String(itemGuruId) === String(guruId);
                 }
                 return true;
             });
@@ -799,21 +808,33 @@
             jamBelajarSelect.innerHTML = '<option value="">Pilih Jam Belajar</option>';
             var added = {};
 
-            if (filtered.length === 0) {
-                // Fallback: show all master jam KBM entries so the dropdown is never empty
-                var fallbackJamList = (jamBelajarServerRaw || []).slice().sort(function(a, b) {
-                    return (a.urutan || 0) - (b.urutan || 0);
+            if (filtered.length === 0 && guruId && String(guruId) !== 'all') {
+                // Fallback: if no schedule exists for the selected date, show all schedule slots
+                // for this guru and class across any day so the admin can still choose a jam.
+                var fallbackFiltered = jadwalList.filter(function(item) {
+                    var itemKelasId = item.kelas_id || item.kelasId || (item.kelas && item.kelas.id) || '';
+                    var itemGuruId = item.guru_id || (item.guru && item.guru.id) || item.guruId || '';
+                    if (kelasId && String(itemKelasId) !== String(kelasId)) return false;
+                    if (String(itemGuruId) !== String(guruId)) return false;
+                    return true;
                 });
-
-                fallbackJamList.forEach(function(jam) {
-                    if (!jam || !jam.id) return;
-                    added[jam.id] = true;
+                fallbackFiltered.sort(function(a,b){ return (a.jam_ke || 0) - (b.jam_ke || 0); });
+                fallbackFiltered.forEach(function(item){
+                    var jamId = item.jam_belajar_id || (item.jamBelajar && item.jamBelajar.id) || item.jam_belajar;
+                    if (!jamId || added[jamId]) return;
+                    added[jamId] = true;
+                    var urutan = item.jam_ke || (item.jamBelajar && item.jamBelajar.urutan) || item.urutan || '?';
+                    var jamMulai = item.jam_mulai || (item.jamBelajar && item.jamBelajar.jam_mulai) || (jamBelajarServer[jamId] && jamBelajarServer[jamId].jam_mulai) || '';
+                    var jamSelesai = item.jam_selesai || (item.jamBelajar && item.jamBelajar.jam_selesai) || (jamBelajarServer[jamId] && jamBelajarServer[jamId].jam_selesai) || '';
+                    var label = 'Jam ke-' + urutan + ' (' + jamMulai + ' - ' + jamSelesai + ')';
                     var opt = document.createElement('option');
-                    opt.value = jam.id;
-                    opt.textContent = 'Jam ke-' + (jam.urutan || '?') + ' (' + (jam.jam_mulai || '') + ' - ' + (jam.jam_selesai || '') + ')';
+                    opt.value = jamId;
+                    opt.textContent = label;
                     jamBelajarSelect.appendChild(opt);
                 });
-            } else {
+            }
+
+            if (filtered.length > 0) {
                 filtered.forEach(function(item){
                     var jamId = item.jam_belajar_id || (item.jamBelajar && item.jamBelajar.id) || item.jam_belajar;
                     if (!jamId) return;
@@ -835,11 +856,10 @@
             window._lastAddedJamIds = Object.keys(added);
 
             var jamInfoBox = document.getElementById('jamInfoBox');
-            if (Object.keys(added).length === 0 || filtered.length === 0) {
+            if (Object.keys(added).length === 0) {
                 jamBelajarSelect.innerHTML = '<option value="">Tidak ada jam KBM aktif untuk pilihan ini</option>';
                 if (jamInfoBox) jamInfoBox.innerHTML = '';
-            } else {
-                if (jamInfoBox) {
+            } else {                if (jamInfoBox) {
                     var keys = Object.keys(added);
                     var labels = keys.map(function(k){
                         var jb = jamBelajarServer[k] || {};
@@ -1069,25 +1089,80 @@
             var secs = seconds % 60;
             return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
         }
+        function parseServerDateTime(value) {
+            if (!value) return null;
+            var s = String(value).trim();
+            var match = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:([+-])(\d{2}):?(\d{2})|Z)?$/);
+            if (!match) {
+                var parsedFallback = new Date(s.replace(/ /g, 'T'));
+                return isNaN(parsedFallback.getTime()) ? null : parsedFallback;
+            }
+
+            var year = parseInt(match[1], 10);
+            var month = parseInt(match[2], 10) - 1;
+            var day = parseInt(match[3], 10);
+            var hour = parseInt(match[4], 10);
+            var minute = parseInt(match[5], 10);
+            var second = parseInt(match[6] || '0', 10);
+            var tzSign = match[7];
+            var tzHour = parseInt(match[8] || '0', 10);
+            var tzMinute = parseInt(match[9] || '0', 10);
+
+            if (!tzSign && !s.endsWith('Z')) {
+                return new Date(year, month, day, hour, minute, second);
+            }
+
+            var utc = Date.UTC(year, month, day, hour, minute, second);
+            if (tzSign) {
+                var offset = (tzHour * 60 + tzMinute) * 60000;
+                utc += tzSign === '+' ? -offset : offset;
+            }
+            return new Date(utc);
+        }
+
+        function getVerificationTimeRangeText() {
+            var from = document.getElementById('verificationValidFrom') ? document.getElementById('verificationValidFrom').value : '';
+            var to = document.getElementById('verificationValidTo') ? document.getElementById('verificationValidTo').value : '';
+            var countdown = formatCountdown(verificationRemainingSeconds);
+            if (from && to) {
+                return 'Kode aktif dari ' + from + ' sampai ' + to + ' (' + countdown + ' tersisa).';
+            }
+            if (to) {
+                return 'Kode aktif sampai ' + to + ' (' + countdown + ' tersisa).';
+            }
+            return 'Kode akan kadaluarsa dalam ' + countdown + '.';
+        }
+
+        function updateVerificationCountdownMessage() {
+            if (!verificationCountdown) return;
+            verificationCountdown.textContent = getVerificationTimeRangeText();
+        }
+
         function startVerificationTimer() {
             if (verificationTimerInterval) {
                 clearInterval(verificationTimerInterval);
             }
             verificationRemainingSeconds = Math.max(0, parseInt(verificationRemainingSeconds ?? verificationTimeoutSeconds, 10));
-            if (verificationCountdown) {
-                verificationCountdown.textContent = 'Kode akan kadaluarsa dalam ' + formatCountdown(verificationRemainingSeconds) + '.';
-            }
+            updateVerificationCountdownMessage();
             verificationTimerInterval = setInterval(function() {
                 verificationRemainingSeconds -= 1;
                 if (verificationRemainingSeconds <= 0) {
-                    if (!verificationIsRefreshing) {
-                        refreshVerificationCode();
+                    if (verificationTimerInterval) {
+                        clearInterval(verificationTimerInterval);
+                        verificationTimerInterval = null;
+                    }
+                    if (verificationCodeBox) {
+                        verificationCodeBox.style.display = 'none';
+                    }
+                    if (verificationHidden) {
+                        verificationHidden.value = '';
+                    }
+                    if (verificationCountdown) {
+                        verificationCountdown.textContent = 'Kode sudah tidak berlaku.';
                     }
                     return;
                 }
-                if (verificationCountdown) {
-                    verificationCountdown.textContent = 'Kode akan kadaluarsa dalam ' + formatCountdown(verificationRemainingSeconds) + '.';
-                }
+                updateVerificationCountdownMessage();
             }, 1000);
         }
 
@@ -1114,6 +1189,8 @@
                 jam_belajar_id: jamId || null,
                 tanggal: tanggalVal,
                 guru_id: guruId || null,
+                verification_valid_from: document.getElementById('verificationValidFrom') ? document.getElementById('verificationValidFrom').value : null,
+                verification_valid_to: document.getElementById('verificationValidTo') ? document.getElementById('verificationValidTo').value : null,
                 timeout_seconds: timeoutSeconds
             };
 
@@ -1127,7 +1204,7 @@
                 body: JSON.stringify(payload)
             }).then(function(res){ return res.json(); }).then(function(data){
                 if (data && data.success) {
-                    setVerificationCodeLocal(data.kode, data.timeout_seconds, data.expires_at);
+                    setVerificationCodeLocal(data.kode, data.timeout_seconds, data.expires_at_timestamp);
                 } else {
                     console.warn('Failed to refresh verification code', data);
                 }
@@ -1142,14 +1219,20 @@
             if (verificationCodeLabel) verificationCodeLabel.textContent = code;
             if (verificationCodeBox) verificationCodeBox.style.display = 'block';
             if (typeof expiresAt !== 'undefined' && document.getElementById('kode_verifikasi_expires_at')) {
-                document.getElementById('kode_verifikasi_expires_at').value = expiresAt;
+                var expiresAtDate = new Date(parseInt(expiresAt, 10));
+                if (!isNaN(expiresAtDate.getTime())) {
+                    document.getElementById('kode_verifikasi_expires_at').value = expiresAtDate.toISOString().slice(0, 19).replace('T', ' ');
+                }
+            }
+            if (typeof expiresAt !== 'undefined' && document.getElementById('kode_verifikasi_expires_at_timestamp')) {
+                document.getElementById('kode_verifikasi_expires_at_timestamp').value = expiresAt;
             }
             verificationTimeoutSeconds = parseInt(timeoutSeconds || verificationTimeoutSeconds, 10);
             if (typeof expiresAt !== 'undefined' && expiresAt) {
-                var now = new Date();
-                var expiresAtDate = new Date(expiresAt);
-                if (!isNaN(expiresAtDate.getTime())) {
-                    verificationRemainingSeconds = Math.max(0, Math.round((expiresAtDate - now) / 1000));
+                var now = Date.now();
+                var expiresAtTimestamp = parseInt(expiresAt, 10);
+                if (!isNaN(expiresAtTimestamp)) {
+                    verificationRemainingSeconds = Math.max(0, Math.round((expiresAtTimestamp - now) / 1000));
                 } else {
                     verificationRemainingSeconds = verificationTimeoutSeconds;
                 }
@@ -1235,12 +1318,12 @@
                     if (verificationCodeBox) {
                         verificationCodeBox.style.display = 'block';
                     }
-                    var expiresAtInput = document.getElementById('kode_verifikasi_expires_at');
-                    if (expiresAtInput && expiresAtInput.value) {
-                        var now = new Date();
-                        var expiresAt = new Date(expiresAtInput.value);
-                        if (!isNaN(expiresAt.getTime())) {
-                            verificationRemainingSeconds = Math.max(0, Math.round((expiresAt - now) / 1000));
+                    var expiresAtTimestampInput = document.getElementById('kode_verifikasi_expires_at_timestamp');
+                    if (expiresAtTimestampInput && expiresAtTimestampInput.value) {
+                        var now = Date.now();
+                        var expiresAtTimestamp = parseInt(expiresAtTimestampInput.value, 10);
+                        if (!isNaN(expiresAtTimestamp)) {
+                            verificationRemainingSeconds = Math.max(0, Math.round((expiresAtTimestamp - now) / 1000));
                         }
                     }
                     startVerificationTimer();
@@ -1272,6 +1355,8 @@
             var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
             var active = verificationToggle ? verificationToggle.checked : false;
             var timeout = document.getElementById('verificationTimeoutSelect') ? parseInt(document.getElementById('verificationTimeoutSelect').value, 10) : verificationTimeoutSeconds;
+            var validFrom = document.getElementById('verificationValidFrom') ? document.getElementById('verificationValidFrom').value : null;
+            var validTo = document.getElementById('verificationValidTo') ? document.getElementById('verificationValidTo').value : null;
 
             fetch('{{ route('absensi.verification.save') }}', {
                 method: 'POST',
@@ -1284,19 +1369,38 @@
                     tanggal: tanggalVal,
                     jam_belajar_id: jamId || null,
                     verifikasi_aktif: active ? 1 : 0,
+                    verification_valid_from: validFrom || null,
+                    verification_valid_to: validTo || null,
                     timeout_seconds: timeout
                 })
-            }).then(function(resp){ return resp.json(); }).then(function(json){
+            }).then(function(resp){
+                return resp.json().then(function(json) {
+                    return { ok: resp.ok, status: resp.status, body: json };
+                }).catch(function() {
+                    return { ok: resp.ok, status: resp.status, body: null };
+                });
+            }).then(function(result){
                 saveVerificationConfigBtn.disabled = false;
-                if (json && json.success) {
+                var json = result.body || {};
+                if (result.ok && json.success) {
                     showVerificationSaveAlert(json.message || 'Konfigurasi verifikasi berhasil disimpan.', 'success');
                     if (active) {
                         if (json.kode) {
-                            setVerificationCodeLocal(json.kode, json.timeout_seconds || timeout, json.expires_at);
+                            if (document.getElementById('verificationValidFrom')) {
+                                document.getElementById('verificationValidFrom').value = json.valid_from || validFrom || document.getElementById('verificationValidFrom').value;
+                            }
+                            if (document.getElementById('verificationValidTo')) {
+                                document.getElementById('verificationValidTo').value = json.valid_to || validTo || document.getElementById('verificationValidTo').value;
+                            }
+                            setVerificationCodeLocal(json.kode, json.timeout_seconds || timeout, json.expires_at_timestamp);
                         } else {
                             refreshVerificationCode();
                         }
                     } else {
+                        if (verificationTimerInterval) {
+                            clearInterval(verificationTimerInterval);
+                            verificationTimerInterval = null;
+                        }
                         if (verificationCodeBox) {
                             verificationCodeBox.style.display = 'none';
                         }
@@ -1308,7 +1412,11 @@
                         }
                     }
                 } else {
-                    showVerificationSaveAlert(json.message || 'Gagal menyimpan konfigurasi verifikasi.', 'danger');
+                    var message = json.message || 'Gagal menyimpan konfigurasi verifikasi.';
+                    if (json.errors) {
+                        message = Object.values(json.errors).flat().join(' ');
+                    }
+                    showVerificationSaveAlert(message, 'danger');
                 }
             }).catch(function(err){
                 saveVerificationConfigBtn.disabled = false;

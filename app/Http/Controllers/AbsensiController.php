@@ -1067,7 +1067,10 @@ class AbsensiController extends Controller
             if ($isGuruPiket && !$selectedJamBelajarId && $jamBelajarList->isNotEmpty()) {
                 $selectedJamBelajarId = $jamBelajarList->first()->id;
             }
-            $jadwalList = collect();
+            $jadwalList = JadwalKbm::with(['kelas', 'jamBelajar', 'guru'])
+                ->where('tahun_ajaran_id', $tahunAjaran->id)
+                ->where('semester_id', $semester->id)
+                ->get();
         }
 
         // If current user is a guru piket, provide the list of guru assigned piket for the selected day
@@ -1086,6 +1089,9 @@ class AbsensiController extends Controller
         $verificationActive = false;
         $verificationCode = null;
         $verificationExpiresAt = null;
+        $verificationExpiresAtTimestamp = null;
+        $verificationValidFrom = null;
+        $verificationValidTo = null;
         $verificationRecord = null;
 
         if ($selectedKelasId && $selectedDate) {
@@ -1116,8 +1122,13 @@ class AbsensiController extends Controller
                 $verificationActive = true;
                 $verificationCode = $verificationRecord->kode;
                 $verificationExpiresAt = $verificationRecord->expires_at
-                    ? Carbon::parse($verificationRecord->expires_at)->format('Y-m-d\TH:i:sP')
+                    ? Carbon::parse($verificationRecord->expires_at)->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i:sP')
                     : null;
+                $verificationExpiresAtTimestamp = $verificationRecord->expires_at
+                    ? $verificationRecord->expires_at->timestamp * 1000
+                    : null;
+                $verificationValidFrom = $verificationRecord->valid_from ? Carbon::parse($verificationRecord->valid_from)->format('H:i') : null;
+                $verificationValidTo = $verificationRecord->valid_to ? Carbon::parse($verificationRecord->valid_to)->format('H:i') : null;
                 if (! $selectedJamBelajarId && $verificationRecord->jam_belajar_id) {
                     $selectedJamBelajarId = $verificationRecord->jam_belajar_id;
                 }
@@ -1143,6 +1154,9 @@ class AbsensiController extends Controller
             'verificationActive',
             'verificationCode',
             'verificationExpiresAt',
+            'verificationExpiresAtTimestamp',
+            'verificationValidFrom',
+            'verificationValidTo',
             'isAdminOrKepala'
         ));
     }
@@ -1159,8 +1173,14 @@ class AbsensiController extends Controller
             'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
             'tanggal' => 'required|date',
             'guru_id' => 'nullable|exists:guru,id',
+            'verification_valid_from' => 'nullable|date_format:H:i',
+            'verification_valid_to' => 'nullable|date_format:H:i',
             'timeout_seconds' => 'nullable|integer|min:10|max:3600'
         ]);
+
+        if (! empty($validated['verification_valid_from']) && ! empty($validated['verification_valid_to']) && $validated['verification_valid_to'] < $validated['verification_valid_from']) {
+            return response()->json(['success' => false, 'message' => 'Waktu akhir harus sama atau setelah waktu mulai.'], 422);
+        }
 
         $guruId = $validated['guru_id'] ?? $user->guru_id ?? null;
         $timeout = (int) ($validated['timeout_seconds'] ?? (new \App\Services\SettingsManager())->get('attendance.verification_timeout_seconds', 300));
@@ -1170,8 +1190,20 @@ class AbsensiController extends Controller
             (new \App\Services\SettingsManager())->set('attendance.verification_timeout_seconds', $timeout);
         }
 
-        $code = $this->generateVerificationCode();
-        $expiresAt = Carbon::now()->addSeconds($timeout);
+        $guruKode = null;
+        if ($guruId) {
+            $guruKode = DB::table('guru')->where('id', $guruId)->value('kode_guru');
+        }
+
+        $code = $this->generateVerificationCode($guruKode);
+        $expiresAt = Carbon::now('Asia/Jakarta')->addSeconds($timeout);
+
+        if (! empty($validated['verification_valid_to'])) {
+            $expiresAt = Carbon::parse($validated['tanggal'] . ' ' . $validated['verification_valid_to'], 'Asia/Jakarta');
+        }
+
+        // Convert to UTC before persisting so Laravel reads it back correctly
+        $expiresAtUtc = $expiresAt->copy()->setTimezone('UTC');
 
         // Upsert verification record
         $record = AttendanceVerificationCode::updateOrCreate(
@@ -1183,14 +1215,16 @@ class AbsensiController extends Controller
             ],
             [
                 'kode' => $code,
-                'expires_at' => $expiresAt,
+                'expires_at' => $expiresAtUtc,
+                'valid_from' => $validated['verification_valid_from'] ?? null,
+                'valid_to' => $validated['verification_valid_to'] ?? null,
             ]
         );
 
             return response()->json([
                 'success' => true,
                 'kode' => $record->kode,
-                'expires_at' => $record->expires_at ? Carbon::parse($record->expires_at)->format('Y-m-d\TH:i:sP') : null,
+                'expires_at_timestamp' => $record->expires_at ? $record->expires_at->timestamp * 1000 : null,
                 'timeout_seconds' => $timeout,
             ]);
     }
@@ -1207,8 +1241,14 @@ class AbsensiController extends Controller
             'tanggal' => 'required|date',
             'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
             'verifikasi_aktif' => 'nullable|boolean',
+            'verification_valid_from' => 'nullable|date_format:H:i',
+            'verification_valid_to' => 'nullable|date_format:H:i',
             'timeout_seconds' => 'nullable|integer|min:10|max:3600',
         ]);
+
+        if (! empty($validated['verification_valid_from']) && ! empty($validated['verification_valid_to']) && $validated['verification_valid_to'] < $validated['verification_valid_from']) {
+            return response()->json(['success' => false, 'message' => 'Waktu akhir harus sama atau setelah waktu mulai.'], 422);
+        }
 
         $guruId = $user->guru_id ?? null;
         if (! $guruId) {
@@ -1238,8 +1278,19 @@ class AbsensiController extends Controller
             (new \App\Services\SettingsManager())->set('attendance.verification_timeout_seconds', $timeout);
         }
 
-        $code = $this->generateVerificationCode();
-        $expiresAt = Carbon::now()->addSeconds($timeout);
+        $guruKode = null;
+        if ($guruId) {
+            $guruKode = DB::table('guru')->where('id', $guruId)->value('kode_guru');
+        }
+
+        $code = $this->generateVerificationCode($guruKode);
+        $expiresAt = Carbon::now('Asia/Jakarta')->addSeconds($timeout);
+        if (! empty($validated['verification_valid_to'])) {
+            $expiresAt = Carbon::parse($validated['tanggal'] . ' ' . $validated['verification_valid_to'], 'Asia/Jakarta');
+        }
+
+        // Convert to UTC before persisting so Laravel reads it back correctly
+        $expiresAtUtc = $expiresAt->copy()->setTimezone('UTC');
 
         try {
             $record = AttendanceVerificationCode::updateOrCreate(
@@ -1251,7 +1302,9 @@ class AbsensiController extends Controller
                 ],
                 [
                     'kode' => $code,
-                    'expires_at' => $expiresAt,
+                    'expires_at' => $expiresAtUtc,
+                    'valid_from' => $validated['verification_valid_from'] ?? null,
+                    'valid_to' => $validated['verification_valid_to'] ?? null,
                 ]
             );
         } catch (\Throwable $e) {
@@ -1262,7 +1315,9 @@ class AbsensiController extends Controller
             'success' => true,
             'message' => 'Konfigurasi verifikasi berhasil disimpan.',
             'kode' => $record->kode,
-            'expires_at' => $record->expires_at ? Carbon::parse($record->expires_at)->format('Y-m-d\TH:i:sP') : null,
+            'expires_at_timestamp' => $record->expires_at ? $record->expires_at->timestamp * 1000 : null,
+            'valid_from' => $record->valid_from,
+            'valid_to' => $record->valid_to,
             'timeout_seconds' => $timeout,
         ]);
     }
@@ -1301,6 +1356,16 @@ class AbsensiController extends Controller
             })
             ->when($jamId, function ($q) use ($jamId) { return $q->where('jam_belajar_id', $jamId); })
             ->first();
+
+        if ($verif) {
+            $currentTime = Carbon::now()->format('H:i');
+            if (! empty($verif->valid_from) && $currentTime < $verif->valid_from) {
+                $verif = null;
+            }
+            if (! empty($verif->valid_to) && $currentTime > $verif->valid_to) {
+                $verif = null;
+            }
+        }
 
         // If not found, try match against AbsensiKelas.kode_verifikasi (in case code was stored in absensi record)
         $absensi = null;
@@ -3282,9 +3347,11 @@ class AbsensiController extends Controller
         return Cache::remember($cacheKey, $ttlSeconds, $callback);
     }
 
-    private function generateVerificationCode(): string
+    private function generateVerificationCode(string $guruKode = null): string
     {
-        return strtoupper(Str::random(6));
+        $prefix = strtoupper(trim($guruKode ?? '')) ?: 'GURU';
+        $random = strtoupper(Str::random(3));
+        return $prefix . $random;
     }
 
     private function flushStudentReportCache(): void

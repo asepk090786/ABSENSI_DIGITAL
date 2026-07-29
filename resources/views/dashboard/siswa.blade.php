@@ -225,6 +225,7 @@
             var verifyAlert = document.getElementById('verifyCodeAlert');
             var bootstrapModal = null;
             var usingJQueryModal = false;
+            var verificationExpiresAtTimestamp = parseInt('{{ $verificationExpiresAtTimestamp ?? '' }}', 10);
 
             if (modalEl) {
                 if (window.bootstrap && typeof window.bootstrap.Modal === 'function') {
@@ -234,7 +235,43 @@
                 }
             }
 
+            // Start countdown timer that disables verification when expired
+            function startStudentVerificationTimer() {
+                if (!verificationExpiresAtTimestamp || isNaN(verificationExpiresAtTimestamp)) return;
+
+                function checkExpiry() {
+                    var now = Date.now();
+                    var remaining = Math.max(0, Math.round((verificationExpiresAtTimestamp - now) / 1000));
+
+                    if (remaining <= 0 && btn && !btn.disabled && !btn.classList.contains('disabled')) {
+                        btn.disabled = true;
+                        btn.classList.add('disabled');
+                        btn.setAttribute('aria-disabled', 'true');
+                        btn.style.pointerEvents = 'none';
+                        var lbl = btn.querySelector('.qm-label');
+                        if (lbl) lbl.textContent = 'Waktu verifikasi sudah habis';
+                        var icon = btn.querySelector('.qm-icon');
+                        if (icon) icon.style.background = '#6c757d';
+                        if (verifySubmit) {
+                            verifySubmit.disabled = true;
+                            verifySubmit.classList.add('disabled');
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+
+                // Check immediately
+                if (checkExpiry()) return;
+
+                // Then check every second
+                setInterval(checkExpiry, 1000);
+            }
+
             if(!btn || !modalEl) return;
+
+            // Start the countdown timer
+            startStudentVerificationTimer();
 
             btn.addEventListener('click', function(){
                 if (verifyInput) verifyInput.value = '';
