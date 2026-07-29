@@ -965,11 +965,11 @@
                 <!-- Data Master -->
                 @if($user->hasAnyRole(['Admin','Kepala Sekolah','Wakil Kepala Sekolah']))
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subMaster" aria-expanded="{{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekstrakurikuler.*','asc_timetable.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subMaster" aria-expanded="{{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekskul.*','asc_timetable.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-database"></i> Data Master
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekstrakurikuler.*','asc_timetable.*']) ? 'show' : '' }}" id="subMaster">
+                    <div class="collapse {{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekskul.*','asc_timetable.*']) ? 'show' : '' }}" id="subMaster">
                         <ul class="sidebar-subnav">
                             <li class="nav-item">
                                 <a href="{{ route('sekolah.index') }}" class="nav-link {{ request()->routeIs('sekolah.*') ? 'active' : '' }}">
@@ -1047,7 +1047,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('ekstrakurikuler.index') }}" class="nav-link {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}">
+                                <a href="{{ route('ekskul.index') }}" class="nav-link {{ request()->routeIs('ekskul.*') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Ekstrakurikuler
                                 </a>
                             </li>

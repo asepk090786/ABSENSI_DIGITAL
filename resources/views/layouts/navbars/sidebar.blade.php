@@ -220,7 +220,7 @@
                 </a>
             </li>
             <li>
-                <a href="{{ route('ekstrakurikuler.index') }}" class="menu-item {{ request()->routeIs('ekstrakurikuler.*') ? 'active' : '' }}">
+                <a href="{{ route('ekskul.index') }}" class="menu-item {{ request()->routeIs('ekskul.*') ? 'active' : '' }}">
                     <i class="material-icons">sports_soccer</i>
                     <span>Ekstrakurikuler</span>
                 </a>
