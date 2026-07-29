@@ -234,7 +234,7 @@ class PengembanganController extends Controller
     protected function renderTemplateContent($template, $item, $name, $barcode)
     {
         $html = $template && !empty($template->template_html)
-            ? $template->template_html
+            ? $this->resolveTemplateImagePaths(html_entity_decode($template->template_html), $template)
             : view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
 
         $replacements = [
@@ -248,6 +248,25 @@ class PengembanganController extends Controller
             $html = str_replace($placeholder, $value, $html);
         }
 
+        return $html;
+    }
+
+    protected function resolveTemplateImagePaths($html, $template)
+    {
+        // Convert storage-relative image paths to absolute paths for DomPDF
+        if ($template && !empty($template->background_image)) {
+            $storagePath = storage_path('app/public/' . $template->background_image);
+            if (file_exists($storagePath)) {
+                $html = str_replace(
+                    'storage/' . $template->background_image,
+                    $storagePath,
+                    $html
+                );
+            }
+            // Also handle src="..." references
+            $publicUrl = asset('storage/' . $template->background_image);
+            $html = str_replace($publicUrl, $storagePath, $html);
+        }
         return $html;
     }
 
@@ -363,9 +382,10 @@ class PengembanganController extends Controller
         $name = $p->peserta_type === 'guru' ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
         $barcode = (string) Str::uuid();
         if ($templateId) {
-            $tpl = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->value('template_html');
-            if ($tpl) {
-                $html = str_replace(['{{name}}','{{kegiatan->nama_kegiatan}}','{{kegiatan->tema_kegiatan}}','{{barcode}}'], [e($name), e($item->nama_kegiatan), e($item->tema_kegiatan ?? ''), $barcode], $tpl);
+            $tplRow = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->first();
+            if ($tplRow && $tplRow->template_html) {
+                $html = $this->resolveTemplateImagePaths(html_entity_decode($tplRow->template_html), $tplRow);
+                $html = str_replace(['{{name}}','{{kegiatan->nama_kegiatan}}','{{kegiatan->tema_kegiatan}}','{{barcode}}'], [e($name), e($item->nama_kegiatan), e($item->tema_kegiatan ?? ''), $barcode], $html);
             } else {
                 $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
             }
