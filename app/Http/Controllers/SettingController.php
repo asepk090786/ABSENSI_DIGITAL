@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\DB;
 use App\Services\BackupService;
 use App\Services\SettingsManager;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Process\Process;
 
 class SettingController extends Controller
 {
@@ -305,6 +307,164 @@ class SettingController extends Controller
     {
         $sekolah = \App\Models\Sekolah::first();
         return view('setting.header', compact('sekolah'));
+    }
+
+    // About: server specifications & installed library/plugin status
+    public function about()
+    {
+        $server = $this->collectServerSpecs();
+        $phpLibraries = $this->collectComposerLibraries();
+        $jsLibraries = $this->collectNpmLibraries();
+
+        return view('setting.about', compact('server', 'phpLibraries', 'jsLibraries'));
+    }
+
+    // Runs the OS-appropriate install command to sync missing dependencies (composer/npm)
+    public function installLibrary(Request $request, string $type)
+    {
+        abort_unless(in_array($type, ['composer', 'npm'], true), 404);
+
+        $isWindows = PHP_OS_FAMILY === 'Windows';
+
+        if ($type === 'composer') {
+            $command = [$isWindows ? 'composer.bat' : 'composer', 'install', '--no-interaction', '--no-ansi', '--prefer-dist'];
+        } else {
+            $command = [$isWindows ? 'npm.cmd' : 'npm', 'install', '--no-audit', '--no-fund'];
+        }
+
+        $process = new Process($command, base_path(), null, null, 300);
+
+        try {
+            $process->run();
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal menjalankan proses instalasi: ' . $e->getMessage());
+        }
+
+        if (!$process->isSuccessful()) {
+            $output = trim($process->getErrorOutput() ?: $process->getOutput());
+            return back()->with('error', 'Instalasi ' . strtoupper($type) . ' gagal: ' . Str::limit($output, 1000));
+        }
+
+        return back()->with('success', 'Dependencies ' . strtoupper($type) . ' berhasil diinstal.');
+    }
+
+    private function collectServerSpecs(): array
+    {
+        $basePath = base_path();
+        $freeSpace = @disk_free_space($basePath);
+        $totalSpace = @disk_total_space($basePath);
+
+        try {
+            $dbVersion = DB::selectOne('select version() as v')->v ?? null;
+        } catch (\Throwable $e) {
+            $dbVersion = null;
+        }
+
+        return [
+            'os' => php_uname(),
+            'php_version' => PHP_VERSION,
+            'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'CLI / Tidak diketahui',
+            'laravel_version' => app()->version(),
+            'database_driver' => config('database.default'),
+            'database_version' => $dbVersion,
+            'memory_limit' => ini_get('memory_limit'),
+            'max_execution_time' => ini_get('max_execution_time') . 's',
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size' => ini_get('post_max_size'),
+            'timezone' => config('app.timezone'),
+            'server_time' => now()->format('Y-m-d H:i:s'),
+            'disk_free' => $freeSpace ? $this->formatBytes($freeSpace) : 'N/A',
+            'disk_total' => $totalSpace ? $this->formatBytes($totalSpace) : 'N/A',
+        ];
+    }
+
+    private function formatBytes($bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = 0;
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+        return round($bytes, 2) . ' ' . $units[$i];
+    }
+
+    private function collectComposerLibraries(): array
+    {
+        $composerJsonPath = base_path('composer.json');
+        if (!file_exists($composerJsonPath)) {
+            return [];
+        }
+
+        $composerJson = json_decode(file_get_contents($composerJsonPath), true) ?? [];
+        $required = array_merge($composerJson['require'] ?? [], $composerJson['require-dev'] ?? []);
+        unset($required['php']);
+
+        $installedPath = base_path('vendor/composer/installed.json');
+        $installedVersions = [];
+        if (file_exists($installedPath)) {
+            $installedData = json_decode(file_get_contents($installedPath), true) ?? [];
+            $packages = $installedData['packages'] ?? $installedData;
+            foreach ($packages as $pkg) {
+                if (isset($pkg['name'])) {
+                    $installedVersions[$pkg['name']] = ltrim($pkg['version'] ?? '-', 'v');
+                }
+            }
+        }
+
+        $libraries = [];
+        foreach ($required as $name => $constraint) {
+            $isInstalled = isset($installedVersions[$name]) && is_dir(base_path('vendor/' . $name));
+            $libraries[] = [
+                'name' => $name,
+                'constraint' => $constraint,
+                'installed_version' => $installedVersions[$name] ?? '-',
+                'installed' => $isInstalled,
+            ];
+        }
+
+        usort($libraries, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+        return $libraries;
+    }
+
+    private function collectNpmLibraries(): array
+    {
+        $packageJsonPath = base_path('package.json');
+        if (!file_exists($packageJsonPath)) {
+            return [];
+        }
+
+        $packageJson = json_decode(file_get_contents($packageJsonPath), true) ?? [];
+        $required = array_merge($packageJson['dependencies'] ?? [], $packageJson['devDependencies'] ?? []);
+
+        $lockVersions = [];
+        $lockPath = base_path('package-lock.json');
+        if (file_exists($lockPath)) {
+            $lockData = json_decode(file_get_contents($lockPath), true) ?? [];
+            foreach ($lockData['packages'] ?? [] as $pkgPath => $pkgInfo) {
+                if ($pkgPath === '' || !str_starts_with($pkgPath, 'node_modules/')) {
+                    continue;
+                }
+                $pkgName = substr($pkgPath, strlen('node_modules/'));
+                $lockVersions[$pkgName] = $pkgInfo['version'] ?? '-';
+            }
+        }
+
+        $libraries = [];
+        foreach ($required as $name => $constraint) {
+            $isInstalled = is_dir(base_path('node_modules/' . $name));
+            $libraries[] = [
+                'name' => $name,
+                'constraint' => $constraint,
+                'installed_version' => $lockVersions[$name] ?? '-',
+                'installed' => $isInstalled,
+            ];
+        }
+
+        usort($libraries, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+        return $libraries;
     }
 
     // Backup settings UI

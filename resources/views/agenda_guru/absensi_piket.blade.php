@@ -378,6 +378,7 @@
         });
     });
 </script>
+<script>
     function applyBulkStatus(statusValue) {
         const selects = document.querySelectorAll('.status-select');
         if (!selects.length) return;

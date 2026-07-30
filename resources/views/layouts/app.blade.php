@@ -1111,6 +1111,11 @@
                                     <i class="ti ti-circle-filled"></i> Backup Database
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('setting.about') }}" class="nav-link {{ request()->routeIs('setting.about') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> About
+                                </a>
+                            </li>
                             @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
                             <li class="nav-item">
                                 <a href="{{ route('help.admin.index') }}" class="nav-link {{ request()->routeIs('help.admin.*') ? 'active' : '' }}">

@@ -374,6 +374,9 @@ Route::middleware(['auth'])->group(function(){
         Route::post('/setting/backup/settings', [SettingController::class, 'backupUpdateSettings'])->name('setting.backup.settings');
         Route::get('/setting/backup/download/{name}', [SettingController::class, 'backupDownload'])->name('setting.backup.download');
         Route::delete('/setting/backup/{name}', [SettingController::class, 'backupDelete'])->name('setting.backup.delete');
+        // About: server specs & library/plugin status
+        Route::get('/setting/about', [SettingController::class, 'about'])->name('setting.about');
+        Route::post('/setting/about/install/{type}', [SettingController::class, 'installLibrary'])->name('setting.about.install')->where('type', 'composer|npm');
         // Admin Help page management (list/create/edit/delete)
         Route::get('/help/admin', [App\Http\Controllers\HelpController::class, 'adminIndex'])->name('help.admin.index');
         Route::get('/help/admin/create', [App\Http\Controllers\HelpController::class, 'create'])->name('help.admin.create');
