@@ -108,8 +108,13 @@ class PengembanganController extends Controller
             ];
         })->all();
 
-        // existing certificates for this pengembangan
+        // existing certificates for this pengembangan (with resolved participant names)
         $certs = PengembanganSertifikat::where('pengembangan_id', $id)->get();
+        $certificates = $certs->map(function($c){
+            $name = $c->peserta_type === 'guru' ? \DB::table('guru')->where('id',$c->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$c->peserta_id)->value('nama');
+            $c->participant_name = $name;
+            return $c;
+        });
         $certMap = [];
         foreach ($certs as $c) {
             $key = $c->peserta_type . '_' . $c->peserta_id;
@@ -119,7 +124,7 @@ class PengembanganController extends Controller
         $defaultTemplateId = $item->default_template_id ?? null;
         $defaultNomorSertifikat = $item->default_nomor_sertifikat ?? null;
 
-        return view('pengembangan.show', compact('item','templates','participants','certMap','defaultTemplateId','defaultNomorSertifikat'));
+        return view('pengembangan.show', compact('item','templates','participants','certificates','certMap','defaultTemplateId','defaultNomorSertifikat'));
     }
 
     public function edit($id)
@@ -414,6 +419,57 @@ class PengembanganController extends Controller
         $path = storage_path('app/'.str_replace('storage/','',$cert->file_path));
         if (!file_exists($path)) abort(404);
         return response()->download($path);
+    }
+
+    public function destroyCertificate($id)
+    {
+        $cert = PengembanganSertifikat::findOrFail($id);
+        $pengembanganId = $cert->pengembangan_id;
+
+        // Hapus file fisik
+        $filePath = storage_path('app/'.str_replace('storage/','',$cert->file_path));
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+
+        $cert->delete();
+
+        return redirect()->route('pengembangan.show', $pengembanganId)
+            ->with('success', 'Sertifikat berhasil dihapus.');
+    }
+
+    public function bulkDestroyCertificates(Request $r)
+    {
+        $ids = $r->input('certificate_ids', []);
+        $id = $r->input('pengembangan_id');
+        
+        if (empty($ids)) {
+            return back()->with('error', 'Tidak ada sertifikat yang dipilih.');
+        }
+        
+        if (!$id) {
+            return back()->with('error', 'ID kegiatan tidak ditemukan.');
+        }
+
+        $certs = PengembanganSertifikat::whereIn('id', $ids)->where('pengembangan_id', $id)->get();
+
+        if ($certs->isEmpty()) {
+            return back()->with('error', 'Sertifikat tidak ditemukan.');
+        }
+
+        $deleted = 0;
+        foreach ($certs as $cert) {
+            // Hapus file fisik
+            $filePath = storage_path('app/'.str_replace('storage/','',$cert->file_path));
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+            $cert->delete();
+            $deleted++;
+        }
+
+        return redirect()->route('pengembangan.show', $id)
+            ->with('success', $deleted . ' sertifikat berhasil dihapus.');
     }
 
     public function previewCertificate(Request $r, $id, CertificateService $certService)

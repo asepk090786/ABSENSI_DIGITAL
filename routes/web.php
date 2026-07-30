@@ -317,6 +317,8 @@ Route::middleware(['auth'])->group(function(){
     Route::delete('pengembangan/templates/{id}', [App\Http\Controllers\PengembanganTemplateController::class, 'destroy'])->name('pengembangan.templates.destroy');
     Route::get('pengembangan/sertifikat/my', [App\Http\Controllers\PengembanganController::class, 'myCertificates'])->name('pengembangan.my_certificates');
     Route::get('pengembangan/sertifikat/{id}/download', [App\Http\Controllers\PengembanganController::class, 'downloadCertificate'])->name('pengembangan.certificates.download');
+    Route::delete('pengembangan/sertifikat/{id}', [App\Http\Controllers\PengembanganController::class, 'destroyCertificate'])->name('pengembangan.certificates.destroy');
+    Route::post('pengembangan/bulk-hapus-sertifikat', [App\Http\Controllers\PengembanganController::class, 'bulkDestroyCertificates'])->name('pengembangan.certificates.bulk_destroy');
     Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
     Route::get('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'show'])->name('pengembangan.show');
     Route::post('pengembangan/{id}/generate-certificates', [App\Http\Controllers\PengembanganController::class, 'generateCertificates'])->name('pengembangan.generate_certificates');

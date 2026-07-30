@@ -135,6 +135,84 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Daftar Sertifikat yang sudah digenerate --}}
+            <div class="card mt-3">
+                <form id="bulkDeleteForm" method="POST" action="{{ url('pengembangan/bulk-hapus-sertifikat') }}" onsubmit="return confirmBulkDelete(event)">
+                    @csrf
+                    <input type="hidden" name="pengembangan_id" value="{{ $item->id }}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title fw-semibold m-0">
+                            <i class="ti ti-certificate me-1"></i> Daftar Sertifikat
+                            <span class="badge bg-secondary ms-2">{{ $certificates->count() }}</span>
+                        </h5>
+                        <button type="submit" id="deleteSelectedBtn" class="btn btn-danger btn-sm d-none">
+                            <i class="ti ti-trash me-1"></i> Hapus Terpilih
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        @if($certificates->isEmpty())
+                            <div class="text-center text-muted py-4">
+                                <i class="ti ti-certificate-off fs-1 d-block mb-2"></i>
+                                Belum ada sertifikat yang digenerate.
+                            </div>
+                        @else
+                            <div class="table-responsive">
+                                <table class="table table-striped table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:40px">
+                                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)">
+                                            </th>
+                                            <th style="width:50px">No</th>
+                                            <th>Nama Peserta</th>
+                                            <th>Tipe</th>
+                                            <th>Nomor Sertifikat</th>
+                                            <th>Barcode</th>
+                                            <th>Tanggal Generate</th>
+                                            <th style="width:140px">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($certificates as $idx => $cert)
+                                        <tr>
+                                            <td>
+                                                <input type="checkbox" name="certificate_ids[]" value="{{ $cert->id }}" class="cert-checkbox" onchange="toggleDeleteButton()">
+                                            </td>
+                                            <td>{{ $idx + 1 }}</td>
+                                            <td>{{ $cert->participant_name ?? '-' }}</td>
+                                            <td><span class="badge bg-{{ $cert->peserta_type === 'guru' ? 'info' : 'warning' }}">{{ strtoupper($cert->peserta_type) }}</span></td>
+                                            <td>{{ $cert->nomor_sertifikat ?? '-' }}</td>
+                                            <td><code class="small">{{ Str::limit($cert->barcode, 12) }}</code></td>
+                                            <td>{{ optional($cert->created_at)->format('d-m-Y H:i') }}</td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{{ route('pengembangan.certificates.download', $cert->id) }}" class="btn btn-sm btn-outline-success" title="Download">
+                                                        <i class="ti ti-download"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="deleteCertificate({{ $cert->id }})">
+                                                        <i class="ti ti-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </form>
+            </div>
+            {{-- End Daftar Sertifikat --}}
+
+{{-- Hidden forms for individual certificate deletion --}}
+@foreach($certificates as $cert)
+<form method="POST" action="{{ route('pengembangan.certificates.destroy', $cert->id) }}" id="delete-cert-form-{{ $cert->id }}" style="display:none">
+    @csrf @method('DELETE')
+</form>
+@endforeach
+
         </div>
     </div>
 </div>
@@ -160,7 +238,82 @@ document.addEventListener('DOMContentLoaded', function(){
     previewSelect?.addEventListener('change', updatePreviewHref);
     templateSelect?.addEventListener('change', updatePreviewHref);
     document.getElementById('nomorSuratInput')?.addEventListener('input', updatePreviewHref);
+
+    // Inisialisasi tombol hapus terpilih
+    toggleDeleteButton();
 });
+
+function toggleSelectAll(source) {
+    document.querySelectorAll('.cert-checkbox').forEach(cb => cb.checked = source.checked);
+    toggleDeleteButton();
+}
+
+function toggleDeleteButton() {
+    const checked = document.querySelectorAll('.cert-checkbox:checked').length;
+    const btn = document.getElementById('deleteSelectedBtn');
+    if (checked > 0) {
+        btn.classList.remove('d-none');
+        btn.innerHTML = '<i class="ti ti-trash me-1"></i> Hapus Terpilih (' + checked + ')';
+    } else {
+        btn.classList.add('d-none');
+    }
+}
+
+function confirmBulkDelete(e) {
+    e.preventDefault();
+    const checkboxes = document.querySelectorAll('.cert-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Tidak ada sertifikat yang dipilih.');
+        return false;
+    }
+    if (!confirm('Yakin ingin menghapus ' + checkboxes.length + ' sertifikat terpilih?')) {
+        return false;
+    }
+
+    const form = document.getElementById('bulkDeleteForm');
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else if (response.ok) {
+            window.location.reload();
+        } else {
+            return response.text().then(text => { throw new Error(text); });
+        }
+    })
+    .catch(error => {
+        alert('Gagal menghapus sertifikat. Silakan coba lagi.');
+        console.error(error);
+        window.location.reload();
+    });
+
+    return false;
+}
+
+function deleteCertificate(certId) {
+    if (!confirm('Yakin ingin menghapus sertifikat ini?')) return;
+    const form = document.getElementById('delete-cert-form-' + certId);
+    if (!form) return;
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else if (response.ok) {
+            window.location.reload();
+        } else {
+            window.location.reload();
+        }
+    })
+    .catch(() => window.location.reload());
+}
 </script>
 @endpush
 @endsection
