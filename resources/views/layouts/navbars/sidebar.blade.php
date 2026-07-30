@@ -279,6 +279,12 @@
                 <span>Backup Database</span>
             </a>
         </li>
+        <li>
+            <a href="{{ route('setting.about') }}" class="menu-item {{ request()->routeIs('setting.about') ? 'active' : '' }}">
+                <i class="material-icons">info</i>
+                <span>About</span>
+            </a>
+        </li>
         @else
         <li>
             <a href="{{ route('profile.edit') }}" class="menu-item {{ request()->routeIs('profile.edit') ? 'active' : '' }}">

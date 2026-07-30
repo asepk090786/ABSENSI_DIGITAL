@@ -620,4 +620,7 @@ class SettingController extends Controller
             return back()
                 ->with('error', 'Gagal menyimpan pengaturan: ' . $e->getMessage());
         }
-    }}
+    }
+
+
+}
