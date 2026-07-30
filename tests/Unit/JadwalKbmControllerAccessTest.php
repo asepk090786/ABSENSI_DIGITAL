@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Http\Controllers\JadwalKbmController;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class JadwalKbmControllerAccessTest extends TestCase
 {
