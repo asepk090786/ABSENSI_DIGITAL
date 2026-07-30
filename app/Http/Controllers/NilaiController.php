@@ -114,6 +114,24 @@ class NilaiController extends Controller
                             'judul' => $item->judul,
                         ];
                     }
+
+                    // Juga simpan di key '*' sebagai fallback untuk semua kelas
+                    if (!isset($rencanaByMapel['*'])) {
+                        $rencanaByMapel['*'] = [];
+                    }
+                    if (!isset($rencanaByMapel['*'][$mapelKey])) {
+                        $rencanaByMapel['*'][$mapelKey] = [];
+                    }
+                    $sudahAdaGlobal = collect($rencanaByMapel['*'][$mapelKey])
+                        ->contains(function ($row) use ($item) {
+                            return mb_strtolower(trim((string) $row['judul'])) === mb_strtolower(trim((string) $item->judul));
+                        });
+                    if (!$sudahAdaGlobal) {
+                        $rencanaByMapel['*'][$mapelKey][] = [
+                            'id' => $item->id,
+                            'judul' => $item->judul,
+                        ];
+                    }
                 }
 
                 if (request()->get('debug') === '1') {

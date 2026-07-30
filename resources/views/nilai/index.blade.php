@@ -552,22 +552,23 @@
         });
     });
 
-    // Initialize tooltips
-    // Initialize Bootstrap 4 tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip();
-
-    const nilaiKelasSelect = document.getElementById('nilaiKelasSelect');
-    const nilaiMapelSelect = document.getElementById('nilaiMapelSelect');
-    const nilaiRencanaSelect = document.getElementById('nilaiRencanaSelect');
-    const nilaiImportKelasSelect = document.getElementById('nilaiImportKelasSelect');
-    const nilaiImportMapelSelect = document.getElementById('nilaiImportMapelSelect');
-    const nilaiImportRencanaSelect = document.getElementById('nilaiImportRencanaSelect');
-    const nilaiTemplateDownloadBtn = document.getElementById('nilaiTemplateDownloadBtn');
-    const mapelByKelas = @json(($mapelByKelas ?? collect())->toArray());
-    const rencanaByMapel = @json($rencanaByMapel ?? []);
-    const allMapelOptions = @json(($mapelOptions ?? collect())->map(function($mapel) {
+    var nilaiKelasSelect = document.getElementById('nilaiKelasSelect');
+    var nilaiMapelSelect = document.getElementById('nilaiMapelSelect');
+    var nilaiRencanaSelect = document.getElementById('nilaiRencanaSelect');
+    var nilaiImportKelasSelect = document.getElementById('nilaiImportKelasSelect');
+    var nilaiImportMapelSelect = document.getElementById('nilaiImportMapelSelect');
+    var nilaiImportRencanaSelect = document.getElementById('nilaiImportRencanaSelect');
+    var nilaiTemplateDownloadBtn = document.getElementById('nilaiTemplateDownloadBtn');
+    var mapelByKelas = @json(($mapelByKelas ?? collect())->toArray());
+    var rencanaByMapel = @json($rencanaByMapel ?? []);
+    var allMapelOptions = @json(($mapelOptions ?? collect())->map(function($mapel) {
         return ['id' => $mapel->id, 'nama' => $mapel->nama_mapel];
     })->values()->toArray());
+
+    // Initialize tooltips (letakkan setelah semua var declaration untuk menghindari ReferenceError)
+    if (typeof $ !== 'undefined') {
+        $('[data-bs-toggle="tooltip"]').tooltip();
+    }
 
     function resetSelect(selectEl, placeholder) {
         if (!selectEl) return;
@@ -590,13 +591,21 @@
     }
 
     function getRencanaItems(kelasId, mapelId) {
-        if (!kelasId || !mapelId || !rencanaByMapel[kelasId] || !rencanaByMapel[kelasId][mapelId]) {
-            return [];
+        // Coba cari berdasarkan kelas + mapel dulu
+        if (kelasId && mapelId && rencanaByMapel[kelasId] && rencanaByMapel[kelasId][mapelId]) {
+            return rencanaByMapel[kelasId][mapelId].map(function(item) {
+                return { id: item.id, nama: item.judul };
+            });
         }
 
-        return rencanaByMapel[kelasId][mapelId].map(function(item) {
-            return { id: item.id, nama: item.judul };
-        });
+        // Fallback: jika tidak ada untuk kelas tertentu, tampilkan semua rencana untuk mapel yang dipilih
+        if (mapelId && rencanaByMapel['*'] && rencanaByMapel['*'][mapelId]) {
+            return rencanaByMapel['*'][mapelId].map(function(item) {
+                return { id: item.id, nama: item.judul };
+            });
+        }
+
+        return [];
     }
 
     function updateRencanaOptions() {
