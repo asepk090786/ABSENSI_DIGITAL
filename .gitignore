@@ -29,6 +29,9 @@
 /storage/app/settings.json
 /storage/app/public/logos/
 /storage/app/public/user_photos/
+/storage/app/public/certificates/
+/storage/app/public/certificate_templates/
+/storage/app/test_output.jpg
 
 # Keep folder structure
 !/storage/app/public/.gitignore

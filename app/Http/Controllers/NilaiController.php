@@ -533,13 +533,18 @@ class NilaiController extends Controller
         Excel::import($import, $validated['file']);
 
         $errors = $import->getErrors();
+        $redirect = redirect()->route('nilai.index', [
+            'kelas_id' => $validated['kelas_id'],
+            'mapel_id' => $validated['mapel_id'],
+        ]);
+
         if (count($errors) > 0) {
-            return redirect()->route('nilai.index')
+            return $redirect
                 ->with('warning', 'Import selesai dengan beberapa error.')
                 ->with('import_errors', $errors);
         }
 
-        return redirect()->route('nilai.index')->with('success', 'Import nilai berhasil.');
+        return $redirect->with('success', 'Import nilai berhasil.');
     }
 
     public function template()
