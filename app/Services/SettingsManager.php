@@ -7,7 +7,7 @@ class SettingsManager
 
     public function __construct()
     {
-        $this->path = dirname(__DIR__, 2) . '/storage/app/settings.json';
+        $this->path = storage_path('app/settings.json');
     }
 
     public function all()
@@ -28,21 +28,10 @@ class SettingsManager
         $all = $this->all();
         data_set($all, $key, $value);
 
+        $this->path = $this->resolveWritablePath($this->path);
         $dir = dirname($this->path);
         if (! is_dir($dir)) {
             @mkdir($dir, 0755, true);
-        }
-
-        if (! is_writable($dir)) {
-            $fallbackDir = storage_path('app');
-            if (! is_dir($fallbackDir)) {
-                @mkdir($fallbackDir, 0755, true);
-            }
-            $this->path = $fallbackDir . '/settings.json';
-            $dir = dirname($this->path);
-            if (! is_dir($dir)) {
-                @mkdir($dir, 0755, true);
-            }
         }
 
         $json = json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -54,5 +43,28 @@ class SettingsManager
         if ($written === false) {
             throw new \RuntimeException('Unable to write settings file: ' . $this->path);
         }
+    }
+
+    protected function resolveWritablePath(string $preferredPath): string
+    {
+        $candidates = [
+            $preferredPath,
+            storage_path('app/settings.json'),
+            public_path('uploads/settings.json'),
+            sys_get_temp_dir() . '/absensi_settings.json',
+        ];
+
+        foreach ($candidates as $candidate) {
+            $dir = dirname($candidate);
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+
+            if (is_dir($dir) && is_writable($dir)) {
+                return $candidate;
+            }
+        }
+
+        return $preferredPath;
     }
 }

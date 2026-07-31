@@ -9,6 +9,7 @@ class BackupService
 {
     protected $disk = 'local';
     protected $dir = 'backups';
+    protected ?string $resolvedDirectory = null;
 
     protected function getOsFamily(): string
     {
@@ -62,19 +63,61 @@ class BackupService
         return null;
     }
 
+    protected function createDirectory(string $path): bool
+    {
+        if (is_dir($path) && is_writable($path)) {
+            return true;
+        }
+
+        $parent = dirname($path);
+        if (! is_dir($parent)) {
+            $parentCreated = $this->createDirectory($parent);
+            if (! $parentCreated) {
+                return false;
+            }
+        }
+
+        if (! is_dir($parent) || ! is_writable($parent)) {
+            return false;
+        }
+
+        if (@mkdir($path, 0755, true)) {
+            @chmod($path, 0755);
+            return is_dir($path) && is_writable($path);
+        }
+
+        return is_dir($path) && is_writable($path);
+    }
+
     public function ensureDirectory()
     {
-        $path = storage_path('app/' . $this->dir);
-        if (! is_dir($path)) mkdir($path, 0755, true);
+        if ($this->resolvedDirectory && is_dir($this->resolvedDirectory) && is_writable($this->resolvedDirectory)) {
+            return $this->resolvedDirectory;
+        }
+
+        $candidates = [
+            storage_path('app/' . $this->dir),
+            public_path('uploads/backup_files'),
+            sys_get_temp_dir() . '/absensi_backups',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($this->createDirectory($candidate)) {
+                $this->resolvedDirectory = $candidate;
+                return $this->resolvedDirectory;
+            }
+        }
+
+        throw new \RuntimeException('Tidak dapat membuat direktori backup. Periksa izin folder aplikasi.');
     }
 
     public function createBackup($format = 'sql')
     {
-        $this->ensureDirectory();
+        $baseDir = $this->ensureDirectory();
         $connection = config('database.default');
         $timestamp = date('Ymd_His');
         $filename = "backup_{$timestamp}.sql";
-        $fullPath = storage_path('app/' . $this->dir . '/' . $filename);
+        $fullPath = $baseDir . '/' . $filename;
 
         $dbConfig = config("database.connections.{$connection}");
 
@@ -121,7 +164,7 @@ class BackupService
         }
 
         if ($format === 'zip') {
-            $zipName = storage_path('app/' . $this->dir . '/backup_' . $timestamp . '.zip');
+            $zipName = $baseDir . '/backup_' . $timestamp . '.zip';
             $zip = new ZipArchive();
             if ($zip->open($zipName, ZipArchive::CREATE) === true) {
                 $zip->addFile($fullPath, basename($fullPath));
@@ -138,8 +181,8 @@ class BackupService
 
     public function listBackups()
     {
-        $this->ensureDirectory();
-        $files = glob(storage_path('app/' . $this->dir . '/*')) ?: [];
+        $baseDir = $this->ensureDirectory();
+        $files = glob($baseDir . '/*') ?: [];
         rsort($files);
         return array_map(function($f){
             return [
@@ -153,13 +196,13 @@ class BackupService
 
     public function downloadPath($name)
     {
-        $path = storage_path('app/' . $this->dir . '/' . $name);
+        $path = $this->ensureDirectory() . '/' . $name;
         return file_exists($path) ? $path : null;
     }
 
     public function delete($name)
     {
-        $path = storage_path('app/' . $this->dir . '/' . $name);
+        $path = $this->ensureDirectory() . '/' . $name;
         if (file_exists($path)) return unlink($path);
         return false;
     }

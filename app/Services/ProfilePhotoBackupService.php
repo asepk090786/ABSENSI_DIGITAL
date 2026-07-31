@@ -11,14 +11,54 @@ class ProfilePhotoBackupService
 {
     protected string $dir = 'backups/profile_photos';
 
+    protected ?string $resolvedDirectory = null;
+
     protected function ensureDirectory(): string
     {
-        $path = storage_path('app/' . $this->dir);
-        if (! is_dir($path)) {
-            mkdir($path, 0755, true);
+        if ($this->resolvedDirectory && is_dir($this->resolvedDirectory) && is_writable($this->resolvedDirectory)) {
+            return $this->resolvedDirectory;
         }
 
-        return $path;
+        $candidates = [
+            storage_path('app/' . $this->dir),
+            public_path('uploads/profile_backups'),
+            sys_get_temp_dir() . '/absensi_profile_photo_backups',
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($this->createDirectory($candidate)) {
+                $this->resolvedDirectory = $candidate;
+                return $this->resolvedDirectory;
+            }
+        }
+
+        throw new \RuntimeException('Tidak dapat membuat direktori backup foto profil. Periksa izin folder penyimpanan aplikasi.');
+    }
+
+    protected function createDirectory(string $path): bool
+    {
+        if (is_dir($path) && is_writable($path)) {
+            return true;
+        }
+
+        $parent = dirname($path);
+        if (! is_dir($parent)) {
+            $parentCreated = $this->createDirectory($parent);
+            if (! $parentCreated) {
+                return false;
+            }
+        }
+
+        if (! is_dir($parent) || ! is_writable($parent)) {
+            return false;
+        }
+
+        if (@mkdir($path, 0755, true)) {
+            @chmod($path, 0755);
+            return is_dir($path) && is_writable($path);
+        }
+
+        return is_dir($path) && is_writable($path);
     }
 
     public function export(): string
@@ -77,8 +117,8 @@ class ProfilePhotoBackupService
 
     public function listBackups(): array
     {
-        $this->ensureDirectory();
-        $files = glob(storage_path('app/' . $this->dir . '/*.zip')) ?: [];
+        $baseDir = $this->ensureDirectory();
+        $files = glob($baseDir . '/*.zip') ?: [];
         rsort($files);
 
         return array_map(function ($file) {
@@ -93,13 +133,13 @@ class ProfilePhotoBackupService
 
     public function downloadPath(string $name): ?string
     {
-        $path = storage_path('app/' . $this->dir . '/' . $name);
+        $path = $this->ensureDirectory() . '/' . $name;
         return file_exists($path) ? $path : null;
     }
 
     public function delete(string $name): bool
     {
-        $path = storage_path('app/' . $this->dir . '/' . $name);
+        $path = $this->ensureDirectory() . '/' . $name;
         return file_exists($path) ? unlink($path) : false;
     }
 

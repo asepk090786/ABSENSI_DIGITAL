@@ -382,6 +382,8 @@ Route::middleware(['auth'])->group(function(){
         Route::post('/setting/backup/profile/import', [SettingController::class, 'backupProfileImport'])->name('setting.backup.profile.import');
         // About: server specs & library/plugin status
         Route::get('/setting/about', [SettingController::class, 'about'])->name('setting.about');
+        Route::post('/setting/about/check-update', [SettingController::class, 'checkForUpdates'])->name('setting.about.check_update');
+        Route::post('/setting/about/update', [SettingController::class, 'applyUpdate'])->name('setting.about.update');
         Route::post('/setting/about/install/{type}', [SettingController::class, 'installLibrary'])->name('setting.about.install')->where('type', 'composer|npm');
         // Admin Help page management (list/create/edit/delete)
         Route::get('/help/admin', [App\Http\Controllers\HelpController::class, 'adminIndex'])->name('help.admin.index');

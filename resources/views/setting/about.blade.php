@@ -15,6 +15,80 @@
     @endif
 
     <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-3 text-center mb-3 mb-md-0">
+                    <img src="{{ $appInfo['logo'] }}" alt="Logo SIMADIS" class="img-fluid" style="max-height: 120px;">
+                </div>
+                <div class="col-md-9">
+                    <h4 class="mb-2">{{ $appInfo['name'] }}</h4>
+                    <p class="mb-3">{{ $appInfo['description'] }}</p>
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <tr><th style="width:35%">Nama Sistem</th><td>{{ $appInfo['name'] }}</td></tr>
+                            <tr><th>Versi SIMADIS</th><td>{{ $appInfo['version'] }}</td></tr>
+                            <tr><th>Repository</th><td><a href="{{ $appInfo['repository'] }}" target="_blank" rel="noopener">{{ $appInfo['repository'] }}</a></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Informasi Web SIMADIS</strong>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:35%">Item</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><th>Fungsi Utama</th><td>Absensi digital, jadwal belajar, data siswa/guru, dan pelaporan sekolah.</td></tr>
+                    <tr><th>Platform</th><td>Laravel + Bootstrap + database MySQL/MariaDB.</td></tr>
+                    <tr><th>Tujuan</th><td>Membantu sekolah mengelola proses pembelajaran dan administrasi secara cepat dan terintegrasi.</td></tr>
+                    <tr><th>Hak Akses</th><td>Admin, Kepala Sekolah, Guru, Wali Kelas, dan pengguna terkait sesuai peran.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Cek Update dari GitHub</strong>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <form action="{{ route('setting.about.check_update') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-primary">
+                        <i class="ti ti-refresh"></i> Cek Update
+                    </button>
+                </form>
+                <form action="{{ route('setting.about.update') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-success" {{ $appInfo['update_available'] ? '' : 'disabled' }}>
+                        <i class="ti ti-download"></i> Update dari GitHub
+                    </button>
+                </form>
+            </div>
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr><th style="width:35%">Versi Terpasang</th><td>{{ $appInfo['version'] }}</td></tr>
+                    <tr><th>Commit Lokal</th><td>{{ $appInfo['current_commit'] }}</td></tr>
+                    <tr><th>Commit Remote</th><td>{{ $appInfo['remote_commit'] }}</td></tr>
+                    <tr><th>Status</th><td>@if($appInfo['update_available'])<span class="badge bg-success">Update tersedia</span>@else<span class="badge bg-secondary">Sudah terbaru</span>@endif</td></tr>
+                    <tr><th>Pesan</th><td>{{ $appInfo['update_message'] }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-header">
             <strong>Spesifikasi Server</strong>
         </div>

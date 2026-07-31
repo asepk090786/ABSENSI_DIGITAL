@@ -316,8 +316,37 @@ class SettingController extends Controller
         $server = $this->collectServerSpecs();
         $phpLibraries = $this->collectComposerLibraries();
         $jsLibraries = $this->collectNpmLibraries();
+        $appInfo = $this->collectAppInfo();
 
-        return view('setting.about', compact('server', 'phpLibraries', 'jsLibraries'));
+        return view('setting.about', compact('server', 'phpLibraries', 'jsLibraries', 'appInfo'));
+    }
+
+    public function checkForUpdates()
+    {
+        $status = $this->checkRemoteUpdateStatus();
+
+        return back()
+            ->with($status['has_update'] ? 'success' : 'info', $status['message'])
+            ->with('update_status', $status);
+    }
+
+    public function applyUpdate()
+    {
+        $process = new Process(['git', 'pull', '--ff-only', 'origin', 'main'], base_path(), null, null, 300);
+
+        try {
+            $process->run();
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal menjalankan update: ' . $e->getMessage());
+        }
+
+        $output = trim($process->getOutput() ?: $process->getErrorOutput());
+        $success = $process->isSuccessful();
+        $message = $success
+            ? 'Update berhasil dijalankan. ' . ($output ? Str::limit($output, 1000) : 'Repository sudah sesuai dengan versi terbaru.')
+            : 'Update gagal: ' . Str::limit($output ?: 'Tidak ada output dari Git.', 1000);
+
+        return back()->with($success ? 'success' : 'error', $message);
     }
 
     // Runs the OS-appropriate install command to sync missing dependencies (composer/npm)
@@ -347,6 +376,93 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Dependencies ' . strtoupper($type) . ' berhasil diinstal.');
+    }
+
+    private function collectAppInfo(): array
+    {
+        $status = session('update_status') ?: $this->checkRemoteUpdateStatus();
+
+        return [
+            'name' => 'SIMADIS',
+            'description' => 'Sistem Informasi Manajemen Absensi Digital untuk sekolah, yang membantu pengelolaan absensi, jadwal, data siswa, guru, dan pelaporan secara terintegrasi.',
+            'logo' => asset('images/icon_simadisnew.png'),
+            'version' => config('app.version', env('APP_VERSION', '1.0.0')),
+            'repository' => env('APP_REPOSITORY_URL', 'https://github.com/'),
+            'current_commit' => $status['current_commit'] ?? '-',
+            'remote_commit' => $status['remote_commit'] ?? '-',
+            'update_available' => (bool) ($status['has_update'] ?? false),
+            'update_message' => $status['message'] ?? 'Belum ada informasi update.',
+        ];
+    }
+
+    private function checkRemoteUpdateStatus(): array
+    {
+        $repoPath = base_path();
+
+        if (! is_dir($repoPath . '/.git')) {
+            return [
+                'has_update' => false,
+                'current_commit' => '-',
+                'remote_commit' => '-',
+                'message' => 'Repository Git tidak ditemukan di direktori aplikasi.',
+            ];
+        }
+
+        $currentCommit = $this->runGitCommand(['git', 'rev-parse', '--short', 'HEAD'], $repoPath);
+        $remoteOutput = $this->runGitCommand(['git', 'ls-remote', '--heads', 'origin', 'main'], $repoPath);
+        $remoteCommit = null;
+
+        if ($remoteOutput) {
+            preg_match('/^([0-9a-f]+)/', trim($remoteOutput), $matches);
+            $remoteCommit = $matches[1] ?? null;
+            $remoteCommit = $remoteCommit ? substr($remoteCommit, 0, 7) : null;
+        }
+
+        if (! $currentCommit) {
+            return [
+                'has_update' => false,
+                'current_commit' => '-',
+                'remote_commit' => $remoteCommit ?? '-',
+                'message' => 'Tidak dapat membaca commit lokal dari Git.',
+            ];
+        }
+
+        if (! $remoteCommit) {
+            return [
+                'has_update' => false,
+                'current_commit' => $currentCommit,
+                'remote_commit' => '-',
+                'message' => 'Tidak dapat memeriksa remote GitHub saat ini. Periksa koneksi atau remote repository.',
+            ];
+        }
+
+        if ($currentCommit === $remoteCommit) {
+            return [
+                'has_update' => false,
+                'current_commit' => $currentCommit,
+                'remote_commit' => $remoteCommit,
+                'message' => 'Aplikasi sudah menggunakan versi terbaru dari GitHub.',
+            ];
+        }
+
+        return [
+            'has_update' => true,
+            'current_commit' => $currentCommit,
+            'remote_commit' => $remoteCommit,
+            'message' => 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.',
+        ];
+    }
+
+    private function runGitCommand(array $command, string $workingDirectory): ?string
+    {
+        $process = new Process($command, $workingDirectory, null, null, 300);
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            return null;
+        }
+
+        return trim($process->getOutput());
     }
 
     private function collectServerSpecs(): array
