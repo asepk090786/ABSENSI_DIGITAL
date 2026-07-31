@@ -27,6 +27,7 @@
                         <tbody>
                             <tr><th style="width:35%">Nama Sistem</th><td>{{ $appInfo['name'] }}</td></tr>
                             <tr><th>Versi SIMADIS</th><td>{{ $appInfo['version'] }}</td></tr>
+                    <tr><th>Release Tahun</th><td>{{ date('Y') }}</td></tr>
                             <tr><th>Repository</th><td><a href="{{ $appInfo['repository'] }}" target="_blank" rel="noopener">{{ $appInfo['repository'] }}</a></td></tr>
                         </tbody>
                     </table>
@@ -79,12 +80,43 @@
             <table class="table table-sm mb-0">
                 <tbody>
                     <tr><th style="width:35%">Versi Terpasang</th><td>{{ $appInfo['version'] }}</td></tr>
+                    <tr><th>Format Versi</th><td>Ver.Major.Minor.Patch, misalnya Ver.1.0.26 untuk tahun 2026 dan patch ke-26. Jika ada release baru di tahun berikutnya, format akan menjadi Ver.2.0.1.</td></tr>
                     <tr><th>Commit Lokal</th><td>{{ $appInfo['current_commit'] }}</td></tr>
                     <tr><th>Commit Remote</th><td>{{ $appInfo['remote_commit'] }}</td></tr>
-                    <tr><th>Status</th><td>@if($appInfo['update_available'])<span class="badge bg-success">Update tersedia</span>@else<span class="badge bg-secondary">Sudah terbaru</span>@endif</td></tr>
+                    <tr><th>Status</th><td>@if($appInfo['update_available'])<span class="badge bg-warning text-white">Update tersedia</span>@else<span class="badge bg-success text-white">Terupdate</span>@endif</td></tr>
                     <tr><th>Pesan</th><td>{{ $appInfo['update_message'] }}</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Riwayat Versi</strong>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Versi</th>
+                            <th>Tanggal</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($appInfo['history'] as $entry)
+                            <tr>
+                                <td>{{ $entry['version'] ?? '-' }}</td>
+                                <td>{{ $entry['date'] ?? '-' }}</td>
+                                <td>{{ $entry['notes'] ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="text-center text-muted">Belum ada riwayat versi.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

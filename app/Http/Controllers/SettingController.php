@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\BackupService;
 use App\Services\ProfilePhotoBackupService;
 use App\Services\SettingsManager;
+use App\Services\AppVersionService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -332,19 +333,35 @@ class SettingController extends Controller
 
     public function applyUpdate()
     {
-        $process = new Process(['git', 'pull', '--ff-only', 'origin', 'main'], base_path(), null, null, 300);
-
+        $process = new Process(['git', 'fetch', '--all', '--tags'], base_path(), null, null, 300);
         try {
             $process->run();
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Gagal mengambil data remote GitHub: ' . $e->getMessage());
+        }
+
+        $fetchOutput = trim($process->getOutput() ?: $process->getErrorOutput());
+        if (! $process->isSuccessful()) {
+            return back()->with('error', 'Gagal mengambil data remote GitHub: ' . Str::limit($fetchOutput ?: 'Tidak ada output dari Git.', 1000));
+        }
+
+        $pullProcess = new Process(['git', 'pull', '--ff-only', 'origin', 'main'], base_path(), null, null, 300);
+        try {
+            $pullProcess->run();
         } catch (\Throwable $e) {
             return back()->with('error', 'Gagal menjalankan update: ' . $e->getMessage());
         }
 
-        $output = trim($process->getOutput() ?: $process->getErrorOutput());
-        $success = $process->isSuccessful();
+        $output = trim($pullProcess->getOutput() ?: $pullProcess->getErrorOutput());
+        $success = $pullProcess->isSuccessful();
         $message = $success
             ? 'Update berhasil dijalankan. ' . ($output ? Str::limit($output, 1000) : 'Repository sudah sesuai dengan versi terbaru.')
             : 'Update gagal: ' . Str::limit($output ?: 'Tidak ada output dari Git.', 1000);
+
+        if ($success) {
+            $versionService = new AppVersionService();
+            $versionService->bumpVersion('github_update', 'Update diterapkan dari GitHub');
+        }
 
         return back()->with($success ? 'success' : 'error', $message);
     }
@@ -382,16 +399,20 @@ class SettingController extends Controller
     {
         $status = session('update_status') ?: $this->checkRemoteUpdateStatus();
 
+        $versionService = new AppVersionService();
+        $versionInfo = $versionService->getVersionInfo();
+
         return [
             'name' => 'SIMADIS',
             'description' => 'Sistem Informasi Manajemen Absensi Digital untuk sekolah, yang membantu pengelolaan absensi, jadwal, data siswa, guru, dan pelaporan secara terintegrasi.',
             'logo' => asset('images/icon_simadisnew.png'),
-            'version' => config('app.version', env('APP_VERSION', '1.0.0')),
-            'repository' => env('APP_REPOSITORY_URL', 'https://github.com/'),
+            'version' => $versionInfo['version'],
+            'repository' => env('APP_REPOSITORY_URL', 'https://github.com/asepk090786/ABSENSI_DIGITAL'),
             'current_commit' => $status['current_commit'] ?? '-',
             'remote_commit' => $status['remote_commit'] ?? '-',
             'update_available' => (bool) ($status['has_update'] ?? false),
             'update_message' => $status['message'] ?? 'Belum ada informasi update.',
+            'history' => $versionInfo['history'],
         ];
     }
 
@@ -418,6 +439,10 @@ class SettingController extends Controller
             $remoteCommit = $remoteCommit ? substr($remoteCommit, 0, 7) : null;
         }
 
+        $versionService = new AppVersionService();
+        $localVersionInfo = $versionService->getVersionInfo();
+        $remoteVersionInfo = $this->getRemoteVersionInfo($repoPath);
+
         if (! $currentCommit) {
             return [
                 'has_update' => false,
@@ -436,21 +461,77 @@ class SettingController extends Controller
             ];
         }
 
-        if ($currentCommit === $remoteCommit) {
-            return [
-                'has_update' => false,
-                'current_commit' => $currentCommit,
-                'remote_commit' => $remoteCommit,
-                'message' => 'Aplikasi sudah menggunakan versi terbaru dari GitHub.',
-            ];
+        $hasUpdate = false;
+        $message = 'Aplikasi sudah terupdate dengan versi yang tersedia di GitHub.';
+
+        if ($remoteVersionInfo) {
+            $hasUpdate = $this->isVersionNewer($localVersionInfo, $remoteVersionInfo);
+            $message = $hasUpdate
+                ? 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.'
+                : 'Versi aplikasi Anda sudah sesuai dengan repository GitHub.';
+        } elseif ($currentCommit !== $remoteCommit) {
+            $hasUpdate = true;
+            $message = 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.';
         }
 
         return [
-            'has_update' => true,
+            'has_update' => $hasUpdate,
             'current_commit' => $currentCommit,
             'remote_commit' => $remoteCommit,
-            'message' => 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.',
+            'message' => $message,
         ];
+    }
+
+    private function getRemoteVersionInfo(string $repoPath): ?array
+    {
+        $tagsOutput = $this->runGitCommand(['git', 'ls-remote', '--tags', 'origin'], $repoPath);
+        if (! $tagsOutput) {
+            return null;
+        }
+
+        $versions = [];
+        preg_match_all('/refs\/tags\/(?:v|Ver\.?|)?(\d+)\.(\d+)\.(\d+)/i', $tagsOutput, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $versions[] = [
+                'major' => (int) $match[1],
+                'minor' => (int) $match[2],
+                'patch' => (int) $match[3],
+            ];
+        }
+
+        if (empty($versions)) {
+            return null;
+        }
+
+        usort($versions, function ($a, $b) {
+            if ($a['major'] !== $b['major']) {
+                return $a['major'] <=> $b['major'];
+            }
+            if ($a['minor'] !== $b['minor']) {
+                return $a['minor'] <=> $b['minor'];
+            }
+            return $a['patch'] <=> $b['patch'];
+        });
+
+        return end($versions);
+    }
+
+    private function isVersionNewer(array $localVersionInfo, array $remoteVersionInfo): bool
+    {
+        $local = [$localVersionInfo['major'] ?? 0, $localVersionInfo['minor'] ?? 0, $localVersionInfo['patch'] ?? 0];
+        $remote = [$remoteVersionInfo['major'] ?? 0, $remoteVersionInfo['minor'] ?? 0, $remoteVersionInfo['patch'] ?? 0];
+
+        for ($i = 0; $i < 3; $i++) {
+            if ($local[$i] < $remote[$i]) {
+                return true;
+            }
+            if ($local[$i] > $remote[$i]) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     private function runGitCommand(array $command, string $workingDirectory): ?string
