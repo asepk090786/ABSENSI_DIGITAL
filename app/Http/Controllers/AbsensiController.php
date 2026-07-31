@@ -1205,21 +1205,27 @@ class AbsensiController extends Controller
         // Convert to UTC before persisting so Laravel reads it back correctly
         $expiresAtUtc = $expiresAt->copy()->setTimezone('UTC');
 
-        // Upsert verification record
-        $record = AttendanceVerificationCode::updateOrCreate(
-            [
-                'guru_id' => $guruId,
+        try {
+            $record = AttendanceVerificationCode::updateOrCreate(
+                [
+                    'guru_id' => $guruId,
+                    'kelas_id' => $validated['kelas_id'],
+                    'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                    'tanggal' => $validated['tanggal'],
+                ],
+                $this->buildVerificationRecordValues($code, $expiresAtUtc, $validated)
+            );
+        } catch (\Throwable $e) {
+            Log::error('absensi.verification.refresh_failed', [
                 'kelas_id' => $validated['kelas_id'],
                 'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
                 'tanggal' => $validated['tanggal'],
-            ],
-            [
-                'kode' => $code,
-                'expires_at' => $expiresAtUtc,
-                'valid_from' => $validated['verification_valid_from'] ?? null,
-                'valid_to' => $validated['verification_valid_to'] ?? null,
-            ]
-        );
+                'guru_id' => $guruId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui kode verifikasi.'], 500);
+        }
 
             return response()->json([
                 'success' => true,
@@ -1300,14 +1306,17 @@ class AbsensiController extends Controller
                     'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
                     'tanggal' => $validated['tanggal'],
                 ],
-                [
-                    'kode' => $code,
-                    'expires_at' => $expiresAtUtc,
-                    'valid_from' => $validated['verification_valid_from'] ?? null,
-                    'valid_to' => $validated['verification_valid_to'] ?? null,
-                ]
+                $this->buildVerificationRecordValues($code, $expiresAtUtc, $validated)
             );
         } catch (\Throwable $e) {
+            Log::error('absensi.verification.save_failed', [
+                'kelas_id' => $validated['kelas_id'],
+                'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                'tanggal' => $validated['tanggal'],
+                'guru_id' => $guruId,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json(['success' => false, 'message' => 'Gagal menyimpan konfigurasi verifikasi.'], 500);
         }
 
@@ -3352,6 +3361,28 @@ class AbsensiController extends Controller
         $prefix = strtoupper(trim($guruKode ?? '')) ?: 'GURU';
         $random = strtoupper(Str::random(3));
         return $prefix . $random;
+    }
+
+    private function buildVerificationRecordValues(string $code, Carbon $expiresAtUtc, array $validated): array
+    {
+        $values = [
+            'kode' => $code,
+            'expires_at' => $expiresAtUtc,
+        ];
+
+        if ($this->attendanceVerificationSupportsTimeRange()) {
+            $values['valid_from'] = $validated['verification_valid_from'] ?? null;
+            $values['valid_to'] = $validated['verification_valid_to'] ?? null;
+        }
+
+        return $values;
+    }
+
+    private function attendanceVerificationSupportsTimeRange(): bool
+    {
+        return Schema::hasTable('attendance_verification_codes')
+            && Schema::hasColumn('attendance_verification_codes', 'valid_from')
+            && Schema::hasColumn('attendance_verification_codes', 'valid_to');
     }
 
     private function flushStudentReportCache(): void
