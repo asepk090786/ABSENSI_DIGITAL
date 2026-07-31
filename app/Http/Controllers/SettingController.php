@@ -345,7 +345,8 @@ class SettingController extends Controller
             return back()->with('error', 'Gagal mengambil data remote GitHub: ' . Str::limit($fetchOutput ?: 'Tidak ada output dari Git.', 1000));
         }
 
-        $pullProcess = new Process(['git', 'pull', '--ff-only', 'origin', 'main'], base_path(), null, null, 300);
+        $branch = $this->getRemoteBranchName(base_path());
+        $pullProcess = new Process(['git', 'pull', '--ff-only', 'origin', $branch], base_path(), null, null, 300);
         try {
             $pullProcess->run();
         } catch (\Throwable $e) {
@@ -430,7 +431,8 @@ class SettingController extends Controller
         }
 
         $currentCommit = $this->runGitCommand(['git', 'rev-parse', '--short', 'HEAD'], $repoPath);
-        $remoteOutput = $this->runGitCommand(['git', 'ls-remote', '--heads', 'origin', 'main'], $repoPath);
+        $branch = $this->getRemoteBranchName($repoPath);
+        $remoteOutput = $this->runGitCommand(['git', 'ls-remote', '--heads', 'origin', $branch], $repoPath);
         $remoteCommit = null;
 
         if ($remoteOutput) {
@@ -470,8 +472,11 @@ class SettingController extends Controller
                 ? 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.'
                 : 'Versi aplikasi Anda sudah sesuai dengan repository GitHub.';
         } elseif ($currentCommit !== $remoteCommit) {
-            $hasUpdate = true;
-            $message = 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.';
+            $isBehind = $this->runGitCommand(['git', 'log', '--oneline', $currentCommit . '..' . $remoteCommit], $repoPath);
+            $hasUpdate = (bool) $isBehind;
+            $message = $hasUpdate
+                ? 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.'
+                : 'Versi aplikasi Anda sudah sesuai dengan repository GitHub.';
         }
 
         return [
@@ -490,14 +495,22 @@ class SettingController extends Controller
         }
 
         $versions = [];
-        preg_match_all('/refs\/tags\/(?:v|Ver\.?|)?(\d+)\.(\d+)\.(\d+)/i', $tagsOutput, $matches, PREG_SET_ORDER);
+        $tagPattern = '/refs\/tags\/(?:v|Ver\.?|)?(\d+)\.(\d+)\.(\d+)(?:[.-].*)?$/im';
+
+        preg_match_all($tagPattern, $tagsOutput, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
-            $versions[] = [
-                'major' => (int) $match[1],
-                'minor' => (int) $match[2],
-                'patch' => (int) $match[3],
-            ];
+            $major = (int) $match[1];
+            $minor = (int) $match[2];
+            $patch = (int) $match[3];
+
+            if ($major > 0 || $minor > 0 || $patch > 0) {
+                $versions[] = [
+                    'major' => $major,
+                    'minor' => $minor,
+                    'patch' => $patch,
+                ];
+            }
         }
 
         if (empty($versions)) {
@@ -522,6 +535,17 @@ class SettingController extends Controller
         $local = [$localVersionInfo['major'] ?? 0, $localVersionInfo['minor'] ?? 0, $localVersionInfo['patch'] ?? 0];
         $remote = [$remoteVersionInfo['major'] ?? 0, $remoteVersionInfo['minor'] ?? 0, $remoteVersionInfo['patch'] ?? 0];
 
+        $isSemverLike = static function (array $version): bool {
+            return count(array_filter($version, fn ($value) => is_int($value) && $value >= 0)) === 3
+                && $version[0] < 1000
+                && $version[1] < 1000
+                && $version[2] < 1000;
+        };
+
+        if (! $isSemverLike($local) || ! $isSemverLike($remote)) {
+            return false;
+        }
+
         for ($i = 0; $i < 3; $i++) {
             if ($local[$i] < $remote[$i]) {
                 return true;
@@ -532,6 +556,24 @@ class SettingController extends Controller
         }
 
         return false;
+    }
+
+    private function getRemoteBranchName(string $repoPath): string
+    {
+        $defaultBranch = $this->runGitCommand(['git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], $repoPath);
+        if ($defaultBranch) {
+            return preg_replace('/^origin\//', '', trim($defaultBranch)) ?: 'main';
+        }
+
+        foreach (['main', 'master'] as $branch) {
+            $branchRef = 'refs/remotes/origin/' . $branch;
+            $branchExists = $this->runGitCommand(['git', 'show-ref', '--verify', '--quiet', $branchRef], $repoPath);
+            if ($branchExists !== null || $branchExists === '') {
+                return $branch;
+            }
+        }
+
+        return 'main';
     }
 
     private function runGitCommand(array $command, string $workingDirectory): ?string
