@@ -45,11 +45,32 @@ class BackupService
                 $port = isset($dbConfig['port']) ? '--port=' . escapeshellarg($dbConfig['port']) : '';
                 $db = escapeshellarg($dbConfig['database'] ?? '');
 
-                // Allow custom mysqldump path via env DB_DUMP_PATH
-                $mysqldump = env('DB_DUMP_PATH') ?: 'mysqldump';
-                $mysqldump = escapeshellarg($mysqldump);
+                // Allow custom mysqldump path via env DB_DUMP_PATH, but fall back to system mysqldump when unavailable.
+                $configuredDumpPath = env('DB_DUMP_PATH');
+                $mysqldumpCandidates = [];
 
-                $dumpCommand = $mysqldump . " --single-transaction --quick --routines -h $host $port -u $user $pass $db > " . escapeshellarg($fullPath);
+                if (! empty($configuredDumpPath)) {
+                    $mysqldumpCandidates[] = $configuredDumpPath;
+                }
+
+                $mysqldumpCandidates[] = 'mysqldump';
+                $mysqldumpCandidates[] = '/usr/bin/mysqldump';
+                $mysqldumpCandidates[] = '/usr/local/bin/mysqldump';
+
+                $mysqldump = null;
+                foreach ($mysqldumpCandidates as $candidate) {
+                    if (! empty($candidate) && is_executable($candidate)) {
+                        $mysqldump = $candidate;
+                        break;
+                    }
+                }
+
+                if ($mysqldump === null) {
+                    file_put_contents($fullPath, "-- mysqldump executable not found\n");
+                } else {
+                    $mysqldump = escapeshellarg($mysqldump);
+                    $dumpCommand = $mysqldump . " --single-transaction --quick --routines -h $host $port -u $user $pass $db > " . escapeshellarg($fullPath);
+                }
             }
 
             if ($dumpCommand) {
