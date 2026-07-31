@@ -8,6 +8,7 @@ use App\Models\Sekolah;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\BackupService;
+use App\Services\ProfilePhotoBackupService;
 use App\Services\SettingsManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -473,8 +474,10 @@ class SettingController extends Controller
         $settings = new SettingsManager();
         $backupSettings = $settings->all();
         $svc = new BackupService();
+        $photoSvc = new ProfilePhotoBackupService();
         $backups = $svc->listBackups();
-        return view('setting.backup', compact('backupSettings','backups'));
+        $photoBackups = $photoSvc->listBackups();
+        return view('setting.backup', compact('backupSettings','backups','photoBackups'));
     }
 
     public function backupManual(Request $request)
@@ -510,6 +513,53 @@ class SettingController extends Controller
         $ok = $svc->delete($name);
         if ($ok) return back()->with('success','Backup dihapus');
         return back()->withErrors('Gagal menghapus backup');
+    }
+
+    public function backupProfileExport()
+    {
+        $svc = new ProfilePhotoBackupService();
+        $name = $svc->export();
+        return back()->with('success', 'Backup foto profil dibuat: ' . $name);
+    }
+
+    public function backupProfileDownload($name)
+    {
+        $svc = new ProfilePhotoBackupService();
+        $path = $svc->downloadPath($name);
+        if (! $path) {
+            return back()->withErrors('File backup foto profil tidak ditemukan');
+        }
+
+        return response()->download($path, $name);
+    }
+
+    public function backupProfileDelete($name)
+    {
+        $svc = new ProfilePhotoBackupService();
+        $ok = $svc->delete($name);
+        if ($ok) {
+            return back()->with('success', 'Backup foto profil dihapus');
+        }
+
+        return back()->withErrors('Gagal menghapus backup foto profil');
+    }
+
+    public function backupProfileImport(Request $request)
+    {
+        $request->validate([
+            'profile_photo_backup' => ['required', 'file', 'mimes:zip', 'max:20480'],
+        ]);
+
+        $path = $request->file('profile_photo_backup')->store('backups/profile_photos/imports');
+        $fullPath = storage_path('app/' . $path);
+        $svc = new ProfilePhotoBackupService();
+        $ok = $svc->import($fullPath);
+
+        if ($ok) {
+            return back()->with('success', 'Import foto profil selesai');
+        }
+
+        return back()->withErrors('Gagal mengimpor backup foto profil');
     }
 
     public function backupUpdateSettings(Request $request)

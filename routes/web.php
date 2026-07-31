@@ -376,6 +376,10 @@ Route::middleware(['auth'])->group(function(){
         Route::post('/setting/backup/settings', [SettingController::class, 'backupUpdateSettings'])->name('setting.backup.settings');
         Route::get('/setting/backup/download/{name}', [SettingController::class, 'backupDownload'])->name('setting.backup.download');
         Route::delete('/setting/backup/{name}', [SettingController::class, 'backupDelete'])->name('setting.backup.delete');
+        Route::post('/setting/backup/profile/export', [SettingController::class, 'backupProfileExport'])->name('setting.backup.profile.export');
+        Route::get('/setting/backup/profile/download/{name}', [SettingController::class, 'backupProfileDownload'])->name('setting.backup.profile.download');
+        Route::delete('/setting/backup/profile/{name}', [SettingController::class, 'backupProfileDelete'])->name('setting.backup.profile.delete');
+        Route::post('/setting/backup/profile/import', [SettingController::class, 'backupProfileImport'])->name('setting.backup.profile.import');
         // About: server specs & library/plugin status
         Route::get('/setting/about', [SettingController::class, 'about'])->name('setting.about');
         Route::post('/setting/about/install/{type}', [SettingController::class, 'installLibrary'])->name('setting.about.install')->where('type', 'composer|npm');

@@ -55,9 +55,9 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card mb-3">
         <div class="card-body">
-            <h5>Daftar Backup</h5>
+            <h5>Daftar Backup Database</h5>
             <table class="table">
                 <thead><tr><th>Nama</th><th>Ukuran</th><th>Terakhir</th><th>Aksi</th></tr></thead>
                 <tbody>
@@ -77,6 +77,48 @@
                     </tr>
                 @empty
                     <tr><td colspan="4">Belum ada backup</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5>Backup Foto Profil</h5>
+            <form method="POST" action="{{ route('setting.backup.profile.export') }}" class="mb-3">
+                @csrf
+                <button class="btn btn-outline-success">Export Foto Profil ke ZIP</button>
+            </form>
+
+            <form method="POST" action="{{ route('setting.backup.profile.import') }}" enctype="multipart/form-data" class="mb-3">
+                @csrf
+                <div class="mb-2">
+                    <label class="form-label">Import Foto Profil dari ZIP</label>
+                    <input type="file" name="profile_photo_backup" class="form-control" accept=".zip" required>
+                </div>
+                <button class="btn btn-outline-primary">Import Foto Profil</button>
+            </form>
+
+            <table class="table">
+                <thead><tr><th>Nama</th><th>Ukuran</th><th>Terakhir</th><th>Aksi</th></tr></thead>
+                <tbody>
+                @forelse($photoBackups as $b)
+                    <tr>
+                        <td>{{ $b['name'] }}</td>
+                        <td>{{ number_format($b['size']/1024,2) }} KB</td>
+                        <td>{{ date('Y-m-d H:i:s', $b['modified']) }}</td>
+                        <td>
+                            <a href="{{ route('setting.backup.profile.download', $b['name']) }}" class="btn btn-sm btn-primary">Download</a>
+                            <form action="{{ route('setting.backup.profile.delete', $b['name']) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Hapus backup foto profil?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-sm btn-danger">Hapus</button>
+                            </form>
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4">Belum ada backup foto profil</td></tr>
                 @endforelse
                 </tbody>
             </table>
