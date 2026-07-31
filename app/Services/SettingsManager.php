@@ -27,9 +27,32 @@ class SettingsManager
     {
         $all = $this->all();
         data_set($all, $key, $value);
-        if (! is_dir(dirname($this->path))) {
-            mkdir(dirname($this->path), 0755, true);
+
+        $dir = dirname($this->path);
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0755, true);
         }
-        file_put_contents($this->path, json_encode($all, JSON_PRETTY_PRINT));
+
+        if (! is_writable($dir)) {
+            $fallbackDir = storage_path('app');
+            if (! is_dir($fallbackDir)) {
+                @mkdir($fallbackDir, 0755, true);
+            }
+            $this->path = $fallbackDir . '/settings.json';
+            $dir = dirname($this->path);
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+        }
+
+        $json = json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            $json = '{}';
+        }
+
+        $written = @file_put_contents($this->path, $json);
+        if ($written === false) {
+            throw new \RuntimeException('Unable to write settings file: ' . $this->path);
+        }
     }
 }

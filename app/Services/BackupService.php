@@ -10,6 +10,58 @@ class BackupService
     protected $disk = 'local';
     protected $dir = 'backups';
 
+    protected function getOsFamily(): string
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            return 'windows';
+        }
+
+        if (PHP_OS_FAMILY === 'Darwin') {
+            return 'mac';
+        }
+
+        return 'linux';
+    }
+
+    protected function resolveMysqldumpPath(): ?string
+    {
+        $configured = env('DB_DUMP_PATH');
+        $candidates = [];
+
+        if (! empty($configured)) {
+            $candidates[] = $configured;
+        }
+
+        $osFamily = $this->getOsFamily();
+        if ($osFamily === 'windows') {
+            $candidates[] = 'C:\\Program Files\\MySQL\\MySQL Server\\bin\\mysqldump.exe';
+            $candidates[] = 'C:\\wamp64\\bin\\mysql\\mysql8.0.32\\bin\\mysqldump.exe';
+            $candidates[] = 'mysqldump.exe';
+        } else {
+            $candidates[] = '/usr/bin/mysqldump';
+            $candidates[] = '/usr/local/bin/mysqldump';
+            $candidates[] = 'mysqldump';
+        }
+
+        foreach ($candidates as $candidate) {
+            if (empty($candidate)) {
+                continue;
+            }
+
+            if (PHP_OS_FAMILY === 'Windows') {
+                if (file_exists($candidate) && is_executable($candidate)) {
+                    return $candidate;
+                }
+            } else {
+                if (is_executable($candidate)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public function ensureDirectory()
     {
         $path = storage_path('app/' . $this->dir);
@@ -45,25 +97,7 @@ class BackupService
                 $port = isset($dbConfig['port']) ? '--port=' . escapeshellarg($dbConfig['port']) : '';
                 $db = escapeshellarg($dbConfig['database'] ?? '');
 
-                // Allow custom mysqldump path via env DB_DUMP_PATH, but fall back to system mysqldump when unavailable.
-                $configuredDumpPath = env('DB_DUMP_PATH');
-                $mysqldumpCandidates = [];
-
-                if (! empty($configuredDumpPath)) {
-                    $mysqldumpCandidates[] = $configuredDumpPath;
-                }
-
-                $mysqldumpCandidates[] = 'mysqldump';
-                $mysqldumpCandidates[] = '/usr/bin/mysqldump';
-                $mysqldumpCandidates[] = '/usr/local/bin/mysqldump';
-
-                $mysqldump = null;
-                foreach ($mysqldumpCandidates as $candidate) {
-                    if (! empty($candidate) && is_executable($candidate)) {
-                        $mysqldump = $candidate;
-                        break;
-                    }
-                }
+                $mysqldump = $this->resolveMysqldumpPath();
 
                 if ($mysqldump === null) {
                     file_put_contents($fullPath, "-- mysqldump executable not found\n");
