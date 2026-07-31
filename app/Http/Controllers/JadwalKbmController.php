@@ -30,10 +30,23 @@ class JadwalKbmController extends Controller
     protected function shouldShowMaintenancePage($user = null): bool
     {
         $user = $user ?? auth()->user();
-        $sekolah = Sekolah::first();
+
+        try {
+            $sekolah = Sekolah::first();
+        } catch (\Throwable $e) {
+            if (! $user) {
+                return false;
+            }
+
+            return ! $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']);
+        }
 
         if (! $sekolah) {
-            return false;
+            if (! $user) {
+                return false;
+            }
+
+            return ! $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah']);
         }
 
         if (! $user) {

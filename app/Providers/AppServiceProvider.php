@@ -28,25 +28,32 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('*', function ($view) {
             $kelasBinaanBk = collect();
-            $sekolah = Schema::hasTable('sekolah') ? Sekolah::first() : null;
+            $sekolah = null;
 
-            if (Auth::check() && Auth::user()->hasRole('Guru BK')) {
-                $guru = Auth::user()->guru;
+            try {
+                $sekolah = Schema::hasTable('sekolah') ? Sekolah::first() : null;
 
-                if ($guru && Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id')) {
-                    $kelasBinaanBk = DB::table('kelas')
-                        ->leftJoin('siswa', 'siswa.kelas_id', '=', 'kelas.id')
-                        ->where('kelas.guru_bk_id', $guru->id)
-                        ->select(
-                            'kelas.id',
-                            'kelas.nama_kelas',
-                            'kelas.tingkat_kelas',
-                            DB::raw('COUNT(siswa.id) as total_siswa')
-                        )
-                        ->groupBy('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
-                        ->orderBy('kelas.nama_kelas')
-                        ->get();
+                if (Auth::check() && Auth::user()->hasRole('Guru BK')) {
+                    $guru = Auth::user()->guru;
+
+                    if ($guru && Schema::hasTable('kelas') && Schema::hasColumn('kelas', 'guru_bk_id')) {
+                        $kelasBinaanBk = DB::table('kelas')
+                            ->leftJoin('siswa', 'siswa.kelas_id', '=', 'kelas.id')
+                            ->where('kelas.guru_bk_id', $guru->id)
+                            ->select(
+                                'kelas.id',
+                                'kelas.nama_kelas',
+                                'kelas.tingkat_kelas',
+                                DB::raw('COUNT(siswa.id) as total_siswa')
+                            )
+                            ->groupBy('kelas.id', 'kelas.nama_kelas', 'kelas.tingkat_kelas')
+                            ->orderBy('kelas.nama_kelas')
+                            ->get();
+                    }
                 }
+            } catch (\Throwable $e) {
+                $kelasBinaanBk = collect();
+                $sekolah = null;
             }
 
             $view->with('kelasBinaanBk', $kelasBinaanBk)
