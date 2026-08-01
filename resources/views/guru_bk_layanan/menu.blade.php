@@ -55,7 +55,7 @@
         </div>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-3 mb-4">
         <div class="col-md-6 col-lg-3">
             <a href="{{ route('guru_bk_layanan.layanan', ['kelas' => $kelas->id]) }}" class="btn btn-outline-primary w-100 py-3" style="height: auto;">
                 <div class="text-center">
@@ -110,6 +110,123 @@
             </button>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h5 class="card-title mb-1">Rekap Kehadiran Per Kelas Binaan</h5>
+                        <p class="text-muted mb-0">Menampilkan rekap kehadiran siswa berdasarkan filter waktu yang dipilih.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="GET" class="row g-2 align-items-end mb-3">
+                        <input type="hidden" name="periode" id="periodeInput" value="{{ $selectedPeriode ?? 'bulanan' }}">
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <label class="form-label mb-1">Jenis Filter</label>
+                            <select class="form-select" id="periodeSelect">
+                                <option value="harian" {{ ($selectedPeriode ?? 'bulanan') === 'harian' ? 'selected' : '' }}>Harian</option>
+                                <option value="mingguan" {{ ($selectedPeriode ?? 'bulanan') === 'mingguan' ? 'selected' : '' }}>Mingguan</option>
+                                <option value="bulanan" {{ ($selectedPeriode ?? 'bulanan') === 'bulanan' ? 'selected' : '' }}>Bulanan</option>
+                                <option value="rentang" {{ ($selectedPeriode ?? 'bulanan') === 'rentang' ? 'selected' : '' }}>Rentang Waktu</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4 col-lg-3" id="tanggalFilterGroup">
+                            <label class="form-label mb-1">Tanggal</label>
+                            <input type="date" name="tanggal" class="form-control" value="{{ $selectedTanggal ?? now()->format('Y-m-d') }}">
+                        </div>
+                        <div class="col-12 col-md-4 col-lg-3" id="tanggalMulaiGroup" style="display:none;">
+                            <label class="form-label mb-1">Tanggal Mulai</label>
+                            <input type="date" name="tanggal_mulai" class="form-control" value="{{ $tanggalMulai ?? '' }}">
+                        </div>
+                        <div class="col-12 col-md-4 col-lg-3" id="tanggalSelesaiGroup" style="display:none;">
+                            <label class="form-label mb-1">Tanggal Selesai</label>
+                            <input type="date" name="tanggal_selesai" class="form-control" value="{{ $tanggalSelesai ?? '' }}">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-search me-1"></i>Tampilkan
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="alert alert-light border mb-3">
+                        <strong>Rentang tampilan:</strong> {{ \Carbon\Carbon::parse($startDate ?? now()->format('Y-m-d'))->translatedFormat('d F Y') }} s.d. {{ \Carbon\Carbon::parse($endDate ?? now()->format('Y-m-d'))->translatedFormat('d F Y') }}
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-vcenter table-hover table-tabler">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Siswa</th>
+                                    <th>NIS</th>
+                                    @if(($isDailyDetail ?? false) && !empty($jamColumns))
+                                        @foreach($jamColumns as $jamColumn)
+                                            <th>{{ $jamColumn['label'] }}</th>
+                                        @endforeach
+                                    @else
+                                        <th>Hadir</th>
+                                        <th>Sakit</th>
+                                        <th>Izin</th>
+                                        <th>Terlambat</th>
+                                        <th>Tidak Hadir</th>
+                                        <th>Total Rekap</th>
+                                    @endif
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if(($isDailyDetail ?? false) && !empty($jamColumns))
+                                    @forelse($dailyAttendanceRows ?? collect() as $index => $row)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $row->nama_siswa ?? '-' }}</td>
+                                            <td>{{ $row->nis ?? '-' }}</td>
+                                            @foreach($row->cells ?? [] as $cell)
+                                                <td>
+                                                    <span class="badge rounded-pill px-2 py-2" style="min-width:46px; {{ $cell['style'] }}">{{ $cell['text'] }}</span>
+                                                </td>
+                                            @endforeach
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="{{ 3 + count($jamColumns) }}" class="text-center text-muted py-4">Belum ada data rekap kehadiran untuk periode ini.</td>
+                                        </tr>
+                                    @endforelse
+                                @else
+                                    @forelse($rekapAbsensi ?? collect() as $index => $row)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $row->nama_siswa ?? '-' }}</td>
+                                            <td>{{ $row->nis ?? '-' }}</td>
+                                            <td>
+                                                @php
+                                                    $dailyStatus = ($row->hadir ?? 0) > 0 && ($row->tidak_hadir ?? 0) == 0 ? 'green' : 'yellow';
+                                                @endphp
+                                                <span class="badge rounded-pill px-3 py-2 {{ $dailyStatus === 'green' ? 'bg-success' : 'bg-warning' }} text-white">
+                                                    {{ $row->hadir ?? 0 }} Hari Hadir
+                                                </span>
+                                            </td>
+                                            <td><span class="badge bg-warning text-white">{{ $row->sakit ?? 0 }}</span></td>
+                                            <td><span class="badge bg-info text-white">{{ $row->izin ?? 0 }}</span></td>
+                                            <td><span class="badge bg-orange text-white">{{ $row->terlambat ?? 0 }}</span></td>
+                                            <td><span class="badge bg-danger text-white">{{ $row->tidak_hadir ?? 0 }}</span></td>
+                                            <td><span class="badge bg-secondary text-white">{{ $row->total_rekap ?? 0 }}</span></td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="9" class="text-center text-muted py-4">Belum ada data rekap kehadiran untuk periode ini.</td>
+                                        </tr>
+                                    @endforelse
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="printPreviewModal" tabindex="-1" aria-hidden="true">
@@ -151,6 +268,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 frame.contentWindow.print();
             }
         });
+    }
+
+    const periodeSelect = document.getElementById('periodeSelect');
+    const periodeInput = document.getElementById('periodeInput');
+    const tanggalFilterGroup = document.getElementById('tanggalFilterGroup');
+    const tanggalMulaiGroup = document.getElementById('tanggalMulaiGroup');
+    const tanggalSelesaiGroup = document.getElementById('tanggalSelesaiGroup');
+
+    function toggleFilterFields() {
+        if (!periodeSelect || !periodeInput) return;
+        const value = periodeSelect.value;
+        periodeInput.value = value;
+
+        if (value === 'rentang') {
+            tanggalFilterGroup.style.display = 'none';
+            tanggalMulaiGroup.style.display = '';
+            tanggalSelesaiGroup.style.display = '';
+        } else {
+            tanggalFilterGroup.style.display = '';
+            tanggalMulaiGroup.style.display = 'none';
+            tanggalSelesaiGroup.style.display = 'none';
+        }
+    }
+
+    if (periodeSelect) {
+        periodeSelect.addEventListener('change', toggleFilterFields);
+        toggleFilterFields();
     }
 });
 </script>

@@ -34,12 +34,75 @@ class GuruBkLayananController extends Controller
         }
     }
 
+    public static function resolveDateRange(string $periode, ?string $tanggal, ?string $tanggalMulai = null, ?string $tanggalSelesai = null): array
+    {
+        if (! empty($tanggalMulai) && ! empty($tanggalSelesai)) {
+            return [
+                'startDate' => Carbon::parse($tanggalMulai)->format('Y-m-d'),
+                'endDate' => Carbon::parse($tanggalSelesai)->format('Y-m-d'),
+                'selectedTanggal' => Carbon::parse($tanggalMulai)->format('Y-m-d'),
+            ];
+        }
+
+        $date = Carbon::parse($tanggal ?? Carbon::today()->format('Y-m-d'));
+        $selectedTanggal = $date->format('Y-m-d');
+
+        switch ($periode) {
+            case 'harian':
+                return [
+                    'startDate' => $selectedTanggal,
+                    'endDate' => $selectedTanggal,
+                    'selectedTanggal' => $selectedTanggal,
+                ];
+            case 'mingguan':
+                $weekNumber = (int) ceil($date->day / 7);
+                $startDate = $date->copy()->startOfMonth()->addDays(($weekNumber - 1) * 7);
+                $endDate = $startDate->copy()->addDays(6);
+
+                if ($endDate->greaterThan($date->copy()->endOfMonth())) {
+                    $endDate = $date->copy()->endOfMonth();
+                }
+
+                return [
+                    'startDate' => $startDate->format('Y-m-d'),
+                    'endDate' => $endDate->format('Y-m-d'),
+                    'selectedTanggal' => $startDate->format('Y-m-d'),
+                ];
+            case 'bulanan':
+            default:
+                $startDate = $date->copy()->startOfMonth();
+                $endDate = $date->copy()->endOfMonth();
+
+                return [
+                    'startDate' => $startDate->format('Y-m-d'),
+                    'endDate' => $endDate->format('Y-m-d'),
+                    'selectedTanggal' => $startDate->format('Y-m-d'),
+                ];
+            case 'rentang':
+                return [
+                    'startDate' => $selectedTanggal,
+                    'endDate' => $selectedTanggal,
+                    'selectedTanggal' => $selectedTanggal,
+                ];
+        }
+    }
+
     public function menu(Kelas $kelas)
     {
         $this->authorizeKelasBinaan($kelas);
 
         $tahunAjaran = TahunAjaran::where('is_active', true)->first();
         $semester = Semester::where('is_active', true)->first();
+
+        $selectedPeriode = request('periode', 'bulanan');
+        $selectedTanggal = request('tanggal', Carbon::today()->format('Y-m-d'));
+        $tanggalMulai = request('tanggal_mulai');
+        $tanggalSelesai = request('tanggal_selesai');
+
+        $resolvedRange = self::resolveDateRange($selectedPeriode, $selectedTanggal, $tanggalMulai, $tanggalSelesai);
+        $startDate = $resolvedRange['startDate'];
+        $endDate = $resolvedRange['endDate'];
+        $selectedTanggal = $resolvedRange['selectedTanggal'];
 
         $absensiQuery = AbsensiKelas::where('kelas_id', $kelas->id);
         $agendaQuery = AgendaKelas::where('kelas_id', $kelas->id);
@@ -70,7 +133,198 @@ class GuruBkLayananController extends Controller
                 ->max('tanggal'),
         ];
 
-        return view('guru_bk_layanan.menu', compact('kelas', 'stats'));
+        $siswaList = Siswa::where('kelas_id', $kelas->id)
+            ->where('status_aktif', 1)
+            ->orderBy('nama')
+            ->get(['id', 'nama', 'nis']);
+
+        $isDailyDetail = ($selectedPeriode ?? 'bulanan') === 'harian';
+
+        $rekapAbsensiQuery = DB::table('absensi_siswa as asw')
+            ->join('absensi_kelas as ak', 'ak.id', '=', 'asw.absensi_kelas_id')
+            ->where('ak.kelas_id', $kelas->id)
+            ->whereBetween('ak.tanggal', [$startDate, $endDate])
+            ->when($tahunAjaran, fn($query) => $query->where('ak.tahun_ajaran_id', $tahunAjaran->id))
+            ->when($semester, fn($query) => $query->where('ak.semester_id', $semester->id));
+
+        if ($isDailyDetail) {
+            $rekapAbsensiQuery->select(
+                'asw.siswa_id',
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as tidak_hadir")
+            )->groupBy('asw.siswa_id');
+        } else {
+            $rekapAbsensiQuery->select(
+                'asw.siswa_id',
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat"),
+                DB::raw("SUM(CASE WHEN LOWER(asw.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as tidak_hadir"),
+                DB::raw("COUNT(DISTINCT DATE(ak.tanggal)) as total_hari")
+            )->groupBy('asw.siswa_id');
+        }
+
+        $rekapAbsensiMap = $rekapAbsensiQuery->get()->keyBy('siswa_id');
+
+        $rekapAbsensi = $siswaList->map(function ($siswa) use ($rekapAbsensiMap, $isDailyDetail) {
+            $row = $rekapAbsensiMap->get($siswa->id, (object) [
+                'hadir' => 0,
+                'sakit' => 0,
+                'izin' => 0,
+                'terlambat' => 0,
+                'tidak_hadir' => 0,
+                'total_hari' => 0,
+            ]);
+
+            $hadirCount = (int) ($row->hadir ?? 0);
+            $sakitCount = (int) ($row->sakit ?? 0);
+            $izinCount = (int) ($row->izin ?? 0);
+            $terlambatCount = (int) ($row->terlambat ?? 0);
+            $tidakHadirCount = (int) ($row->tidak_hadir ?? 0);
+            $totalHari = (int) ($row->total_hari ?? 0);
+
+            if (! $isDailyDetail) {
+                $hadirCount = max(0, min($totalHari, $hadirCount));
+            }
+
+            return (object) [
+                'siswa_id' => $siswa->id,
+                'nama_siswa' => $siswa->nama,
+                'nis' => $siswa->nis,
+                'hadir' => $hadirCount,
+                'sakit' => $sakitCount,
+                'izin' => $izinCount,
+                'terlambat' => $terlambatCount,
+                'tidak_hadir' => $tidakHadirCount,
+                'total_rekap' => (int) ($hadirCount + $sakitCount + $izinCount + $terlambatCount + $tidakHadirCount),
+            ];
+        })->values();
+        $jamColumns = [];
+        $dailyAttendanceRows = collect();
+
+        if ($isDailyDetail) {
+            $hariMap = [
+                'Monday' => 'Senin',
+                'Tuesday' => 'Selasa',
+                'Wednesday' => 'Rabu',
+                'Thursday' => 'Kamis',
+                'Friday' => 'Jumat',
+                'Saturday' => 'Sabtu',
+                'Sunday' => 'Minggu',
+            ];
+            $hariQuery = $hariMap[Carbon::parse($selectedTanggal)->format('l')] ?? Carbon::parse($selectedTanggal)->format('l');
+
+            $jamRows = DB::table('jadwal_kbm as jk')
+                ->leftJoin('jam_belajar as jb', 'jb.id', '=', 'jk.jam_belajar_id')
+                ->where('jk.kelas_id', $kelas->id)
+                ->where('jk.hari', $hariQuery)
+                ->when($tahunAjaran, fn($query) => $query->where('jk.tahun_ajaran_id', $tahunAjaran->id))
+                ->when($semester, fn($query) => $query->where('jk.semester_id', $semester->id))
+                ->select('jk.jam_belajar_id', 'jk.jam_ke', 'jb.urutan', 'jb.jam_mulai', 'jb.jam_selesai')
+                ->orderBy('jk.jam_ke')
+                ->get();
+
+            if ($jamRows->isEmpty()) {
+                $jamRows = DB::table('absensi_kelas as ak')
+                    ->leftJoin('jam_belajar as jb', 'jb.id', '=', 'ak.jam_belajar_id')
+                    ->where('ak.kelas_id', $kelas->id)
+                    ->whereDate('ak.tanggal', $selectedTanggal)
+                    ->when($tahunAjaran, fn($query) => $query->where('ak.tahun_ajaran_id', $tahunAjaran->id))
+                    ->when($semester, fn($query) => $query->where('ak.semester_id', $semester->id))
+                    ->select('ak.jam_belajar_id', 'jb.urutan', 'jb.jam_mulai', 'jb.jam_selesai')
+                    ->distinct()
+                    ->orderBy('jb.urutan')
+                    ->get();
+            }
+
+            $jamColumns = $jamRows->map(function ($jam, $index) {
+                $jamKe = $jam->jam_ke ?? $jam->urutan ?? ($index + 1);
+                $label = 'Jam ke-' . $jamKe;
+                if (!empty($jam->jam_mulai) && !empty($jam->jam_selesai)) {
+                    $label .= ' (' . $jam->jam_mulai . ' - ' . $jam->jam_selesai . ')';
+                }
+
+                return [
+                    'id' => $jam->jam_belajar_id,
+                    'label' => $label,
+                ];
+            })->values()->all();
+
+            $dailyEntries = DB::table('absensi_siswa as asw')
+                ->join('absensi_kelas as ak', 'ak.id', '=', 'asw.absensi_kelas_id')
+                ->where('ak.kelas_id', $kelas->id)
+                ->whereDate('ak.tanggal', $selectedTanggal)
+                ->when($tahunAjaran, fn($query) => $query->where('ak.tahun_ajaran_id', $tahunAjaran->id))
+                ->when($semester, fn($query) => $query->where('ak.semester_id', $semester->id))
+                ->select('asw.siswa_id', 'asw.status', 'ak.jam_belajar_id')
+                ->get();
+
+            $detailMap = [];
+            foreach ($dailyEntries as $entry) {
+                $detailMap[$entry->siswa_id][$entry->jam_belajar_id] = $entry->status;
+            }
+
+            $dailyAttendanceRows = $siswaList->map(function ($siswa) use ($detailMap, $jamColumns) {
+                $cells = [];
+
+                foreach ($jamColumns as $jamColumn) {
+                    $status = $detailMap[$siswa->id][$jamColumn['id']] ?? null;
+                    $cells[] = $this->buildAttendanceCell($status);
+                }
+
+                return (object) [
+                    'siswa_id' => $siswa->id,
+                    'nama_siswa' => $siswa->nama,
+                    'nis' => $siswa->nis,
+                    'cells' => $cells,
+                ];
+            })->values();
+        }
+
+        return view('guru_bk_layanan.menu', compact(
+            'kelas',
+            'stats',
+            'rekapAbsensi',
+            'selectedPeriode',
+            'selectedTanggal',
+            'tanggalMulai',
+            'tanggalSelesai',
+            'startDate',
+            'endDate',
+            'isDailyDetail',
+            'jamColumns',
+            'dailyAttendanceRows'
+        ));
+    }
+
+    private function buildAttendanceCell(?string $status): array
+    {
+        $statusNormalized = strtolower(trim((string) ($status ?? '')));
+
+        switch ($statusNormalized) {
+            case 'hadir':
+                return ['text' => 'H', 'style' => 'background:#16a34a;color:#fff;'];
+            case 'sakit':
+                return ['text' => 'S', 'style' => 'background:#93c5fd;color:#0f172a;'];
+            case 'izin':
+            case 'ijin':
+                return ['text' => 'I', 'style' => 'background:#93c5fd;color:#0f172a;'];
+            case 'terlambat':
+            case 'telat':
+                return ['text' => 'T', 'style' => 'background:#facc15;color:#713f12;'];
+            case 'alpha':
+            case 'alpa':
+            case 'alfa':
+            case 'absen':
+            case 'tidak_hadir':
+                return ['text' => 'A', 'style' => 'background:#dc2626;color:#fff;'];
+            default:
+                return ['text' => '-', 'style' => 'background:#f3f4f6;color:#6b7280;'];
+        }
     }
 
     public function layanan(Kelas $kelas)
