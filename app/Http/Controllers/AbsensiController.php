@@ -56,6 +56,7 @@ class AbsensiController extends Controller
         $user = auth()->user();
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $mode = $request->get('mode');
+        $bkAttendanceStats = [];
         $hariPiketArr = (array) ($user->guru->hari_piket ?? []);
         $todayEng = \Carbon\Carbon::now()->format('l');
         $map = [
@@ -161,6 +162,7 @@ class AbsensiController extends Controller
                 ->get();
 
             $siswaPerluPerhatian = $this->getGuruBkMonitoringData($user->guru_id, $selectedTanggal);
+            $bkAttendanceStats = $this->buildBkAttendanceStats($siswaPerluPerhatian);
         } elseif ($user->guru_id && !$isAdminOrKepala && !$isGuruPiket) {
             // Get all classes taught by this teacher in current semester
             $kelasQuickAccess = JadwalKbm::with(['kelas'])
@@ -228,7 +230,7 @@ class AbsensiController extends Controller
 
         $canPrintExport = $isAdminOrKepala || $this->isGuruPiketUser(auth()->user()) || $isSiswaOfficer;
 
-        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer', 'canPrintExport'));
+        return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer', 'canPrintExport', 'bkAttendanceStats'));
     }
 
     public function exportBkMonitoring(Request $request)
@@ -2851,7 +2853,7 @@ class AbsensiController extends Controller
             ->leftJoin('guru', 'guru.id', '=', 'absensi_kelas.guru_id')
             ->where('kelas.guru_bk_id', $guruId)
             ->whereDate('absensi_kelas.tanggal', $selectedTanggal)
-            ->whereIn(DB::raw('LOWER(absensi_siswa.status)'), ['terlambat', 'telat', 'alpa', 'alpha', 'alfa', 'absen'])
+            ->whereIn(DB::raw('LOWER(absensi_siswa.status)'), ['terlambat', 'telat', 'alpa', 'alpha', 'alfa', 'absen', 'sakit', 'izin', 'ijin', 'hadir'])
             ->select(
                 'absensi_kelas.id as absensi_kelas_id',
                 'absensi_kelas.tanggal',
@@ -2866,6 +2868,48 @@ class AbsensiController extends Controller
             ->orderBy('kelas.nama_kelas')
             ->orderBy('siswa.nama')
             ->get();
+    }
+
+    private function buildBkAttendanceStats($rows)
+    {
+        $normalizedRows = collect($rows)->filter(function ($row) {
+            return !empty($row->siswa_id) && !empty($row->status);
+        });
+
+        $stats = [
+            'hadir' => 0,
+            'sakit' => 0,
+            'izin' => 0,
+            'terlambat' => 0,
+            'tidak_hadir' => 0,
+        ];
+
+        foreach ($normalizedRows as $row) {
+            $status = strtolower((string) $row->status);
+            $siswaId = (int) $row->siswa_id;
+
+            if ($status === 'hadir') {
+                $stats['hadir'] += 1;
+            } elseif (in_array($status, ['sakit'], true)) {
+                $stats['sakit'] += 1;
+            } elseif (in_array($status, ['izin', 'ijin'], true)) {
+                $stats['izin'] += 1;
+            } elseif (in_array($status, ['terlambat', 'telat'], true)) {
+                $stats['terlambat'] += 1;
+            } elseif (in_array($status, ['alpa', 'alpha', 'alfa', 'absen', 'tidak_hadir'], true)) {
+                $stats['tidak_hadir'] += 1;
+            }
+        }
+
+        $uniqueCounts = [
+            'hadir' => $normalizedRows->filter(fn ($row) => strtolower((string) $row->status) === 'hadir')->unique('siswa_id')->count(),
+            'sakit' => $normalizedRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['sakit'], true))->unique('siswa_id')->count(),
+            'izin' => $normalizedRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['izin', 'ijin'], true))->unique('siswa_id')->count(),
+            'terlambat' => $normalizedRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['terlambat', 'telat'], true))->unique('siswa_id')->count(),
+            'tidak_hadir' => $normalizedRows->filter(fn ($row) => in_array(strtolower((string) $row->status), ['alpa', 'alpha', 'alfa', 'absen', 'tidak_hadir'], true))->unique('siswa_id')->count(),
+        ];
+
+        return $uniqueCounts;
     }
 
     private function getDailyStudentReportRows(string $selectedTanggal, $kelasId, $tahun, $semester, $guruId = null)

@@ -178,24 +178,31 @@
                     </form>
 
                     @php
-                        $totalTerlambatBk = ($siswaPerluPerhatian ?? collect())
-                            ->filter(function ($row) {
-                                return in_array(strtolower((string) ($row->status ?? '')), ['terlambat', 'telat'], true);
-                            })
-                            ->unique('siswa_id')
-                            ->count();
-
-                        $totalTidakMasukBk = ($siswaPerluPerhatian ?? collect())
-                            ->filter(function ($row) {
-                                return in_array(strtolower((string) ($row->status ?? '')), ['alpa', 'alpha', 'alfa', 'absen'], true);
-                            })
-                            ->unique('siswa_id')
-                            ->count();
+                        $stats = $bkAttendanceStats ?? [
+                            'hadir' => 0,
+                            'sakit' => 0,
+                            'izin' => 0,
+                            'terlambat' => 0,
+                            'tidak_hadir' => 0,
+                        ];
                     @endphp
 
-                    <div class="d-flex flex-wrap gap-2 mb-2">
-                        <span class="badge" style="background:#f59e0b;color:#fff;">Total Terlambat: {{ $totalTerlambatBk }}</span>
-                        <span class="badge bg-danger">Total Tidak Masuk: {{ $totalTidakMasukBk }}</span>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge rounded-pill px-3 py-2" style="background:#16a34a; color:#fff; font-size:0.95rem;">
+                            <i class="ti ti-circle-check me-1"></i>Hadir: {{ $stats['hadir'] }}
+                        </span>
+                        <span class="badge rounded-pill px-3 py-2" style="background:#ca8a04; color:#fff; font-size:0.95rem;">
+                            <i class="ti ti-medicine-syrup me-1"></i>Sakit: {{ $stats['sakit'] }}
+                        </span>
+                        <span class="badge rounded-pill px-3 py-2" style="background:#2563eb; color:#fff; font-size:0.95rem;">
+                            <i class="ti ti-file-description me-1"></i>Izin: {{ $stats['izin'] }}
+                        </span>
+                        <span class="badge rounded-pill px-3 py-2" style="background:#ea580c; color:#fff; font-size:0.95rem;">
+                            <i class="ti ti-clock-alert me-1"></i>Terlambat: {{ $stats['terlambat'] }}
+                        </span>
+                        <span class="badge rounded-pill px-3 py-2" style="background:#dc2626; color:#fff; font-size:0.95rem;">
+                            <i class="ti ti-user-off me-1"></i>Tidak Hadir: {{ $stats['tidak_hadir'] }}
+                        </span>
                     </div>
 
                     @if(($siswaPerluPerhatian ?? collect())->isEmpty())
