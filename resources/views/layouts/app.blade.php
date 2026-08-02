@@ -1043,6 +1043,11 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="{{ route('jenis_kegiatan.index') }}" class="nav-link {{ request()->routeIs('jenis_kegiatan.*') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> Jenis Kegiatan
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="{{ route('jenis_pelanggaran.index') }}" class="nav-link {{ request()->routeIs('jenis_pelanggaran.*') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Jenis Pelanggaran
                                 </a>

@@ -48,16 +48,24 @@ class PengembanganController extends Controller
             'kegiatan_id'=>'nullable|exists:kegiatan,id',
             'deskripsi'=>'nullable|string',
             'pemateri_guru_ids'=>'nullable|array',
+            'pemateri_guru_ids.*'=>'integer|exists:guru,id',
             'pemateri_names'=>'nullable|string',
             'tanggal_mulai'=>'nullable|date',
             'tanggal_selesai'=>'nullable|date',
+            'guru_ids'=>'nullable|array',
+            'guru_ids.*'=>'integer|exists:guru,id',
+            'siswa_ids'=>'nullable|array',
+            'siswa_ids.*'=>'integer|exists:siswa,id',
+            'external_participants'=>'nullable|array',
+            'external_participants.*.name'=>'required_with:external_participants|string',
+            'external_participants.*.instansi'=>'required_with:external_participants|string',
         ]);
 
         // Build pemateri array from selected guru ids and extra names
         $pemateri = [];
-        $guruIds = $r->input('pemateri_guru_ids', []);
-        if (!empty($guruIds)) {
-            $rows = \DB::table('guru')->whereIn('id', $guruIds)->pluck('nama')->all();
+        $pemateriGuruIds = $r->input('pemateri_guru_ids', []);
+        if (!empty($pemateriGuruIds)) {
+            $rows = \DB::table('guru')->whereIn('id', $pemateriGuruIds)->pluck('nama')->all();
             $pemateri = array_merge($pemateri, $rows);
         }
         $extra = $r->input('pemateri_names');
@@ -82,12 +90,39 @@ class PengembanganController extends Controller
             'tanggal_selesai' => $data['tanggal_selesai'] ?? null,
         ]);
 
-        // participants arrays: guru_ids[], siswa_ids[]
-        foreach (($r->input('guru_ids',[]) ) as $gid) {
-            PengembanganPeserta::create(['pengembangan_id'=>$p->id,'peserta_type'=>'guru','peserta_id'=>$gid]);
+        $schoolName = \DB::table('sekolah')->value('nama_sekolah') ?? null;
+
+        foreach (($r->input('guru_ids', [])) as $gid) {
+            PengembanganPeserta::create([
+                'pengembangan_id' => $p->id,
+                'peserta_type' => 'guru',
+                'peserta_id' => $gid,
+                'peserta_name' => null,
+                'instansi' => $schoolName,
+            ]);
         }
-        foreach (($r->input('siswa_ids',[]) ) as $sid) {
-            PengembanganPeserta::create(['pengembangan_id'=>$p->id,'peserta_type'=>'siswa','peserta_id'=>$sid]);
+        foreach (($r->input('siswa_ids', [])) as $sid) {
+            PengembanganPeserta::create([
+                'pengembangan_id' => $p->id,
+                'peserta_type' => 'siswa',
+                'peserta_id' => $sid,
+                'peserta_name' => null,
+                'instansi' => $schoolName,
+            ]);
+        }
+        foreach (($r->input('external_participants', [])) as $external) {
+            $name = trim($external['name'] ?? '');
+            $instansi = trim($external['instansi'] ?? '');
+            if ($name === '' && $instansi === '') {
+                continue;
+            }
+            PengembanganPeserta::create([
+                'pengembangan_id' => $p->id,
+                'peserta_type' => 'external',
+                'peserta_id' => null,
+                'peserta_name' => $name ?: null,
+                'instansi' => $instansi ?: null,
+            ]);
         }
 
         return redirect()->route('pengembangan.index')->with('success','Kegiatan dibuat');
@@ -99,12 +134,19 @@ class PengembanganController extends Controller
         $templates = \DB::table('pengembangan_sertifikat_templates')->orderBy('nama')->get();
         // resolve participant names
         $participants = $item->peserta->map(function($p){
-            $name = $p->peserta_type === 'guru' ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+            if ($p->peserta_type === 'guru') {
+                $name = \DB::table('guru')->where('id',$p->peserta_id)->value('nama');
+            } elseif ($p->peserta_type === 'siswa') {
+                $name = \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+            } else {
+                $name = $p->peserta_name ?? 'Peserta Eksternal';
+            }
             return [
                 'id'=>$p->id,
                 'type'=>$p->peserta_type,
                 'peserta_id'=>$p->peserta_id,
                 'name'=>$name,
+                'instansi'=>$p->instansi,
             ];
         })->all();
 
@@ -149,15 +191,23 @@ class PengembanganController extends Controller
             'kegiatan_id'=>'nullable|exists:kegiatan,id',
             'deskripsi'=>'nullable|string',
             'pemateri_guru_ids'=>'nullable|array',
+            'pemateri_guru_ids.*'=>'integer|exists:guru,id',
             'pemateri_names'=>'nullable|string',
             'tanggal_mulai'=>'nullable|date',
             'tanggal_selesai'=>'nullable|date',
+            'guru_ids'=>'nullable|array',
+            'guru_ids.*'=>'integer|exists:guru,id',
+            'siswa_ids'=>'nullable|array',
+            'siswa_ids.*'=>'integer|exists:siswa,id',
+            'external_participants'=>'nullable|array',
+            'external_participants.*.name'=>'required_with:external_participants|string',
+            'external_participants.*.instansi'=>'required_with:external_participants|string',
         ]);
 
         $pemateri = [];
-        $guruIds = $r->input('pemateri_guru_ids', []);
-        if (!empty($guruIds)) {
-            $rows = \DB::table('guru')->whereIn('id', $guruIds)->pluck('nama')->all();
+        $pemateriGuruIds = $r->input('pemateri_guru_ids', []);
+        if (!empty($pemateriGuruIds)) {
+            $rows = \DB::table('guru')->whereIn('id', $pemateriGuruIds)->pluck('nama')->all();
             $pemateri = array_merge($pemateri, $rows);
         }
         $extra = $r->input('pemateri_names');
@@ -183,11 +233,38 @@ class PengembanganController extends Controller
 
         // Replace participants
         \DB::table('pengembangan_peserta')->where('pengembangan_id', $item->id)->delete();
-        foreach (($r->input('guru_ids',[]) ) as $gid) {
-            PengembanganPeserta::create(['pengembangan_id'=>$item->id,'peserta_type'=>'guru','peserta_id'=>$gid]);
+        $schoolName = \DB::table('sekolah')->value('nama_sekolah') ?? null;
+        foreach (($r->input('guru_ids', [])) as $gid) {
+            PengembanganPeserta::create([
+                'pengembangan_id' => $item->id,
+                'peserta_type' => 'guru',
+                'peserta_id' => $gid,
+                'peserta_name' => null,
+                'instansi' => $schoolName,
+            ]);
         }
-        foreach (($r->input('siswa_ids',[]) ) as $sid) {
-            PengembanganPeserta::create(['pengembangan_id'=>$item->id,'peserta_type'=>'siswa','peserta_id'=>$sid]);
+        foreach (($r->input('siswa_ids', [])) as $sid) {
+            PengembanganPeserta::create([
+                'pengembangan_id' => $item->id,
+                'peserta_type' => 'siswa',
+                'peserta_id' => $sid,
+                'peserta_name' => null,
+                'instansi' => $schoolName,
+            ]);
+        }
+        foreach (($r->input('external_participants', [])) as $external) {
+            $name = trim($external['name'] ?? '');
+            $instansi = trim($external['instansi'] ?? '');
+            if ($name === '' && $instansi === '') {
+                continue;
+            }
+            PengembanganPeserta::create([
+                'pengembangan_id' => $item->id,
+                'peserta_type' => 'external',
+                'peserta_id' => null,
+                'peserta_name' => $name ?: null,
+                'instansi' => $instansi ?: null,
+            ]);
         }
 
         return redirect()->route('pengembangan.show', $item->id)->with('success','Kegiatan diperbarui');
@@ -240,7 +317,13 @@ class PengembanganController extends Controller
 
         foreach ($toGenerate as $p) {
             $barcode = (string) Str::uuid();
-            $name = ($p->peserta_type === 'guru') ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+            if ($p->peserta_type === 'guru') {
+                $name = \DB::table('guru')->where('id',$p->peserta_id)->value('nama');
+            } elseif ($p->peserta_type === 'siswa') {
+                $name = \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+            } else {
+                $name = $p->peserta_name ?? 'Peserta Eksternal';
+            }
 
             if ($template && $template->background_image) {
                 $filePath = $certService->generatePdf($template, $item, $name, $barcode, $nomorSertifikat);

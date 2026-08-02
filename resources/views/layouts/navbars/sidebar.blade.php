@@ -226,6 +226,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('kegiatan.index') }}" class="menu-item {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}">
+                    <i class="material-icons">event</i>
+                    <span>Kegiatan</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('ekskul.index') }}" class="menu-item {{ request()->routeIs('ekskul.*') ? 'active' : '' }}">
                     <i class="material-icons">sports_soccer</i>
                     <span>Ekstrakurikuler</span>

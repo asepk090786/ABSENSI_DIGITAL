@@ -77,7 +77,11 @@
                                     <label class="form-label">Pilih Peserta untuk Sertifikat</label>
                                     <select multiple class="form-select" name="participant_ids[]" size="8">
                                         @foreach($participants as $p)
-                                            <option value="{{ $p['id'] }}">{{ $p['name'] }} ({{ strtoupper($p['type']) }})</option>
+                                            <option value="{{ $p['id'] }}">
+                                                {{ $p['name'] }} ({{ strtoupper($p['type']) }})
+                                                @if(!empty($p['instansi'])) - {{ $p['instansi'] }}
+                                                @endif
+                                            </option>
                                         @endforeach
                                     </select>
                                     <small class="text-muted">Pilih beberapa peserta (Ctrl/Cmd + klik) atau biarkan kosong untuk semua.</small>
