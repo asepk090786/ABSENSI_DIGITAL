@@ -1505,6 +1505,7 @@ class AbsensiController extends Controller
             // Update agenda/guru note
             $this->updateAgendaGuruAttendanceNote($absensiKelas);
             $this->flushStudentReportCache();
+            $this->flushExistingAbsensiCache($kelasId, $tanggal);
 
             // Broadcast real-time notification so teacher view can update
             try {
@@ -2164,6 +2165,7 @@ class AbsensiController extends Controller
 
             DB::commit();
             $this->flushStudentReportCache();
+            $this->flushExistingAbsensiCache($validated['kelas_id'], $validated['tanggal']);
 
             $jamBelajarLabels = JamBelajar::whereIn('id', array_values(array_unique($appliedJamIds)))
                 ->orderBy('urutan')
@@ -2693,28 +2695,31 @@ class AbsensiController extends Controller
 
             $existing = [];
             if ($tanggal && $loadExisting) {
-                // find existing absensi_kelas for this kelas and tanggal
-                $absensiKelas = AbsensiKelas::with(['absensiSiswa', 'jamBelajar', 'guru'])
-                    ->where('kelas_id', $kelasId)
-                    ->whereDate('tanggal', $tanggal)
-                    ->get();
+                $cacheKey = $this->buildExistingAbsensiCacheKey($kelasId, $tanggal);
+                $existing = $this->rememberExistingAbsensiCache($cacheKey, 900, function () use ($kelasId, $tanggal) {
+                    $result = [];
+                    $absensiKelas = AbsensiKelas::with(['absensiSiswa', 'jamBelajar', 'guru'])
+                        ->where('kelas_id', $kelasId)
+                        ->whereDate('tanggal', $tanggal)
+                        ->get();
 
-                foreach ($absensiKelas as $ak) {
-                    $jamId = $ak->jam_belajar_id;
-                    $existing[$jamId] = [
-                        'absensi_kelas_id' => $ak->id,
-                        'guru_id' => $ak->guru_id,
-                        'guru_name' => $ak->guru->nama ?? null,
-                        'jam_urutan' => $ak->jamBelajar->urutan ?? null,
-                        'statuses' => [],
-                    ];
-                    foreach ($ak->absensiSiswa as $asw) {
-                        $existing[$jamId]['statuses'][$asw->siswa_id] = $asw->status;
+                    foreach ($absensiKelas as $ak) {
+                        $jamId = $ak->jam_belajar_id;
+                        $result[$jamId] = [
+                            'absensi_kelas_id' => $ak->id,
+                            'guru_id' => $ak->guru_id,
+                            'guru_name' => $ak->guru->nama ?? null,
+                            'jam_urutan' => $ak->jamBelajar->urutan ?? null,
+                            'statuses' => [],
+                        ];
+                        foreach ($ak->absensiSiswa as $asw) {
+                            $result[$jamId]['statuses'][$asw->siswa_id] = $asw->status;
+                        }
                     }
-                }
 
-                // If the requester is Guru Piket (or Admin/Kepala), include a daily aggregated
-                // snapshot so piket view can prefill statuses from combined class absensi.
+                    return $result;
+                });
+
                 try {
                     $user = auth()->user();
                     $isAdminOrKepala = $user ? $user->hasAnyRole(['Admin', 'Kepala Sekolah']) : false;
@@ -2731,21 +2736,7 @@ class AbsensiController extends Controller
                     }
 
                     if ($isGuruPiket || $isAdminOrKepala) {
-                        // build aggregated daily status per siswa using existing absensi entries
-                        $dailyRows = $this->getDailyStudentReportRows($tanggal, $kelasId, DB::table('tahun_ajaran')->where('is_active',1)->first(), DB::table('semester')->where('is_active',1)->first());
-                        $dailyStatuses = [];
-                        foreach ($dailyRows as $dr) {
-                            // map status labels to normalized values
-                            $norm = strtolower((string) $dr->status);
-                            if ($norm === 'hadir') $norm = 'hadir';
-                            elseif (in_array($norm, ['terlambat','telat'], true)) $norm = 'terlambat';
-                            elseif ($norm === 'sakit') $norm = 'sakit';
-                            elseif (in_array($norm, ['izin','ijin'], true)) $norm = 'izin';
-                            else $norm = 'alpa';
-                            $dailyStatuses[$dr->siswa_id] = $norm;
-                        }
-
-                        // insert with a special key so front-end can prefer this (jam_urutan = 0)
+                        $dailyStatuses = $this->buildDailyExistingStatuses($existing);
                         $existing['daily'] = [
                             'absensi_kelas_id' => null,
                             'guru_id' => null,
@@ -3398,6 +3389,76 @@ class AbsensiController extends Controller
         }
 
         return Cache::remember($cacheKey, $ttlSeconds, $callback);
+    }
+
+    private function buildExistingAbsensiCacheKey(int $kelasId, string $tanggal): string
+    {
+        return 'absensi:existing:kelas:' . $kelasId . ':tanggal:' . $tanggal;
+    }
+
+    private function rememberExistingAbsensiCache(string $cacheKey, int $ttlSeconds, \Closure $callback)
+    {
+        $store = Cache::getStore();
+        if (method_exists($store, 'supportsTags') && $store->supportsTags()) {
+            return Cache::tags(['absensi_existing'])->remember($cacheKey, $ttlSeconds, $callback);
+        }
+
+        return Cache::remember($cacheKey, $ttlSeconds, $callback);
+    }
+
+    private function flushExistingAbsensiCache(int $kelasId, string $tanggal): void
+    {
+        try {
+            $store = Cache::getStore();
+            if (method_exists($store, 'supportsTags') && $store->supportsTags()) {
+                Cache::tags(['absensi_existing'])->flush();
+                return;
+            }
+
+            Cache::forget($this->buildExistingAbsensiCacheKey($kelasId, $tanggal));
+        } catch (\Throwable $e) {
+            Log::warning('absensi.existing_cache.flush_failed', ['kelas_id' => $kelasId, 'tanggal' => $tanggal, 'error' => $e->getMessage()]);
+        }
+    }
+
+    private function buildDailyExistingStatuses(array $existingPerJam): array
+    {
+        $dailyStatuses = [];
+        foreach ($existingPerJam as $entry) {
+            if (!isset($entry['statuses']) || !is_array($entry['statuses'])) {
+                continue;
+            }
+            foreach ($entry['statuses'] as $siswaId => $status) {
+                $norm = strtolower(trim((string) $status));
+                if ($norm === '') {
+                    continue;
+                }
+                if (!isset($dailyStatuses[$siswaId])) {
+                    $dailyStatuses[$siswaId] = $norm;
+                    continue;
+                }
+                $current = $dailyStatuses[$siswaId];
+                $dailyStatuses[$siswaId] = $this->pickWorstAttendanceStatus($current, $norm);
+            }
+        }
+
+        return $dailyStatuses;
+    }
+
+    private function pickWorstAttendanceStatus(string $a, string $b): string
+    {
+        $rank = [
+            'hadir' => 1,
+            'terlambat' => 2,
+            'sakit' => 3,
+            'izin' => 4,
+            'alpa' => 5,
+        ];
+
+        $aNorm = array_key_exists($a, $rank) ? $a : 'alpa';
+        $bNorm = array_key_exists($b, $rank) ? $b : 'alpa';
+
+        return $rank[$aNorm] >= $rank[$bNorm] ? $aNorm : $bNorm;
     }
 
     private function generateVerificationCode(string $guruKode = null): string

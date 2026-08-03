@@ -277,16 +277,11 @@
                             @if(auth()->user()->guru_id && !($isAdminOrKepala ?? false))
                             <div class="col-md-6">
                                 <div class="form-check form-switch mt-3 pt-2">
-                                    <input class="form-check-input" type="checkbox" id="ambilAbsensiToggle" name="ambil_absensi_dari_kelas" value="1" {{ old('ambil_absensi_dari_kelas') ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="ambilAbsensiToggle">
-                                        Ambil Absensi dari Kelas
-                                    </label>
+                                    <input class="form-check-input" type="checkbox" id="loadClassAttendanceToggle" name="load_class_attendance" value="1" {{ old('load_class_attendance') ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="loadClassAttendanceToggle">Ambil data absensi kelas</label>
                                 </div>
                                 <div class="form-text text-muted">
-                                    Jika aktif, sistem akan memuat data absensi kelas yang sudah diinput oleh siswa dengan jabatan.
-                                </div>
-                                <div class="form-text text-muted mt-1">
-                                    Jika nonaktif, guru akan menginput absensi sendiri secara manual. Pada mode manual, guru hanya dapat menyimpan jika memiliki jadwal mengajar di kelas ini pada tanggal tersebut.
+                                    Jika aktif, tabel kehadiran akan terisi otomatis dari absensi kelas yang sudah diisi oleh siswa pada tanggal ini.
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1035,9 +1030,21 @@
 
         // When guru, kelas or tanggal changes, re-render jam options
         if (guruSelect) guruSelect.addEventListener('change', function(){ renderJamOptionsByGuru(); });
-        if (tanggalInput) tanggalInput.addEventListener('change', function(){ renderJamOptionsByGuru(); });
+        if (tanggalInput) tanggalInput.addEventListener('change', function(){
+            renderJamOptionsByGuru();
+            if (loadClassAttendanceToggle && loadClassAttendanceToggle.checked && kelasSelect && kelasSelect.value) {
+                loadSiswaByKelas(kelasSelect.value);
+            }
+        });
 
-        var ambilAbsensiToggle = document.getElementById('ambilAbsensiToggle');
+        var loadClassAttendanceToggle = document.getElementById('loadClassAttendanceToggle');
+        if (loadClassAttendanceToggle) {
+            loadClassAttendanceToggle.addEventListener('change', function() {
+                if (kelasSelect && kelasSelect.value) {
+                    loadSiswaByKelas(kelasSelect.value);
+                }
+            });
+        }
         var viewListBtn = document.getElementById('viewListBtn');
         var viewGridBtn = document.getElementById('viewGridBtn');
         var siswaGrid = document.getElementById('siswaGrid');
@@ -1083,6 +1090,7 @@
         var verificationTimerInterval = null;
         var verificationIsRefreshing = false;
         window._pendingAttendanceUpdates = window._pendingAttendanceUpdates || {};
+        window._attendanceStatuses = window._attendanceStatuses || {};
 
         function formatCountdown(seconds) {
             var mins = Math.floor(seconds / 60);
@@ -1425,13 +1433,6 @@
             });
         }
 
-        if (ambilAbsensiToggle) {
-            ambilAbsensiToggle.addEventListener('change', function() {
-                if (kelasSelect && kelasSelect.value) {
-                    loadSiswaByKelas(kelasSelect.value);
-                }
-            });
-        }
         if (verificationToggle) {
             verificationToggle.addEventListener('change', updateVerificationUi);
         }
@@ -1628,7 +1629,7 @@
         function loadSiswaByKelas(kelasId) {
             console.log('Fetching siswa for kelas:', kelasId);
             var tanggalVal = tanggalInput ? tanggalInput.value : '';
-            var loadExisting = ambilAbsensiToggle ? ambilAbsensiToggle.checked : false;
+            var loadExisting = loadClassAttendanceToggle ? loadClassAttendanceToggle.checked : false;
             const url = '{{ route("absensi.get-siswa") }}?kelas_id=' + kelasId + (tanggalVal ? '&tanggal=' + tanggalVal : '') + '&load_existing=' + (loadExisting ? '1' : '0');
             console.log('Fetch URL:', url, 'loadExisting:', loadExisting);
             
@@ -1776,99 +1777,110 @@
     function applyExistingAttendanceStatuses(existingData) {
         var statuses = getPreferredExistingStatuses(existingData || window._existingAbsensiCache || {});
         var appliedAny = false;
+
+        function findPreferredRadio(groupName, value) {
+            var radios = Array.from(document.getElementsByName(groupName)).filter(function(radio) {
+                return !radio.disabled;
+            });
+            if (!radios.length) return null;
+            return radios.find(function(radio) { return radio.value === value && isVisibleElement(radio); })
+                || radios.find(function(radio) { return radio.value === value; })
+                || radios.find(function(radio) { return isVisibleElement(radio); })
+                || radios[0];
+        }
+
         Object.keys(statuses).forEach(function(sid){
             var status = statuses[sid];
             if (!status) return;
             var norm = normalizeAttendanceStatus(status);
-            var radios = Array.from(document.querySelectorAll('input.status-radio[data-siswa-id="'+sid+'"]')).filter(function(radio){ return radio.value === norm; });
-            if (radios.length === 0) {
-                radios = Array.from(document.querySelectorAll('input.status-radio[name="absensi_siswa['+sid+']"][value="'+norm+'"]'));
+            var groupName = 'absensi_siswa[' + sid + ']';
+            var radio = findPreferredRadio(groupName, norm);
+            if (!radio) return;
+
+            if (!radio.checked) {
+                radio.checked = true;
             }
-            if (radios.length === 0) {
-                radios = Array.from(document.querySelectorAll('input.status-radio')).filter(function(radio){
-                    return radio.name === 'absensi_siswa['+sid+']' && radio.value === norm;
-                });
-            }
-            radios.forEach(function(radio){
-                if (!radio.checked) {
-                    radio.checked = true;
-                    radio.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                var row = radio.closest('tr');
-                if (row) updateStatusBadge(norm, row);
-                var label = radio.closest('label');
-                if (label) label.classList.add('active');
-                appliedAny = true;
-            });
+            window._attendanceStatuses[sid] = norm;
+
+            syncStatusButtonStates(groupName);
+            var row = radio.closest('tr');
+            if (row) updateStatusBadge(norm, row);
+            appliedAny = true;
         });
+
         if (appliedAny) {
             refreshAllStatusButtonStates();
         }
     }
 
+    function renderListSiswaItems(data, existingStatuses, isTableMode) {
+        var tbody = document.getElementById('siswaTableBody');
+        if (!tbody) return;
+
+        var html = '';
+        data.forEach(function(siswa, index){
+            var selectedStatus = window._attendanceStatuses[siswa.id] || (existingStatuses[siswa.id] ? normalizeAttendanceStatus(existingStatuses[siswa.id]) : null);
+            var disabledAttr = isTableMode ? '' : ' disabled';
+            html += '<tr data-siswa-id="' + siswa.id + '">';
+            html += '<td class="text-center">' + (index+1) + '</td>';
+            html += '<td class="text-center">' + escapeHtml(siswa.nis || '-') + '</td>';
+            html += '<td class="text-center">' + escapeHtml(siswa.nisn || '-') + '</td>';
+            html += '<td class="text-center">' + (siswa.foto_url ? '<img src="' + escapeHtml(siswa.foto_url) + '" alt="Foto ' + escapeHtml(siswa.nama || '-') + '" class="student-photo">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>') + '</td>';
+            html += '<td>' + escapeHtml(siswa.nama || '-') + '</td>';
+            html += '<td class="text-center">' + escapeHtml(siswa.jenis_kelamin || '-') + '</td>';
+            ['hadir','terlambat','sakit','izin','alpa'].forEach(function(val){
+                html += '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa['+siswa.id+']" value="'+val+'" data-siswa-id="'+siswa.id+'"' + (selectedStatus === val ? ' checked' : '') + disabledAttr + '></td>';
+            });
+            html += '<td><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan (opsional)"' + disabledAttr + '></td>';
+            html += '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderGridSiswaItems(data, existingStatuses, isGridMode) {
+        if (!siswaGrid) return;
+
+        siswaGrid.innerHTML = '';
+        data.forEach(function(siswa){
+            var selectedStatus = window._attendanceStatuses[siswa.id] || (existingStatuses[siswa.id] ? normalizeAttendanceStatus(existingStatuses[siswa.id]) : null);
+            var disabledAttr = isGridMode ? '' : ' disabled';
+            var foto = siswa.foto_url ? ('<img src="'+escapeHtml(siswa.foto_url)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:90px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"><i class="ti ti-user"></i></div>';
+            var card = document.createElement('div');
+            card.className = 'col-6 col-sm-4 col-md-3';
+            card.innerHTML = '<div class="card student-card p-2 h-100" data-siswa-id="'+siswa.id+'">' +
+                '<div class="d-flex flex-column align-items-center text-center">' + foto +
+                '<div class="mt-2 fw-semibold">'+escapeHtml(siswa.nama || '-')+'</div>' +
+                '<div class="text-muted small">'+escapeHtml(siswa.nis || '')+'</div>' +
+                '</div>' +
+                '<div class="mt-2 d-flex justify-content-around">' +
+                    '<label class="btn btn-sm btn-outline-success"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="hadir" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'hadir' ? ' checked' : '') + disabledAttr + '>H</label>' +
+                    '<label class="btn btn-sm btn-outline-warning"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="terlambat" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'terlambat' ? ' checked' : '') + disabledAttr + '>T</label>' +
+                    '<label class="btn btn-sm btn-outline-secondary"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="sakit" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'sakit' ? ' checked' : '') + disabledAttr + '>S</label>' +
+                '</div>' +
+                '<div class="mt-2 d-flex justify-content-around">' +
+                    '<label class="btn btn-sm btn-outline-info"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="izin" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'izin' ? ' checked' : '') + disabledAttr + '>I</label>' +
+                    '<label class="btn btn-sm btn-outline-danger"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="alpa" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'alpa' ? ' checked' : '') + disabledAttr + '>A</label>' +
+                '</div>' +
+                '<div class="mt-2"><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan"' + disabledAttr + '></div>' +
+            '</div>';
+            siswaGrid.appendChild(card);
+        });
+    }
+
     function renderSiswaItems() {
         var data = window._siswaCache || [];
         var existing = window._existingAbsensiCache || {};
-        // render table body
-        var tbody = document.getElementById('siswaTableBody');
-        if (tbody) {
-            var html = '';
-            data.forEach(function(siswa, index){
-                html += '<tr data-siswa-id="' + siswa.id + '">';
-                html += '<td class="text-center">' + (index+1) + '</td>';
-                html += '<td class="text-center">' + escapeHtml(siswa.nis || '-') + '</td>';
-                html += '<td class="text-center">' + escapeHtml(siswa.nisn || '-') + '</td>';
-                html += '<td class="text-center">' + (siswa.foto_url ? '<img src="' + escapeHtml(siswa.foto_url) + '" alt="Foto ' + escapeHtml(siswa.nama || '-') + '" class="student-photo">' : '<div class="student-photo-placeholder"><i class="ti ti-user"></i></div>') + '</td>';
-                html += '<td>' + escapeHtml(siswa.nama || '-') + '</td>';
-                html += '<td class="text-center">' + escapeHtml(siswa.jenis_kelamin || '-') + '</td>';
-                ['hadir','terlambat','sakit','izin','alpa'].forEach(function(val){
-                    html += '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa['+siswa.id+']" value="'+val+'" data-siswa-id="'+siswa.id+'"></td>';
-                });
-                html += '<td><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan (opsional)"></td>';
-                html += '</tr>';
-            });
-            tbody.innerHTML = html;
-        }
+        var existingStatuses = getPreferredExistingStatuses(existing);
+        var isGridMode = currentView === 'grid';
+        var isTableMode = !isGridMode;
 
-        // render grid cards
-        if (siswaGrid) {
-            siswaGrid.innerHTML = '';
-            data.forEach(function(siswa, index){
-                var foto = siswa.foto_url ? ('<img src="'+escapeHtml(siswa.foto_url)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:90px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"><i class="ti ti-user"></i></div>';
-                var card = document.createElement('div');
-                card.className = 'col-6 col-sm-4 col-md-3';
-                card.innerHTML = '<div class="card student-card p-2 h-100" data-siswa-id="'+siswa.id+'">' +
-                    '<div class="d-flex flex-column align-items-center text-center">' + foto +
-                    '<div class="mt-2 fw-semibold">'+escapeHtml(siswa.nama || '-')+'</div>' +
-                    '<div class="text-muted small">'+escapeHtml(siswa.nis || '')+'</div>' +
-                    '</div>' +
-                    '<div class="mt-2 d-flex justify-content-around">' +
-                        '<label class="btn btn-sm btn-outline-success"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="hadir" data-siswa-id="'+siswa.id+'">H</label>' +
-                        '<label class="btn btn-sm btn-outline-warning"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="terlambat" data-siswa-id="'+siswa.id+'">T</label>' +
-                        '<label class="btn btn-sm btn-outline-secondary"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="sakit" data-siswa-id="'+siswa.id+'">S</label>' +
-                    '</div>' +
-                    '<div class="mt-2 d-flex justify-content-around">' +
-                        '<label class="btn btn-sm btn-outline-info"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="izin" data-siswa-id="'+siswa.id+'">I</label>' +
-                        '<label class="btn btn-sm btn-outline-danger"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="alpa" data-siswa-id="'+siswa.id+'">A</label>' +
-                    '</div>' +
-                    '<div class="mt-2"><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan"></div>' +
-                '</div>';
-                siswaGrid.appendChild(card);
-            });
-        }
+        renderListSiswaItems(data, existingStatuses, isTableMode);
+        renderGridSiswaItems(data, existingStatuses, isGridMode);
 
         bindStatusRadioHandlers();
         refreshAllStatusButtonStates();
 
-        // prefill existing absensi if present
-        try {
-            setTimeout(function() {
-                applyExistingAttendanceStatuses(existing);
-                applyPendingAttendanceUpdates();
-            }, 20);
-        } catch (e) { console.warn('Prefill error', e); }
-
-        // Attach change listeners for status radios for table/grid state updates
         document.querySelectorAll('.status-radio').forEach(function(radio){
             radio.removeEventListener('change', statusRadioHandler);
             radio.addEventListener('change', statusRadioHandler);
@@ -1877,6 +1889,10 @@
     }
 
     function statusRadioHandler() {
+        var siswaId = this.dataset.siswaId || this.name.replace(/^absensi_siswa\[(\d+)\]$/, '$1');
+        if (siswaId) {
+            window._attendanceStatuses[siswaId] = this.value;
+        }
         var row = this.closest('tr');
         if (row) updateStatusBadge(this.value, row);
         syncStatusButtonStates(this.name);
