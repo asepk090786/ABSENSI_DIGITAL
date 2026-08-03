@@ -258,7 +258,7 @@
             gap: 0.75rem;
         }
         .topbar-toggle {
-            display: none;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             width: 2.25rem;
@@ -1254,6 +1254,39 @@
 
 <script>
     // Sidebar toggle functionality
+    const SIDEBAR_STATE_KEY = 'simadis_sidebar_collapsed';
+
+    function setSidebarState(collapsed) {
+        try {
+            window.localStorage.setItem(SIDEBAR_STATE_KEY, collapsed ? '1' : '0');
+        } catch (e) {
+            console.warn('Cannot persist sidebar state', e);
+        }
+    }
+
+    function getSidebarState() {
+        try {
+            return window.localStorage.getItem(SIDEBAR_STATE_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function applySidebarState() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        if (!sidebar || !mainContent) return;
+
+        const collapsed = getSidebarState();
+        if (window.innerWidth >= 992) {
+            sidebar.classList.toggle('collapsed', collapsed);
+            mainContent.classList.toggle('sidebar-hidden', collapsed);
+        } else {
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-hidden');
+        }
+    }
+
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
@@ -1263,8 +1296,10 @@
             sidebar.classList.toggle('mobile-open');
             overlay.classList.toggle('show');
         } else {
+            const isCollapsed = !sidebar.classList.contains('collapsed');
             sidebar.classList.toggle('collapsed');
             mainContent.classList.toggle('sidebar-hidden');
+            setSidebarState(isCollapsed);
         }
     }
 
@@ -1280,11 +1315,13 @@
         if (window.innerWidth >= 992) {
             document.getElementById('sidebarOverlay').classList.remove('show');
             document.getElementById('sidebar').classList.remove('mobile-open');
+            applySidebarState();
         }
     });
 
     // Initialize Toast and Topbar interactions
     document.addEventListener('DOMContentLoaded', function() {
+        applySidebarState();
         // Manual collapse toggle for sidebar nav to fix freeze issue
         document.querySelectorAll('.sidebar-nav .nav-link[data-bs-toggle="collapse"]').forEach(function(link) {
             link.addEventListener('click', function(e) {
