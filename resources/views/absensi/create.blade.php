@@ -1655,8 +1655,10 @@
                                 filterSiswaRows(this.value);
                             });
                         }
-                        renderSiswaItems();
-                        applyPendingAttendanceUpdates();
+                        setTimeout(function() {
+                            applyExistingAttendanceStatuses(window._existingAbsensiCache);
+                            applyPendingAttendanceUpdates();
+                        }, 50);
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
                         siswaContainer.style.display = 'block';
@@ -1729,6 +1731,81 @@
         if (window._siswaCache) renderSiswaItems();
     }
 
+    function getPreferredExistingStatuses(existingData) {
+        if (!existingData || typeof existingData !== 'object') {
+            return {};
+        }
+
+        if (existingData.daily && existingData.daily.statuses && Object.keys(existingData.daily.statuses).length > 0) {
+            return existingData.daily.statuses;
+        }
+
+        var selectedJamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : '';
+        if (selectedJamId && existingData[selectedJamId] && existingData[selectedJamId].statuses) {
+            return existingData[selectedJamId].statuses;
+        }
+
+        var selectedGuruId = document.getElementById('guru_id') ? document.getElementById('guru_id').value : '';
+        if (selectedGuruId && selectedGuruId !== 'all') {
+            for (var jid in existingData) {
+                if (existingData[jid] && String(existingData[jid].guru_id || '') === String(selectedGuruId)) {
+                    return existingData[jid].statuses || {};
+                }
+            }
+        }
+
+        var lowest = null;
+        var lowestJ = null;
+        for (var jid2 in existingData) {
+            if (!existingData[jid2]) continue;
+            var ur = parseInt(existingData[jid2].jam_urutan, 10);
+            if (isNaN(ur)) ur = 999;
+            if (lowest === null || ur < lowest) {
+                lowest = ur;
+                lowestJ = jid2;
+            }
+        }
+
+        if (lowestJ && existingData[lowestJ] && existingData[lowestJ].statuses) {
+            return existingData[lowestJ].statuses;
+        }
+
+        return {};
+    }
+
+    function applyExistingAttendanceStatuses(existingData) {
+        var statuses = getPreferredExistingStatuses(existingData || window._existingAbsensiCache || {});
+        var appliedAny = false;
+        Object.keys(statuses).forEach(function(sid){
+            var status = statuses[sid];
+            if (!status) return;
+            var norm = normalizeAttendanceStatus(status);
+            var radios = Array.from(document.querySelectorAll('input.status-radio[data-siswa-id="'+sid+'"]')).filter(function(radio){ return radio.value === norm; });
+            if (radios.length === 0) {
+                radios = Array.from(document.querySelectorAll('input.status-radio[name="absensi_siswa['+sid+']"][value="'+norm+'"]'));
+            }
+            if (radios.length === 0) {
+                radios = Array.from(document.querySelectorAll('input.status-radio')).filter(function(radio){
+                    return radio.name === 'absensi_siswa['+sid+']' && radio.value === norm;
+                });
+            }
+            radios.forEach(function(radio){
+                if (!radio.checked) {
+                    radio.checked = true;
+                    radio.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                var row = radio.closest('tr');
+                if (row) updateStatusBadge(norm, row);
+                var label = radio.closest('label');
+                if (label) label.classList.add('active');
+                appliedAny = true;
+            });
+        });
+        if (appliedAny) {
+            refreshAllStatusButtonStates();
+        }
+    }
+
     function renderSiswaItems() {
         var data = window._siswaCache || [];
         var existing = window._existingAbsensiCache || {};
@@ -1785,37 +1862,10 @@
 
         // prefill existing absensi if present
         try {
-            var preferJamId = null;
-            var selGuruElem = document.getElementById('guru_id');
-            var selGuru = selGuruElem ? selGuruElem.value : '';
-            if (selGuru && selGuru !== 'all') {
-                for (var jid in existing) { if (String(existing[jid].guru_id) === String(selGuru)) { preferJamId = jid; break; } }
-            }
-            if (!preferJamId) {
-                var lowest = null; var lowestJ = null;
-                for (var jid in existing) { var ur = existing[jid].jam_urutan || 999; if (lowest===null||ur<lowest){lowest=ur;lowestJ=jid;} }
-                preferJamId = lowestJ;
-            }
-            if (preferJamId && existing[preferJamId]) {
-                var map = existing[preferJamId].statuses || {};
-                Object.keys(map).forEach(function(sid){
-                    var status = map[sid]; if (!status) return;
-                    var norm = status.toLowerCase(); if (['terlambat','telat'].includes(norm)) norm='terlambat'; if (['izin','ijin'].includes(norm)) norm='izin'; if (!['hadir','terlambat','sakit','izin','alpa'].includes(norm)) norm='alpa';
-                    var selector = '[data-siswa-id="'+sid+'"]';
-                    // table radios
-                    var tRow = document.querySelector('#siswaTableBody tr'+selector);
-                    if (tRow) {
-                        var r = tRow.querySelector('.status-radio[value="'+norm+'"]'); if (r) { r.checked=true; updateStatusBadge(norm, tRow); }
-                    }
-                    // grid radios
-                    var gCard = document.querySelector('.student-card'+selector);
-                    if (gCard) {
-                        var rg = gCard.querySelector('.status-radio[value="'+norm+'"]'); if (rg) rg.checked=true;
-                    }
-                });
-                refreshAllStatusButtonStates();
+            setTimeout(function() {
+                applyExistingAttendanceStatuses(existing);
                 applyPendingAttendanceUpdates();
-            }
+            }, 20);
         } catch (e) { console.warn('Prefill error', e); }
 
         // Attach change listeners for status radios for table/grid state updates
