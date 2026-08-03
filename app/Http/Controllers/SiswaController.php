@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Siswa;
 use App\Models\Kelas;
@@ -178,6 +179,7 @@ class SiswaController extends Controller
             'username' => 'required|string|max:255|unique:users,username,' . $userId,
             'password' => 'nullable|string|min:6|confirmed',
             'jabatan_kelas' => 'nullable|in:ketua,wakil,sekretaris,bendahara',
+            'foto' => 'sometimes|nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $roleSiswa = Role::where('role_name', 'Siswa')->first();
@@ -214,6 +216,13 @@ class SiswaController extends Controller
 
         if (! empty($validated['password'])) {
             $userData['password'] = Hash::make($validated['password']);
+        }
+
+        if ($request->hasFile('foto')) {
+            if ($user && $user->foto && Storage::disk('public')->exists($user->foto)) {
+                Storage::disk('public')->delete($user->foto);
+            }
+            $userData['foto'] = $request->file('foto')->store('user_photos', 'public');
         }
 
         if ($user) {

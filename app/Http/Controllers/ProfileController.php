@@ -46,9 +46,10 @@ class ProfileController extends Controller
             'email' => ['sometimes', 'nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'jenis_kelamin' => ['sometimes', 'nullable', 'in:L,P'],
             'foto' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'foto_data' => ['sometimes', 'nullable', 'string'],
         ]);
 
-        // Handle photo upload
+        // Handle photo upload from file input or base64 data
         if ($request->hasFile('foto')) {
             // Delete old photo if exists
             if ($user->foto && Storage::disk('public')->exists($user->foto)) {
@@ -57,6 +58,22 @@ class ProfileController extends Controller
 
             $path = $request->file('foto')->store('user_photos', 'public');
             $user->foto = $path;
+        } elseif (! empty($validated['foto_data'])) {
+            if (preg_match('/^data:image\/(\w+);base64,(.*)$/', $validated['foto_data'], $matches)) {
+                $extension = strtolower($matches[1]);
+                $base64 = $matches[2];
+                $decoded = base64_decode(str_replace(' ', '+', $base64));
+
+                if ($decoded !== false) {
+                    if ($user->foto && Storage::disk('public')->exists($user->foto)) {
+                        Storage::disk('public')->delete($user->foto);
+                    }
+
+                    $filename = 'user_photos/' . uniqid('profile_', true) . '.' . ($extension === 'jpeg' ? 'jpg' : $extension);
+                    Storage::disk('public')->put($filename, $decoded);
+                    $user->foto = $filename;
+                }
+            }
         }
 
         if ($request->has('name')) {

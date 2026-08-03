@@ -72,8 +72,15 @@
 
                         <div class="form-group{{ $errors->has('foto') ? ' has-danger' : '' }}">
                             <label>Foto Profile</label>
-                            <input type="file" name="foto" class="form-control{{ $errors->has('foto') ? ' is-invalid' : '' }}" accept="image/*" onchange="previewImage(event)">
-                            <small class="form-text text-muted">Format: JPG, PNG. Maksimal 2MB</small>
+                            <input type="file" id="fotoInput" name="foto" class="form-control{{ $errors->has('foto') ? ' is-invalid' : '' }}" accept="image/*" capture="environment" onchange="previewImage(event)">
+                            <input type="hidden" id="fotoDataInput" name="foto_data" value="">
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="cameraCaptureBtn" data-bs-toggle="modal" data-bs-target="#cameraModal">
+                                    <i class="ti ti-camera me-1"></i> Ambil dari Kamera
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Format: JPG, PNG. Maksimal 2MB. Setelah mengambil foto, tekan tombol Save untuk menyimpan ke server. Refresh tanpa menyimpan akan mengembalikan foto lama.</small>
+                            <div id="fotoStatus" class="form-text text-success" style="display:none;">Foto siap disimpan. Tekan tombol Save untuk menyimpan.</div>
                             @include('alerts.feedback', ['field' => 'foto'])
                         </div>
 
@@ -176,19 +183,262 @@
     </div>
 
     <script>
+        let cameraStream = null;
+        let cameraReady = false;
+        let photoInput = null;
+        let fotoDataInput = null;
+        let previewImageEl = null;
+        let fotoStatusEl = null;
+        let cameraModalEl = null;
+        let cameraVideo = null;
+        let cameraCanvas = null;
+        let keepCapturedPhoto = false;
+
         function previewImage(event) {
             const input = event.target;
             const preview = document.getElementById('preview-image');
-            
-            if (input.files && input.files[0]) {
+            const file = input.files && input.files[0] ? input.files[0] : null;
+
+            if (file) {
                 const reader = new FileReader();
-                
                 reader.onload = function(e) {
                     preview.src = e.target.result;
+                    if (fotoStatusEl) {
+                        fotoStatusEl.style.display = 'block';
+                        fotoStatusEl.textContent = 'Foto siap disimpan. Tekan tombol Save untuk menyimpan.';
+                    }
                 }
-                
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
+                if (fotoDataInput) {
+                    fotoDataInput.value = '';
+                }
+            } else if (fotoDataInput && fotoDataInput.value) {
+                preview.src = fotoDataInput.value;
+                if (fotoStatusEl) {
+                    fotoStatusEl.style.display = 'block';
+                    fotoStatusEl.textContent = 'Foto siap disimpan. Tekan tombol Save untuk menyimpan.';
+                }
+            } else {
+                if (previewImageEl) {
+                    previewImageEl.src = previewImageEl.dataset.defaultSrc || previewImageEl.src;
+                }
+                if (fotoStatusEl) {
+                    fotoStatusEl.style.display = 'none';
+                }
             }
         }
+
+        function startCamera() {
+            cameraReady = false;
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Browser Anda tidak mendukung akses kamera.');
+                return;
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+                .then(function(stream) {
+                    cameraStream = stream;
+                    cameraVideo.srcObject = stream;
+                    cameraVideo.onloadedmetadata = function() {
+                        cameraReady = true;
+                        const playPromise = cameraVideo.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(function(error) {
+                                if (error.name !== 'AbortError') {
+                                    console.error('Camera play failed:', error);
+                                }
+                            });
+                        }
+                    };
+                    cameraVideo.oncanplay = function() {
+                        if (!cameraReady) {
+                            cameraReady = true;
+                        }
+                    };
+                })
+                .catch(function(error) {
+                    console.error('Camera access error:', error);
+                    alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+                    const modal = bootstrap.Modal.getOrCreateInstance(cameraModalEl);
+                    if (modal) modal.hide();
+                });
+        }
+
+        function stopCamera() {
+            cameraReady = false;
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(function(track) {
+                    track.stop();
+                });
+                cameraStream = null;
+            }
+            if (cameraVideo) {
+                cameraVideo.onloadedmetadata = null;
+                cameraVideo.oncanplay = null;
+                cameraVideo.pause();
+                cameraVideo.srcObject = null;
+            }
+        }
+
+        let capturedPhotoURL = null;
+        let cameraCapturePreview = null;
+        let retakePhotoBtn = null;
+        let usePhotoBtn = null;
+
+        function updateCameraModalState(captured) {
+            if (!cameraCapturePreview || !retakePhotoBtn || !usePhotoBtn) return;
+            cameraCapturePreview.style.display = captured ? 'block' : 'none';
+            retakePhotoBtn.style.display = captured ? 'inline-block' : 'none';
+            usePhotoBtn.style.display = captured ? 'inline-block' : 'none';
+            cameraVideo.style.display = captured ? 'none' : 'block';
+        }
+
+        function resetCameraModal() {
+            cameraReady = false;
+            if (capturedPhotoURL) {
+                URL.revokeObjectURL(capturedPhotoURL);
+                capturedPhotoURL = null;
+            }
+            if (cameraCapturePreview) {
+                cameraCapturePreview.src = '';
+            }
+            if (!keepCapturedPhoto && fotoDataInput) {
+                fotoDataInput.value = '';
+            }
+            if (!keepCapturedPhoto && photoInput) {
+                photoInput.value = '';
+                previewImage({ target: photoInput });
+            }
+            updateCameraModalState(false);
+        }
+
+        function takePhoto() {
+            if (!cameraVideo || !cameraCanvas) return;
+            if (!cameraReady || cameraVideo.videoWidth === 0 || cameraVideo.videoHeight === 0) {
+                alert('Kamera belum siap. Tunggu beberapa detik lalu coba lagi.');
+                return;
+            }
+
+            const context = cameraCanvas.getContext('2d');
+            const width = cameraVideo.videoWidth || 640;
+            const height = cameraVideo.videoHeight || 480;
+            cameraCanvas.width = width;
+            cameraCanvas.height = height;
+            context.drawImage(cameraVideo, 0, 0, width, height);
+
+            cameraCanvas.toBlob(function(blob) {
+                if (!blob) return;
+                    const reader = new FileReader();
+                reader.onloadend = function() {
+                    const result = reader.result;
+                    if (fotoDataInput) {
+                        fotoDataInput.value = result;
+                    }
+                    if (previewImageEl) {
+                        previewImageEl.src = result;
+                    }
+                    if (cameraCapturePreview) {
+                        if (capturedPhotoURL) {
+                            URL.revokeObjectURL(capturedPhotoURL);
+                        }
+                        capturedPhotoURL = URL.createObjectURL(blob);
+                        cameraCapturePreview.src = capturedPhotoURL;
+                    }
+                    if (fotoStatusEl) {
+                        fotoStatusEl.style.display = 'block';
+                        fotoStatusEl.textContent = 'Foto siap disimpan. Tekan tombol Save untuk menyimpan.';
+                    }
+                    keepCapturedPhoto = true;
+                    updateCameraModalState(true);
+                };
+                reader.readAsDataURL(blob);
+            }, 'image/jpeg', 0.92);
+        }
+
+        function retakePhoto() {
+            if (photoInput) {
+                photoInput.value = '';
+            }
+            if (fotoDataInput) {
+                fotoDataInput.value = '';
+            }
+            if (previewImageEl) {
+                previewImageEl.src = previewImageEl.dataset.defaultSrc || previewImageEl.src;
+            }
+            if (cameraCapturePreview) {
+                cameraCapturePreview.src = '';
+            }
+            if (fotoStatusEl) {
+                fotoStatusEl.style.display = 'none';
+            }
+            keepCapturedPhoto = false;
+            resetCameraModal();
+            startCamera();
+        }
+
+        function useCapturedPhoto() {
+            if (fotoStatusEl) {
+                fotoStatusEl.style.display = 'block';
+                fotoStatusEl.textContent = 'Foto siap disimpan. Tekan tombol Save untuk menyimpan.';
+            }
+            keepCapturedPhoto = true;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            photoInput = document.getElementById('fotoInput');
+            fotoDataInput = document.getElementById('fotoDataInput');
+            previewImageEl = document.getElementById('preview-image');
+            if (previewImageEl) {
+                previewImageEl.dataset.defaultSrc = previewImageEl.src;
+            }
+            fotoStatusEl = document.getElementById('fotoStatus');
+            cameraModalEl = document.getElementById('cameraModal');
+            cameraVideo = document.getElementById('cameraVideo');
+            cameraCanvas = document.getElementById('cameraCanvas');
+            cameraCapturePreview = document.getElementById('cameraCapturePreview');
+            retakePhotoBtn = document.getElementById('retakePhotoBtn');
+            usePhotoBtn = document.getElementById('usePhotoBtn');
+
+            if (cameraModalEl) {
+                cameraModalEl.addEventListener('shown.bs.modal', function() {
+                    resetCameraModal();
+                    keepCapturedPhoto = false;
+                    startCamera();
+                });
+                cameraModalEl.addEventListener('hide.bs.modal', function(event) {
+                    stopCamera();
+                    if (!keepCapturedPhoto) {
+                        resetCameraModal();
+                    }
+                });
+            }
+        });
     </script>
+
+    <!-- Camera capture modal -->
+    <div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cameraModalLabel">Ambil Foto Profil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <video id="cameraVideo" class="w-100" style="max-height: 360px; background: #000; border-radius: 0.75rem;"></video>
+                    <img id="cameraCapturePreview" src="" alt="Foto Hasil Kamera" class="w-100 rounded" style="display:none; max-height: 360px; object-fit: cover;">
+                    <canvas id="cameraCanvas" style="display:none;"></canvas>
+                    <p class="mt-3 text-muted">Tekan tombol ambil untuk menangkap foto, lalu gunakan atau ambil ulang sebelum menutup.</p>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" onclick="retakePhoto()" id="retakePhotoBtn" style="display:none;">Ambil Ulang</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-success" onclick="useCapturedPhoto()" data-bs-dismiss="modal" id="usePhotoBtn" style="display:none;">Gunakan Foto</button>
+                        <button type="button" class="btn btn-primary" onclick="takePhoto()">Ambil Foto</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
