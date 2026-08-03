@@ -1464,13 +1464,6 @@
         // Teacher-side polling: refresh existing absensi statuses periodically
         var teacherPollingInterval = null;
         var teacherPollingIntervalMs = 7000; // 7 seconds
-        function normalizeAttendanceStatus(status) {
-            var norm = String(status || '').toLowerCase().trim();
-            if (norm === 'telat') norm = 'terlambat';
-            if (norm === 'ijin') norm = 'izin';
-            if (!['hadir','terlambat','sakit','izin','alpa'].includes(norm)) norm = 'alpa';
-            return norm;
-        }
 
         function getExistingStatuses(existing) {
             if (!existing || typeof existing !== 'object') {
@@ -1678,6 +1671,14 @@
         }
     });
 
+    function normalizeAttendanceStatus(status) {
+        var norm = String(status || '').toLowerCase().trim();
+        if (norm === 'telat') norm = 'terlambat';
+        if (norm === 'ijin') norm = 'izin';
+        if (!['hadir','terlambat','sakit','izin','alpa'].includes(norm)) norm = 'alpa';
+        return norm;
+    }
+
     function escapeHtml(value) {
         return String(value ?? '')
             .replace(/&/g, '&amp;')
@@ -1821,6 +1822,7 @@
         data.forEach(function(siswa, index){
             var selectedStatus = window._attendanceStatuses[siswa.id] || (existingStatuses[siswa.id] ? normalizeAttendanceStatus(existingStatuses[siswa.id]) : null);
             var disabledAttr = isTableMode ? '' : ' disabled';
+            var nameAttr = isTableMode ? ' name="absensi_siswa['+siswa.id+']"' : '';
             html += '<tr data-siswa-id="' + siswa.id + '">';
             html += '<td class="text-center">' + (index+1) + '</td>';
             html += '<td class="text-center">' + escapeHtml(siswa.nis || '-') + '</td>';
@@ -1829,7 +1831,8 @@
             html += '<td>' + escapeHtml(siswa.nama || '-') + '</td>';
             html += '<td class="text-center">' + escapeHtml(siswa.jenis_kelamin || '-') + '</td>';
             ['hadir','terlambat','sakit','izin','alpa'].forEach(function(val){
-                html += '<td class="text-center"><input class="status-radio" type="radio" name="absensi_siswa['+siswa.id+']" value="'+val+'" data-siswa-id="'+siswa.id+'"' + (selectedStatus === val ? ' checked' : '') + disabledAttr + '></td>';
+                var checkedAttr = isTableMode && selectedStatus === val ? ' checked' : '';
+                html += '<td class="text-center"><input class="status-radio" type="radio"' + nameAttr + ' value="'+val+'" data-siswa-id="'+siswa.id+'"' + checkedAttr + disabledAttr + '></td>';
             });
             html += '<td><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan (opsional)"' + disabledAttr + '></td>';
             html += '</tr>';
@@ -1845,6 +1848,7 @@
         data.forEach(function(siswa){
             var selectedStatus = window._attendanceStatuses[siswa.id] || (existingStatuses[siswa.id] ? normalizeAttendanceStatus(existingStatuses[siswa.id]) : null);
             var disabledAttr = isGridMode ? '' : ' disabled';
+            var nameAttr = isGridMode ? ' name="absensi_siswa['+siswa.id+']"' : '';
             var foto = siswa.foto_url ? ('<img src="'+escapeHtml(siswa.foto_url)+'" class="student-photo-grid" alt="Foto">') : '<div class="student-photo-placeholder" style="width:90px;height:120px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;"><i class="ti ti-user"></i></div>';
             var card = document.createElement('div');
             card.className = 'col-6 col-sm-4 col-md-3';
@@ -1854,13 +1858,13 @@
                 '<div class="text-muted small">'+escapeHtml(siswa.nis || '')+'</div>' +
                 '</div>' +
                 '<div class="mt-2 d-flex justify-content-around">' +
-                    '<label class="btn btn-sm btn-outline-success"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="hadir" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'hadir' ? ' checked' : '') + disabledAttr + '>H</label>' +
-                    '<label class="btn btn-sm btn-outline-warning"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="terlambat" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'terlambat' ? ' checked' : '') + disabledAttr + '>T</label>' +
-                    '<label class="btn btn-sm btn-outline-secondary"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="sakit" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'sakit' ? ' checked' : '') + disabledAttr + '>S</label>' +
+                    '<label class="btn btn-sm btn-outline-success"><input type="radio" class="status-radio"' + nameAttr + ' value="hadir" data-siswa-id="'+siswa.id+'"' + (isGridMode && selectedStatus === 'hadir' ? ' checked' : '') + disabledAttr + '>H</label>' +
+                    '<label class="btn btn-sm btn-outline-warning"><input type="radio" class="status-radio"' + nameAttr + ' value="terlambat" data-siswa-id="'+siswa.id+'"' + (isGridMode && selectedStatus === 'terlambat' ? ' checked' : '') + disabledAttr + '>T</label>' +
+                    '<label class="btn btn-sm btn-outline-secondary"><input type="radio" class="status-radio"' + nameAttr + ' value="sakit" data-siswa-id="'+siswa.id+'"' + (isGridMode && selectedStatus === 'sakit' ? ' checked' : '') + disabledAttr + '>S</label>' +
                 '</div>' +
                 '<div class="mt-2 d-flex justify-content-around">' +
-                    '<label class="btn btn-sm btn-outline-info"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="izin" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'izin' ? ' checked' : '') + disabledAttr + '>I</label>' +
-                    '<label class="btn btn-sm btn-outline-danger"><input type="radio" class="status-radio" name="absensi_siswa['+siswa.id+']" value="alpa" data-siswa-id="'+siswa.id+'"' + (selectedStatus === 'alpa' ? ' checked' : '') + disabledAttr + '>A</label>' +
+                    '<label class="btn btn-sm btn-outline-info"><input type="radio" class="status-radio"' + nameAttr + ' value="izin" data-siswa-id="'+siswa.id+'"' + (isGridMode && selectedStatus === 'izin' ? ' checked' : '') + disabledAttr + '>I</label>' +
+                    '<label class="btn btn-sm btn-outline-danger"><input type="radio" class="status-radio"' + nameAttr + ' value="alpa" data-siswa-id="'+siswa.id+'"' + (isGridMode && selectedStatus === 'alpa' ? ' checked' : '') + disabledAttr + '>A</label>' +
                 '</div>' +
                 '<div class="mt-2"><input type="text" name="keterangan_siswa['+siswa.id+']" class="form-control form-control-sm" placeholder="Keterangan"' + disabledAttr + '></div>' +
             '</div>';
