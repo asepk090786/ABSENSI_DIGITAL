@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class PengembanganSertifikat extends Model
 {
     protected $table = 'pengembangan_sertifikats';
-    protected $fillable = ['pengembangan_id','peserta_type','peserta_id','file_path','barcode','nomor_sertifikat','verified_at','template_id'];
+    protected $fillable = ['pengembangan_id','peserta_type','peserta_id','peserta_name','instansi','file_path','barcode','nomor_sertifikat','template_id','verified_at','bukti_dukung_daftar_hadir','bukti_dukung_dokumentasi','bukti_dukung_materi'];
+    protected $casts = [
+        'verified_at' => 'datetime',
+        'bukti_dukung_dokumentasi' => 'array',
+        'bukti_dukung_materi' => 'array',
+    ];
 
     public function pengembangan()
     {

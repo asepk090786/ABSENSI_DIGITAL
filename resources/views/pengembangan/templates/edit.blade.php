@@ -59,6 +59,15 @@
                             <div class="mt-2"><img id="existingBg" src="{{ asset('storage/'.$item->background_image) }}" style="max-height:100px;" class="border rounded"></div>
                             @endif
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Opsi QR Verifikasi</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_barcode" value="1" id="includeBarcode" {{ ($item->include_barcode ?? (isset($savedPositions['barcode']) ? true : false)) ? 'checked' : '' }}>
+                                <label class="form-check-label small" for="includeBarcode">Tampilkan kode verifikasi (QR) pada template</label>
+                            </div>
+                            <small class="text-muted d-block">Centang untuk menyertakan QR yang mengarah ke halaman verifikasi.</small>
+                            <button type="button" id="addBarcodePlhBtn" class="btn btn-outline-primary btn-sm mt-2">Tempatkan QR Verifikasi</button>
+                        </div>
                     </div>
 
                     <input type="hidden" id="placeholderPositions" name="placeholder_positions" value="">
@@ -86,7 +95,7 @@
                                         </div>
                                         <div class="mb-1">
                                             <label class="form-label small mb-0">Ukuran Font</label>
-                                            <input id="propFontSize" type="number" class="form-control form-control-sm" min="8" max="200">
+                                            <input id="propFontSize" type="number" class="form-control form-control-sm" min="1" max="200">
                                         </div>
                                         <div class="mb-1">
                                             <label class="form-label small mb-0">Font</label>
@@ -103,6 +112,16 @@
                                         <div class="mb-1">
                                             <label class="form-label small mb-0">Warna</label>
                                             <input id="propColor" type="color" class="form-control form-control-color">
+                                        </div>
+                                        <div id="qrControls" style="display:none;">
+                                            <div class="form-check mb-1">
+                                                <input class="form-check-input" type="checkbox" id="propIsQr">
+                                                <label class="form-check-label small" for="propIsQr">Render sebagai QR</label>
+                                            </div>
+                                            <div class="mb-1">
+                                                <label class="form-label small mb-0">Ukuran QR (px)</label>
+                                                <input id="propQrSize" type="number" class="form-control form-control-sm" min="40" max="800">
+                                            </div>
                                         </div>
                                         <div class="row g-1 mb-1">
                                             <div class="col-6">
@@ -136,6 +155,7 @@
 @endsection
 
 @push('js')
+@include('pengembangan.templates.partials.template_preview_renderer')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -144,6 +164,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     var bgInput = document.getElementById('bgInput');
+    var includeBarcodeCheckbox = document.getElementById('includeBarcode');
+    var addBarcodeBtn = document.getElementById('addBarcodePlhBtn');
     var form = document.getElementById('templateForm');
     var hiddenPos = document.getElementById('placeholderPositions');
     var propField = document.getElementById('propField');
@@ -157,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var resetBtn = document.getElementById('resetPlhBtn');
 
     var bgImage = null;
+    var backgroundImageUrl = null;
     var textObjects = {};
     var updating = false;
 
@@ -164,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         name: { label: 'Nama Peserta', x: 450, y: 200, size: 36, color: '#000000' },
         'kegiatan->nama_kegiatan': { label: 'Nama Kegiatan', x: 450, y: 290, size: 26, color: '#000000' },
         'kegiatan->tema_kegiatan': { label: 'Tema Kegiatan', x: 450, y: 350, size: 20, color: '#000000' },
-        barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 16, color: '#000000' },
+        barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 16, color: '#000000', is_qr: true },
         nomor_surat: { label: 'Nomor Surat', x: 450, y: 430, size: 18, color: '#000000' },
     };
 
@@ -189,31 +212,48 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!d) return;
         var scale = getCanvasScaleFactor();
         var previewFontSize = (opts.fontSize || d.size) * scale;
-        var t = new fabric.Text(opts.text || d.label, {
+        var isBarcodeQr = key === 'barcode' && ((opts.is_qr !== undefined) ? opts.is_qr : d.is_qr);
+        var textLabel = isBarcodeQr ? 'QR' : (opts.text || d.label);
+        var t = new fabric.Text(textLabel, {
             key: key, left: opts.x || d.x, top: opts.y || d.y,
             fontSize: previewFontSize, fill: opts.color || d.color,
             originX: 'center', originY: 'center', fontFamily: 'Arial, sans-serif',
             fontWeight: 'bold', padding: 10, cornerSize: 8,
             transparentCorners: false, cornerColor: '#0d6efd',
             borderColor: '#0d6efd', hasRotatingPoint: false, lockRotation: true,
+            stroke: isBarcodeQr ? '#000000' : undefined,
+            strokeWidth: isBarcodeQr ? 0.8 : 0,
         });
+        // Attach QR metadata for barcode placeholder
+        if (key === 'barcode') {
+            t.is_qr = (opts.is_qr !== undefined) ? opts.is_qr : true;
+            t.qr_size = (opts.qr_size !== undefined) ? opts.qr_size : (d.size * 4);
+            if (t.is_qr) {
+                t.text = 'QR';
+            }
+        }
         textObjects[key] = t;
         canvas.add(t);
     }
 
     function init() {
-        Object.keys(defaults).forEach(function(k) {
+        Object.keys(savedPos).forEach(function(k) {
+            if (k === 'barcode' && includeBarcodeCheckbox && !includeBarcodeCheckbox.checked) {
+                return;
+            }
             var saved = savedPos[k] || {};
             var canvasW = canvas.width || 900;
             var canvasH = canvas.height || 600;
-            var previewX = saved.x_ratio !== undefined ? (saved.x_ratio * canvasW) : (saved.x || defaults[k].x);
-            var previewY = saved.y_ratio !== undefined ? (saved.y_ratio * canvasH) : (saved.y || defaults[k].y);
-            var previewFontSize = saved.font_size !== undefined ? saved.font_size : (defaults[k].size);
+            var previewX = saved.x_ratio !== undefined ? (saved.x_ratio * canvasW) : ((defaults[k] || {}).x || 450);
+            var previewY = saved.y_ratio !== undefined ? (saved.y_ratio * canvasH) : ((defaults[k] || {}).y || 300);
+            var previewFontSize = saved.font_size !== undefined ? saved.font_size : ((defaults[k] || {}).size || 24);
             addText(k, {
                 x: previewX,
                 y: previewY,
                 fontSize: previewFontSize,
-                color: saved.color || defaults[k].color,
+                color: saved.color || ((defaults[k] || {}).color || '#000000'),
+                is_qr: saved.is_qr,
+                qr_size: saved.qr_size,
             });
         });
         canvas.renderAll();
@@ -234,6 +274,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 color: o.fill,
                 align: 'center'
             };
+            if (k === 'barcode') {
+                p[k].is_qr = !!o.is_qr;
+                p[k].qr_size = o.qr_size || Math.max(80, Math.round((o.fontSize || defaults[k].size) * 4));
+            }
         });
         return JSON.stringify(p);
     }
@@ -246,6 +290,17 @@ document.addEventListener('DOMContentLoaded', function() {
         propField.value = obj.key; propFontSize.value = Math.max(1, Math.round((obj.fontSize || 24) / (scale || 1)));
         propColor.value = obj.fill; propX.value = Math.round(obj.left);
         propY.value = Math.round(obj.top);
+        // QR specific
+        if (obj.key === 'barcode') {
+            var qrControls = document.getElementById('qrControls');
+            qrControls.style.display = '';
+            var propIsQr = document.getElementById('propIsQr');
+            var propQrSize = document.getElementById('propQrSize');
+            propIsQr.checked = !!obj.is_qr;
+            propQrSize.value = obj.qr_size || Math.max(80, Math.round((obj.fontSize || 24) * 4));
+        } else {
+            var qrControls = document.getElementById('qrControls'); if (qrControls) qrControls.style.display = 'none';
+        }
         updating = false;
     }
 
@@ -269,6 +324,25 @@ document.addEventListener('DOMContentLoaded', function() {
         var o = canvas.getActiveObject();
         if (o && o.key) { o.set({ fill: this.value }); canvas.renderAll(); }
     });
+    // QR controls handlers
+    var propIsQr = document.getElementById('propIsQr');
+    var propQrSize = document.getElementById('propQrSize');
+    if (propIsQr) {
+        propIsQr.addEventListener('change', function() {
+            var o = canvas.getActiveObject(); if (!o || !o.key) return;
+            o.is_qr = this.checked;
+            if (o.key === 'barcode') {
+                o.set('text', o.is_qr ? 'QR' : 'Kode Verifikasi');
+                canvas.renderAll();
+            }
+        });
+    }
+    if (propQrSize) {
+        propQrSize.addEventListener('change', function() {
+            var o = canvas.getActiveObject(); if (!o || !o.key) return;
+            o.qr_size = parseInt(this.value) || o.qr_size || 120;
+        });
+    }
     propX.addEventListener('change', function() {
         if (updating) return; var o = canvas.getActiveObject();
         if (o && o.key) { o.set({ left: parseInt(this.value) || 0 }); canvas.renderAll(); }
@@ -304,6 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @if($item->background_image)
     (function() {
         var bgUrl = '{{ asset("storage/".$item->background_image) }}';
+        backgroundImageUrl = bgUrl;
         fabric.Image.fromURL(bgUrl, function(img) {
             var s = Math.min(900 / img.width, 600 / img.height);
             img.set({ left: 0, top: 0, scaleX: s, scaleY: s, selectable: false, evented: false });
@@ -336,13 +411,86 @@ document.addEventListener('DOMContentLoaded', function() {
 
     form.addEventListener('submit', function() { hiddenPos.value = toJSON(); });
 
+    // Barcode inclusion toggle
+    var includeBarcodeCheckbox = document.getElementById('includeBarcode');
+    if (includeBarcodeCheckbox) {
+        includeBarcodeCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!textObjects['barcode']) {
+                    var canvasW = canvas.width || 900;
+                    var canvasH = canvas.height || 600;
+                    var saved = savedPos['barcode'] || {};
+                    var previewX = saved.x_ratio !== undefined ? (saved.x_ratio * canvasW) : (saved.x || defaults['barcode'].x);
+                    var previewY = saved.y_ratio !== undefined ? (saved.y_ratio * canvasH) : (saved.y || defaults['barcode'].y);
+                    addText('barcode', { x: previewX, y: previewY, fontSize: saved.font_size || defaults['barcode'].size, color: saved.color || defaults['barcode'].color });
+                    canvas.renderAll();
+                }
+            } else {
+                if (textObjects['barcode']) {
+                    canvas.remove(textObjects['barcode']);
+                    delete textObjects['barcode'];
+                    canvas.renderAll();
+                }
+            }
+        });
+    }
+
+    function addBarcodePlaceholder() {
+        if (textObjects['barcode']) return;
+        var canvasW = canvas.width || 900;
+        var canvasH = canvas.height || 600;
+        var saved = savedPos['barcode'] || {};
+        var previewX = saved.x_ratio !== undefined ? (saved.x_ratio * canvasW) : (saved.x || defaults['barcode'].x);
+        var previewY = saved.y_ratio !== undefined ? (saved.y_ratio * canvasH) : (saved.y || defaults['barcode'].y);
+        addText('barcode', {
+            x: previewX,
+            y: previewY,
+            fontSize: saved.font_size || defaults['barcode'].size,
+            color: saved.color || defaults['barcode'].color,
+            is_qr: saved.is_qr,
+            qr_size: saved.qr_size,
+        });
+        canvas.renderAll();
+    }
+
+    if (addBarcodeBtn) {
+        addBarcodeBtn.addEventListener('click', function() {
+            if (!includeBarcodeCheckbox || !includeBarcodeCheckbox.checked) {
+                includeBarcodeCheckbox.checked = true;
+            }
+            addBarcodePlaceholder();
+        });
+    }
+
     // Preview button
     document.getElementById('previewBtn').addEventListener('click', function() {
         hiddenPos.value = toJSON();
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        var w = window.open('', '_blank');
-        w.document.write('<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;"><img src="' + dataUrl + '" style="max-width:100%;max-height:100vh;"/></body></html>');
-        w.document.close();
+        var previewWrapper = document.createElement('div');
+        previewWrapper.style.width = '100%';
+        previewWrapper.style.maxWidth = '900px';
+        previewWrapper.style.margin = '0 auto';
+        previewWrapper.style.padding = '16px';
+
+        var previewWindow = window.open('', '_blank');
+        previewWindow.document.write('<html><head><title>Preview Template</title><style>body{margin:0;background:#f5f5f5;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:Arial,sans-serif;}#preview-root{width:100%;max-width:900px;border:1px solid #dee2e6;border-radius:8px;background:#fff;}</style></head><body><div id="preview-root"></div></body></html>');
+        previewWindow.document.close();
+
+        var root = previewWindow.document.getElementById('preview-root');
+        if (root) {
+            window.TemplatePreviewRenderer.renderCanvasPreview(root, {
+                width: 900,
+                height: 600,
+                backgroundImage: backgroundImageUrl,
+                rawPositions: hiddenPos.value,
+                values: {
+                    name: 'Nama Peserta',
+                    'kegiatan->nama_kegiatan': 'Nama Kegiatan Contoh',
+                    'kegiatan->tema_kegiatan': 'Tema Kegiatan Contoh',
+                    barcode: 'ABC123-VERIFY',
+                    nomor_surat: '123/SMAN1/PONTANG'
+                }
+            });
+        }
     });
 });
 </script>

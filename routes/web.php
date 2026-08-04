@@ -20,6 +20,9 @@ Route::get('/', function(){
     return redirect()->route('home');
 });
 
+// Public certificate verification (allow QR scans without login)
+Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
+
 Route::middleware('guest')->group(function () {
     Route::get('login',[AuthController::class,'showLogin'])->name('login');
     Route::post('login',[AuthController::class,'login'])->name('login.post');
@@ -318,8 +321,9 @@ Route::middleware(['auth'])->group(function(){
     Route::get('pengembangan/sertifikat/my', [App\Http\Controllers\PengembanganController::class, 'myCertificates'])->name('pengembangan.my_certificates');
     Route::get('pengembangan/sertifikat/{id}/download', [App\Http\Controllers\PengembanganController::class, 'downloadCertificate'])->name('pengembangan.certificates.download');
     Route::delete('pengembangan/sertifikat/{id}', [App\Http\Controllers\PengembanganController::class, 'destroyCertificate'])->name('pengembangan.certificates.destroy');
+    Route::delete('pengembangan/sertifikat/{id}/bukti/{type}/{index?}', [App\Http\Controllers\PengembanganController::class, 'destroyCertificateEvidence'])->name('pengembangan.certificates.evidence.destroy');
     Route::post('pengembangan/bulk-hapus-sertifikat', [App\Http\Controllers\PengembanganController::class, 'bulkDestroyCertificates'])->name('pengembangan.certificates.bulk_destroy');
-    Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
+    
     Route::get('pengembangan/{id}', [App\Http\Controllers\PengembanganController::class, 'show'])->name('pengembangan.show');
     Route::post('pengembangan/{id}/generate-certificates', [App\Http\Controllers\PengembanganController::class, 'generateCertificates'])->name('pengembangan.generate_certificates');
     Route::get('pengembangan/{id}/edit', [App\Http\Controllers\PengembanganController::class, 'edit'])->name('pengembangan.edit');

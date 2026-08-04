@@ -153,7 +153,13 @@ class PengembanganController extends Controller
         // existing certificates for this pengembangan (with resolved participant names)
         $certs = PengembanganSertifikat::where('pengembangan_id', $id)->get();
         $certificates = $certs->map(function($c){
-            $name = $c->peserta_type === 'guru' ? \DB::table('guru')->where('id',$c->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$c->peserta_id)->value('nama');
+            if ($c->peserta_type === 'guru') {
+                $name = \DB::table('guru')->where('id',$c->peserta_id)->value('nama');
+            } elseif ($c->peserta_type === 'siswa') {
+                $name = \DB::table('siswa')->where('id',$c->peserta_id)->value('nama');
+            } else {
+                $name = $c->peserta_name ?? 'Peserta Eksternal';
+            }
             $c->participant_name = $name;
             return $c;
         });
@@ -283,13 +289,52 @@ class PengembanganController extends Controller
         $storagePath = 'public/certificates';
         Storage::makeDirectory($storagePath);
 
-        $selected = request()->input('participant_ids', []);
-        $templateId = request()->input('template_id');
-        $nomorSertifikat = request()->input('nomor_surat', request()->input('nomor_sertifikat'));
+        $data = request()->validate([
+            'participant_ids' => 'nullable|array',
+            'participant_ids.*' => 'integer|exists:pengembangan_peserta,id',
+            'template_id' => 'nullable|integer|exists:pengembangan_sertifikat_templates,id',
+            'nomor_surat' => 'nullable|string|max:255',
+            'nomor_sertifikat' => 'nullable|string|max:255',
+            'save_only' => 'sometimes|boolean',
+            'save_certificate_defaults' => 'sometimes|boolean',
+            'bukti_dukung_daftar_hadir' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:10240',
+            'bukti_dukung_dokumentasi' => 'nullable|array',
+            'bukti_dukung_dokumentasi.*' => 'file|mimes:pdf,jpeg,png,jpg|max:10240',
+            'bukti_dukung_materi' => 'nullable|array',
+            'bukti_dukung_materi.*' => 'file|mimes:pdf,jpeg,png,jpg,doc,docx|max:10240',
+        ]);
+
+        $selected = $data['participant_ids'] ?? [];
+        $templateId = $data['template_id'] ?? null;
+        $nomorSertifikat = $data['nomor_surat'] ?? ($data['nomor_sertifikat'] ?? null);
         $saveOnly = request()->boolean('save_only');
         $saveAsDefault = $saveOnly || request()->boolean('save_certificate_defaults');
         $template = $templateId ? \DB::table('pengembangan_sertifikat_templates')->where('id', $templateId)->first() : null;
         $outputFormat = $template?->output_format ?? 'pdf';
+
+        $buktiDukung = [
+            'daftar_hadir' => null,
+            'dokumentasi' => [],
+            'materi' => [],
+        ];
+
+        if (request()->hasFile('bukti_dukung_daftar_hadir')) {
+            $file = request()->file('bukti_dukung_daftar_hadir');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $buktiDukung['daftar_hadir'] = Storage::disk('public')->putFileAs('pengembangan/bukti_dukung', $file, $filename);
+        }
+
+        foreach (request()->file('bukti_dukung_dokumentasi', []) as $file) {
+            if (!$file) continue;
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $buktiDukung['dokumentasi'][] = Storage::disk('public')->putFileAs('pengembangan/bukti_dukung', $file, $filename);
+        }
+
+        foreach (request()->file('bukti_dukung_materi', []) as $file) {
+            if (!$file) continue;
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $buktiDukung['materi'][] = Storage::disk('public')->putFileAs('pengembangan/bukti_dukung', $file, $filename);
+        }
 
         if (!$template || !$template->background_image) {
             // Use first available template with background
@@ -309,6 +354,63 @@ class PengembanganController extends Controller
                 'default_nomor_sertifikat' => $saveOnly || request()->filled('nomor_surat') || request()->filled('nomor_sertifikat') ? $nomorSertifikat : null,
                 'default_template_id' => $saveOnly || request()->filled('template_id') ? $templateId : null,
             ]);
+        }
+
+        $hasNewEvidence = !empty($buktiDukung['daftar_hadir']) || !empty($buktiDukung['dokumentasi']) || !empty($buktiDukung['materi']);
+
+        if ($saveOnly && $hasNewEvidence) {
+            foreach ($toGenerate as $p) {
+                $existingCerts = PengembanganSertifikat::where('pengembangan_id', $item->id)
+                    ->where('peserta_type', $p->peserta_type)
+                    ->when($p->peserta_id !== null, function ($query) use ($p) {
+                        return $query->where('peserta_id', $p->peserta_id);
+                    })
+                    ->when($p->peserta_id === null, function ($query) use ($p) {
+                        return $query->where('peserta_name', $p->peserta_name)->where('instansi', $p->instansi);
+                    })
+                    ->get();
+
+                $existingCert = $existingCerts->first();
+                if ($existingCerts->count() > 1) {
+                    $existingCerts->slice(1)->each(function ($duplicate) {
+                        if ($duplicate->file_path) {
+                            $this->deleteStorageFile($duplicate->file_path);
+                        }
+                        $duplicate->delete();
+                    });
+                }
+
+                $existingDokumentasi = $existingCert ? (array) $existingCert->bukti_dukung_dokumentasi : [];
+                $existingMateri = $existingCert ? (array) $existingCert->bukti_dukung_materi : [];
+
+                if ($existingCert) {
+                    if (!empty($buktiDukung['daftar_hadir'])) {
+                        $existingCert->bukti_dukung_daftar_hadir = $buktiDukung['daftar_hadir'];
+                    }
+                    if (!empty($buktiDukung['dokumentasi'])) {
+                        $existingCert->bukti_dukung_dokumentasi = array_values(array_merge($existingDokumentasi, $buktiDukung['dokumentasi']));
+                    }
+                    if (!empty($buktiDukung['materi'])) {
+                        $existingCert->bukti_dukung_materi = array_values(array_merge($existingMateri, $buktiDukung['materi']));
+                    }
+                    $existingCert->save();
+                } else {
+                    PengembanganSertifikat::create([
+                        'pengembangan_id' => $item->id,
+                        'peserta_type' => $p->peserta_type,
+                        'peserta_id' => $p->peserta_id,
+                        'peserta_name' => $p->peserta_name,
+                        'instansi' => $p->instansi,
+                        'file_path' => null,
+                        'barcode' => (string) Str::uuid(),
+                        'nomor_sertifikat' => $nomorSertifikat ?: null,
+                        'template_id' => $templateId ?: null,
+                        'bukti_dukung_daftar_hadir' => $buktiDukung['daftar_hadir'] ?? null,
+                        'bukti_dukung_dokumentasi' => $buktiDukung['dokumentasi'] ?: null,
+                        'bukti_dukung_materi' => $buktiDukung['materi'] ?: null,
+                    ]);
+                }
+            }
         }
 
         if ($saveOnly) {
@@ -338,18 +440,89 @@ class PengembanganController extends Controller
                 Storage::disk('public')->put($filePath, $pdf->output());
             }
 
-            PengembanganSertifikat::create([
-                'pengembangan_id'=>$item->id,
-                'peserta_type'=>$p->peserta_type,
-                'peserta_id'=>$p->peserta_id,
-                'file_path'=> $filePath,
-                'barcode'=>$barcode,
-                'nomor_sertifikat'=>$nomorSertifikat ?: null,
-                'template_id'=>$templateId ?: null,
-            ]);
+            $existingCerts = PengembanganSertifikat::where('pengembangan_id', $item->id)
+                ->where('peserta_type', $p->peserta_type)
+                ->when($p->peserta_id !== null, function ($query) use ($p) {
+                    return $query->where('peserta_id', $p->peserta_id);
+                })
+                ->when($p->peserta_id === null, function ($query) use ($p) {
+                    return $query->where('peserta_name', $p->peserta_name)->where('instansi', $p->instansi);
+                })
+                ->get();
+
+            $existingCert = $existingCerts->first();
+            if ($existingCerts->count() > 1) {
+                $existingCerts->slice(1)->each(function ($duplicate) {
+                    if ($duplicate->file_path) {
+                        $this->deleteStorageFile($duplicate->file_path);
+                    }
+                    $duplicate->delete();
+                });
+            }
+
+            $existingDokumentasi = $existingCert ? (array) $existingCert->bukti_dukung_dokumentasi : [];
+            $existingMateri = $existingCert ? (array) $existingCert->bukti_dukung_materi : [];
+            $existingDaftarHadir = $existingCert ? $existingCert->bukti_dukung_daftar_hadir : null;
+
+            $preservedDaftarHadir = $buktiDukung['daftar_hadir'] ?? $existingDaftarHadir;
+            $preservedDokumentasi = !empty($buktiDukung['dokumentasi'])
+                ? array_values(array_merge($existingDokumentasi, $buktiDukung['dokumentasi']))
+                : $existingDokumentasi;
+            $preservedMateri = !empty($buktiDukung['materi'])
+                ? array_values(array_merge($existingMateri, $buktiDukung['materi']))
+                : $existingMateri;
+
+            if ($existingCert) {
+                if ($existingCert->file_path) {
+                    $this->deleteStorageFile($existingCert->file_path);
+                }
+                $existingCert->update([
+                    'file_path' => $filePath,
+                    'barcode' => $barcode,
+                    'nomor_sertifikat' => $nomorSertifikat ?: null,
+                    'template_id' => $templateId ?: null,
+                    'bukti_dukung_daftar_hadir' => $preservedDaftarHadir,
+                    'bukti_dukung_dokumentasi' => empty($preservedDokumentasi) ? null : $preservedDokumentasi,
+                    'bukti_dukung_materi' => empty($preservedMateri) ? null : $preservedMateri,
+                ]);
+            } else {
+                PengembanganSertifikat::create([
+                    'pengembangan_id' => $item->id,
+                    'peserta_type' => $p->peserta_type,
+                    'peserta_id' => $p->peserta_id,
+                    'peserta_name' => $p->peserta_name,
+                    'instansi' => $p->instansi,
+                    'file_path' => $filePath,
+                    'barcode' => $barcode,
+                    'nomor_sertifikat' => $nomorSertifikat ?: null,
+                    'template_id' => $templateId ?: null,
+                    'bukti_dukung_daftar_hadir' => $preservedDaftarHadir,
+                    'bukti_dukung_dokumentasi' => empty($preservedDokumentasi) ? null : $preservedDokumentasi,
+                    'bukti_dukung_materi' => empty($preservedMateri) ? null : $preservedMateri,
+                ]);
+            }
         }
 
         return redirect()->route('pengembangan.show', $id)->with('success','Sertifikat dibuat untuk peserta');
+    }
+
+    private function deleteCertificateFiles(PengembanganSertifikat $cert)
+    {
+        $paths = [];
+        $paths[] = $cert->file_path;
+        if (!empty($cert->bukti_dukung_daftar_hadir)) {
+            $paths[] = $cert->bukti_dukung_daftar_hadir;
+        }
+        if (!empty($cert->bukti_dukung_dokumentasi)) {
+            $paths = array_merge($paths, is_array($cert->bukti_dukung_dokumentasi) ? $cert->bukti_dukung_dokumentasi : [$cert->bukti_dukung_dokumentasi]);
+        }
+        if (!empty($cert->bukti_dukung_materi)) {
+            $paths = array_merge($paths, is_array($cert->bukti_dukung_materi) ? $cert->bukti_dukung_materi : [$cert->bukti_dukung_materi]);
+        }
+
+        foreach ($paths as $path) {
+            $this->deleteStorageFile($path);
+        }
     }
 
     protected function renderTemplateContent($template, $item, $name, $barcode)
@@ -499,8 +672,8 @@ class PengembanganController extends Controller
     public function downloadCertificate($id)
     {
         $cert = PengembanganSertifikat::findOrFail($id);
-        $path = storage_path('app/'.str_replace('storage/','',$cert->file_path));
-        if (!file_exists($path)) abort(404);
+        $path = $this->resolveCertificateStoragePath($cert->file_path);
+        if (!$path) abort(404);
         return response()->download($path);
     }
 
@@ -510,8 +683,8 @@ class PengembanganController extends Controller
         $pengembanganId = $cert->pengembangan_id;
 
         // Hapus file fisik
-        $filePath = storage_path('app/'.str_replace('storage/','',$cert->file_path));
-        if (file_exists($filePath)) {
+        $filePath = $this->resolveCertificateStoragePath($cert->file_path);
+        if ($filePath && file_exists($filePath)) {
             @unlink($filePath);
         }
 
@@ -519,6 +692,54 @@ class PengembanganController extends Controller
 
         return redirect()->route('pengembangan.show', $pengembanganId)
             ->with('success', 'Sertifikat berhasil dihapus.');
+    }
+
+    public function destroyCertificateEvidence($id, $type, $index = null)
+    {
+        $cert = PengembanganSertifikat::findOrFail($id);
+        $allowedTypes = ['daftar_hadir', 'dokumentasi', 'materi'];
+
+        if (!in_array($type, $allowedTypes, true)) {
+            abort(404);
+        }
+
+        if ($type === 'daftar_hadir') {
+            if ($cert->bukti_dukung_daftar_hadir) {
+                $this->deleteStorageFile($cert->bukti_dukung_daftar_hadir);
+                $cert->bukti_dukung_daftar_hadir = null;
+                $cert->save();
+            }
+        } else {
+            $field = 'bukti_dukung_' . $type;
+            $files = (array) $cert->{$field};
+            if (!is_numeric($index) || !isset($files[$index])) {
+                abort(404);
+            }
+            $path = $files[$index];
+            $this->deleteStorageFile($path);
+            array_splice($files, $index, 1);
+            $cert->{$field} = empty($files) ? null : array_values($files);
+            $cert->save();
+        }
+
+        return redirect()->route('pengembangan.show', $cert->pengembangan_id)
+            ->with('success', 'Bukti dukung berhasil dihapus.');
+    }
+
+    private function deleteStorageFile(?string $path)
+    {
+        if (!$path) {
+            return;
+        }
+
+        $normalized = str_replace('\\', '/', $path);
+        $normalized = preg_replace('#^/?storage/#', '', $normalized);
+        $normalized = preg_replace('#^/?public/#', '', $normalized);
+        $normalized = ltrim($normalized, '/');
+
+        if (Storage::disk('public')->exists($normalized)) {
+            Storage::disk('public')->delete($normalized);
+        }
     }
 
     public function bulkDestroyCertificates(Request $r)
@@ -543,8 +764,8 @@ class PengembanganController extends Controller
         $deleted = 0;
         foreach ($certs as $cert) {
             // Hapus file fisik
-            $filePath = storage_path('app/'.str_replace('storage/','',$cert->file_path));
-            if (file_exists($filePath)) {
+            $filePath = $this->resolveCertificateStoragePath($cert->file_path);
+            if ($filePath && file_exists($filePath)) {
                 @unlink($filePath);
             }
             $cert->delete();
@@ -553,6 +774,33 @@ class PengembanganController extends Controller
 
         return redirect()->route('pengembangan.show', $id)
             ->with('success', $deleted . ' sertifikat berhasil dihapus.');
+    }
+
+    protected function resolveCertificateStoragePath(?string $filePath): ?string
+    {
+        if (!$filePath) {
+            return null;
+        }
+
+        $normalized = str_replace('\\', '/', $filePath);
+        $normalized = preg_replace('#^/?storage/#', '', $normalized);
+        $normalized = preg_replace('#^/?public/#', '', $normalized);
+        $normalized = ltrim($normalized, '/');
+
+        $candidates = [];
+        if ($normalized !== '') {
+            $candidates[] = Storage::disk('public')->path($normalized);
+            $candidates[] = storage_path('app/public/' . $normalized);
+            $candidates[] = storage_path('app/' . $normalized);
+        }
+
+        foreach ($candidates as $candidate) {
+            if ($candidate && file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     public function previewCertificate(Request $r, $id, CertificateService $certService)
@@ -595,6 +843,33 @@ class PengembanganController extends Controller
     {
         $cert = PengembanganSertifikat::where('barcode',$code)->first();
         if (!$cert) return view('pengembangan.verify', ['valid'=>false]);
-        return view('pengembangan.verify', ['valid'=>true,'cert'=>$cert]);
+        $item = Pengembangan::find($cert->pengembangan_id);
+
+        // Mark as verified on first scan
+        if (!$cert->verified_at) {
+            $cert->verified_at = now();
+            $cert->save();
+        }
+
+        // Resolve participant name
+        $participantName = null;
+        if ($cert->peserta_type === 'guru') {
+            $participantName = \DB::table('guru')->where('id', $cert->peserta_id)->value('nama');
+        } elseif ($cert->peserta_type === 'siswa') {
+            $participantName = \DB::table('siswa')->where('id', $cert->peserta_id)->value('nama');
+        } else {
+            $participantName = $cert->peserta_name ?? null;
+        }
+
+        $pemateri = is_array($item->pemateri) ? $item->pemateri : [];
+        $participantRole = in_array($participantName, $pemateri, true) ? 'Pemateri' : 'Peserta';
+
+        return view('pengembangan.verify', [
+            'valid' => true,
+            'cert' => $cert,
+            'item' => $item,
+            'participant_name' => $participantName,
+            'participant_role' => $participantRole,
+        ]);
     }
 }

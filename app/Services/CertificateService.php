@@ -7,6 +7,8 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Pengembangan;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
 
 class CertificateService
 {
@@ -35,6 +37,18 @@ class CertificateService
             $positions = json_decode($template->placeholder_positions, true) ?? [];
         }
 
+        if (($template->include_barcode ?? false) && !isset($positions['barcode'])) {
+            $positions['barcode'] = [
+                'x_ratio' => 0.5,
+                'y_ratio' => 0.8,
+                'font_size' => 16,
+                'color' => '#000000',
+                'align' => 'center',
+                'is_qr' => $template->barcode_is_qr ?? true,
+                'qr_size' => $template->barcode_qr_size ?? 180,
+            ];
+        }
+
         $placeholders = [
             'name' => $name,
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
@@ -55,6 +69,68 @@ class CertificateService
             $fontFile = $this->resolveFontFile($pos['font_file'] ?? null, $template->font_file ?? null);
 
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
+            // Special-case: render barcode as QR image or as text based on placeholder options
+            if ($key === 'barcode') {
+                $isQr = $template->barcode_is_qr ?? true;
+                if (isset($pos['is_qr'])) {
+                    $isQr = (bool) $pos['is_qr'];
+                }
+                $qrSize = isset($pos['qr_size']) ? (int) $pos['qr_size'] : ($template->barcode_qr_size ? (int) $template->barcode_qr_size : max(80, min(300, (int) ($fontSize * 4))));
+                if ($isQr) {
+                    try {
+                        $verifyUrl = route('pengembangan.verify', ['code' => $text]);
+                        $qr = Builder::create()
+                            ->writer(new PngWriter())
+                            ->data($verifyUrl)
+                            ->size(max(40, min(800, $qrSize)))
+                            ->margin(0)
+                            ->build();
+
+                        $tmpQr = sys_get_temp_dir() . '/qr_' . uniqid() . '.png';
+                        file_put_contents($tmpQr, $qr->getString());
+
+                        // center the QR at x,y
+                        $left = (int) round($x - ($qrSize / 2));
+                        $top = (int) round($y - ($qrSize / 2));
+                        $img->place($tmpQr, 'top-left', $left, $top);
+
+                        // Optionally add textual barcode under the QR
+                        $img->text($text, (int) $x, (int) ($y + ($qrSize / 2) + 10), function ($font) use ($fontSize, $color, $fontFile) {
+                            if ($fontFile) $font->file($fontFile);
+                            $font->size(max(10, (int) ($fontSize / 1.2)));
+                            $font->color($color);
+                            $font->align('center');
+                            $font->valign('top');
+                        });
+
+                        @unlink($tmpQr);
+                    } catch (\Throwable $e) {
+                        // fallback to text
+                        $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
+                            if ($fontFile) {
+                                $font->file($fontFile);
+                            }
+                            $font->size($fontSize);
+                            $font->color($color);
+                            $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
+                            $font->valign('middle');
+                        });
+                    }
+                } else {
+                    // Render barcode as plain text
+                    $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
+                        if ($fontFile) {
+                            $font->file($fontFile);
+                        }
+                        $font->size($fontSize);
+                        $font->color($color);
+                        $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
+                        $font->valign('middle');
+                    });
+                }
+
+                continue;
+            }
 
             // Parse color
             $colorRgb = $this->hexToRgb($color);
@@ -151,6 +227,59 @@ class CertificateService
             $color = $normalizedPos['color'] ?? '#000000';
             $alignment = $normalizedPos['align'] ?? $normalizedPos['alignment'] ?? 'center';
             $fontFile = $this->resolveFontFile($pos['font_file'] ?? null, null);
+            if ($key === 'barcode') {
+                $isQr = true;
+                if (isset($pos['is_qr'])) {
+                    $isQr = (bool) $pos['is_qr'];
+                }
+                $qrSize = isset($pos['qr_size']) ? (int) $pos['qr_size'] : max(80, min(300, (int) ($fontSize * 4)));
+                if ($isQr) {
+                    try {
+                        $verifyUrl = route('pengembangan.verify', ['code' => $text]);
+                        $qr = Builder::create()
+                            ->writer(new PngWriter())
+                            ->data($verifyUrl)
+                            ->size(max(40, min(800, $qrSize)))
+                            ->margin(0)
+                            ->build();
+
+                        $tmpQr = sys_get_temp_dir() . '/qr_' . uniqid() . '.png';
+                        file_put_contents($tmpQr, $qr->getString());
+                        $left = (int) round($x - ($qrSize / 2));
+                        $top = (int) round($y - ($qrSize / 2));
+                        $img->place($tmpQr, 'top-left', $left, $top);
+                        $img->text($text, (int) $x, (int) ($y + ($qrSize / 2) + 10), function ($font) use ($fontSize, $color, $fontFile, $alignment) {
+                            if ($fontFile) $font->file($fontFile);
+                            $font->size(max(10, (int) ($fontSize / 1.2)));
+                            $font->color($color);
+                            $font->align('center');
+                            $font->valign('top');
+                        });
+                        @unlink($tmpQr);
+                    } catch (\Throwable $e) {
+                        $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $alignment, $fontFile) {
+                            if ($fontFile) {
+                                $font->file($fontFile);
+                            }
+                            $font->size($fontSize);
+                            $font->color($color);
+                            $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
+                            $font->valign('middle');
+                        });
+                    }
+                } else {
+                    $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $alignment, $fontFile) {
+                        if ($fontFile) {
+                            $font->file($fontFile);
+                        }
+                        $font->size($fontSize);
+                        $font->color($color);
+                        $font->align($alignment === 'left' ? 'left' : ($alignment === 'right' ? 'right' : 'center'));
+                        $font->valign('middle');
+                    });
+                }
+                continue;
+            }
 
             $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $alignment, $fontFile) {
                 if ($fontFile) {
@@ -192,6 +321,18 @@ class CertificateService
             $positions = json_decode($template->placeholder_positions, true) ?? [];
         }
 
+        if (($template->include_barcode ?? false) && !isset($positions['barcode'])) {
+            $positions['barcode'] = [
+                'x_ratio' => 0.5,
+                'y_ratio' => 0.8,
+                'font_size' => 16,
+                'color' => '#000000',
+                'align' => 'center',
+                'is_qr' => $template->barcode_is_qr ?? true,
+                'qr_size' => $template->barcode_qr_size ?? 180,
+            ];
+        }
+
         $placeholders = [
             'name' => $name,
             'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
@@ -209,11 +350,50 @@ class CertificateService
             $y = $normalizedPos['y'] ?? ($height / 2);
             $fontSize = $normalizedPos['font_size'] ?? 24;
             $color = $normalizedPos['color'] ?? '#000000';
-            $fontFamily = $normalizedPos['font_family'] ?? 'Arial, sans-serif';
             $fontFile = $this->resolveFontFile($pos['font_file'] ?? null, $template->font_file ?? null);
             $alignment = $pos['align'] ?? $pos['alignment'] ?? 'center';
 
-            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment, $fontFamily) {
+            if ($key === 'barcode') {
+                $isQr = $template->barcode_is_qr ?? true;
+                if (isset($pos['is_qr'])) {
+                    $isQr = (bool) $pos['is_qr'];
+                }
+                $qrSize = isset($pos['qr_size']) ? (int) $pos['qr_size'] : ($template->barcode_qr_size ? (int) $template->barcode_qr_size : max(80, min(300, (int) ($fontSize * 4))));
+
+                if ($isQr) {
+                    try {
+                        $verifyUrl = route('pengembangan.verify', ['code' => $text]);
+                        $qr = Builder::create()
+                            ->writer(new PngWriter())
+                            ->data($verifyUrl)
+                            ->size(max(40, min(800, $qrSize)))
+                            ->margin(0)
+                            ->build();
+
+                        $tmpQr = sys_get_temp_dir() . '/qr_' . uniqid() . '.png';
+                        file_put_contents($tmpQr, $qr->getString());
+
+                        $left = (int) round($x - ($qrSize / 2));
+                        $top = (int) round($y - ($qrSize / 2));
+                        $img->place($tmpQr, 'top-left', $left, $top);
+
+                        $img->text($text, (int) $x, (int) ($y + ($qrSize / 2) + 10), function ($font) use ($fontSize, $color, $fontFile) {
+                            if ($fontFile) $font->file($fontFile);
+                            $font->size(max(10, (int) ($fontSize / 1.2)));
+                            $font->color($color);
+                            $font->align('center');
+                            $font->valign('top');
+                        });
+
+                        @unlink($tmpQr);
+                        continue;
+                    } catch (\Throwable $e) {
+                        // Fall back to text below if QR generation fails.
+                    }
+                }
+            }
+
+            $img->text($text, (int) $x, (int) $y, function ($font) use ($fontSize, $color, $fontFile, $alignment) {
                 if ($fontFile) $font->file($fontFile);
                 $font->size($fontSize);
                 $font->color($color);

@@ -43,18 +43,6 @@
                 </table>
             </div>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Pemateri lain (nama, pisahkan dengan koma)</label>
-            <input name="pemateri_names" value="{{ $pemateriNames }}" class="form-control" placeholder="Nama Pemateri Tambahan, Contoh: Narasumber A, Narasumber B" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Tanggal Mulai</label>
-            <input type="date" name="tanggal_mulai" class="form-control" value="{{ old('tanggal_mulai', optional($item->tanggal_mulai)->format('Y-m-d')) }}" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Tanggal Selesai</label>
-            <input type="date" name="tanggal_selesai" class="form-control" value="{{ old('tanggal_selesai', optional($item->tanggal_selesai)->format('Y-m-d')) }}" />
-        </div>
         @php
             $selectedGuruIds = old('guru_ids', $item->peserta->where('peserta_type','guru')->pluck('peserta_id')->filter()->all());
             $selectedSiswaIds = old('siswa_ids', $item->peserta->where('peserta_type','siswa')->pluck('peserta_id')->filter()->all());
@@ -68,6 +56,18 @@
                 return $gurus->contains('nama', $name);
             })->implode(', '));
         @endphp
+        <div class="mb-3">
+            <label class="form-label">Pemateri lain (nama, pisahkan dengan koma)</label>
+            <input name="pemateri_names" value="{{ $pemateriNames }}" class="form-control" placeholder="Nama Pemateri Tambahan, Contoh: Narasumber A, Narasumber B" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Tanggal Mulai</label>
+            <input type="date" name="tanggal_mulai" class="form-control" value="{{ old('tanggal_mulai', optional($item->tanggal_mulai)->format('Y-m-d')) }}" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Tanggal Selesai</label>
+            <input type="date" name="tanggal_selesai" class="form-control" value="{{ old('tanggal_selesai', optional($item->tanggal_selesai)->format('Y-m-d')) }}" />
+        </div>
         <div class="mb-3">
             <label class="form-label">Peserta</label>
             <div class="d-flex gap-2 align-items-center flex-wrap mb-2">

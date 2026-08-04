@@ -797,7 +797,7 @@
         <nav class="sidebar-nav-wrap">
             @php
                 $user = auth()->user();
-                $isGuru = $user->hasAnyRole(['Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket','Pembina']);
+                $isGuru = $user && $user->hasAnyRole(['Guru','Guru Mapel','Guru Kelas','Wali Kelas','Guru BK','Guru Piket','Pembina']);
                 $isGuruPiket = false;
                 if ($isGuru && $user->guru) {
                     $hrPkt = $user->guru->hari_piket ?? [];
@@ -807,7 +807,7 @@
                         'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
                     ];
                     $todayIndo = $map[$todayEng] ?? null;
-                    $isGuruPiket = in_array($todayIndo, (array) $hrPkt, true) || $user->hasAnyRole(['Admin','Kepala Sekolah']);
+                    $isGuruPiket = in_array($todayIndo, (array) $hrPkt, true) || ($user && $user->hasAnyRole(['Admin','Kepala Sekolah']));
                 }
                 $isModeAcademic = request()->query('mode') === 'academic';
                 $isModePiket = ! $isModeAcademic;
@@ -827,7 +827,7 @@
                 </li>
 
                 <!-- Akademik -->
-                @if($user->hasAnyRole(['Admin','Kepala Sekolah','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']))
+                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-school"></i> Akademik
@@ -836,19 +836,19 @@
                     <div class="collapse {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*']) ? 'show' : '' }}" id="subAkademik">
                         <ul class="sidebar-subnav">
                             <li class="nav-item"><a href="{{ route('jadwal-kbm.index') }}" class="nav-link {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal KBM</a></li>
-                            @if($isGuruPiket || $user->hasAnyRole(['Admin','Kepala Sekolah']))
+                            @if($isGuruPiket || ($user && $user->hasAnyRole(['Admin','Kepala Sekolah'])))
                                 <li class="nav-item"><a href="{{ route('guru_piket.index') }}" class="nav-link {{ request()->routeIs('guru_piket.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal Piket</a></li>
                             @endif
-                            @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
+                            @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah']))
                                 <li class="nav-item"><a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengaturan Jam</a></li>
                             @endif
-                                @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
+                                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah']))
                                     <li class="nav-item"><a href="{{ route('pengembangan.index') }}" class="nav-link {{ request()->routeIs('pengembangan.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Pengembangan Diri</a></li>
                                 @endif
-                            @if(!auth()->user()->hasRole('Siswa'))
+                            @if(!($user && $user->hasRole('Siswa')))
                                 <li class="nav-item"><a href="{{ route('tugas_guru.index') }}" class="nav-link {{ request()->routeIs('tugas_guru.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Beban Kerja Guru</a></li>
                             @endif
-                            @if(!auth()->user()->hasRole('Siswa'))
+                            @if(!($user && $user->hasRole('Siswa')))
                                 <li class="nav-item"><a href="{{ route('sk_tugas.index') }}" class="nav-link {{ request()->routeIs('sk_tugas.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> SK TUGAS</a></li>
                             @endif
                             @if($isGuru)
@@ -883,7 +883,7 @@
                 @endif
 
                 <!-- Pembelajaran (Siswa) -->
-                @if($user->hasRole('Siswa'))
+                @if($user && $user->hasRole('Siswa'))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaranSiswa" aria-expanded="{{ request()->routeIs('siswa.pembelajaran.*') ? 'true' : 'false' }}">
                         <i class="ti ti-book"></i> Pembelajaran
@@ -937,7 +937,7 @@
                 @endif
 
                 <!-- Guru BK -->
-                @if($user->hasRole('Guru BK'))
+                @if($user && $user->hasRole('Guru BK'))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subBk" aria-expanded="{{ request()->routeIs('guru_bk_layanan.*') ? 'true' : 'false' }}">
                         <i class="ti ti-user-plus"></i> Guru BK
@@ -964,7 +964,7 @@
                 @endif
 
                 <!-- Data Master -->
-                @if($user->hasAnyRole(['Admin','Kepala Sekolah','Wakil Kepala Sekolah']))
+                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Wakil Kepala Sekolah']))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subMaster" aria-expanded="{{ request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru_bk.*','guru.*','pembina.*','guru_piket.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','kegiatan.*','jenis_pelanggaran.*','ekskul.*','asc_timetable.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-database"></i> Data Master
@@ -1085,7 +1085,7 @@
                                     <i class="ti ti-circle-filled"></i> Panduan
                                 </a>
                             </li>
-                            @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
+                            @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah']))
                             <li class="nav-item">
                                 <a href="{{ route('tahun_ajaran.index') }}" class="nav-link {{ request()->routeIs('tahun_ajaran.index') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Dashboard Pengaturan
@@ -1121,7 +1121,7 @@
                                     <i class="ti ti-circle-filled"></i> About
                                 </a>
                             </li>
-                            @if($user->hasAnyRole(['Admin','Kepala Sekolah']))
+                            @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah']))
                             <li class="nav-item">
                                 <a href="{{ route('help.admin.index') }}" class="nav-link {{ request()->routeIs('help.admin.*') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Help
@@ -1163,7 +1163,7 @@
             <ul class="topbar-nav">
                 <li><a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}"><i class="ti ti-layout-dashboard me-1"></i> Dashboard</a></li>
                 <li><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') ? 'active' : '' }}"><i class="ti ti-clipboard-list me-1"></i> Absensi</a></li>
-                @if($user->hasAnyRole(['Admin','Kepala Sekolah','Wakil Kepala Sekolah']))
+                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Wakil Kepala Sekolah']))
                 <li><a href="{{ route('siswa.index') }}" class="nav-link {{ request()->routeIs('siswa.*') ? 'active' : '' }}"><i class="ti ti-users me-1"></i> Siswa</a></li>
                 @endif
             </ul>
@@ -1178,7 +1178,7 @@
                         <li>
                             <div class="px-3 py-2">
                                 <div class="fw-semibold">{{ $user->name ?? 'User' }}</div>
-                                <div class="text-muted small">{{ $user->role->role_name ?? 'User' }}</div>
+                                <div class="text-muted small">{{ $user?->role?->role_name ?? 'User' }}</div>
                             </div>
                         </li>
                         <li><hr class="dropdown-divider m-0"></li>

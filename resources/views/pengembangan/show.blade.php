@@ -69,7 +69,7 @@
                     <h5 class="card-title fw-semibold m-0">Peserta</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ route('pengembangan.generate_certificates',$item->id) }}">
+                    <form method="POST" action="{{ route('pengembangan.generate_certificates',$item->id) }}" enctype="multipart/form-data">
                         @csrf
                         <div class="row g-3">
                             <div class="col-md-7">
@@ -105,6 +105,20 @@
                                     <label class="form-label">Nomor Sertifikat</label>
                                     <input type="text" id="nomorSuratInput" name="nomor_surat" class="form-control" value="{{ old('nomor_surat', $defaultNomorSertifikat ?? '') }}" placeholder="Contoh: SRT-001/2026" />
                                     <small class="text-muted">Nomor ini akan disimpan pada setiap sertifikat yang dibuat.</small>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Bukti Dukung: Daftar Hadir</label>
+                                    <input type="file" name="bukti_dukung_daftar_hadir" class="form-control" accept=".pdf,image/*">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Bukti Dukung: Dokumentasi</label>
+                                    <input type="file" name="bukti_dukung_dokumentasi[]" class="form-control" accept=".pdf,image/*" multiple>
+                                    <small class="text-muted">Pilih lebih dari satu file dokumentasi jika diperlukan.</small>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Bukti Dukung: Materi</label>
+                                    <input type="file" name="bukti_dukung_materi[]" class="form-control" accept=".pdf,.doc,.docx,image/*" multiple>
+                                    <small class="text-muted">Pilih lebih dari satu file materi jika diperlukan.</small>
                                 </div>
                                 <div class="text-muted small mt-2">
                                     Gunakan tombol di bawah untuk menyimpan pengaturan nomor surat dan template yang dipilih tanpa langsung membuat sertifikat.
@@ -210,6 +224,87 @@
             </div>
             {{-- End Daftar Sertifikat --}}
 
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title fw-semibold m-0">Keterangan Bukti Dukung</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if($certificates->isEmpty())
+                        <div class="text-center text-muted py-4">
+                            <i class="ti ti-file-description-off fs-1 d-block mb-2"></i>
+                            Belum ada bukti dukung karena sertifikat belum dibuat.
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px">No</th>
+                                        <th>Peserta</th>
+                                        <th>Daftar Hadir</th>
+                                        <th>Dokumentasi</th>
+                                        <th>Materi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($certificates as $idx => $cert)
+                                        <tr>
+                                            <td>{{ $idx + 1 }}</td>
+                                            <td>{{ $cert->participant_name ?? ($cert->peserta_name ?? ($cert->peserta_type . ' #' . $cert->peserta_id)) }}</td>
+                                            <td>
+                                                @if($cert->bukti_dukung_daftar_hadir)
+                                                    <a href="{{ asset('storage/' . $cert->bukti_dukung_daftar_hadir) }}" target="_blank">Lihat</a>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if(!empty($cert->bukti_dukung_dokumentasi))
+                                                    <ul class="list-unstyled mb-0">
+                                                        @foreach((array) $cert->bukti_dukung_dokumentasi as $idx => $path)
+                                                            <li>
+                                                                <a href="{{ asset('storage/' . $path) }}" target="_blank">{{ basename($path) }}</a>
+                                                                <button type="button" class="btn btn-link btn-sm p-0 ms-2 evidence-preview-btn" data-url="{{ asset('storage/' . $path) }}" data-name="{{ basename($path) }}">Preview</button>
+                                                                <form action="{{ route('pengembangan.certificates.evidence.destroy', ['id' => $cert->id, 'type' => 'dokumentasi', 'index' => $idx]) }}" method="POST" class="d-inline ms-2">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-link btn-sm p-0 text-danger">Hapus</button>
+                                                                </form>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if(!empty($cert->bukti_dukung_materi))
+                                                    <ul class="list-unstyled mb-0">
+                                                        @foreach((array) $cert->bukti_dukung_materi as $idx => $path)
+                                                            <li>
+                                                                <a href="{{ asset('storage/' . $path) }}" target="_blank">{{ basename($path) }}</a>
+                                                                <button type="button" class="btn btn-link btn-sm p-0 ms-2 evidence-preview-btn" data-url="{{ asset('storage/' . $path) }}" data-name="{{ basename($path) }}">Preview</button>
+                                                                <form action="{{ route('pengembangan.certificates.evidence.destroy', ['id' => $cert->id, 'type' => 'materi', 'index' => $idx]) }}" method="POST" class="d-inline ms-2">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-link btn-sm p-0 text-danger">Hapus</button>
+                                                                </form>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                @else
+                                                    -
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
 {{-- Hidden forms for individual certificate deletion --}}
 @foreach($certificates as $cert)
 <form method="POST" action="{{ route('pengembangan.certificates.destroy', $cert->id) }}" id="delete-cert-form-{{ $cert->id }}" style="display:none">
@@ -217,6 +312,23 @@
 </form>
 @endforeach
 
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="evidencePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="evidencePreviewModalLabel">Preview Bukti Dukung</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="evidencePreviewName" class="fw-semibold"></p>
+                <div id="evidencePreviewContent" class="ratio ratio-16x9">
+                    <iframe id="evidencePreviewFrame" src="" frameborder="0" allowfullscreen></iframe>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -242,6 +354,16 @@ document.addEventListener('DOMContentLoaded', function(){
     previewSelect?.addEventListener('change', updatePreviewHref);
     templateSelect?.addEventListener('change', updatePreviewHref);
     document.getElementById('nomorSuratInput')?.addEventListener('input', updatePreviewHref);
+
+    document.querySelectorAll('.evidence-preview-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const url = this.dataset.url;
+            const name = this.dataset.name;
+            document.getElementById('evidencePreviewName').textContent = name;
+            document.getElementById('evidencePreviewFrame').src = url;
+            new bootstrap.Modal(document.getElementById('evidencePreviewModal')).show();
+        });
+    });
 
     // Inisialisasi tombol hapus terpilih
     toggleDeleteButton();

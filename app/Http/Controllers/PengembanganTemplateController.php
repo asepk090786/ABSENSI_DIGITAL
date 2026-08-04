@@ -47,11 +47,34 @@ class PengembanganTemplateController extends Controller
             $positionsJson = json_encode($r->input('pos'));
         }
 
+        $positionsArr = json_decode($positionsJson ?: '{}', true) ?? [];
+        $includeBarcode = $r->boolean('include_barcode');
+
+        if ($includeBarcode) {
+            $barcodeConfig = $positionsArr['barcode'] ?? [];
+            $positionsArr['barcode'] = array_merge([
+                'x_ratio' => 0.5,
+                'y_ratio' => 0.8,
+                'font_size' => 16,
+                'color' => '#000000',
+                'align' => 'center',
+                'is_qr' => true,
+                'qr_size' => 180,
+            ], $barcodeConfig);
+        } else {
+            unset($positionsArr['barcode']);
+        }
+
+        $positionsJson = !empty($positionsArr) ? json_encode($positionsArr) : null;
+
         // Handle font file upload
         $fontPath = null;
         if ($r->hasFile('font_file')) {
             $fontPath = $r->file('font_file')->store('certificate_fonts', 'public');
         }
+
+        $barcodeIsQr = isset($positionsArr['barcode']['is_qr']) ? (int) (bool) $positionsArr['barcode']['is_qr'] : 1;
+        $barcodeQrSize = isset($positionsArr['barcode']['qr_size']) ? (int) $positionsArr['barcode']['qr_size'] : null;
 
         $insertData = [
             'nama' => $data['nama'] ?? null,
@@ -63,6 +86,9 @@ class PengembanganTemplateController extends Controller
             'placeholder_positions' => $positionsJson,
             'editor_mode' => $data['editor_mode'] ?? 'image',
             'font_file' => $fontPath,
+            'include_barcode' => $r->boolean('include_barcode') ? 1 : 0,
+            'barcode_is_qr' => isset($positionsArr['barcode']['is_qr']) ? (int) (bool) $positionsArr['barcode']['is_qr'] : 1,
+            'barcode_qr_size' => isset($positionsArr['barcode']['qr_size']) ? (int) $positionsArr['barcode']['qr_size'] : null,
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -135,6 +161,26 @@ class PengembanganTemplateController extends Controller
             $positionsJson = json_encode($r->input('pos'));
         }
 
+        $positionsArr = json_decode($positionsJson ?? $item->placeholder_positions ?? '{}', true) ?? [];
+        $includeBarcode = $r->boolean('include_barcode');
+
+        if ($includeBarcode) {
+            $barcodeConfig = $positionsArr['barcode'] ?? [];
+            $positionsArr['barcode'] = array_merge([
+                'x_ratio' => 0.5,
+                'y_ratio' => 0.8,
+                'font_size' => 16,
+                'color' => '#000000',
+                'align' => 'center',
+                'is_qr' => true,
+                'qr_size' => 180,
+            ], $barcodeConfig);
+        } else {
+            unset($positionsArr['barcode']);
+        }
+
+        $positionsJson = !empty($positionsArr) ? json_encode($positionsArr) : null;
+
         // Handle font file upload
         $fontPath = $item->font_file ?? null;
         if ($r->hasFile('font_file')) {
@@ -144,15 +190,21 @@ class PengembanganTemplateController extends Controller
             }
         }
 
+        $barcodeIsQr = isset($positionsArr['barcode']['is_qr']) ? (int) (bool) $positionsArr['barcode']['is_qr'] : ($item->barcode_is_qr ?? 1);
+        $barcodeQrSize = isset($positionsArr['barcode']['qr_size']) ? (int) $positionsArr['barcode']['qr_size'] : ($item->barcode_qr_size ?? null);
+
         $updateData = [
             'nama' => $data['nama'] ?? null,
             'template_html' => $data['template_html'] ?? null,
             'output_format' => $data['output_format'] ?? 'pdf',
             'page_size' => $data['page_size'] ?? 'A4',
             'page_orientation' => $data['page_orientation'] ?? 'portrait',
-            'placeholder_positions' => $positionsJson ?? $data['placeholder_positions'] ?? null,
+            'placeholder_positions' => $positionsJson,
             'editor_mode' => $data['editor_mode'] ?? 'image',
             'font_file' => $fontPath,
+            'include_barcode' => $includeBarcode ? 1 : 0,
+            'barcode_is_qr' => $barcodeIsQr,
+            'barcode_qr_size' => $barcodeQrSize,
             'updated_at' => now(),
         ];
         if ($backgroundPath) {

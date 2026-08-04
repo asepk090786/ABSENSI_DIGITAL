@@ -51,6 +51,15 @@
                             <label class="form-label">Background Template (JPEG/PNG) <span class="text-danger">*</span></label>
                             <input type="file" name="background_image" id="bgInput" class="form-control" accept="image/jpeg,image/png" required>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Opsi QR Verifikasi</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_barcode" value="1" id="includeBarcodeCreate" checked>
+                                <label class="form-check-label small" for="includeBarcodeCreate">Tampilkan kode verifikasi (QR) pada template</label>
+                            </div>
+                            <small class="text-muted d-block">Centang untuk menyertakan QR yang mengarah ke halaman verifikasi.</small>
+                            <button type="button" id="addBarcodePlhCreateBtn" class="btn btn-outline-primary btn-sm mt-2">Tempatkan QR Verifikasi</button>
+                        </div>
                     </div>
 
                     <input type="hidden" id="placeholderPositions" name="placeholder_positions" value="">
@@ -78,7 +87,7 @@
                                         </div>
                                         <div class="mb-1">
                                             <label class="form-label small mb-0">Ukuran Font</label>
-                                            <input id="propFontSize" type="number" class="form-control form-control-sm" min="8" max="200">
+                                            <input id="propFontSize" type="number" class="form-control form-control-sm" min="1" max="200">
                                         </div>
                                         <div class="mb-1">
                                             <label class="form-label small mb-0">Font</label>
@@ -95,6 +104,16 @@
                                         <div class="mb-1">
                                             <label class="form-label small mb-0">Warna</label>
                                             <input id="propColor" type="color" class="form-control form-control-color">
+                                        </div>
+                                        <div id="qrControlsCreate" style="display:none;">
+                                            <div class="form-check mb-1">
+                                                <input class="form-check-input" type="checkbox" id="propIsQrCreate">
+                                                <label class="form-check-label small" for="propIsQrCreate">Render sebagai QR</label>
+                                            </div>
+                                            <div class="mb-1">
+                                                <label class="form-label small mb-0">Ukuran QR (px)</label>
+                                                <input id="propQrSizeCreate" type="number" class="form-control form-control-sm" min="40" max="800">
+                                            </div>
                                         </div>
                                         <div class="row g-1 mb-1">
                                             <div class="col-6">
@@ -136,6 +155,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     var bgInput = document.getElementById('bgInput');
+    var includeBarcodeCreate = document.getElementById('includeBarcodeCreate');
+    var addBarcodeCreateBtn = document.getElementById('addBarcodePlhCreateBtn');
     var form = document.getElementById('templateForm');
     var hiddenPos = document.getElementById('placeholderPositions');
     var propField = document.getElementById('propField');
@@ -156,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
         name: { label: 'Nama Peserta', x: 450, y: 200, size: 36, color: '#000000' },
         'kegiatan->nama_kegiatan': { label: 'Nama Kegiatan', x: 450, y: 290, size: 26, color: '#000000' },
         'kegiatan->tema_kegiatan': { label: 'Tema Kegiatan', x: 450, y: 350, size: 20, color: '#000000' },
-        barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 16, color: '#000000' },
+        barcode: { label: 'Kode Verifikasi', x: 450, y: 480, size: 16, color: '#000000', is_qr: true },
         nomor_surat: { label: 'Nomor Surat', x: 450, y: 430, size: 18, color: '#000000' },
     };
 
@@ -172,20 +193,34 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!d) return;
         var scale = getCanvasScaleFactor();
         var previewFontSize = (opts.fontSize || d.size) * scale;
-        var t = new fabric.Text(opts.text || d.label, {
+        var isBarcodeQr = key === 'barcode' && ((opts.is_qr !== undefined) ? opts.is_qr : d.is_qr);
+        var textLabel = isBarcodeQr ? 'QR' : (opts.text || d.label);
+        var t = new fabric.Text(textLabel, {
             key: key, left: opts.x || d.x, top: opts.y || d.y,
             fontSize: previewFontSize, fill: opts.color || d.color,
             originX: 'center', originY: 'center', fontFamily: 'Arial, sans-serif',
             fontWeight: 'bold', padding: 10, cornerSize: 8,
             transparentCorners: false, cornerColor: '#0d6efd',
             borderColor: '#0d6efd', hasRotatingPoint: false, lockRotation: true,
+            stroke: isBarcodeQr ? '#000000' : undefined,
+            strokeWidth: isBarcodeQr ? 0.8 : 0,
         });
+        if (key === 'barcode') {
+            t.is_qr = (opts.is_qr !== undefined) ? opts.is_qr : true;
+            t.qr_size = (opts.qr_size !== undefined) ? opts.qr_size : (d.size * 4);
+            if (t.is_qr) {
+                t.text = 'QR';
+            }
+        }
         textObjects[key] = t;
         canvas.add(t);
     }
 
     function init() {
         Object.keys(defaults).forEach(function(k) {
+            if (k === 'barcode' && includeBarcodeCreate && !includeBarcodeCreate.checked) {
+                return;
+            }
             if (!textObjects[k]) addText(k, {});
         });
         canvas.renderAll();
@@ -206,6 +241,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 color: o.fill,
                 align: 'center'
             };
+            if (k === 'barcode') {
+                p[k].is_qr = !!o.is_qr;
+                p[k].qr_size = o.qr_size || Math.max(80, Math.round((o.fontSize || defaults[k].size) * 4));
+            }
         });
         return JSON.stringify(p);
     }
@@ -218,6 +257,12 @@ document.addEventListener('DOMContentLoaded', function() {
         propField.value = obj.key; propFontSize.value = Math.max(1, Math.round((obj.fontSize || 24) / (scale || 1)));
         propColor.value = obj.fill; propX.value = Math.round(obj.left);
         propY.value = Math.round(obj.top);
+        if (obj.key === 'barcode') {
+            var propIsQr = document.getElementById('propIsQrCreate');
+            var propQrSize = document.getElementById('propQrSizeCreate');
+            if (propIsQr) propIsQr.checked = !!obj.is_qr;
+            if (propQrSize) propQrSize.value = obj.qr_size || Math.max(80, Math.round((obj.fontSize || 24) * 4));
+        }
         updating = false;
     }
 
@@ -241,6 +286,20 @@ document.addEventListener('DOMContentLoaded', function() {
         var o = canvas.getActiveObject();
         if (o && o.key) { o.set({ fill: this.value }); canvas.renderAll(); }
     });
+    var propIsQrCreate = document.getElementById('propIsQrCreate');
+    var propQrSizeCreate = document.getElementById('propQrSizeCreate');
+    if (propIsQrCreate) {
+        propIsQrCreate.addEventListener('change', function() {
+            var o = canvas.getActiveObject(); if (!o || !o.key) return;
+            o.is_qr = this.checked;
+        });
+    }
+    if (propQrSizeCreate) {
+        propQrSizeCreate.addEventListener('change', function() {
+            var o = canvas.getActiveObject(); if (!o || !o.key) return;
+            o.qr_size = parseInt(this.value) || o.qr_size || 120;
+        });
+    }
     propX.addEventListener('change', function() {
         if (updating) return; var o = canvas.getActiveObject();
         if (o && o.key) { o.set({ left: parseInt(this.value) || 0 }); canvas.renderAll(); }
@@ -306,6 +365,47 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (d.error) { alert(d.error); }
         }).catch(function() { alert('Gagal preview'); });
     });
+
+    function addBarcodePlaceholder() {
+        if (textObjects['barcode']) return;
+        var canvasW = canvas.width || 900;
+        var canvasH = canvas.height || 600;
+        var previewX = defaults['barcode'].x;
+        var previewY = defaults['barcode'].y;
+        addText('barcode', { x: previewX, y: previewY, fontSize: defaults['barcode'].size, color: defaults['barcode'].color });
+        canvas.renderAll();
+    }
+
+    if (addBarcodeCreateBtn) {
+        addBarcodeCreateBtn.addEventListener('click', function() {
+            if (includeBarcodeCreate && !includeBarcodeCreate.checked) {
+                includeBarcodeCreate.checked = true;
+            }
+            addBarcodePlaceholder();
+        });
+    }
+
+    // Barcode inclusion toggle for create
+    if (includeBarcodeCreate) {
+        includeBarcodeCreate.addEventListener('change', function() {
+            if (this.checked) {
+                if (!textObjects['barcode']) {
+                    var canvasW = canvas.width || 900;
+                    var canvasH = canvas.height || 600;
+                    var previewX = defaults['barcode'].x;
+                    var previewY = defaults['barcode'].y;
+                    addText('barcode', { x: previewX, y: previewY, fontSize: defaults['barcode'].size, color: defaults['barcode'].color });
+                    canvas.renderAll();
+                }
+            } else {
+                if (textObjects['barcode']) {
+                    canvas.remove(textObjects['barcode']);
+                    delete textObjects['barcode'];
+                    canvas.renderAll();
+                }
+            }
+        });
+    }
 
     init();
 });
