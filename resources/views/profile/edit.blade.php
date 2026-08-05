@@ -72,7 +72,7 @@
 
                         <div class="form-group{{ $errors->has('foto') ? ' has-danger' : '' }}">
                             <label>Foto Profile</label>
-                            <input type="file" id="fotoInput" name="foto" class="form-control{{ $errors->has('foto') ? ' is-invalid' : '' }}" accept="image/*" capture="environment" onchange="previewImage(event)">
+                            <input type="file" id="fotoInput" name="foto" class="form-control{{ $errors->has('foto') ? ' is-invalid' : '' }}" accept="image/*" onchange="previewImage(event)">
                             <input type="hidden" id="fotoDataInput" name="foto_data" value="">
                             <div class="mt-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="cameraCaptureBtn" data-bs-toggle="modal" data-bs-target="#cameraModal">

@@ -139,11 +139,21 @@ class RencanaPembelajaranController extends Controller
         }
 
         $mataPelajaran = MataPelajaran::find($mataPelajaranId);
+        $previewItem = null;
+        if ($request->has('preview')) {
+            $previewId = $request->query('preview');
+            $previewItem = RencanaPembelajaran::where('guru_id', $guru->id)
+                ->where('mata_pelajaran_id', $mataPelajaranId)
+                ->where('id', $previewId)
+                ->with(['mataPelajaran', 'kelas'])
+                ->first();
+        }
 
         return view('rencana_pembelajaran.index', [
             'items' => $items,
             'mataPelajaran' => $mataPelajaran,
             'tingkat' => $tingkat,
+            'previewItem' => $previewItem,
         ]);
     }
 
@@ -161,6 +171,26 @@ class RencanaPembelajaranController extends Controller
         }
 
         return $query;
+    }
+
+    private function getAllowedKelasIdsForRencana(int $mataPelajaranId, string $tingkat)
+    {
+        $guru = auth()->user()->guru;
+        if (!$guru) {
+            return collect();
+        }
+
+        return \App\Models\JadwalKbm::where('guru_id', $guru->id)
+            ->where('mata_pelajaran_id', $mataPelajaranId)
+            ->with('kelas')
+            ->get()
+            ->pluck('kelas')
+            ->filter(function ($k) use ($tingkat) {
+                return $k->tingkat_kelas == $tingkat;
+            })
+            ->pluck('id')
+            ->unique()
+            ->values();
     }
 
     public function create(Request $request)
@@ -209,6 +239,12 @@ class RencanaPembelajaranController extends Controller
             'metode' => 'nullable|string',
             'media' => 'nullable|string',
             'sumber' => 'nullable|string',
+            'alokasi_waktu' => 'nullable|string',
+            'praktik_pedagogis' => 'nullable|string',
+            'lingkungan_pembelajaran' => 'nullable|string',
+            'pemanfaatan_digital' => 'nullable|string',
+            'pengalaman_pembelajaran' => 'nullable|string',
+            'refleksi_pembelajaran' => 'nullable|string',
             'penilaian' => 'nullable|string',
             'komponen_nilai_ids' => 'nullable|array',
             'komponen_nilai_ids.*' => 'exists:komponen_nilai,id',
@@ -221,6 +257,13 @@ class RencanaPembelajaranController extends Controller
         $mataPelajaranId = $validated['mata_pelajaran_id'];
         $tingkat = Kelas::find($validated['kelas_ids'][0])->tingkat_kelas;
         $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
+
+        if (!$this->isAdminOrKepala()) {
+            $allowedKelasIds = $this->getAllowedKelasIdsForRencana($mataPelajaranId, $tingkat)->toArray();
+            if (count(array_diff($validated['kelas_ids'], $allowedKelasIds)) > 0) {
+                abort(403, 'Salah satu kelas tidak termasuk dalam jadwal pelajaran Anda.');
+            }
+        }
 
         if (!empty($komponenNilaiIds) && auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
             $allowedKomponenIds = $this->scopedKomponenNilaiQuery()
@@ -260,8 +303,27 @@ class RencanaPembelajaranController extends Controller
     /**
      * Display the specified resource.
      */
+    private function isAdminOrKepala(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
+    }
+
+    private function authorizeRencanaPembelajaran(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        if ($this->isAdminOrKepala()) {
+            return;
+        }
+
+        $guru = auth()->user()->guru;
+        if (!$guru || $rencanaPembelajaran->guru_id !== $guru->id) {
+            abort(403, 'Anda tidak memiliki akses ke rencana pembelajaran ini.');
+        }
+    }
+
     public function show(RencanaPembelajaran $rencanaPembelajaran)
     {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
         return view('rencana_pembelajaran.show', ['item' => $rencanaPembelajaran]);
     }
 
@@ -270,10 +332,13 @@ class RencanaPembelajaranController extends Controller
      */
     public function edit(RencanaPembelajaran $rencanaPembelajaran)
     {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
         $guru = auth()->user()->guru;
+        $guruId = $guru ? $guru->id : $rencanaPembelajaran->guru_id;
         
-        // Get only classes that this guru teaches for this subject and level
-        $kelas = \App\Models\JadwalKbm::where('guru_id', $guru->id)
+        // Get only classes for this subject and level
+        $kelas = \App\Models\JadwalKbm::where('guru_id', $guruId)
             ->where('mata_pelajaran_id', $rencanaPembelajaran->mata_pelajaran_id)
             ->with('kelas')
             ->get()
@@ -307,6 +372,8 @@ class RencanaPembelajaranController extends Controller
      */
     public function update(Request $request, RencanaPembelajaran $rencanaPembelajaran)
     {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'judul' => 'required|string|max:255',
@@ -315,6 +382,12 @@ class RencanaPembelajaranController extends Controller
             'metode' => 'nullable|string',
             'media' => 'nullable|string',
             'sumber' => 'nullable|string',
+            'alokasi_waktu' => 'nullable|string',
+            'praktik_pedagogis' => 'nullable|string',
+            'lingkungan_pembelajaran' => 'nullable|string',
+            'pemanfaatan_digital' => 'nullable|string',
+            'pengalaman_pembelajaran' => 'nullable|string',
+            'refleksi_pembelajaran' => 'nullable|string',
             'penilaian' => 'nullable|string',
             'komponen_nilai_ids' => 'nullable|array',
             'komponen_nilai_ids.*' => 'exists:komponen_nilai,id',
@@ -355,6 +428,8 @@ class RencanaPembelajaranController extends Controller
      */
     public function destroy(RencanaPembelajaran $rencanaPembelajaran)
     {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
         $mataPelajaranId = $rencanaPembelajaran->mata_pelajaran_id;
         $tingkat = $rencanaPembelajaran->kelas->tingkat_kelas;
 
@@ -396,49 +471,72 @@ class RencanaPembelajaranController extends Controller
         $table = $section->addTable(['borderSize' => 6, 'borderColor' => '000000']);
         
         $table->addRow();
-        $table->addCell(2000)->addText('Judul', ['bold' => true]);
-        $table->addCell(6000)->addText('[Masukkan judul rencana pembelajaran di sini]');
+        $table->addCell(2500)->addText('Judul', ['bold' => true]);
+        $table->addCell(5500)->addText('[Masukkan judul rencana pembelajaran di sini]');
         
         $table->addRow();
-        $table->addCell(2000)->addText('Mata Pelajaran', ['bold' => true]);
-        $table->addCell(6000)->addText('[Nama mata pelajaran]');
+        $table->addCell(2500)->addText('Mata Pelajaran', ['bold' => true]);
+        $table->addCell(5500)->addText('[Nama mata pelajaran]');
         
         $table->addRow();
-        $table->addCell(2000)->addText('Kelas', ['bold' => true]);
-        $table->addCell(6000)->addText('[Nama kelas]');
+        $table->addCell(2500)->addText('Kelas / Fase', ['bold' => true]);
+        $table->addCell(5500)->addText('[Kelas / Fase]');
         
         $table->addRow();
-        $table->addCell(2000)->addText('Status', ['bold' => true]);
-        $table->addCell(6000)->addText('[Draft / Published]');
+        $table->addCell(2500)->addText('Status', ['bold' => true]);
+        $table->addCell(5500)->addText('[Draft / Published]');
+        
+        $table->addRow();
+        $table->addCell(2500)->addText('Alokasi Waktu', ['bold' => true]);
+        $table->addCell(5500)->addText('[... JP]');
         
         $section->addText('');
         
-        // Content sections
-        $section->addText('DESKRIPSI', ['bold' => true, 'size' => 12]);
-        $section->addText('[Deskripsi singkat tentang rencana pembelajaran...]');
+        $section->addText('CAPAIAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Tuliskan capaian pembelajaran sesuai dengan format yang berlaku]');
         $section->addText('');
         
         $section->addText('TUJUAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Tuliskan tujuan pembelajaran yang ingin dicapai...]');
+        $section->addText('[Sebutkan tujuan pembelajaran yang mengacu pada capaian pembelajaran]');
         $section->addText('');
         
         $section->addText('METODE PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Jelaskan metode pembelajaran yang akan digunakan...]');
+        $section->addText('[Metode: ceramah, diskusi, tanya jawab, presentasi, penugasan, refleksi, dll.]');
         $section->addText('');
         
         $section->addText('MEDIA PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Sebutkan media yang akan digunakan dalam pembelajaran...]');
+        $section->addText('[Buku, SIMADIS, GeoGebra, PowerPoint, Video, Internet, LKPD Digital, dll.]');
         $section->addText('');
         
         $section->addText('SUMBER BELAJAR', ['bold' => true, 'size' => 12]);
-        $section->addText('[Referensi buku, link, atau sumber lain yang digunakan...]');
+        $section->addText('[Referensi buku, website, lembar kegiatan, atau sumber lain]');
+        $section->addText('');
+        
+        $section->addText('PRAKTIK PEDAGOGIS', ['bold' => true, 'size' => 12]);
+        $section->addText('[Model Pembelajaran, Metode, Pendekatan, dll.]');
+        $section->addText('');
+        
+        $section->addText('LINGKUNGAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Ruang fisik, ruang virtual, budaya belajar, dukungan lingkungan]');
+        $section->addText('');
+        
+        $section->addText('PEMANFAATAN DIGITAL', ['bold' => true, 'size' => 12]);
+        $section->addText('[Buku, SIMADIS, GeoGebra, PowerPoint, Video, Internet, LKPD Digital, dll.]');
+        $section->addText('');
+        
+        $section->addText('PENGALAMAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Pendahuluan, Inti, Penutup. Tuliskan kegiatan pembelajaran pada setiap tahap.]');
+        $section->addText('');
+        
+        $section->addText('REFLEKSI PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Refleksi guru dan peserta didik]');
         $section->addText('');
         
         $section->addText('PENILAIAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Jelaskan metode penilaian dan kriteria penilaian...]');
+        $section->addText('[Diagnostik, Formatif, Observasi, Kuis, Sumatif, dll.]');
         
-        // Generate filename
-        $filename = 'Template_Rencana_Pembelajaran_' . date('Y-m-d') . '.docx';
+        // Generate filename using the attached template name
+        $filename = 'Template_Rencana_Pembelajaran.docx';
         
         // Create writer and output to stream
         $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
@@ -459,6 +557,8 @@ class RencanaPembelajaranController extends Controller
      */
     public function export(RencanaPembelajaran $rencanaPembelajaran)
     {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
         $phpWord = new \PhpOffice\PhpWord\PhpWord();
         
         // Set default font
@@ -613,70 +713,150 @@ class RencanaPembelajaranController extends Controller
 
         try {
             $file = $request->file('file');
-            $tmpFile = $file->store('temp');
-            $filePath = storage_path('app/' . $tmpFile);
+            $docxPath = \Storage::putFile('rencana_pembelajaran/docx', $file);
+            $filePath = storage_path('app/' . $docxPath);
 
-            // Read Word document
             $phpWord = \PhpOffice\PhpWord\IOFactory::load($filePath);
-            
-            // Extract text from document
+
             $extractedText = '';
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
-                    if (method_exists($element, 'getText')) {
-                        $extractedText .= $element->getText() . "\n";
-                    } elseif ($element instanceof \PhpOffice\PhpWord\Element\Table) {
+                    if ($element instanceof \PhpOffice\PhpWord\Element\Table) {
                         foreach ($element->getRows() as $row) {
+                            $cells = [];
                             foreach ($row->getCells() as $cell) {
-                                $extractedText .= $cell->getText() . " | ";
+                                $cells[] = $this->extractWordElementText($cell);
                             }
-                            $extractedText .= "\n";
+                            $rowText = trim(implode(' | ', array_filter($cells)));
+                            if ($rowText !== '') {
+                                $extractedText .= $rowText . "\n";
+                            }
+                        }
+                    } else {
+                        $line = $this->extractWordElementText($element);
+                        if ($line !== '') {
+                            $extractedText .= $line . "\n";
                         }
                     }
                 }
             }
 
-            // Parse extracted data - look for key patterns
             $data = $this->parseWordDocument($extractedText);
 
             if (empty($data['judul'])) {
                 return back()->with('error', 'Tidak dapat menemukan judul dalam dokumen Word.');
             }
 
-            // Create rencana pembelajaran for each selected class
-            $guru = auth()->user()->guru;
-            $mataPelajaranId = $request->input('mata_pelajaran_id');
-            $tingkat = Kelas::find($request->input('kelas_ids')[0])->tingkat_kelas;
-
-            foreach ($request->input('kelas_ids') as $kelasId) {
-                $rencana = new RencanaPembelajaran();
-                $rencana->guru_id = $guru->id;
-                $rencana->mata_pelajaran_id = $mataPelajaranId;
-                $rencana->kelas_id = $kelasId;
-                $rencana->judul = $data['judul'];
-                $rencana->capaian_pembelajaran = $data['deskripsi'] ?? null;
-                $rencana->tujuan = $data['tujuan'] ?? null;
-                $rencana->metode = $data['metode'] ?? null;
-                $rencana->media = $data['media'] ?? null;
-                $rencana->sumber = $data['sumber'] ?? null;
-                $rencana->penilaian = $data['penilaian'] ?? null;
-                $rencana->status = 'draft';
-                $rencana->save();
+            $data['status'] = isset($data['status']) ? strtolower(trim($data['status'])) : 'draft';
+            if (! in_array($data['status'], ['draft', 'published'])) {
+                $data['status'] = 'draft';
             }
 
-            // Clean up temp file
-            \Storage::delete($tmpFile);
+            $data['html_content'] = $this->convertDocxToHtml($filePath);
+            $mataPelajaranId = $request->input('mata_pelajaran_id');
+            $kelasIds = $request->input('kelas_ids');
+            $selectedKelas = Kelas::whereIn('id', $kelasIds)->get();
+            $mataPelajaran = MataPelajaran::find($mataPelajaranId);
 
-            return redirect()
-                ->route('rencana_pembelajaran.index', [
-                    'mata_pelajaran_id' => $mataPelajaranId,
-                    'tingkat' => $tingkat,
-                ])
-                ->with('success', 'Rencana pembelajaran berhasil diimport untuk ' . count($request->input('kelas_ids')) . ' kelas.');
+            if (!$this->isAdminOrKepala()) {
+                $tingkat = $selectedKelas->first()->tingkat_kelas ?? null;
+                $allowedKelasIds = $this->getAllowedKelasIdsForRencana($mataPelajaranId, $tingkat)->toArray();
+                if (count(array_diff($kelasIds, $allowedKelasIds)) > 0) {
+                    return back()->with('error', 'Salah satu kelas tidak termasuk dalam jadwal pelajaran Anda.');
+                }
+            }
 
+            return view('rencana_pembelajaran.import_preview', [
+                'mataPelajaran' => $mataPelajaran,
+                'selectedKelas' => $selectedKelas,
+                'selectedKelasIds' => $kelasIds,
+                'importData' => $data,
+                'originalDocxPath' => $docxPath,
+                'fileName' => $file->getClientOriginalName(),
+            ]);
         } catch (\Exception $e) {
             return back()->with('error', 'Error saat membaca dokumen: ' . $e->getMessage());
         }
+    }
+
+    public function importConfirm(Request $request)
+    {
+        $validated = $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_ids' => 'required|array|min:1',
+            'kelas_ids.*' => 'exists:kelas,id',
+            'original_docx_path' => 'required|string',
+            'judul' => 'required|string|max:255',
+            'capaian_pembelajaran' => 'nullable|string',
+            'tujuan' => 'nullable|string',
+            'metode' => 'nullable|string',
+            'media' => 'nullable|string',
+            'sumber' => 'nullable|string',
+            'alokasi_waktu' => 'nullable|string',
+            'praktik_pedagogis' => 'nullable|string',
+            'lingkungan_pembelajaran' => 'nullable|string',
+            'pemanfaatan_digital' => 'nullable|string',
+            'pengalaman_pembelajaran' => 'nullable|string',
+            'refleksi_pembelajaran' => 'nullable|string',
+            'penilaian' => 'nullable|string',
+            'status' => 'required|in:draft,published',
+            'html_content' => 'nullable|string',
+        ]);
+
+        if (!\Storage::exists($validated['original_docx_path'])) {
+            return back()->with('error', 'File DOCX asli tidak ditemukan di server. Silakan ulangi proses upload.');
+        }
+
+        $guru = auth()->user()->guru;
+        $mataPelajaranId = $validated['mata_pelajaran_id'];
+        $kelasIds = $validated['kelas_ids'];
+        $status = $validated['status'];
+        $htmlContent = isset($validated['html_content']) ? base64_decode($validated['html_content']) : null;
+
+        if (empty($htmlContent) && \Storage::exists($validated['original_docx_path'])) {
+            $htmlContent = $this->convertDocxToHtml(storage_path('app/' . $validated['original_docx_path']));
+        }
+
+        if (!$this->isAdminOrKepala()) {
+            $tingkat = Kelas::find($kelasIds[0])->tingkat_kelas;
+            $allowedKelasIds = $this->getAllowedKelasIdsForRencana($mataPelajaranId, $tingkat)->toArray();
+            if (count(array_diff($kelasIds, $allowedKelasIds)) > 0) {
+                return back()->with('error', 'Salah satu kelas tidak termasuk dalam jadwal pelajaran Anda.');
+            }
+        }
+
+        foreach ($kelasIds as $kelasId) {
+            $rencana = new RencanaPembelajaran();
+            $rencana->guru_id = $guru->id;
+            $rencana->mata_pelajaran_id = $mataPelajaranId;
+            $rencana->kelas_id = $kelasId;
+            $rencana->judul = $validated['judul'];
+            $rencana->capaian_pembelajaran = $validated['capaian_pembelajaran'] ?? null;
+            $rencana->tujuan = $validated['tujuan'] ?? null;
+            $rencana->metode = $validated['metode'] ?? null;
+            $rencana->media = $validated['media'] ?? null;
+            $rencana->sumber = $validated['sumber'] ?? null;
+            $rencana->alokasi_waktu = $validated['alokasi_waktu'] ?? null;
+            $rencana->praktik_pedagogis = $validated['praktik_pedagogis'] ?? null;
+            $rencana->lingkungan_pembelajaran = $validated['lingkungan_pembelajaran'] ?? null;
+            $rencana->pemanfaatan_digital = $validated['pemanfaatan_digital'] ?? null;
+            $rencana->pengalaman_pembelajaran = $validated['pengalaman_pembelajaran'] ?? null;
+            $rencana->refleksi_pembelajaran = $validated['refleksi_pembelajaran'] ?? null;
+            $rencana->penilaian = $validated['penilaian'] ?? null;
+            $rencana->status = $status;
+            $rencana->html_content = $htmlContent;
+            $rencana->original_docx_path = $validated['original_docx_path'];
+            $rencana->save();
+        }
+
+        $tingkat = Kelas::find($kelasIds[0])->tingkat_kelas;
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'tingkat' => $tingkat,
+            ])
+            ->with('success', 'Rencana pembelajaran berhasil diimport untuk ' . count($kelasIds) . ' kelas.');
     }
 
     /**
@@ -728,25 +908,199 @@ class RencanaPembelajaranController extends Controller
     private function parseWordDocument($text)
     {
         $data = [];
+        $text = preg_replace('/\r\n?/', "\n", $text);
+        $text = trim($text);
 
-        // Extract judul (first non-empty line after title)
-        $lines = array_filter(array_map('trim', explode("\n", $text)));
+        $lines = array_filter(array_map('trim', explode("\n", $text)), fn($line) => $line !== '');
+
+        $headingMap = [
+            'JUDUL' => 'judul',
+            'MATA PELAJARAN' => 'mata_pembelajaran',
+            'KELAS' => 'kelas',
+            'STATUS' => 'status',
+            'DESKRIPSI' => 'capaian_pembelajaran',
+            'DESKRIPSI / CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'TUJUAN PEMBELAJARAN' => 'tujuan',
+            'TUJUAN' => 'tujuan',
+            'METODE PEMBELAJARAN' => 'metode',
+            'METODE' => 'metode',
+            'MEDIA PEMBELAJARAN' => 'media',
+            'MEDIA' => 'media',
+            'SUMBER BELAJAR' => 'sumber',
+            'SUMBER' => 'sumber',
+            'ALOKASI WAKTU' => 'alokasi_waktu',
+            'PRAKTIK PEDAGOGIS' => 'praktik_pedagogis',
+            'PRAKTIK PEDAGOGI' => 'praktik_pedagogis',
+            'LINGKUNGAN PEMBELAJARAN' => 'lingkungan_pembelajaran',
+            'PEMANFAATAN DIGITAL' => 'pemanfaatan_digital',
+            'PENGALAMAN PEMBELAJARAN' => 'pengalaman_pembelajaran',
+            'REFLEKSI PEMBELAJARAN' => 'refleksi_pembelajaran',
+            'PENILAIAN' => 'penilaian',
+        ];
+
+        $currentSection = null;
+
         foreach ($lines as $line) {
-            if (strlen($line) > 10 && strpos($line, 'RENCANA PEMBELAJARAN') === false) {
-                $data['judul'] = $line;
-                break;
+            $upperLine = preg_replace('/\s+/', ' ', strtoupper($line));
+            $matched = false;
+
+            foreach ($headingMap as $heading => $field) {
+                if ($upperLine === $heading) {
+                    $currentSection = $field;
+                    $matched = true;
+                    break;
+                }
+
+                if (preg_match('/^' . preg_quote($heading, '/') . '\s*[:\-\|]+\s*(.*)$/i', $line, $matches)) {
+                    $currentSection = $field;
+                    $value = trim($matches[1]);
+                    if ($value !== '') {
+                        $data[$currentSection] = $value;
+                    }
+                    $matched = true;
+                    break;
+                }
+
+                if (strpos($upperLine, $heading . ' |') === 0) {
+                    $currentSection = $field;
+                    $value = trim(substr($line, strlen($heading) + 1));
+                    if ($value !== '') {
+                        $data[$currentSection] = $value;
+                    }
+                    $matched = true;
+                    break;
+                }
+            }
+
+            if ($matched) {
+                continue;
+            }
+
+            if (strpos($line, ':') !== false || strpos($line, '-') !== false) {
+                $parts = preg_split('/\s*[:\-]\s*/', $line, 2);
+                if (count($parts) === 2) {
+                    $left = trim($parts[0]);
+                    $right = trim($parts[1]);
+                    $upperLeft = preg_replace('/\s+/', ' ', strtoupper($left));
+                    if (isset($headingMap[$upperLeft])) {
+                        $data[$headingMap[$upperLeft]] = $right;
+                        $currentSection = null;
+                        continue;
+                    }
+                }
+            }
+
+            if (strpos($line, '|') !== false) {
+                [$left, $right] = array_map('trim', explode('|', $line, 2));
+                $upperLeft = preg_replace('/\s+/', ' ', strtoupper($left));
+                if (isset($headingMap[$upperLeft])) {
+                    $data[$headingMap[$upperLeft]] = $right;
+                    $currentSection = null;
+                    continue;
+                }
+            }
+
+            if ($currentSection) {
+                $data[$currentSection] = isset($data[$currentSection])
+                    ? trim($data[$currentSection] . "\n" . $line)
+                    : $line;
             }
         }
 
-        // Extract sections by looking for bold headers
-        $sections = ['deskripsi', 'tujuan', 'metode', 'media', 'sumber', 'penilaian'];
-        foreach ($sections as $section) {
-            $pattern = '/(?:' . ucfirst($section) . '|' . strtoupper($section) . ')[:\s]+([^(?:' . implode('|', array_diff($sections, [$section])) . ')]+)/i';
-            if (preg_match($pattern, $text, $matches)) {
-                $data[$section] = trim($matches[1]);
+        if (empty($data['judul'])) {
+            foreach ($lines as $line) {
+                $upper = preg_replace('/\s+/', ' ', strtoupper($line));
+                if (stripos($upper, 'TEMPLATE RENCANA PEMBELAJARAN') !== false) {
+                    continue;
+                }
+                if (preg_match('/^(JUDUL|MATA PELAJARAN|KELAS|STATUS|DESKRIPSI|CAPAIAN PEMBELAJARAN|TUJUAN PEMBELAJARAN|TUJUAN|METODE PEMBELAJARAN|MEDIA PEMBELAJARAN|SUMBER BELAJAR|SUMBER|ALOKASI WAKTU|PRAKTIK PEDAGOGIS|LINGKUNGAN PEMBELAJARAN|PEMANFAATAN DIGITAL|PENGALAMAN PEMBELAJARAN|REFLEKSI PEMBELAJARAN|PENILAIAN)\b/', $upper)) {
+                    continue;
+                }
+                if (strlen($line) > 5) {
+                    $data['judul'] = $line;
+                    break;
+                }
             }
         }
 
         return $data;
+    }
+
+    private function convertDocxToHtml(string $filePath)
+    {
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($filePath);
+            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
+            ob_start();
+            $writer->save('php://output');
+            return ob_get_clean();
+        } catch (\Throwable $e) {
+            return '<div class="alert alert-warning">Preview HTML tidak tersedia karena gagal mengonversi DOCX: ' . e($e->getMessage()) . '</div>';
+        }
+    }
+
+    private function renderHtmlPreview(array $data)
+    {
+        $html = '<div class="rpp-preview">';
+
+        if (!empty($data['judul'])) {
+            $html .= '<h2>' . e($data['judul']) . '</h2>';
+        }
+
+        $html .= '<table class="table table-bordered"><tbody>';
+        foreach (['mata_pembelajaran' => 'Mata Pelajaran', 'kelas' => 'Kelas', 'status' => 'Status'] as $field => $label) {
+            if (!empty($data[$field])) {
+                $html .= '<tr><th>' . e($label) . '</th><td>' . e($data[$field]) . '</td></tr>';
+            }
+        }
+        $html .= '</tbody></table>';
+
+        $sections = [
+            'capaian_pembelajaran' => 'Deskripsi / Capaian Pembelajaran',
+            'tujuan' => 'Tujuan Pembelajaran',
+            'metode' => 'Metode Pembelajaran',
+            'media' => 'Media Pembelajaran',
+            'sumber' => 'Sumber Belajar',
+            'alokasi_waktu' => 'Alokasi Waktu',
+            'praktik_pedagogis' => 'Praktik Pedagogis',
+            'lingkungan_pembelajaran' => 'Lingkungan Pembelajaran',
+            'pemanfaatan_digital' => 'Pemanfaatan Digital',
+            'pengalaman_pembelajaran' => 'Pengalaman Pembelajaran',
+            'refleksi_pembelajaran' => 'Refleksi Pembelajaran',
+            'penilaian' => 'Penilaian',
+        ];
+
+        foreach ($sections as $field => $label) {
+            if (!empty($data[$field])) {
+                $content = nl2br(e($data[$field]));
+                $html .= '<h4>' . e($label) . '</h4>';
+                $html .= '<div>' . $content . '</div>';
+            }
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    private function extractWordElementText($element)
+    {
+        if (method_exists($element, 'getText')) {
+            return trim($element->getText());
+        }
+
+        if (method_exists($element, 'getElements')) {
+            $text = '';
+            foreach ($element->getElements() as $child) {
+                $childText = $this->extractWordElementText($child);
+                if ($childText !== '') {
+                    $text .= ($text === '' ? '' : ' ') . $childText;
+                }
+            }
+            return trim($text);
+        }
+
+        return '';
     }
 }

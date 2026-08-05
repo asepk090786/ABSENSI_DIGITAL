@@ -51,8 +51,8 @@
                         </div>
 
                         <div class="col-md-12 mb-2">
-                            <label class="form-label">Capaian Pembelajaran</label>
-                            <textarea name="capaian_pembelajaran" class="form-control @error('capaian_pembelajaran') is-invalid @enderror" rows="3">{{ old('capaian_pembelajaran') }}</textarea>
+                            <label class="form-label">Deskripsi / Capaian Pembelajaran</label>
+                            <textarea name="capaian_pembelajaran" class="form-control tiny-editor @error('capaian_pembelajaran') is-invalid @enderror" rows="3">{{ old('capaian_pembelajaran') }}</textarea>
                             @error('capaian_pembelajaran')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -60,7 +60,7 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Tujuan Pembelajaran</label>
-                            <textarea name="tujuan" class="form-control @error('tujuan') is-invalid @enderror" rows="3">{{ old('tujuan') }}</textarea>
+                            <textarea name="tujuan" class="form-control tiny-editor @error('tujuan') is-invalid @enderror" rows="3">{{ old('tujuan') }}</textarea>
                             @error('tujuan')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -68,7 +68,7 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Metode Pembelajaran</label>
-                            <textarea name="metode" class="form-control @error('metode') is-invalid @enderror" rows="2">{{ old('metode') }}</textarea>
+                            <textarea name="metode" class="form-control tiny-editor @error('metode') is-invalid @enderror" rows="2">{{ old('metode') }}</textarea>
                             @error('metode')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -76,15 +76,63 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Media Pembelajaran</label>
-                            <textarea name="media" class="form-control @error('media') is-invalid @enderror" rows="2">{{ old('media') }}</textarea>
+                            <textarea name="media" class="form-control tiny-editor @error('media') is-invalid @enderror" rows="2">{{ old('media') }}</textarea>
                             @error('media')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-12 mb-2">
+                            <label class="form-label">Alokasi Waktu</label>
+                            <input type="text" name="alokasi_waktu" class="form-control @error('alokasi_waktu') is-invalid @enderror" value="{{ old('alokasi_waktu') }}">
+                            @error('alokasi_waktu')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label">Praktik Pedagogis</label>
+                            <textarea name="praktik_pedagogis" class="form-control tiny-editor @error('praktik_pedagogis') is-invalid @enderror" rows="3">{{ old('praktik_pedagogis') }}</textarea>
+                            @error('praktik_pedagogis')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label">Lingkungan Pembelajaran</label>
+                            <textarea name="lingkungan_pembelajaran" class="form-control tiny-editor @error('lingkungan_pembelajaran') is-invalid @enderror" rows="3">{{ old('lingkungan_pembelajaran') }}</textarea>
+                            @error('lingkungan_pembelajaran')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label">Pemanfaatan Digital</label>
+                            <textarea name="pemanfaatan_digital" class="form-control tiny-editor @error('pemanfaatan_digital') is-invalid @enderror" rows="3">{{ old('pemanfaatan_digital') }}</textarea>
+                            @error('pemanfaatan_digital')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label">Pengalaman Pembelajaran</label>
+                            <textarea name="pengalaman_pembelajaran" class="form-control tiny-editor @error('pengalaman_pembelajaran') is-invalid @enderror" rows="3">{{ old('pengalaman_pembelajaran') }}</textarea>
+                            @error('pengalaman_pembelajaran')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label">Refleksi Pembelajaran</label>
+                            <textarea name="refleksi_pembelajaran" class="form-control tiny-editor @error('refleksi_pembelajaran') is-invalid @enderror" rows="3">{{ old('refleksi_pembelajaran') }}</textarea>
+                            @error('refleksi_pembelajaran')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 mb-2">
                             <label class="form-label">Sumber Belajar</label>
-                            <textarea name="sumber" class="form-control @error('sumber') is-invalid @enderror" rows="2">{{ old('sumber') }}</textarea>
+                            <textarea name="sumber" class="form-control tiny-editor @error('sumber') is-invalid @enderror" rows="2">{{ old('sumber') }}</textarea>
                             @error('sumber')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -92,7 +140,7 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Penilaian</label>
-                            <textarea name="penilaian" class="form-control @error('penilaian') is-invalid @enderror" rows="2">{{ old('penilaian') }}</textarea>
+                            <textarea name="penilaian" class="form-control tiny-editor @error('penilaian') is-invalid @enderror" rows="2">{{ old('penilaian') }}</textarea>
                             @error('penilaian')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -145,4 +193,23 @@
         </div>
     </div>
 </div>
+
+@push('js')
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js"></script>
+<script>
+    if (typeof tinymce !== 'undefined') {
+        tinymce.init({
+            selector: 'textarea.tiny-editor',
+            plugins: 'lists link image table code help wordcount',
+            toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
+            language: 'id',
+            height: 320,
+            menubar: false,
+            statusbar: true,
+            license_key: 'gpl',
+            content_style: 'body { color: #212529; font-family: inherit; }'
+        });
+    }
+</script>
+@endpush
 @endsection
