@@ -23,8 +23,11 @@ class JamBelajar extends Model
     public function scopeOrderByDay($query)
     {
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        $dayOrder = implode(',', array_map(fn($day) => "'{$day}'", $days));
-        return $query->orderByRaw("FIELD(hari, {$dayOrder})")->orderBy('urutan');
+        $case = collect($days)
+            ->map(fn($day, $index) => "WHEN hari = '{$day}' THEN {$index}")
+            ->implode(' ');
+
+        return $query->orderByRaw("CASE {$case} ELSE 999 END")->orderBy('urutan');
     }
 
 }

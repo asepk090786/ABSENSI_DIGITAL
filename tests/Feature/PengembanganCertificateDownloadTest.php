@@ -15,12 +15,15 @@ class PengembanganCertificateDownloadTest extends TestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('pengembangan_sertifikats');
+
         Schema::create('pengembangan_sertifikats', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('pengembangan_id');
             $table->string('peserta_type');
             $table->unsignedBigInteger('peserta_id')->nullable();
             $table->string('file_path')->nullable();
+            $table->boolean('is_visible')->default(true);
             $table->string('barcode')->nullable();
             $table->string('nomor_sertifikat')->nullable();
             $table->unsignedBigInteger('template_id')->nullable();

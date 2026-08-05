@@ -221,7 +221,12 @@ class EkskulController extends Controller
     public function jadwal($id)
     {
         $ekskul = Ekstrakurikuler::with('jadwal')->findOrFail($id);
-        $jadwal = $ekskul->jadwal()->orderByRaw("FIELD(hari, 'Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu')")->get();
+        $days = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+        $case = collect($days)
+            ->map(fn($day, $index) => "WHEN hari = '{$day}' THEN {$index}")
+            ->implode(' ');
+
+        $jadwal = $ekskul->jadwal()->orderByRaw("CASE {$case} ELSE 999 END")->get();
         return view('ekskul.jadwal', compact('ekskul', 'jadwal'));
     }
 

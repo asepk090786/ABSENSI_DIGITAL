@@ -100,7 +100,10 @@ class JadwalKbm extends Model
     public function scopeOrderBySchedule($query)
     {
         $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-        $dayOrder = implode(',', array_map(fn($day) => "'{$day}'", $days));
-        return $query->orderByRaw("FIELD(hari, {$dayOrder})")->orderBy('jam_ke');
+        $case = collect($days)
+            ->map(fn($day, $index) => "WHEN hari = '{$day}' THEN {$index}")
+            ->implode(' ');
+
+        return $query->orderByRaw("CASE {$case} ELSE 999 END")->orderBy('jam_ke');
     }
 }
