@@ -69,3 +69,7 @@ Thumbs.db
 /assign_guru_piket.php
 /public/.user.ini
 /resources/views/layouts/backup/
+/public/uploads/
+/public/storage_backup/
+/storage/app/public/pengembangan/
+/storage/app/public/sk_tugas/
