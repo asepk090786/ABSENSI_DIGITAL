@@ -19,8 +19,10 @@ class UserManagementController extends Controller
     public function edit(User $user)
     {
         $roles = Role::orderBy('role_name')->get();
-        $guru = Guru::orderBy('nama')->get();
-        return view('user_management.edit', compact('user', 'roles', 'guru'));
+        $guru = Guru::with('user')->orderBy('nama')->get();
+        $kepala = KepalaSekolah::with('guru')->orderBy('nama')->get();
+        $siswa = Siswa::orderBy('nama')->get();
+        return view('user_management.edit', compact('user', 'roles', 'guru', 'kepala', 'siswa'));
     }
 
     public function update(Request $request, User $user)
@@ -147,7 +149,7 @@ class UserManagementController extends Controller
                 $validator->errors()->add('kepala_sekolah_id', 'Pilih kepala sekolah untuk peran ini.');
             }
 
-            if (str_contains($roleName, 'Guru') && empty($data['guru_id'])) {
+            if ((str_contains($roleName, 'Guru') || $roleName === 'Pengawas Pembina') && empty($data['guru_id'])) {
                 $validator->errors()->add('guru_id', 'Pilih guru untuk peran guru.');
             }
         });

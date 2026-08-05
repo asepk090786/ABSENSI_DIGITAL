@@ -32,6 +32,8 @@ class PengembanganTemplateController extends Controller
             'editor_mode' => 'nullable|string|in:image,html',
             'font_file' => 'nullable|file|mimes:ttf,otf|max:5120',
             'pos' => 'nullable|array',
+            'include_verification_code' => 'sometimes|boolean',
+            'include_verification_qr' => 'sometimes|boolean',
         ]);
 
         $backgroundPath = null;
@@ -48,21 +50,34 @@ class PengembanganTemplateController extends Controller
         }
 
         $positionsArr = json_decode($positionsJson ?: '{}', true) ?? [];
-        $includeBarcode = $r->boolean('include_barcode');
+        $includeVerificationCode = $r->boolean('include_verification_code');
+        $includeVerificationQr = $r->boolean('include_verification_qr');
 
-        if ($includeBarcode) {
-            $barcodeConfig = $positionsArr['barcode'] ?? [];
-            $positionsArr['barcode'] = array_merge([
+        if ($includeVerificationCode) {
+            $verificationTextConfig = $positionsArr['verification_text'] ?? [];
+            $positionsArr['verification_text'] = array_merge([
                 'x_ratio' => 0.5,
                 'y_ratio' => 0.8,
                 'font_size' => 16,
                 'color' => '#000000',
                 'align' => 'center',
-                'is_qr' => true,
-                'qr_size' => 180,
-            ], $barcodeConfig);
+            ], $verificationTextConfig);
         } else {
-            unset($positionsArr['barcode']);
+            unset($positionsArr['verification_text']);
+        }
+
+        if ($includeVerificationQr) {
+            $verificationQrConfig = $positionsArr['verification_qr'] ?? [];
+            $positionsArr['verification_qr'] = array_merge([
+                'x_ratio' => 0.85,
+                'y_ratio' => 0.8,
+                'font_size' => 16,
+                'color' => '#000000',
+                'align' => 'center',
+                'qr_size' => 180,
+            ], $verificationQrConfig);
+        } else {
+            unset($positionsArr['verification_qr']);
         }
 
         $positionsJson = !empty($positionsArr) ? json_encode($positionsArr) : null;
@@ -72,9 +87,6 @@ class PengembanganTemplateController extends Controller
         if ($r->hasFile('font_file')) {
             $fontPath = $r->file('font_file')->store('certificate_fonts', 'public');
         }
-
-        $barcodeIsQr = isset($positionsArr['barcode']['is_qr']) ? (int) (bool) $positionsArr['barcode']['is_qr'] : 1;
-        $barcodeQrSize = isset($positionsArr['barcode']['qr_size']) ? (int) $positionsArr['barcode']['qr_size'] : null;
 
         $insertData = [
             'nama' => $data['nama'] ?? null,
@@ -86,9 +98,8 @@ class PengembanganTemplateController extends Controller
             'placeholder_positions' => $positionsJson,
             'editor_mode' => $data['editor_mode'] ?? 'image',
             'font_file' => $fontPath,
-            'include_barcode' => $r->boolean('include_barcode') ? 1 : 0,
-            'barcode_is_qr' => isset($positionsArr['barcode']['is_qr']) ? (int) (bool) $positionsArr['barcode']['is_qr'] : 1,
-            'barcode_qr_size' => isset($positionsArr['barcode']['qr_size']) ? (int) $positionsArr['barcode']['qr_size'] : null,
+            'include_verification_code' => $includeVerificationCode ? 1 : 0,
+            'include_verification_qr' => $includeVerificationQr ? 1 : 0,
             'created_at' => now(),
             'updated_at' => now(),
         ];
@@ -143,6 +154,8 @@ class PengembanganTemplateController extends Controller
             'editor_mode' => 'nullable|string|in:image,html',
             'font_file' => 'nullable|file|mimes:ttf,otf|max:5120',
             'pos' => 'nullable|array',
+            'include_verification_code' => 'sometimes|boolean',
+            'include_verification_qr' => 'sometimes|boolean',
         ]);
 
         $backgroundPath = null;
@@ -162,21 +175,34 @@ class PengembanganTemplateController extends Controller
         }
 
         $positionsArr = json_decode($positionsJson ?? $item->placeholder_positions ?? '{}', true) ?? [];
-        $includeBarcode = $r->boolean('include_barcode');
+        $includeVerificationCode = $r->boolean('include_verification_code');
+        $includeVerificationQr = $r->boolean('include_verification_qr');
 
-        if ($includeBarcode) {
-            $barcodeConfig = $positionsArr['barcode'] ?? [];
-            $positionsArr['barcode'] = array_merge([
+        if ($includeVerificationCode) {
+            $verificationTextConfig = $positionsArr['verification_text'] ?? [];
+            $positionsArr['verification_text'] = array_merge([
                 'x_ratio' => 0.5,
                 'y_ratio' => 0.8,
                 'font_size' => 16,
                 'color' => '#000000',
                 'align' => 'center',
-                'is_qr' => true,
-                'qr_size' => 180,
-            ], $barcodeConfig);
+            ], $verificationTextConfig);
         } else {
-            unset($positionsArr['barcode']);
+            unset($positionsArr['verification_text']);
+        }
+
+        if ($includeVerificationQr) {
+            $verificationQrConfig = $positionsArr['verification_qr'] ?? [];
+            $positionsArr['verification_qr'] = array_merge([
+                'x_ratio' => 0.85,
+                'y_ratio' => 0.8,
+                'font_size' => 16,
+                'color' => '#000000',
+                'align' => 'center',
+                'qr_size' => 180,
+            ], $verificationQrConfig);
+        } else {
+            unset($positionsArr['verification_qr']);
         }
 
         $positionsJson = !empty($positionsArr) ? json_encode($positionsArr) : null;
@@ -190,9 +216,6 @@ class PengembanganTemplateController extends Controller
             }
         }
 
-        $barcodeIsQr = isset($positionsArr['barcode']['is_qr']) ? (int) (bool) $positionsArr['barcode']['is_qr'] : ($item->barcode_is_qr ?? 1);
-        $barcodeQrSize = isset($positionsArr['barcode']['qr_size']) ? (int) $positionsArr['barcode']['qr_size'] : ($item->barcode_qr_size ?? null);
-
         $updateData = [
             'nama' => $data['nama'] ?? null,
             'template_html' => $data['template_html'] ?? null,
@@ -202,9 +225,8 @@ class PengembanganTemplateController extends Controller
             'placeholder_positions' => $positionsJson,
             'editor_mode' => $data['editor_mode'] ?? 'image',
             'font_file' => $fontPath,
-            'include_barcode' => $includeBarcode ? 1 : 0,
-            'barcode_is_qr' => $barcodeIsQr,
-            'barcode_qr_size' => $barcodeQrSize,
+            'include_verification_code' => $includeVerificationCode ? 1 : 0,
+            'include_verification_qr' => $includeVerificationQr ? 1 : 0,
             'updated_at' => now(),
         ];
         if ($backgroundPath) {

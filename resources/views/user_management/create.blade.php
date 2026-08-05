@@ -62,7 +62,7 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Guru (untuk Admin / Kepala Sekolah / Guru BK / Guru)</label>
+                            <label class="form-label">Guru (untuk Admin / Kepala Sekolah / Guru BK / Guru / Pengawas Pembina)</label>
                             <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
                                 <option value="">-- Pilih Guru --</option>
                                 @foreach($guru as $g)
@@ -134,7 +134,7 @@
 
         function updateUserRoleFields() {
             const roleText = roleSelect.options[roleSelect.selectedIndex]?.text || '';
-            const isGuruRole = /Guru|Admin|Wakil Kepala Sekolah/i.test(roleText);
+            const isGuruRole = /Guru|Admin|Wakil Kepala Sekolah|Pengawas Pembina/i.test(roleText);
             const isKepalaRole = /Kepala Sekolah/i.test(roleText);
             const isSiswaRole = /Siswa/i.test(roleText);
 

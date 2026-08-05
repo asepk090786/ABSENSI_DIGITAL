@@ -319,7 +319,10 @@ Route::middleware(['auth'])->group(function(){
     Route::put('pengembangan/templates/{id}', [App\Http\Controllers\PengembanganTemplateController::class, 'update'])->name('pengembangan.templates.update');
     Route::delete('pengembangan/templates/{id}', [App\Http\Controllers\PengembanganTemplateController::class, 'destroy'])->name('pengembangan.templates.destroy');
     Route::get('pengembangan/sertifikat/my', [App\Http\Controllers\PengembanganController::class, 'myCertificates'])->name('pengembangan.my_certificates');
+    Route::get('pengembangan/sertifikat/{id}/preview', [App\Http\Controllers\PengembanganController::class, 'viewCertificate'])->name('pengembangan.certificates.preview');
     Route::get('pengembangan/sertifikat/{id}/download', [App\Http\Controllers\PengembanganController::class, 'downloadCertificate'])->name('pengembangan.certificates.download');
+    Route::post('pengembangan/sertifikat/{id}/toggle-visibility', [App\Http\Controllers\PengembanganController::class, 'toggleCertificateVisibility'])->name('pengembangan.certificates.toggle_visibility');
+    Route::post('pengembangan/{id}/toggle-certificates-visibility', [App\Http\Controllers\PengembanganController::class, 'toggleAllCertificatesVisibility'])->name('pengembangan.certificates.toggle_visibility_all');
     Route::delete('pengembangan/sertifikat/{id}', [App\Http\Controllers\PengembanganController::class, 'destroyCertificate'])->name('pengembangan.certificates.destroy');
     Route::delete('pengembangan/sertifikat/{id}/bukti/{type}/{index?}', [App\Http\Controllers\PengembanganController::class, 'destroyCertificateEvidence'])->name('pengembangan.certificates.evidence.destroy');
     Route::post('pengembangan/bulk-hapus-sertifikat', [App\Http\Controllers\PengembanganController::class, 'bulkDestroyCertificates'])->name('pengembangan.certificates.bulk_destroy');

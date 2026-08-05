@@ -12,6 +12,9 @@
         <h1>Sertifikat</h1>
         <p>Diberikan kepada</p>
         <h2>{{ $name }}</h2>
+        @if(!empty($sebagai))
+            <p><strong>Sebagai:</strong> {{ $sebagai }}</p>
+        @endif
         <p>Atas partisipasinya pada kegiatan:</p>
         <h3>{{ $kegiatan->nama_kegiatan }}</h3>
         <p><strong>Pemateri:</strong>

@@ -156,18 +156,30 @@
 
             {{-- Daftar Sertifikat yang sudah digenerate --}}
             <div class="card mt-3">
-                <form id="bulkDeleteForm" method="POST" action="{{ url('pengembangan/bulk-hapus-sertifikat') }}" onsubmit="return confirmBulkDelete(event)">
-                    @csrf
-                    <input type="hidden" name="pengembangan_id" value="{{ $item->id }}">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="card-title fw-semibold m-0">
-                            <i class="ti ti-certificate me-1"></i> Daftar Sertifikat
-                            <span class="badge bg-secondary ms-2">{{ $certificates->count() }}</span>
-                        </h5>
-                        <button type="submit" id="deleteSelectedBtn" class="btn btn-danger btn-sm d-none">
+                @php $visibleCount = $certificates->where('is_visible', true)->count(); @endphp
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-semibold m-0">
+                        <i class="ti ti-certificate me-1"></i> Daftar Sertifikat
+                        <span class="badge bg-secondary ms-2">{{ $certificates->count() }}</span>
+                    </h5>
+                    <div class="d-flex gap-2">
+                        @if($certificates->isNotEmpty())
+                        <form method="POST" action="{{ route('pengembangan.certificates.toggle_visibility_all', $item->id) }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm {{ $visibleCount ? 'btn-warning' : 'btn-success' }}">
+                                <i class="ti ti-eye{{ $visibleCount ? '-off' : '' }} me-1"></i>
+                                {{ $visibleCount ? 'Sembunyikan Semua Sertifikat' : 'Tampilkan Semua Sertifikat' }}
+                            </button>
+                        </form>
+                        @endif
+                        <button type="submit" id="deleteSelectedBtn" form="bulkDeleteForm" class="btn btn-danger btn-sm d-none">
                             <i class="ti ti-trash me-1"></i> Hapus Terpilih
                         </button>
                     </div>
+                </div>
+                <form id="bulkDeleteForm" method="POST" action="{{ url('pengembangan/bulk-hapus-sertifikat') }}" onsubmit="return confirmBulkDelete(event)">
+                    @csrf
+                    <input type="hidden" name="pengembangan_id" value="{{ $item->id }}">
                     <div class="card-body p-0">
                         @if($certificates->isEmpty())
                             <div class="text-center text-muted py-4">
@@ -199,19 +211,44 @@
                                             </td>
                                             <td>{{ $idx + 1 }}</td>
                                             <td>{{ $cert->participant_name ?? '-' }}</td>
-                                            <td><span class="badge bg-{{ $cert->peserta_type === 'guru' ? 'info' : 'warning' }}">{{ strtoupper($cert->peserta_type) }}</span></td>
+                                            <td>
+                                                @php
+                                                    $badgeClass = 'secondary';
+                                                    if ($cert->peserta_type === 'guru') {
+                                                        $badgeClass = 'info';
+                                                    } elseif ($cert->peserta_type === 'siswa') {
+                                                        $badgeClass = 'warning';
+                                                    } elseif ($cert->peserta_type === 'pemateri') {
+                                                        $badgeClass = 'success';
+                                                    }
+                                                @endphp
+                                                <span class="badge bg-{{ $badgeClass }} text-white">{{ strtoupper($cert->peserta_type) }}</span>
+                                            </td>
                                             <td>{{ $cert->nomor_sertifikat ?? '-' }}</td>
                                             <td><code class="small">{{ Str::limit($cert->barcode, 12) }}</code></td>
                                             <td>{{ optional($cert->created_at)->format('d-m-Y H:i') }}</td>
                                             <td>
-                                                <div class="d-flex gap-1">
-                                                    <a href="{{ route('pengembangan.certificates.download', $cert->id) }}" class="btn btn-sm btn-outline-success" title="Download">
-                                                        <i class="ti ti-download"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="deleteCertificate({{ $cert->id }})">
-                                                        <i class="ti ti-trash"></i>
-                                                    </button>
-                                                </div>
+                                                @if($cert->is_visible)
+                                                    <form method="POST" action="{{ route('pengembangan.certificates.toggle_visibility', $cert->id) }}" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Sembunyikan Sertifikat">
+                                                            <i class="ti ti-eye-off"></i>
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <form method="POST" action="{{ route('pengembangan.certificates.toggle_visibility', $cert->id) }}" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Tampilkan Sertifikat">
+                                                            <i class="ti ti-eye"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                                <a href="{{ route('pengembangan.certificates.download', $cert->id) }}" class="btn btn-sm btn-outline-success" title="Download">
+                                                    <i class="ti ti-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus" onclick="deleteCertificate({{ $cert->id }})">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                         @endforeach
@@ -386,6 +423,11 @@ function toggleDeleteButton() {
 }
 
 function confirmBulkDelete(e) {
+    const submitter = e.submitter;
+    if (!submitter || submitter.id !== 'deleteSelectedBtn') {
+        return true;
+    }
+
     e.preventDefault();
     const checkboxes = document.querySelectorAll('.cert-checkbox:checked');
     if (checkboxes.length === 0) {

@@ -230,7 +230,7 @@ class PengembanganController extends Controller
         $item->update([
             'nama_kegiatan'=>$namaKegiatan,
             'tema_kegiatan'=>$data['tema_kegiatan'] ?? null,
-            'jenis_kegiatan'=>$data['jenis_kegiatan'] ?? null,
+            'jenis_kegiatan'=>array_key_exists('jenis_kegiatan', $data) ? $data['jenis_kegiatan'] : $item->jenis_kegiatan,
             'deskripsi'=>$data['deskripsi'] ?? null,
             'pemateri'=>$pemateri,
             'tanggal_mulai'=>$data['tanggal_mulai'] ?? null,
@@ -344,10 +344,36 @@ class PengembanganController extends Controller
                 ->first();
         }
 
-        $toGenerate = $item->peserta->filter(function($p) use ($selected){
-            if (empty($selected)) return true;
-            return in_array($p->id, $selected);
+        $selectedParticipantIds = $selected;
+        $toGenerate = $item->peserta->filter(function($p) use ($selectedParticipantIds){
+            if (empty($selectedParticipantIds)) return true;
+            return in_array($p->id, $selectedParticipantIds);
         });
+
+        $pemateriNames = is_array($item->pemateri) ? array_filter(array_map('trim', $item->pemateri)) : [];
+        $existingParticipantNames = $item->peserta->map(function ($p) {
+            if ($p->peserta_type === 'guru') {
+                return \DB::table('guru')->where('id', $p->peserta_id)->value('nama');
+            }
+            if ($p->peserta_type === 'siswa') {
+                return \DB::table('siswa')->where('id', $p->peserta_id)->value('nama');
+            }
+            return $p->peserta_name;
+        })->filter()->unique()->values()->all();
+
+        $pemateriRecipients = collect($pemateriNames)
+            ->filter(fn ($name) => !in_array($name, $existingParticipantNames, true))
+            ->map(function ($name) use ($item) {
+                return (object) [
+                    'pengembangan_id' => $item->id,
+                    'peserta_type' => 'pemateri',
+                    'peserta_id' => null,
+                    'peserta_name' => $name,
+                    'instansi' => null,
+                ];
+            });
+
+        $toGenerate = $toGenerate->concat($pemateriRecipients);
 
         if ($saveAsDefault) {
             $item->update([
@@ -408,6 +434,7 @@ class PengembanganController extends Controller
                         'bukti_dukung_daftar_hadir' => $buktiDukung['daftar_hadir'] ?? null,
                         'bukti_dukung_dokumentasi' => $buktiDukung['dokumentasi'] ?: null,
                         'bukti_dukung_materi' => $buktiDukung['materi'] ?: null,
+                    'is_visible' => true,
                     ]);
                 }
             }
@@ -423,15 +450,18 @@ class PengembanganController extends Controller
                 $name = \DB::table('guru')->where('id',$p->peserta_id)->value('nama');
             } elseif ($p->peserta_type === 'siswa') {
                 $name = \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+            } elseif ($p->peserta_type === 'pemateri') {
+                $name = $p->peserta_name ?? 'Pemateri';
             } else {
                 $name = $p->peserta_name ?? 'Peserta Eksternal';
             }
+            $sebagai = $this->resolveParticipantRole($p, $item);
 
             if ($template && $template->background_image) {
-                $filePath = $certService->generatePdf($template, $item, $name, $barcode, $nomorSertifikat);
+                $filePath = $certService->generatePdf($template, $item, $name, $barcode, $nomorSertifikat, $sebagai);
             } else {
                 // Fallback: DomPDF
-                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat])->render();
+                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat,'sebagai'=>$sebagai])->render();
                 $pageSize = strtolower($template?->page_size ?? 'a4');
                 $orientation = ($template?->page_orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
                 $pdf = PDF::loadHTML($html)->setPaper($pageSize, $orientation);
@@ -496,6 +526,101 @@ class PengembanganController extends Controller
                     'barcode' => $barcode,
                     'nomor_sertifikat' => $nomorSertifikat ?: null,
                     'template_id' => $templateId ?: null,
+                    'is_visible' => true,
+                    'bukti_dukung_daftar_hadir' => $preservedDaftarHadir,
+                    'bukti_dukung_dokumentasi' => empty($preservedDokumentasi) ? null : $preservedDokumentasi,
+                    'bukti_dukung_materi' => empty($preservedMateri) ? null : $preservedMateri,
+                ]);
+            }
+        }
+
+        if ($saveOnly) {
+            return redirect()->route('pengembangan.show', $id)->with('success', 'Pengaturan sertifikat disimpan');
+        }
+
+        foreach ($toGenerate as $p) {
+            $barcode = (string) Str::uuid();
+            if ($p->peserta_type === 'guru') {
+                $name = \DB::table('guru')->where('id',$p->peserta_id)->value('nama');
+            } elseif ($p->peserta_type === 'siswa') {
+                $name = \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+            } elseif ($p->peserta_type === 'pemateri') {
+                $name = $p->peserta_name ?? 'Pemateri';
+            } else {
+                $name = $p->peserta_name ?? 'Peserta Eksternal';
+            }
+            $sebagai = $this->resolveParticipantRole($p, $item);
+
+            if ($template && $template->background_image) {
+                $filePath = $certService->generatePdf($template, $item, $name, $barcode, $nomorSertifikat, $sebagai);
+            } else {
+                // Fallback: DomPDF
+                $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat,'sebagai'=>$sebagai])->render();
+                $pageSize = strtolower($template?->page_size ?? 'a4');
+                $orientation = ($template?->page_orientation ?? 'portrait') === 'landscape' ? 'landscape' : 'portrait';
+                $pdf = PDF::loadHTML($html)->setPaper($pageSize, $orientation);
+                $fileName = "pengembangan_{$item->id}_{$p->peserta_type}_{$p->peserta_id}_".time().".pdf";
+                $filePath = 'certificates/'.$fileName;
+                Storage::disk('public')->put($filePath, $pdf->output());
+            }
+
+            $existingCerts = PengembanganSertifikat::where('pengembangan_id', $item->id)
+                ->where('peserta_type', $p->peserta_type)
+                ->when($p->peserta_id !== null, function ($query) use ($p) {
+                    return $query->where('peserta_id', $p->peserta_id);
+                })
+                ->when($p->peserta_id === null, function ($query) use ($p) {
+                    return $query->where('peserta_name', $p->peserta_name)->where('instansi', $p->instansi);
+                })
+                ->get();
+
+            $existingCert = $existingCerts->first();
+            if ($existingCerts->count() > 1) {
+                $existingCerts->slice(1)->each(function ($duplicate) {
+                    if ($duplicate->file_path) {
+                        $this->deleteStorageFile($duplicate->file_path);
+                    }
+                    $duplicate->delete();
+                });
+            }
+
+            $existingDokumentasi = $existingCert ? (array) $existingCert->bukti_dukung_dokumentasi : [];
+            $existingMateri = $existingCert ? (array) $existingCert->bukti_dukung_materi : [];
+            $existingDaftarHadir = $existingCert ? $existingCert->bukti_dukung_daftar_hadir : null;
+
+            $preservedDaftarHadir = $buktiDukung['daftar_hadir'] ?? $existingDaftarHadir;
+            $preservedDokumentasi = !empty($buktiDukung['dokumentasi'])
+                ? array_values(array_merge($existingDokumentasi, $buktiDukung['dokumentasi']))
+                : $existingDokumentasi;
+            $preservedMateri = !empty($buktiDukung['materi'])
+                ? array_values(array_merge($existingMateri, $buktiDukung['materi']))
+                : $existingMateri;
+
+            if ($existingCert) {
+                if ($existingCert->file_path) {
+                    $this->deleteStorageFile($existingCert->file_path);
+                }
+                $existingCert->update([
+                    'file_path' => $filePath,
+                    'barcode' => $barcode,
+                    'nomor_sertifikat' => $nomorSertifikat ?: null,
+                    'template_id' => $templateId ?: null,
+                    'bukti_dukung_daftar_hadir' => $preservedDaftarHadir,
+                    'bukti_dukung_dokumentasi' => empty($preservedDokumentasi) ? null : $preservedDokumentasi,
+                    'bukti_dukung_materi' => empty($preservedMateri) ? null : $preservedMateri,
+                ]);
+            } else {
+                PengembanganSertifikat::create([
+                    'pengembangan_id' => $item->id,
+                    'peserta_type' => $p->peserta_type,
+                    'peserta_id' => $p->peserta_id,
+                    'peserta_name' => $p->peserta_name,
+                    'instansi' => $p->instansi,
+                    'file_path' => $filePath,
+                    'barcode' => $barcode,
+                    'nomor_sertifikat' => $nomorSertifikat ?: null,
+                    'template_id' => $templateId ?: null,
+                    'is_visible' => true,
                     'bukti_dukung_daftar_hadir' => $preservedDaftarHadir,
                     'bukti_dukung_dokumentasi' => empty($preservedDokumentasi) ? null : $preservedDokumentasi,
                     'bukti_dukung_materi' => empty($preservedMateri) ? null : $preservedMateri,
@@ -506,46 +631,7 @@ class PengembanganController extends Controller
         return redirect()->route('pengembangan.show', $id)->with('success','Sertifikat dibuat untuk peserta');
     }
 
-    private function deleteCertificateFiles(PengembanganSertifikat $cert)
-    {
-        $paths = [];
-        $paths[] = $cert->file_path;
-        if (!empty($cert->bukti_dukung_daftar_hadir)) {
-            $paths[] = $cert->bukti_dukung_daftar_hadir;
-        }
-        if (!empty($cert->bukti_dukung_dokumentasi)) {
-            $paths = array_merge($paths, is_array($cert->bukti_dukung_dokumentasi) ? $cert->bukti_dukung_dokumentasi : [$cert->bukti_dukung_dokumentasi]);
-        }
-        if (!empty($cert->bukti_dukung_materi)) {
-            $paths = array_merge($paths, is_array($cert->bukti_dukung_materi) ? $cert->bukti_dukung_materi : [$cert->bukti_dukung_materi]);
-        }
-
-        foreach ($paths as $path) {
-            $this->deleteStorageFile($path);
-        }
-    }
-
-    protected function renderTemplateContent($template, $item, $name, $barcode)
-    {
-        $html = $template && !empty($template->template_html)
-            ? $this->resolveTemplateImagePaths(html_entity_decode($template->template_html), $template)
-            : view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode])->render();
-
-        $replacements = [
-            '{{name}}' => e($name),
-            '{{kegiatan->nama_kegiatan}}' => e($item->nama_kegiatan ?? ''),
-            '{{kegiatan->tema_kegiatan}}' => e($item->tema_kegiatan ?? ''),
-            '{{barcode}}' => $barcode,
-        ];
-
-        foreach ($replacements as $placeholder => $value) {
-            $html = str_replace($placeholder, $value, $html);
-        }
-
-        return $html;
-    }
-
-    protected function resolveTemplateImagePaths($html, $template)
+    protected function renderTemplateContent($template, $item, $name, $barcode, ?string $sebagai = null)
     {
         // Convert storage-relative image paths to absolute paths for DomPDF
         if ($template && !empty($template->background_image)) {
@@ -662,16 +748,75 @@ class PengembanganController extends Controller
     public function myCertificates()
     {
         $user = auth()->user();
-        $certs = [];
+
+        $query = PengembanganSertifikat::with('pengembangan');
+
         if ($user->guru_id) {
-            $certs = PengembanganSertifikat::where('peserta_type','guru')->where('peserta_id',$user->guru_id)->get();
+            $guruName = \DB::table('guru')->where('id', $user->guru_id)->value('nama');
+            $query->where(function ($q) use ($user, $guruName) {
+                $q->where(function ($sub) use ($user) {
+                    $sub->where('peserta_type', 'guru')->where('peserta_id', $user->guru_id);
+                });
+                if (!empty($guruName)) {
+                    $q->orWhere(function ($sub) use ($guruName) {
+                        $sub->where('peserta_type', 'pemateri')->where('peserta_name', $guruName);
+                    });
+                }
+            });
+        } elseif ($user->siswa_id) {
+            $query->where('peserta_type', 'siswa')->where('peserta_id', $user->siswa_id);
+        } else {
+            $query->whereRaw('0 = 1');
         }
+
+        $certs = $query->orderByDesc('created_at')->get();
         return view('pengembangan.certificates', compact('certs'));
+    }
+
+    public function viewCertificate($id)
+    {
+        $cert = PengembanganSertifikat::findOrFail($id);
+        if (!$cert->is_visible) {
+            abort(403, 'Sertifikat belum tersedia untuk peserta.');
+        }
+        $path = $this->resolveCertificateStoragePath($cert->file_path);
+        if (!$path || !file_exists($path)) {
+            abort(404);
+        }
+        return response()->file($path);
+    }
+
+    public function toggleCertificateVisibility($id)
+    {
+        $cert = PengembanganSertifikat::findOrFail($id);
+        $cert->is_visible = ! $cert->is_visible;
+        $cert->save();
+
+        return redirect()->back()->with('success', 'Visibilitas sertifikat diperbarui.');
+    }
+
+    public function toggleAllCertificatesVisibility($id)
+    {
+        $item = Pengembangan::findOrFail($id);
+        $hasCertificates = PengembanganSertifikat::where('pengembangan_id', $item->id)->exists();
+
+        if (!$hasCertificates) {
+            return redirect()->back()->with('error', 'Tidak ada sertifikat untuk diperbarui.');
+        }
+
+        $anyVisible = PengembanganSertifikat::where('pengembangan_id', $item->id)->where('is_visible', true)->exists();
+        PengembanganSertifikat::where('pengembangan_id', $item->id)
+            ->update(['is_visible' => ! $anyVisible]);
+
+        return redirect()->back()->with('success', $anyVisible ? 'Semua sertifikat disembunyikan.' : 'Semua sertifikat ditampilkan.');
     }
 
     public function downloadCertificate($id)
     {
         $cert = PengembanganSertifikat::findOrFail($id);
+        if (!$cert->is_visible) {
+            abort(403, 'Sertifikat belum tersedia untuk peserta.');
+        }
         $path = $this->resolveCertificateStoragePath($cert->file_path);
         if (!$path) abort(404);
         return response()->download($path);
@@ -813,13 +958,20 @@ class PengembanganController extends Controller
         if (! $p || $p->pengembangan_id != $id) abort(404);
 
         $item = Pengembangan::findOrFail($id);
-        $name = $p->peserta_type === 'guru' ? \DB::table('guru')->where('id',$p->peserta_id)->value('nama') : \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+        if ($p->peserta_type === 'guru') {
+            $name = \DB::table('guru')->where('id',$p->peserta_id)->value('nama');
+        } elseif ($p->peserta_type === 'siswa') {
+            $name = \DB::table('siswa')->where('id',$p->peserta_id)->value('nama');
+        } else {
+            $name = $p->peserta_name ?? 'Peserta Eksternal';
+        }
+        $sebagai = $this->resolveParticipantRole($p, $item);
         $barcode = (string) Str::uuid();
 
         if ($templateId) {
             $template = \DB::table('pengembangan_sertifikat_templates')->where('id',$templateId)->first();
             if ($template && $template->background_image) {
-                return $certService->streamPreview($template, $item, $name, $barcode, $nomorSertifikat);
+                return $certService->streamPreview($template, $item, $name, $barcode, $nomorSertifikat, $sebagai);
             }
         }
 
@@ -830,11 +982,11 @@ class PengembanganController extends Controller
             ->first();
 
         if ($template) {
-            return $certService->streamPreview($template, $item, $name, $barcode, $nomorSertifikat);
+            return $certService->streamPreview($template, $item, $name, $barcode, $nomorSertifikat, $sebagai);
         }
 
         // Last fallback: DomPDF from HTML
-        $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat])->render();
+        $html = view('pengembangan.certificate_template', ['name'=>$name,'kegiatan'=>$item,'barcode'=>$barcode,'nomor_surat'=>$nomorSertifikat,'sebagai'=>$sebagai])->render();
         $pdf = PDF::loadHTML($html)->setPaper('a4','landscape');
         return response($pdf->output(), 200)->header('Content-Type', 'application/pdf');
     }
@@ -871,5 +1023,19 @@ class PengembanganController extends Controller
             'participant_name' => $participantName,
             'participant_role' => $participantRole,
         ]);
+    }
+
+    protected function resolveParticipantRole($participant, Pengembangan $item): string
+    {
+        if ($participant->peserta_type === 'guru') {
+            $name = \DB::table('guru')->where('id', $participant->peserta_id)->value('nama');
+        } elseif ($participant->peserta_type === 'siswa') {
+            $name = \DB::table('siswa')->where('id', $participant->peserta_id)->value('nama');
+        } else {
+            $name = $participant->peserta_name ?? null;
+        }
+
+        $pemateri = is_array($item->pemateri) ? $item->pemateri : [];
+        return in_array($name, $pemateri, true) ? 'Pemateri' : 'Peserta';
     }
 }

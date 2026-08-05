@@ -87,6 +87,14 @@
             </a>
         </li>
         @endif
+        @if(auth()->user()->guru_id || auth()->user()->siswa_id)
+        <li>
+            <a href="{{ route('pengembangan.my_certificates') }}" class="menu-item {{ request()->routeIs('pengembangan.my_certificates') ? 'active' : '' }}">
+                <i class="material-icons">badge</i>
+                <span>Pengembangan Diri Saya</span>
+            </a>
+        </li>
+        @endif
         @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
         <li>
             <a href="{{ url('/pengaturan-jam') }}" class="menu-item {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}">

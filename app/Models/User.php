@@ -104,13 +104,24 @@ class User extends Authenticatable
             ->all();
     }
 
+    protected static array $roleEquivalents = [
+        'Kepala Sekolah' => ['Kepala Sekolah', 'Pengawas Pembina'],
+        'Pengawas Pembina' => ['Pengawas Pembina', 'Kepala Sekolah'],
+    ];
+
     public function hasRole(string $roleName): bool
     {
         $needle = mb_strtolower(trim($roleName));
+        $roleNames = collect($this->roleNames())->map(fn ($name) => mb_strtolower(trim($name)));
 
-        return collect($this->roleNames())->contains(function ($name) use ($needle) {
-            return mb_strtolower(trim($name)) === $needle;
-        });
+        if (isset(self::$roleEquivalents[trim($roleName)])) {
+            $equivalentNames = collect(self::$roleEquivalents[trim($roleName)])
+                ->map(fn ($name) => mb_strtolower(trim($name)));
+
+            return $roleNames->intersect($equivalentNames)->isNotEmpty();
+        }
+
+        return $roleNames->contains($needle);
     }
 
     public function hasAnyRole(array $roleNames): bool

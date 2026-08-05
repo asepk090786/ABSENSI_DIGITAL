@@ -45,8 +45,10 @@
             name: { x_ratio: 0.5, y_ratio: 0.3, font_size: 36, color: '#000000', align: 'center' },
             'kegiatan->nama_kegiatan': { x_ratio: 0.5, y_ratio: 0.4, font_size: 26, color: '#000000', align: 'center' },
             'kegiatan->tema_kegiatan': { x_ratio: 0.5, y_ratio: 0.5, font_size: 20, color: '#000000', align: 'center' },
-            nomor_surat: { x_ratio: 0.5, y_ratio: 0.6, font_size: 18, color: '#000000', align: 'center' },
-            barcode: { x_ratio: 0.5, y_ratio: 0.8, font_size: 16, color: '#000000', align: 'center', is_qr: true, qr_size: 120 }
+            sebagai: { x_ratio: 0.5, y_ratio: 0.55, font_size: 20, color: '#000000', align: 'center' },
+            nomor_surat: { x_ratio: 0.5, y_ratio: 0.63, font_size: 18, color: '#000000', align: 'center' },
+            verification_text: { x_ratio: 0.5, y_ratio: 0.8, font_size: 16, color: '#000000', align: 'center' },
+            verification_qr: { x_ratio: 0.85, y_ratio: 0.8, font_size: 16, color: '#000000', align: 'center', qr_size: 120 }
         };
     }
 
@@ -143,9 +145,19 @@
             name: values.name || 'Nama Peserta',
             'kegiatan->nama_kegiatan': values['kegiatan->nama_kegiatan'] || 'Nama Kegiatan',
             'kegiatan->tema_kegiatan': values['kegiatan->tema_kegiatan'] || 'Tema Kegiatan',
-            barcode: values.barcode || 'ABC123-VERIFY',
-            nomor_surat: values.nomor_surat || '123/SMAN1/PONTANG'
+            sebagai: values.sebagai || 'Peserta',
+verification_text: values.verification_text || 'ABC123-VERIFY',
+        verification_qr: values.verification_qr || 'ABC123-VERIFY'
         };
+
+        if (positions.barcode) {
+            if (!positions.verification_text) {
+                positions.verification_text = positions.barcode;
+            }
+            if (!positions.verification_qr) {
+                positions.verification_qr = positions.barcode;
+            }
+        }
 
         function drawQrCode(ctx, x, y, size, value) {
             var qrValue = value || 'QR';
@@ -175,13 +187,8 @@
                 var text = labelValues[key] || '';
                 var fontSize = pos.scaledFontSize || (pos.fontSize || 24);
                 var qrSize = pos.scaledQrSize || (pos.qrSize || 120);
-                if (key === 'barcode' && pos.isQr) {
+                if (key === 'verification_qr') {
                     drawQrCode(ctx, pos.x, pos.y, qrSize, text);
-                    ctx.font = Math.max(10, Math.round(fontSize / 1.2)) + 'px Arial';
-                    ctx.fillStyle = pos.color || '#000000';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    ctx.fillText(text, pos.x, pos.y + (qrSize / 2) + 8);
                     return;
                 }
                 ctx.font = fontSize + 'px Arial';

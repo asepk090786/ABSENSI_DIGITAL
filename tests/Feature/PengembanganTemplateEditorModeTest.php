@@ -28,7 +28,7 @@ class PengembanganTemplateEditorModeTest extends TestCase
         ]);
     }
 
-    public function test_store_persists_include_barcode_and_qr_size()
+    public function test_store_persists_include_verification_code_and_qr_size()
     {
         DB::table('pengembangan_sertifikat_templates')->truncate();
 
@@ -39,15 +39,15 @@ class PengembanganTemplateEditorModeTest extends TestCase
             'nama' => 'Template QR',
             'template_html' => '<div>QR</div>',
             'editor_mode' => 'image',
-            'include_barcode' => '1',
+            'include_verification_code' => '1',
+            'include_verification_qr' => '1',
         ]);
 
         $response->assertRedirect(route('pengembangan.templates.index'));
         $this->assertDatabaseHas('pengembangan_sertifikat_templates', [
             'nama' => 'Template QR',
-            'include_barcode' => 1,
-            'barcode_is_qr' => 1,
-            'barcode_qr_size' => 180,
+            'include_verification_code' => 1,
+            'include_verification_qr' => 1,
         ]);
     }
 }

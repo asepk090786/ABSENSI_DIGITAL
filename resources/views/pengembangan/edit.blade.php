@@ -22,6 +22,15 @@
             <input name="nama_kegiatan" value="{{ old('nama_kegiatan', $item->nama_kegiatan) }}" class="form-control" />
         </div>
         <div class="mb-3">
+            <label class="form-label">Jenis Kegiatan</label>
+            <select name="jenis_kegiatan" class="form-control">
+                <option value="">-- Pilih Jenis Kegiatan --</option>
+                @foreach($jenisList as $jk)
+                    <option value="{{ $jk->kode }}" {{ old('jenis_kegiatan', $item->jenis_kegiatan) == $jk->kode ? 'selected' : '' }}>{{ $jk->nama }} ({{ $jk->kode }})</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="mb-3">
             <label class="form-label">Tema Kegiatan</label>
             <input name="tema_kegiatan" value="{{ old('tema_kegiatan', $item->tema_kegiatan) }}" class="form-control" />
         </div>

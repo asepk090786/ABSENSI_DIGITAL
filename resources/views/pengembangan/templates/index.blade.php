@@ -118,7 +118,9 @@
                         name: 'Nama Peserta',
                         'kegiatan->nama_kegiatan': 'Nama Kegiatan Contoh',
                         'kegiatan->tema_kegiatan': 'Tema Kegiatan Contoh',
-                        barcode: 'ABC123-VERIFY',
+                        sebagai: 'Peserta',
+                        verification_text: 'ABC123-VERIFY',
+                        verification_qr: 'ABC123-VERIFY',
                         nomor_surat: '123/SMAN1/PONTANG'
                     }
                 });

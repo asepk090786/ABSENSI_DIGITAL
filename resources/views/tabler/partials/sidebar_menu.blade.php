@@ -31,6 +31,13 @@
         </a>
     </div>
     @endif
+    @if(auth()->user()->guru_id || auth()->user()->siswa_id)
+    <div class="nav-item">
+        <a href="{{ route('pengembangan.my_certificates') }}" class="nav-link {{ request()->routeIs('pengembangan.my_certificates') ? 'active' : '' }}">
+            <i class="ti ti-badge me-2"></i> Pengembangan Diri Saya
+        </a>
+    </div>
+    @endif
     @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
     <div class="nav-item">
         <a href="{{ url('/pengaturan-jam') }}" class="nav-link {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'active' : '' }}">

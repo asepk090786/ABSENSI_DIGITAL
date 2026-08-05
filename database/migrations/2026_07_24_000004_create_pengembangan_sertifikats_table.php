@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('pengembangan_id')->constrained('pengembangan_diri')->onDelete('cascade');
             $table->string('peserta_type');
-            $table->unsignedBigInteger('peserta_id');
+            $table->unsignedBigInteger('peserta_id')->nullable();
             $table->string('file_path')->nullable();
             $table->string('barcode')->unique();
             $table->timestamp('verified_at')->nullable();

@@ -34,7 +34,7 @@
                         </select>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label">Guru (untuk Admin / Kepala Sekolah / Guru BK / Guru)</label>
+                        <label class="form-label">Guru (untuk Admin / Kepala Sekolah / Guru BK / Guru / Pengawas Pembina)</label>
                         <select name="guru_id" class="form-select @error('guru_id') is-invalid @enderror">
                             <option value="">-- Pilih Guru --</option>
                             @foreach($guru as $g)
@@ -42,6 +42,28 @@
                             @endforeach
                         </select>
                         @error('guru_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Kepala Sekolah (untuk peran Kepala Sekolah)</label>
+                        <select name="kepala_sekolah_id" class="form-select @error('kepala_sekolah_id') is-invalid @enderror">
+                            <option value="">-- Pilih Kepala Sekolah --</option>
+                            @foreach($kepala as $k)
+                                <option value="{{ $k->id }}" {{ old('kepala_sekolah_id', $user->kepala_sekolah_id) == $k->id ? 'selected' : '' }}>
+                                    {{ $k->nama }} @if($k->guru) - {{ $k->guru->nama }} @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('kepala_sekolah_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Siswa (untuk akun siswa)</label>
+                        <select name="siswa_id" class="form-select @error('siswa_id') is-invalid @enderror">
+                            <option value="">-- Pilih Siswa --</option>
+                            @foreach($siswa as $s)
+                                <option value="{{ $s->id }}" {{ old('siswa_id', $user->siswa_id) == $s->id ? 'selected' : '' }}>{{ $s->nama }}</option>
+                            @endforeach
+                        </select>
+                        @error('siswa_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="mb-2">
                         <label for="is_active" class="form-label">Status</label>
@@ -72,7 +94,7 @@
 
         function updateUserRoleFields() {
             const roleText = roleSelect.options[roleSelect.selectedIndex]?.text || '';
-            const isGuruRole = /Guru|Admin|Wakil Kepala Sekolah/i.test(roleText);
+            const isGuruRole = /Guru|Admin|Wakil Kepala Sekolah|Pengawas Pembina/i.test(roleText);
             const isKepalaRole = /Kepala Sekolah/i.test(roleText);
             const isSiswaRole = /Siswa/i.test(roleText);
 
@@ -81,10 +103,19 @@
             }
             if (kepalaField) {
                 kepalaField.style.display = isKepalaRole ? '' : 'none';
+                const kepalaSelectElement = kepalaField.querySelector('select[name="kepala_sekolah_id"]');
+                if (kepalaSelectElement) {
+                    kepalaSelectElement.required = isKepalaRole;
+                }
             }
             if (siswaField) {
                 siswaField.style.display = isSiswaRole ? '' : 'none';
+                const siswaSelectElement = siswaField.querySelector('select[name="siswa_id"]');
+                if (siswaSelectElement) {
+                    siswaSelectElement.required = isSiswaRole;
+                }
             }
+        }
         }
 
         if (roleSelect) {
