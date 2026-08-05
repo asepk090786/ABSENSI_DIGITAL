@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+# post-merge hook: ensure PHP/JS deps installed after a `git pull`
+# This file is a template. Enable it by running `git config core.hooksPath .githooks`
+
+DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$DIR"
+
+echo "[post-merge] Running post-merge tasks in $DIR"
+
+if command -v composer >/dev/null 2>&1; then
+    echo "[post-merge] Running: composer install --no-interaction --prefer-dist --optimize-autoloader"
+    composer install --no-interaction --prefer-dist --optimize-autoloader || echo "composer install failed"
+else
+    echo "[post-merge] composer command not found; please install Composer to auto-install PHP deps"
+fi
+
+if [ -f package.json ]; then
+    if command -v npm >/dev/null 2>&1; then
+        echo "[post-merge] Running: npm ci"
+        npm ci --silent || npm install --no-audit --no-fund --silent || echo "npm install failed"
+    else
+        echo "[post-merge] npm not found; skipping JavaScript dependency install"
+    fi
+fi
+
+echo "[post-merge] Done."

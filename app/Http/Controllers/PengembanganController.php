@@ -297,9 +297,9 @@ class PengembanganController extends Controller
             'nomor_sertifikat' => 'nullable|string|max:255',
             'save_only' => 'sometimes|boolean',
             'save_certificate_defaults' => 'sometimes|boolean',
-            'bukti_dukung_daftar_hadir' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:10240',
+            'bukti_dukung_daftar_hadir' => 'nullable|file|mimes:pdf,jpeg,png,jpg,doc,docx|max:10240',
             'bukti_dukung_dokumentasi' => 'nullable|array',
-            'bukti_dukung_dokumentasi.*' => 'file|mimes:pdf,jpeg,png,jpg|max:10240',
+            'bukti_dukung_dokumentasi.*' => 'file|mimes:pdf,jpeg,png,jpg,doc,docx|max:10240',
             'bukti_dukung_materi' => 'nullable|array',
             'bukti_dukung_materi.*' => 'file|mimes:pdf,jpeg,png,jpg,doc,docx|max:10240',
         ]);

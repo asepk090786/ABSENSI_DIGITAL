@@ -19,6 +19,15 @@ class CertificateService
         $this->image = new ImageManager(new Driver());
     }
 
+    protected function getA4CanvasDimensions(string $pageOrientation = 'landscape'): array
+    {
+        $orientation = strtolower($pageOrientation) === 'portrait' ? 'portrait' : 'landscape';
+        if ($orientation === 'portrait') {
+            return ['width' => 848, 'height' => 1200];
+        }
+        return ['width' => 1200, 'height' => 848];
+    }
+
     public function generate($template, Pengembangan $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null): string
     {
         $bgPath = $template->background_image ?? null;
@@ -142,13 +151,16 @@ class CertificateService
     {
         $imagePath = $this->generate($template, $item, $name, $barcode, $nomorSurat, $sebagai);
 
+        $pageSize = strtolower($template->page_size ?? 'a4');
+        $orientation = ($template->page_orientation ?? 'landscape') === 'portrait' ? 'portrait' : 'landscape';
+
         if (str_starts_with($imagePath, 'certificates/')) {
             $fullImgPath = Storage::disk('public')->path($imagePath);
             if (file_exists($fullImgPath)) {
                 $imgData = base64_encode(file_get_contents($fullImgPath));
                 $src = 'data:image/jpeg;base64,' . $imgData;
                 $html = '<!DOCTYPE html><html style="margin:0;padding:0;width:100%;height:100%;"><body style="margin:0;padding:0;width:100%;height:100%;"><img src="' . $src . '" style="width:100%;height:100%;"/></body></html>';
-                $pdf = Pdf::loadHTML($html)->setPaper('a4', 'landscape');
+                $pdf = Pdf::loadHTML($html)->setPaper($pageSize, $orientation);
                 $pdfPath = 'certificates/pdf_' . uniqid() . '.pdf';
                 Storage::disk('public')->put($pdfPath, $pdf->output());
                 return $pdfPath;
@@ -191,9 +203,10 @@ class CertificateService
         return $pdfPath;
     }
 
-    public function previewFromFile($uploadedFile, $positionsJson): string
+    public function previewFromFile($uploadedFile, $positionsJson, string $pageOrientation = 'landscape'): string
     {
         $img = $this->image->read($uploadedFile->getRealPath());
+        $canvasDims = $this->getA4CanvasDimensions($pageOrientation);
         $positions = json_decode($positionsJson, true) ?? [];
 
         if (isset($positions['barcode'])) {
@@ -221,7 +234,7 @@ class CertificateService
                 continue;
             }
 
-            $normalizedPos = $this->normalizeEditorPlaceholderPosition($pos, $img->width(), $img->height());
+            $normalizedPos = $this->normalizeEditorPlaceholderPosition($pos, $img->width(), $img->height(), $canvasDims['width'], $canvasDims['height']);
             $x = $normalizedPos['x'] ?? ($img->width() / 2);
             $y = $normalizedPos['y'] ?? ($img->height() / 2);
             $fontSize = $normalizedPos['font_size'] ?? 24;
@@ -403,7 +416,7 @@ class CertificateService
         return response($pdf->output(), 200)->header('Content-Type', 'application/pdf');
     }
 
-    public function normalizeEditorPlaceholderPosition(array $position, int $imageWidth, int $imageHeight, int $canvasWidth = 900, int $canvasHeight = 600): array
+    public function normalizeEditorPlaceholderPosition(array $position, int $imageWidth, int $imageHeight, int $canvasWidth = 1200, int $canvasHeight = 848): array
     {
         $imageWidth = max(1, $imageWidth);
         $imageHeight = max(1, $imageHeight);

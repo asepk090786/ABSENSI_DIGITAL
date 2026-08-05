@@ -53,6 +53,21 @@ composer install
 npm install
 ```
 
+### 2.a (Optional) Auto-install on git pull
+
+To enable automatic dependency installation when someone pulls updates, install the repository git hooks once on the remote server:
+
+```bash
+# run once on the server (project root)
+bash scripts/install-git-hooks.sh
+# or alternatively:
+git config core.hooksPath .githooks
+chmod +x .githooks/*
+```
+
+The hook will run `composer install` and `npm ci` (if `package.json` exists) after a `git pull` / `git merge`.
+
+
 ### 3. Konfigurasi Environment
 
 ```bash
