@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -15,6 +16,7 @@ class DashboardController extends Controller
         $isGuruPanel = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
         $isSiswa = $user->hasRole('Siswa');
         $isKepalaSekolah = $user->hasRole('Kepala Sekolah');
+        $isPengawas = $user->hasRole('Pengawas Pembina');
 
         // Data umum untuk dashboard
         $guru = \Illuminate\Support\Facades\Schema::hasTable('guru') ? DB::table('guru')->count() : 0;
@@ -577,16 +579,153 @@ class DashboardController extends Controller
             ->with('verificationExpiresAt', $verificationExpiresAt ?? null)
             ->with('verificationExpiresAtTimestamp', $verificationExpiresAtTimestamp ?? null);
             
-        } elseif ($isKepalaSekolah) {
+        } elseif ($isKepalaSekolah || $isPengawas) {
             $kelasLaporanOptions = collect();
-            if (\Illuminate\Support\Facades\Schema::hasTable('kelas')) {
+            if (Schema::hasTable('kelas')) {
                 $kelasLaporanOptions = DB::table('kelas')
                     ->select('id', 'nama_kelas')
                     ->orderBy('nama_kelas')
                     ->get();
             }
 
-            return view('dashboard.kepala', compact('guru','siswa','kelas','absensi','tahunAjaran','semestrName', 'kelasLaporanOptions'));
+            $totalRencanaPembelajaran = Schema::hasTable('rencana_pembelajarans') ? DB::table('rencana_pembelajarans')->count() : 0;
+            $totalNilaiHarian = Schema::hasTable('nilai_harian') ? DB::table('nilai_harian')->whereNotNull('nilai')->count() : 0;
+            $totalKomponenPenilaian = Schema::hasTable('komponen_nilai') ? DB::table('komponen_nilai')->count() : 0;
+            $totalCapaianPembelajaran = Schema::hasTable('capaian_pembelajarans') ? DB::table('capaian_pembelajarans')->count() : 0;
+            $totalLayananBk = Schema::hasTable('layanan_bk') ? DB::table('layanan_bk')->count() : 0;
+            $totalPembinaanBk = Schema::hasTable('pembinaan_bk') ? DB::table('pembinaan_bk')->count() : 0;
+            $totalTindakLanjutBk = Schema::hasTable('tindak_lanjut_bk') ? DB::table('tindak_lanjut_bk')->count() : 0;
+
+            $labelPeriode = 'Hari Ini';
+            $periodeTanggal = now()->toDateString();
+
+            $statistikKehadiranSiswaHarian = (object) [
+                'tanggal' => $periodeTanggal,
+                'total_entri' => 0,
+                'hadir' => 0,
+                'terlambat' => 0,
+                'izin' => 0,
+                'sakit' => 0,
+                'alpa' => 0,
+                'persentase_hadir' => 0,
+            ];
+            $rekapKehadiranSiswaPerKelas = collect();
+            if (Schema::hasTable('absensi_siswa') && Schema::hasTable('absensi_kelas') && Schema::hasTable('kelas')) {
+                $dailySiswaSubQuery = DB::table('absensi_siswa as abs_s')
+                    ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
+                    ->select(
+                        'abs_k.kelas_id',
+                        'abs_s.siswa_id',
+                        DB::raw('DATE(abs_k.tanggal) as tanggal'),
+                        DB::raw("MAX(CASE
+                            WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
+                            WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                            WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
+                            WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
+                            WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                            ELSE 0
+                        END) as status_rank")
+                    )
+                    ->groupBy('abs_k.kelas_id', 'abs_s.siswa_id', DB::raw('DATE(abs_k.tanggal)'));
+
+                $statSiswaQuery = DB::query()
+                    ->fromSub($dailySiswaSubQuery, 'daily_siswa')
+                    ->whereDate('daily_siswa.tanggal', $periodeTanggal)
+                    ->select(
+                        DB::raw('COUNT(*) as total_entri'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa')
+                    )
+                    ->first();
+
+                if ($statSiswaQuery) {
+                    $statistikKehadiranSiswaHarian = (object) [
+                        'tanggal' => $periodeTanggal,
+                        'total_entri' => (int) ($statSiswaQuery->total_entri ?? 0),
+                        'hadir' => (int) ($statSiswaQuery->hadir ?? 0),
+                        'terlambat' => (int) ($statSiswaQuery->terlambat ?? 0),
+                        'izin' => (int) ($statSiswaQuery->izin ?? 0),
+                        'sakit' => (int) ($statSiswaQuery->sakit ?? 0),
+                        'alpa' => (int) ($statSiswaQuery->alpa ?? 0),
+                        'persentase_hadir' => ($statSiswaQuery->total_entri ?? 0) > 0 ? round((($statSiswaQuery->hadir ?? 0) / $statSiswaQuery->total_entri) * 100, 2) : 0,
+                    ];
+                }
+
+                $rekapKehadiranSiswaPerKelas = DB::query()
+                    ->fromSub($dailySiswaSubQuery, 'daily_siswa')
+                    ->join('kelas as k', 'daily_siswa.kelas_id', '=', 'k.id')
+                    ->whereDate('daily_siswa.tanggal', $periodeTanggal)
+                    ->select(
+                        'k.id as kelas_id',
+                        'k.nama_kelas',
+                        DB::raw('COUNT(*) as total_entri'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa')
+                    )
+                    ->groupBy('k.id', 'k.nama_kelas')
+                    ->orderBy('k.nama_kelas')
+                    ->get();
+            }
+
+            $statistikKehadiranGuruHarian = (object) [
+                'tanggal' => $periodeTanggal,
+                'total_entri' => 0,
+                'hadir' => 0,
+                'izin' => 0,
+                'sakit' => 0,
+                'tidak_hadir' => 0,
+                'persentase_hadir' => 0,
+            ];
+            if (Schema::hasTable('absensi_guru') && Schema::hasTable('guru')) {
+                $statGuruQuery = DB::table('absensi_guru as ag')
+                    ->whereDate('ag.tanggal', $periodeTanggal)
+                    ->select(
+                        DB::raw('COUNT(ag.id) as total_entri'),
+                        DB::raw("SUM(CASE WHEN LOWER(ag.status) = 'hadir' THEN 1 ELSE 0 END) as hadir"),
+                        DB::raw("SUM(CASE WHEN LOWER(ag.status) = 'izin' THEN 1 ELSE 0 END) as izin"),
+                        DB::raw("SUM(CASE WHEN LOWER(ag.status) = 'sakit' THEN 1 ELSE 0 END) as sakit"),
+                        DB::raw("SUM(CASE WHEN LOWER(ag.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as tidak_hadir")
+                    )
+                    ->first();
+
+                if ($statGuruQuery) {
+                    $statistikKehadiranGuruHarian = (object) [
+                        'tanggal' => $periodeTanggal,
+                        'total_entri' => (int) ($statGuruQuery->total_entri ?? 0),
+                        'hadir' => (int) ($statGuruQuery->hadir ?? 0),
+                        'izin' => (int) ($statGuruQuery->izin ?? 0),
+                        'sakit' => (int) ($statGuruQuery->sakit ?? 0),
+                        'tidak_hadir' => (int) ($statGuruQuery->tidak_hadir ?? 0),
+                        'persentase_hadir' => ($statGuruQuery->total_entri ?? 0) > 0 ? round((($statGuruQuery->hadir ?? 0) / $statGuruQuery->total_entri) * 100, 2) : 0,
+                    ];
+                }
+            }
+
+            return view('dashboard.kepala', compact(
+                'guru',
+                'siswa',
+                'kelas',
+                'absensi',
+                'tahunAjaran',
+                'semestrName',
+                'kelasLaporanOptions',
+                'totalRencanaPembelajaran',
+                'totalNilaiHarian',
+                'totalKomponenPenilaian',
+                'totalCapaianPembelajaran',
+                'totalLayananBk',
+                'totalPembinaanBk',
+                'totalTindakLanjutBk',
+                'statistikKehadiranSiswaHarian',
+                'statistikKehadiranGuruHarian',
+                'rekapKehadiranSiswaPerKelas'
+            ))->with('pageTitle', $isPengawas ? 'Dashboard Pengawas Pembina' : 'Dashboard Kepala Sekolah');
         } else {
             return view('dashboard.user');
         }
