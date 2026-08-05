@@ -12,16 +12,17 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CapaianPembelajaranController extends Controller
 {
-    private function isGuruMapel(): bool
+    private function isTeacherUser(): bool
     {
-        return auth()->check() && auth()->user()->hasRole('Guru Mapel');
+        $user = auth()->user();
+        return $user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id);
     }
 
     private function scopedCapaianQuery()
     {
         $query = CapaianPembelajaran::query();
 
-        if ($this->isGuruMapel() && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
+        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
             $query->where('user_id', auth()->id());
         }
 
@@ -50,7 +51,7 @@ class CapaianPembelajaranController extends Controller
 
     public function update(Request $request, CapaianPembelajaran $capaianPembelajaran)
     {
-        if ($this->isGuruMapel() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
+        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
             abort(403, 'Anda tidak diizinkan mengubah CP milik guru lain.');
         }
 
@@ -70,7 +71,7 @@ class CapaianPembelajaranController extends Controller
 
     public function destroy(CapaianPembelajaran $capaianPembelajaran)
     {
-        if ($this->isGuruMapel() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
+        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
             abort(403, 'Anda tidak diizinkan menghapus CP milik guru lain.');
         }
 

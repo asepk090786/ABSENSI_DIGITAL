@@ -13,10 +13,24 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class KomponenNilaiExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
     private int $no = 1;
+    private $user;
+
+    public function __construct($user = null)
+    {
+        $this->user = $user;
+    }
 
     public function collection()
     {
-        return KomponenNilai::with('capaianPembelajaran')->orderBy('nama_komponen')->get();
+        $query = KomponenNilai::with('capaianPembelajaran')->orderBy('nama_komponen');
+
+        if ($this->user && ! $this->user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            $query->whereHas('capaianPembelajaran', function ($subQuery) {
+                $subQuery->where('user_id', $this->user->id);
+            });
+        }
+
+        return $query->get();
     }
 
     public function headings(): array

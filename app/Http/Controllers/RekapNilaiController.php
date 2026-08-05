@@ -12,6 +12,20 @@ use Illuminate\Support\Facades\DB;
 
 class RekapNilaiController extends Controller
 {
+    private function scopedKomponenQuery()
+    {
+        $query = KomponenNilai::query();
+        $user = auth()->user();
+
+        if ($user && $user->hasRole('Guru Mapel')) {
+            $query->whereHas('capaianPembelajaran', function ($subQuery) use ($user) {
+                $subQuery->where('user_id', $user->id);
+            });
+        }
+
+        return $query;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -218,7 +232,7 @@ class RekapNilaiController extends Controller
         }
         
         // Get komponen nilai options
-        $komponenOptions = KomponenNilai::orderBy('nama_komponen')->get();
+        $komponenOptions = $this->scopedKomponenQuery()->orderBy('nama_komponen')->get();
         
         // Get rekap data if filters are applied
         $rekapData = null;
@@ -227,10 +241,14 @@ class RekapNilaiController extends Controller
         $selectedMapel = null;
         $selectedKomponen = null;
         
+        if ($komponenId) {
+            $selectedKomponen = $this->scopedKomponenQuery()->find($komponenId);
+        }
+
         if ($kelasId && $mapelId) {
             $selectedKelas = Kelas::find($kelasId);
             $selectedMapel = MataPelajaran::find($mapelId);
-            $selectedKomponen = $komponenId ? KomponenNilai::find($komponenId) : null;
+            $selectedKomponen = $komponenId ? $this->scopedKomponenQuery()->find($komponenId) : null;
 
             $students = DB::table('siswa')
                 ->where('kelas_id', $kelasId)

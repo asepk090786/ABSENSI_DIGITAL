@@ -36,9 +36,18 @@ class NilaiController extends Controller
         $mapelByKelas = collect();
         $rencanaByMapel = [];
         $debugRencana = null;
-        $komponenList = DB::table('komponen_nilai')->orderBy('nama_komponen')->get();
 
         $user = auth()->user();
+        $komponenQuery = DB::table('komponen_nilai')
+            ->leftJoin('capaian_pembelajarans as cp', 'komponen_nilai.capaian_pembelajaran_id', '=', 'cp.id')
+            ->select('komponen_nilai.*')
+            ->orderBy('komponen_nilai.nama_komponen');
+
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            $komponenQuery->where('cp.user_id', $user->id);
+        }
+
+        $komponenList = $komponenQuery->get();
         $guru = $user ? $user->guru : null;
         $isAdminOrKepala = $user && $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
         $isGuruBk = $user && $user->hasRole('Guru BK');
@@ -279,6 +288,10 @@ class NilaiController extends Controller
                 $daftarInputNilaiGuruQuery->where('nh.mapel_id', $mapelId);
             }
 
+            if (!$isAdminOrKepala) {
+                $daftarInputNilaiGuruQuery->where('nh.guru_id', $guru->id);
+            }
+
             $daftarInputNilaiGuru = $daftarInputNilaiGuruQuery
                 ->limit(300)
                 ->get();
@@ -316,6 +329,10 @@ class NilaiController extends Controller
         if ($mapelId) {
             $itemsQuery->where('nilai_harian.mapel_id', $mapelId);
             $filterMapelName = MataPelajaran::where('id', $mapelId)->value('nama_mapel');
+        }
+
+        if ($guru && !$isAdminOrKepala && !$isGuruBk) {
+            $itemsQuery->where('nilai_harian.guru_id', $guru->id);
         }
         $items = $itemsQuery->orderBy('nilai_harian.created_at','desc')->get();
 
@@ -431,6 +448,16 @@ class NilaiController extends Controller
             return redirect()->route('nilai.index')->with('error', 'Tahun ajaran atau semester aktif belum diatur.');
         }
 
+        if (!$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            $rencanaAllowed = RencanaPembelajaran::where('id', $validated['rencana_pembelajaran_id'])
+                ->where('guru_id', $guru->id)
+                ->exists();
+
+            if (! $rencanaAllowed) {
+                return redirect()->route('nilai.index')->with('error', 'Rencana pembelajaran tidak ditemukan atau bukan milik Anda.');
+            }
+        }
+
         $siswaIds = Siswa::where('kelas_id', $validated['kelas_id'])->pluck('id');
         if ($siswaIds->isEmpty()) {
             return redirect()->route('nilai.index')->with('error', 'Tidak ada siswa pada kelas ini.');
@@ -481,15 +508,25 @@ class NilaiController extends Controller
             'nilai.*' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        $user = auth()->user();
+        $guru = $user ? $user->guru : null;
+        $isAdminOrKepala = $user && $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $isGuruBk = $user && $user->hasRole('Guru BK');
+
         $now = now();
         $updated = 0;
         foreach ($validated['nilai'] as $id => $value) {
-            $affected = DB::table('nilai_harian')
-                ->where('id', $id)
-                ->update([
-                    'nilai' => $value === '' ? null : $value,
-                    'updated_at' => $now,
-                ]);
+            $query = DB::table('nilai_harian')
+                ->where('id', $id);
+
+            if ($guru && !$isAdminOrKepala && !$isGuruBk) {
+                $query->where('guru_id', $guru->id);
+            }
+
+            $affected = $query->update([
+                'nilai' => $value === '' ? null : $value,
+                'updated_at' => $now,
+            ]);
             $updated += $affected;
         }
 
@@ -518,6 +555,16 @@ class NilaiController extends Controller
 
         if (!$tahunAjaranAktif || !$semesterAktif) {
             return redirect()->route('nilai.index')->with('error', 'Tahun ajaran atau semester aktif belum diatur.');
+        }
+
+        if (!$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            $rencanaAllowed = RencanaPembelajaran::where('id', $validated['rencana_pembelajaran_id'])
+                ->where('guru_id', $guru->id)
+                ->exists();
+
+            if (! $rencanaAllowed) {
+                return redirect()->route('nilai.index')->with('error', 'Rencana pembelajaran tidak ditemukan atau bukan milik Anda.');
+            }
         }
 
         $import = new NilaiHarianImport(
