@@ -156,21 +156,30 @@
 
             {{-- Daftar Sertifikat yang sudah digenerate --}}
             <div class="card mt-3">
-                @php $visibleCount = $certificates->where('is_visible', true)->count(); @endphp
+                @php
+                    $visibleCount = $certificates->where('is_visible', true)->count();
+                    $hasFilesCount = $certificates->filter(fn($c) => !empty($c->file_path))->count();
+                @endphp
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title fw-semibold m-0">
                         <i class="ti ti-certificate me-1"></i> Daftar Sertifikat
                         <span class="badge bg-secondary ms-2">{{ $certificates->count() }}</span>
                     </h5>
                     <div class="d-flex gap-2">
-                        @if($certificates->isNotEmpty())
-                        <form method="POST" action="{{ route('pengembangan.certificates.toggle_visibility_all', $item->id) }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-sm {{ $visibleCount ? 'btn-warning' : 'btn-success' }}">
-                                <i class="ti ti-eye{{ $visibleCount ? '-off' : '' }} me-1"></i>
-                                {{ $visibleCount ? 'Sembunyikan Semua Sertifikat' : 'Tampilkan Semua Sertifikat' }}
+                        @if($hasFilesCount > 0)
+                            <form method="POST" action="{{ route('pengembangan.certificates.toggle_visibility_all', $item->id) }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm {{ $visibleCount ? 'btn-warning' : 'btn-success' }}">
+                                    <i class="ti ti-eye{{ $visibleCount ? '-off' : '' }} me-1"></i>
+                                    {{ $visibleCount ? 'Sembunyikan Semua Sertifikat' : 'Tampilkan Semua Sertifikat' }}
+                                </button>
+                            </form>
+                        @else
+                            <button type="button" class="btn btn-sm btn-secondary" disabled title="Belum ada berkas sertifikat. Klik Generate untuk membuat berkas sertifikat.">
+                                <i class="ti ti-eye-off me-1"></i>
+                                Belum Ada Berkas Sertifikat
                             </button>
-                        </form>
+                            <small class="text-muted ms-2">Klik <strong>Generate Certificates</strong> untuk membuat file sertifikat terlebih dahulu.</small>
                         @endif
                         <button type="submit" id="deleteSelectedBtn" form="bulkDeleteForm" class="btn btn-danger btn-sm d-none">
                             <i class="ti ti-trash me-1"></i> Hapus Terpilih
