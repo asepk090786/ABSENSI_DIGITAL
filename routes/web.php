@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('guru','App\Http\Controllers\GuruController');
     Route::post('guru/bulk-delete', ['App\Http\Controllers\GuruController', 'bulkDelete'])->name('guru.bulk-delete');
     Route::post('guru/{guru}/generate-account', ['App\Http\Controllers\GuruController', 'generateAccount'])->name('guru.generate-account');
+    Route::post('guru/{guru}/generate-pengawas-account', ['App\Http\Controllers\GuruController', 'generatePengawasAccount'])->name('guru.generate-pengawas-account');
     Route::get('guru-export', ['App\Http\Controllers\GuruController', 'export'])->name('guru.export');
     Route::get('guru-template', ['App\Http\Controllers\GuruController', 'templateDownload'])->name('guru.template');
     Route::post('guru-import', ['App\Http\Controllers\GuruController', 'import'])->name('guru.import');
@@ -238,6 +239,7 @@ Route::middleware(['auth'])->group(function(){
     // Data Master routes
     Route::resource('sekolah', 'App\Http\Controllers\SekolahController');
     Route::resource('kepala_sekolah', 'App\Http\Controllers\KepalaSekolahController');
+    Route::post('kepala_sekolah/{kepala_sekolah}/generate-account', [App\Http\Controllers\KepalaSekolahController::class, 'generateAccount'])->name('kepala_sekolah.generate-account');
     Route::resource('wakil_kepala_sekolah', 'App\Http\Controllers\WakilKepalaSekolahController');
     Route::resource('guru_bk', 'App\Http\Controllers\GuruBkController');
     Route::prefix('guru-bk')->name('guru_bk_layanan.')->group(function () {

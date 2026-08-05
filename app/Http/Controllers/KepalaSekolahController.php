@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\KepalaSekolah;
 use App\Models\Guru;
+use App\Models\KepalaSekolah;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class KepalaSekolahController extends Controller
 {
     public function index()
     {
-        $kepalaSekolah = KepalaSekolah::with('guru')->orderBy('tanggal_mulai_jabatan', 'desc')->get();
+        $kepalaSekolah = KepalaSekolah::with(['guru', 'user'])->orderBy('tanggal_mulai_jabatan', 'desc')->get();
         return view('kepala_sekolah.index', compact('kepalaSekolah'));
     }
 
@@ -46,9 +49,58 @@ class KepalaSekolahController extends Controller
         return redirect()->route('kepala_sekolah.index')->with('success', 'Data kepala sekolah berhasil ditambahkan.');
     }
 
+    public function generateAccount(KepalaSekolah $kepalaSekolah)
+    {
+        if ($kepalaSekolah->user) {
+            return redirect()->route('kepala_sekolah.index')->with('warning', 'Akun Kepala Sekolah sudah tersedia.');
+        }
+
+        $role = Role::where('role_name', 'Kepala Sekolah')->first();
+        if (! $role) {
+            return redirect()->route('kepala_sekolah.index')->with('error', 'Role Kepala Sekolah tidak ditemukan.');
+        }
+
+        $guru = $kepalaSekolah->guru;
+        $username = trim((string) ($kepalaSekolah->nip ?? ''));
+        $plainPassword = $username;
+        $email = trim((string) ($kepalaSekolah->email ?? ''));
+
+        if ($username === '' || User::where('username', $username)->exists()) {
+            [$username, $email] = $this->generateSimadisIdentity('kepala');
+            $plainPassword = $username;
+        }
+
+        if ($email === '' || User::where('email', $email)->exists()) {
+            $email = $this->ensureUniqueEmail($username . '@simadis.sch.id');
+        }
+
+        $user = User::create([
+            'name' => $kepalaSekolah->nama,
+            'username' => $username,
+            'email' => $email,
+            'password' => Hash::make($plainPassword),
+            'jenis_kelamin' => $guru?->jenis_kelamin,
+            'role_id' => $role->id,
+            'guru_id' => $guru?->id,
+            'kepala_sekolah_id' => $kepalaSekolah->id,
+            'is_active' => 1,
+        ]);
+
+        $user->roles()->syncWithoutDetaching([$role->id]);
+
+        return redirect()->route('kepala_sekolah.index')
+            ->with('success', 'Akun Kepala Sekolah berhasil dibuat.')
+            ->with('generated_credentials', [
+                'nama' => $kepalaSekolah->nama,
+                'username' => $username,
+                'password' => $plainPassword,
+                'email' => $email,
+            ]);
+    }
+
     public function show(KepalaSekolah $kepalaSekolah)
     {
-        $kepalaSekolah->load('guru');
+        $kepalaSekolah->load(['guru', 'user']);
         return view('kepala_sekolah.show', compact('kepalaSekolah'));
     }
 
@@ -95,5 +147,42 @@ class KepalaSekolahController extends Controller
         $kepalaSekolah->delete();
 
         return redirect()->route('kepala_sekolah.index')->with('success', 'Data kepala sekolah berhasil dihapus.');
+    }
+
+    private function generateSimadisIdentity(string $prefix = 'kepala'): array
+    {
+        $maxAttempt = 50;
+        $attempt = 0;
+
+        do {
+            $attempt++;
+            $rand = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            $username = $prefix . $rand;
+            $email = $username . '@simadis.sch.id';
+        } while ($attempt < $maxAttempt && User::where('username', $username)->orWhere('email', $email)->exists());
+
+        if (User::where('username', $username)->orWhere('email', $email)->exists()) {
+            throw new \RuntimeException('Gagal menghasilkan identitas unik untuk Kepala Sekolah.');
+        }
+
+        return [$username, $email];
+    }
+
+    private function ensureUniqueEmail(string $email): string
+    {
+        if (! str_contains($email, '@')) {
+            throw new \InvalidArgumentException('Email tidak valid.');
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        $candidate = $email;
+        $counter = 1;
+
+        while (User::where('email', $candidate)->exists()) {
+            $candidate = $local . '+' . $counter . '@' . $domain;
+            $counter++;
+        }
+
+        return $candidate;
     }
 }
