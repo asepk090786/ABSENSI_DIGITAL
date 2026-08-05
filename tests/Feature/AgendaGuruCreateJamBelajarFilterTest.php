@@ -68,14 +68,14 @@ class AgendaGuruCreateJamBelajarFilterTest extends TestCase
         $this->actingAs($user);
 
         // Insert jam_belajar and capture IDs
-        $jam1 = DB::table('jam_belajar')->insertGetId(['hari' => 'Senin', 'urutan' => 1, 'jam_mulai' => '07:00', 'jam_selesai' => '07:45', 'jenis' => 'KBM', 'created_at' => now(), 'updated_at' => now()]);
-        $jam2 = DB::table('jam_belajar')->insertGetId(['hari' => 'Senin', 'urutan' => 2, 'jam_mulai' => '07:45', 'jam_selesai' => '08:30', 'jenis' => 'KBM', 'created_at' => now(), 'updated_at' => now()]);
+        $jam1 = DB::table('jam_belajar')->insertGetId(['hari' => 'Kamis', 'urutan' => 1, 'jam_mulai' => '07:00', 'jam_selesai' => '07:45', 'jenis' => 'KBM', 'created_at' => now(), 'updated_at' => now()]);
+        $jam2 = DB::table('jam_belajar')->insertGetId(['hari' => 'Kamis', 'urutan' => 2, 'jam_mulai' => '07:45', 'jam_selesai' => '08:30', 'jenis' => 'KBM', 'created_at' => now(), 'updated_at' => now()]);
         $jam3 = DB::table('jam_belajar')->insertGetId(['hari' => 'Kamis', 'urutan' => 5, 'jam_mulai' => '10:00', 'jam_selesai' => '10:45', 'jenis' => 'KBM', 'created_at' => now(), 'updated_at' => now()]);
         $jam4 = DB::table('jam_belajar')->insertGetId(['hari' => 'Kamis', 'urutan' => 6, 'jam_mulai' => '10:45', 'jam_selesai' => '11:30', 'jenis' => 'KBM', 'created_at' => now(), 'updated_at' => now()]);
 
         DB::table('jadwal_kbm')->insertOrIgnore([
-            ['kelas_id' => $kelasId, 'guru_id' => $guruId, 'mata_pelajaran_id' => $mapelId, 'jam_belajar_id' => $jam3, 'hari' => 'Kamis', 'jam_ke' => 5, 'tahun_ajaran_id' => $tahunId, 'semester_id' => $semesterId, 'created_at' => now(), 'updated_at' => now()],
-            ['kelas_id' => $kelasId, 'guru_id' => $guruId, 'mata_pelajaran_id' => $mapelId, 'jam_belajar_id' => $jam4, 'hari' => 'Kamis', 'jam_ke' => 6, 'tahun_ajaran_id' => $tahunId, 'semester_id' => $semesterId, 'created_at' => now(), 'updated_at' => now()],
+            ['kelas_id' => $kelasId, 'guru_id' => $guruId, 'mata_pelajaran_id' => $mapelId, 'jam_belajar_id' => $jam1, 'hari' => 'Kamis', 'jam_ke' => 1, 'tahun_ajaran_id' => $tahunId, 'semester_id' => $semesterId, 'created_at' => now(), 'updated_at' => now()],
+            ['kelas_id' => $kelasId, 'guru_id' => $guruId, 'mata_pelajaran_id' => $mapelId, 'jam_belajar_id' => $jam2, 'hari' => 'Kamis', 'jam_ke' => 2, 'tahun_ajaran_id' => $tahunId, 'semester_id' => $semesterId, 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 
