@@ -16,6 +16,11 @@
                             <a href="{{ route('rencana_pembelajaran.edit', $item->id) }}" class="btn btn-primary btn-sm">
                                 <i class="ti ti-edit me-1"></i>Edit
                             </a>
+                            @if($item->html_content)
+                                <button type="button" class="btn btn-info btn-sm" data-bs-toggle="collapse" data-bs-target="#previewDocContent">
+                                    <i class="ti ti-eye me-1"></i>Preview Dokumen
+                                </button>
+                            @endif
                             <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $item->mata_pelajaran_id, 'tingkat' => $item->kelas->tingkat_kelas]) }}" class="btn btn-secondary btn-sm">
                                 <i class="ti ti-arrow-left me-1"></i>Kembali
                             </a>
@@ -94,6 +99,48 @@
                     </div>
                     @endif
 
+                    @if($item->alokasi_waktu)
+                    <div class="col-md-12 mb-2">
+                        <label class="form-label text-muted">Alokasi Waktu</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->alokasi_waktu)) !!}</p>
+                    </div>
+                    @endif
+
+                    @if($item->praktik_pedagogis)
+                    <div class="col-md-12 mb-2">
+                        <label class="form-label text-muted">Praktik Pedagogis</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->praktik_pedagogis)) !!}</p>
+                    </div>
+                    @endif
+
+                    @if($item->lingkungan_pembelajaran)
+                    <div class="col-md-12 mb-2">
+                        <label class="form-label text-muted">Lingkungan Pembelajaran</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->lingkungan_pembelajaran)) !!}</p>
+                    </div>
+                    @endif
+
+                    @if($item->pemanfaatan_digital)
+                    <div class="col-md-12 mb-2">
+                        <label class="form-label text-muted">Pemanfaatan Digital</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->pemanfaatan_digital)) !!}</p>
+                    </div>
+                    @endif
+
+                    @if($item->pengalaman_pembelajaran)
+                    <div class="col-md-12 mb-2">
+                        <label class="form-label text-muted">Pengalaman Pembelajaran</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->pengalaman_pembelajaran)) !!}</p>
+                    </div>
+                    @endif
+
+                    @if($item->refleksi_pembelajaran)
+                    <div class="col-md-12 mb-2">
+                        <label class="form-label text-muted">Refleksi Pembelajaran</label>
+                        <p class="form-control-plaintext">{!! nl2br(e($item->refleksi_pembelajaran)) !!}</p>
+                    </div>
+                    @endif
+
                     @if($item->penilaian)
                     <div class="col-md-12 mb-2">
                         <label class="form-label text-muted">Penilaian</label>
@@ -120,6 +167,18 @@
                                         </div>
                                     </div>
                                 @endforeach
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($item->html_content)
+                    <div class="col-md-12 mb-2">
+                        <div class="collapse" id="previewDocContent">
+                            <div class="card mt-3">
+                                <div class="card-body p-0">
+                                    <iframe srcdoc="{!! htmlspecialchars($item->html_content, ENT_QUOTES, 'UTF-8') !!}" style="width:100%;min-height:600px;border:none;"></iframe>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -17,6 +17,7 @@ class UserManagementAdminFilterTest extends TestCase
             'name' => 'Admin Test',
             'username' => 'admin-test-' . uniqid(),
             'password' => bcrypt('secret123'),
+            'email' => uniqid('admin').'@example.test',
             'role_id' => $adminRole->id,
         ]);
 
@@ -24,6 +25,7 @@ class UserManagementAdminFilterTest extends TestCase
             'name' => 'Guru Test',
             'username' => 'guru-test-' . uniqid(),
             'password' => bcrypt('secret123'),
+            'email' => uniqid('guru').'@example.test',
             'role_id' => $guruRole->id,
         ]);
 
@@ -45,6 +47,7 @@ class UserManagementAdminFilterTest extends TestCase
             'name' => 'Admin Route',
             'username' => 'admin-route-' . uniqid(),
             'password' => bcrypt('secret123'),
+            'email' => uniqid('admin-route').'@example.test',
             'role_id' => $adminRole->id,
         ]);
 
@@ -52,6 +55,7 @@ class UserManagementAdminFilterTest extends TestCase
             'name' => 'Guru Route',
             'username' => 'guru-route-' . uniqid(),
             'password' => bcrypt('secret123'),
+            'email' => uniqid('guru-route').'@example.test',
             'role_id' => $guruRole->id,
         ]);
 
@@ -71,6 +75,7 @@ class UserManagementAdminFilterTest extends TestCase
             'name' => 'Admin Creator',
             'username' => 'admin-creator-' . uniqid(),
             'password' => bcrypt('secret123'),
+            'email' => uniqid('admin-creator').'@example.test',
             'role_id' => $adminRole->id,
         ]);
 

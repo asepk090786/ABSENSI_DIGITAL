@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -13,14 +14,18 @@ return new class extends Migration
     {
         if (!Schema::hasTable('ekstrakurikuler')) return;
 
-        // Rename nama_ekskul → nama if needed
+        // Rename nama_ekskul → nama if needed (MySQL only)
         if (Schema::hasColumn('ekstrakurikuler', 'nama_ekskul') && !Schema::hasColumn('ekstrakurikuler', 'nama')) {
-            DB::statement('ALTER TABLE ekstrakurikuler CHANGE nama_ekskul nama VARCHAR(150) NOT NULL');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE ekstrakurikuler CHANGE nama_ekskul nama VARCHAR(150) NOT NULL');
+            }
         }
 
-        // Rename pembina_id → guru_id if needed
+        // Rename pembina_id → guru_id if needed (MySQL only)
         if (Schema::hasColumn('ekstrakurikuler', 'pembina_id') && !Schema::hasColumn('ekstrakurikuler', 'guru_id')) {
-            DB::statement('ALTER TABLE ekstrakurikuler CHANGE pembina_id guru_id BIGINT UNSIGNED NULL');
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement('ALTER TABLE ekstrakurikuler CHANGE pembina_id guru_id BIGINT UNSIGNED NULL');
+            }
         }
 
         // Add new columns if missing
@@ -45,14 +50,15 @@ return new class extends Migration
             });
         }
 
-        // Add foreign key for guru_id if column was renamed and constraint doesn't exist
-        if (Schema::hasColumn('ekstrakurikuler', 'guru_id') && !DB::select("SELECT 1 FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'ekstrakurikuler' AND CONSTRAINT_NAME = 'ekstrakurikuler_guru_id_foreign' LIMIT 1")) {
+        // Add foreign key for guru_id if column was renamed. Wrap in try/catch because
+        // SQLite doesn't support adding some FK constraints the same way; ignore failures.
+        if (Schema::hasColumn('ekstrakurikuler', 'guru_id')) {
             try {
                 Schema::table('ekstrakurikuler', function (Blueprint $table) {
                     $table->foreign('guru_id')->references('id')->on('guru')->nullOnDelete();
                 });
             } catch (\Throwable $e) {
-                // ignore if FK fails
+                // ignore if FK fails on this driver
             }
         }
     }

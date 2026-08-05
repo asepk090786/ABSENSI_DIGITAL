@@ -8,14 +8,18 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->json('hari_piket')->nullable()->after('jenis_tugas_wakil');
+            if (! Schema::hasColumn('guru', 'hari_piket')) {
+                $table->json('hari_piket')->nullable();
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('guru', function (Blueprint $table) {
-            $table->dropColumn('hari_piket');
+            if (Schema::hasColumn('guru', 'hari_piket')) {
+                $table->dropColumn('hari_piket');
+            }
         });
     }
 };

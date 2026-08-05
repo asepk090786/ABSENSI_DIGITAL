@@ -13,11 +13,17 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class KomponenNilaiController extends Controller
 {
+    private function isTeacherUser(): bool
+    {
+        $user = auth()->user();
+        return $user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id);
+    }
+
     private function scopedCapaianQuery()
     {
         $query = CapaianPembelajaran::query();
 
-        if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
+        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
             $query->where('user_id', auth()->id());
         }
 
@@ -28,7 +34,7 @@ class KomponenNilaiController extends Controller
     {
         $query = KomponenNilai::query();
 
-        if (auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+        if ($this->isTeacherUser()) {
             $query->whereHas('capaianPembelajaran', function ($subQuery) {
                 $subQuery->where('user_id', auth()->id());
             });
@@ -56,7 +62,7 @@ class KomponenNilaiController extends Controller
             'indikator_kriteria' => 'nullable|string',
         ]);
 
-        if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && $validated['capaian_pembelajaran_id']) {
+        if ($this->isTeacherUser() && $validated['capaian_pembelajaran_id']) {
             $allowed = CapaianPembelajaran::where('id', $validated['capaian_pembelajaran_id'])
                 ->where('user_id', auth()->id())
                 ->exists();
@@ -92,7 +98,7 @@ class KomponenNilaiController extends Controller
             'indikator_kriteria' => 'nullable|string',
         ]);
 
-        if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && $validated['capaian_pembelajaran_id']) {
+        if ($this->isTeacherUser() && $validated['capaian_pembelajaran_id']) {
             $allowed = CapaianPembelajaran::where('id', $validated['capaian_pembelajaran_id'])
                 ->where('user_id', auth()->id())
                 ->exists();
@@ -117,7 +123,7 @@ class KomponenNilaiController extends Controller
 
     public function export()
     {
-        return Excel::download(new KomponenNilaiExport, 'komponen_nilai_' . date('Y-m-d') . '.xlsx');
+        return Excel::download(new KomponenNilaiExport(auth()->user()), 'komponen_nilai_' . date('Y-m-d') . '.xlsx');
     }
 
     public function template()

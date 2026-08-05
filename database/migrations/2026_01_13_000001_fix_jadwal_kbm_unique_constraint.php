@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
         
         Schema::table('jadwal_kbm', function (Blueprint $table) {
             // Drop the old unique constraint
@@ -25,7 +27,9 @@ return new class extends Migration
             $table->unique(['guru_id', 'mata_pelajaran_id', 'hari', 'jam_ke', 'tahun_ajaran_id', 'semester_id'], 'unique_jadwal_guru_mapel');
         });
         
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
     }
 
     /**
@@ -33,7 +37,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
         
         Schema::table('jadwal_kbm', function (Blueprint $table) {
             $table->dropUnique('unique_jadwal_guru_mapel');
@@ -43,6 +49,8 @@ return new class extends Migration
             $table->unique(['kelas_id', 'hari', 'jam_ke', 'tahun_ajaran_id', 'semester_id'], 'unique_jadwal_kelas');
         });
         
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
     }
 };

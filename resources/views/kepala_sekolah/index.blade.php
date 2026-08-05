@@ -18,6 +18,17 @@
                             <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
                         </div>
                     @endif
+                    @if(session('generated_credentials'))
+                        @php $cred = session('generated_credentials'); @endphp
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                            <strong>Akun dibuat:</strong>
+                            Nama: <strong>{{ $cred['nama'] ?? '-' }}</strong>,
+                            Username: <strong>{{ $cred['username'] ?? '-' }}</strong>,
+                            Password: <strong>{{ $cred['password'] ?? '-' }}</strong>,
+                            Email: <strong>{{ $cred['email'] ?? '-' }}</strong>
+                            <button type="button" class="close" data-bs-dismiss="alert"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                    @endif
 
                     @if($kepalaSekolah->isEmpty())
                         <div class="alert alert-info">
@@ -77,6 +88,14 @@
                                                     <a href="{{ route('kepala_sekolah.edit', $kepsek->id) }}" class="btn btn-sm btn-warning">
                                                         <i class="ti ti-edit"></i>
                                                     </a>
+                                                    @if(!$kepsek->user)
+                                                        <form action="{{ route('kepala_sekolah.generate-account', $kepsek->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Buat akun untuk Kepala Sekolah ini?')">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-success">
+                                                                <i class="ti ti-key"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                     <form action="{{ route('kepala_sekolah.destroy', $kepsek->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                                         @csrf
                                                         @method('DELETE')

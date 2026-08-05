@@ -117,8 +117,14 @@
                             @if(!$it->user)
                                 <form action="{{ route('guru.generate-account', $it->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate akun otomatis untuk guru ini?')">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-success btn-modern" title="Generate Akun">
+                                    <button type="submit" class="btn btn-sm btn-outline-success btn-modern" title="Generate Akun Guru">
                                         <i class="ti ti-key"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ route('guru.generate-pengawas-account', $it->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate akun Pengawas Pembina untuk guru ini?')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-primary btn-modern" title="Generate Akun Pengawas Pembina">
+                                        <i class="ti ti-shield-check"></i>
                                     </button>
                                 </form>
                             @endif

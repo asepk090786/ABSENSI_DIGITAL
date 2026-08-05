@@ -29,7 +29,9 @@ class AgendaKelasController extends Controller
             $kelasQuickAccess = collect();
             $guruQuickAccess = collect();
             $selectedGuru = null;
-            return view('agenda_kelas.index', compact('items', 'kelasQuickAccess', 'guruQuickAccess', 'selectedGuru'))
+            $filterGuruId = null;
+            $filterJenisKegiatan = null;
+            return view('agenda_kelas.index', compact('items', 'kelasQuickAccess', 'guruQuickAccess', 'selectedGuru', 'filterGuruId', 'filterJenisKegiatan'))
                 ->withErrors('Tahun ajaran atau semester belum di-set aktif.');
         }
 

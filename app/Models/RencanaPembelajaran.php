@@ -24,9 +24,17 @@ class RencanaPembelajaran extends Model
         'media',
         'sumber',
         'penilaian',
+        'alokasi_waktu',
+        'praktik_pedagogis',
+        'lingkungan_pembelajaran',
+        'pemanfaatan_digital',
+        'pengalaman_pembelajaran',
+        'refleksi_pembelajaran',
         'tanggal_mulai',
         'tanggal_selesai',
         'status',
+        'html_content',
+        'original_docx_path',
     ];
 
     public function guru()

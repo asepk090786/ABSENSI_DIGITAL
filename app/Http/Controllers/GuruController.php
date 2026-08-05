@@ -295,6 +295,65 @@ class GuruController extends Controller
         }
     }
 
+    public function generatePengawasAccount(Guru $guru)
+    {
+        if ($guru->user) {
+            return redirect()->route('guru.index')->with('warning', 'Guru ini sudah memiliki akun.');
+        }
+
+        $rolePengawas = Role::where('role_name', 'Pengawas Pembina')->first();
+        if (! $rolePengawas) {
+            return redirect()->route('guru.index')->with('error', 'Role Pengawas Pembina tidak ditemukan.');
+        }
+
+        try {
+            $nip = trim((string) ($guru->nip ?? ''));
+            if ($nip !== '' && ! User::where('username', $nip)->exists()) {
+                $username = $nip;
+                $plainPassword = $nip;
+            } else {
+                [$username, $generatedEmail] = $this->generateSimadisIdentity('pengawas');
+                $plainPassword = $username;
+            }
+
+            $email = trim((string) ($guru->email ?? ''));
+            if ($email === '' || User::where('email', $email)->exists()) {
+                $email = $generatedEmail ?? ($username . '@simadis.sch.id');
+                if (User::where('email', $email)->exists()) {
+                    $email = $this->ensureUniqueEmail($email);
+                }
+            }
+
+            $user = User::create([
+                'name' => $guru->nama,
+                'username' => $username,
+                'password' => Hash::make($plainPassword),
+                'email' => $email,
+                'jenis_kelamin' => $guru->jenis_kelamin,
+                'role_id' => $rolePengawas->id,
+                'guru_id' => $guru->id,
+                'is_active' => 1,
+            ]);
+
+            $user->roles()->syncWithoutDetaching([$rolePengawas->id]);
+
+            if (empty($guru->email) || $guru->email !== $email) {
+                $guru->update(['email' => $email]);
+            }
+
+            return redirect()->route('guru.index')
+                ->with('success', 'Akun Pengawas Pembina berhasil dibuat.')
+                ->with('generated_credentials', [
+                    'nama' => $guru->nama,
+                    'username' => $username,
+                    'password' => $plainPassword,
+                    'email' => $email,
+                ]);
+        } catch (\Throwable $e) {
+            return redirect()->route('guru.index')->with('error', 'Gagal generate akun Pengawas Pembina: ' . $e->getMessage());
+        }
+    }
+
     public function export()
     {
         return Excel::download(new GuruExport, 'data_guru_' . date('Ymd_His') . '.xlsx');

@@ -47,6 +47,65 @@
                     </div>
                 @endif
 
+                @if(isset($previewItem) && $previewItem)
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-1">Preview Rencana Pembelajaran</h5>
+                                <p class="text-muted mb-0">{{ $previewItem->judul }}</p>
+                            </div>
+                            <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-sm btn-secondary">Tutup Preview</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted">Mata Pelajaran</label>
+                                    <p class="form-control-plaintext">{{ $previewItem->mataPelajaran->nama_mapel }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted">Kelas</label>
+                                    <p class="form-control-plaintext">{{ $previewItem->kelas->nama_kelas }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-muted">Status</label>
+                                    <p class="form-control-plaintext">
+                                        <span class="badge bg-{{ $previewItem->status === 'published' ? 'success' : 'warning' }}">
+                                            {{ ucfirst($previewItem->status) }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            @if($previewItem->html_content)
+                                <div class="mb-3">
+                                    <h6 class="mb-2">Preview Dokumen</h6>
+                                    <div class="border bg-light" style="min-height:420px;">
+                                        <iframe id="previewItemFrame" style="width:100%; min-height:420px; border:none;" sandbox="allow-same-origin allow-scripts"></iframe>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <h6 class="mb-2">Ringkasan Konten</h6>
+                                    </div>
+                                    <div class="col-md-12 mb-2">
+                                        <strong>Capaian Pembelajaran</strong>
+                                        <p>{{ $previewItem->capaian_pembelajaran ?? '-' }}</p>
+                                    </div>
+                                    <div class="col-md-12 mb-2">
+                                        <strong>Tujuan Pembelajaran</strong>
+                                        <p>{{ $previewItem->tujuan ?? '-' }}</p>
+                                    </div>
+                                    <div class="col-md-12 mb-2">
+                                        <strong>Metode Pembelajaran</strong>
+                                        <p>{{ $previewItem->metode ?? '-' }}</p>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
                 @if($isLanding)
                     <div class="alert alert-info">
                         <i class="ti ti-info-circle me-2"></i>Pilih mata pelajaran dan tingkat untuk melihat atau membuat rencana pembelajaran Anda.
@@ -170,6 +229,9 @@
                                             <a href="{{ route('rencana_pembelajaran.edit', $item->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                                 <i class="ti ti-edit"></i>
                                             </a>
+                                            <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat, 'preview' => $item->id]) }}" class="btn btn-sm btn-outline-secondary" title="Preview">
+                                                <i class="ti ti-eye-off"></i>
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteGroup('{{ implode(',', $item->related_ids ?? [$item->id]) }}')" title="Hapus">
                                                 <i class="ti ti-trash"></i>
                                             </button>
@@ -241,6 +303,17 @@ function updateBulkDeleteButton() {
     } else {
         btn.style.display = 'none';
     }
+}
+
+// Load preview iframe content if any
+var previewContent = {!! json_encode($previewItem?->html_content ?? null) !!};
+if (previewContent) {
+    document.addEventListener('DOMContentLoaded', function() {
+        var previewFrame = document.getElementById('previewItemFrame');
+        if (previewFrame) {
+            previewFrame.srcdoc = previewContent;
+        }
+    });
 }
 
 // Bulk delete handler

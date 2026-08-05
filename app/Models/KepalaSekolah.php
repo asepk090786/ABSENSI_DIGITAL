@@ -34,4 +34,9 @@ class KepalaSekolah extends Model
     {
         return $this->belongsTo(Guru::class);
     }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'kepala_sekolah_id');
+    }
 }

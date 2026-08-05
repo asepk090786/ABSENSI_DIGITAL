@@ -38,9 +38,9 @@
                                 <strong>Petunjuk:</strong>
                                 <ol class="mb-0 mt-2">
                                     <li>Download template Word terlebih dahulu</li>
-                                    <li>Isi data sesuai format template</li>
-                                    <li>Dokumen akan otomatis diparsing dan diisi</li>
-                                    <li>Pastikan informasi sudah benar sebelum submit</li>
+                                    <li>Isi data sesuai format template, termasuk kolom <strong>Status</strong> (Draft atau Published)</li>
+                                    <li>Setelah upload, Anda akan melihat preview HTML dan bisa mengedit ringan sebelum menyimpan</li>
+                                    <li>Pastikan informasi sudah benar sebelum konfirmasi simpan</li>
                                 </ol>
                             </div>
 

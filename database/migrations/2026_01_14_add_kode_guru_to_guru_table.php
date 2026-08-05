@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::table('guru', function (Blueprint $table) {
             if (!Schema::hasColumn('guru', 'kode_guru')) {
-                $table->string('kode_guru')->nullable()->unique()->after('nip');
+                $table->string('kode_guru')->nullable()->unique();
             }
         });
     }

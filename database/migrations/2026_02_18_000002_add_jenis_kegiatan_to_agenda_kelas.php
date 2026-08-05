@@ -14,18 +14,23 @@ return new class extends Migration
             $table->string('nama_kegiatan')->nullable()->after('kegiatan');
         });
 
-        DB::statement('ALTER TABLE agenda_kelas MODIFY kelas_id BIGINT UNSIGNED NULL');
-        DB::statement('ALTER TABLE agenda_kelas MODIFY jam_belajar_id BIGINT UNSIGNED NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE agenda_kelas MODIFY kelas_id BIGINT UNSIGNED NULL');
+            DB::statement('ALTER TABLE agenda_kelas MODIFY jam_belajar_id BIGINT UNSIGNED NULL');
+        }
     }
 
     public function down(): void
     {
-        DB::statement('UPDATE agenda_kelas SET jenis_kegiatan = "kbm" WHERE jenis_kegiatan IS NULL');
-        DB::statement('UPDATE agenda_kelas SET kelas_id = (SELECT id FROM kelas ORDER BY id LIMIT 1) WHERE kelas_id IS NULL');
-        DB::statement('UPDATE agenda_kelas SET jam_belajar_id = (SELECT id FROM jam_belajar ORDER BY id LIMIT 1) WHERE jam_belajar_id IS NULL');
+        // Ensure default values for nullable columns before removing them
+        DB::statement("UPDATE agenda_kelas SET jenis_kegiatan = 'kbm' WHERE jenis_kegiatan IS NULL");
+        DB::statement("UPDATE agenda_kelas SET kelas_id = (SELECT id FROM kelas ORDER BY id LIMIT 1) WHERE kelas_id IS NULL");
+        DB::statement("UPDATE agenda_kelas SET jam_belajar_id = (SELECT id FROM jam_belajar ORDER BY id LIMIT 1) WHERE jam_belajar_id IS NULL");
 
-        DB::statement('ALTER TABLE agenda_kelas MODIFY kelas_id BIGINT UNSIGNED NOT NULL');
-        DB::statement('ALTER TABLE agenda_kelas MODIFY jam_belajar_id BIGINT UNSIGNED NOT NULL');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE agenda_kelas MODIFY kelas_id BIGINT UNSIGNED NOT NULL');
+            DB::statement('ALTER TABLE agenda_kelas MODIFY jam_belajar_id BIGINT UNSIGNED NOT NULL');
+        }
 
         Schema::table('agenda_kelas', function (Blueprint $table) {
             $table->dropColumn('nama_kegiatan');

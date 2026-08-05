@@ -13,6 +13,9 @@ class PengembanganCertificateVerificationTest extends TestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('pengembangan_sertifikats');
+        Schema::dropIfExists('pengembangan_diri');
+
         Schema::create('pengembangan_diri', function (Blueprint $table) {
             $table->id();
             $table->string('nama_kegiatan')->nullable();
@@ -31,6 +34,7 @@ class PengembanganCertificateVerificationTest extends TestCase
             $table->string('file_path')->nullable();
             $table->string('barcode')->nullable();
             $table->string('nomor_sertifikat')->nullable();
+            $table->timestamp('verified_at')->nullable();
             $table->unsignedBigInteger('template_id')->nullable();
             $table->timestamps();
         });

@@ -25,6 +25,10 @@ class KomponenNilaiImport implements ToCollection, WithHeadingRow
             if (!empty($cpName)) {
                 $cp = CapaianPembelajaran::where('nama_capaian_pembelajaran', $cpName)->first();
                 if ($cp) {
+                    if (auth()->check() && auth()->user()->hasRole('Guru Mapel') && $cp->user_id !== auth()->id()) {
+                        $this->pushError($rowNumber, 'CP tidak ditemukan atau bukan milik Anda: ' . $cpName);
+                        continue;
+                    }
                     $capaianId = $cp->id;
                 } else {
                     $this->pushError($rowNumber, 'CP tidak ditemukan: ' . $cpName);
@@ -62,10 +66,15 @@ class KomponenNilaiImport implements ToCollection, WithHeadingRow
                 $existing = KomponenNilai::where('nama_komponen', $payload['nama_komponen'])->first();
                 
                 if ($existing) {
-                    // Update existing
+                    if (auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+                        $existingCp = $existing->capaianPembelajaran;
+                        if (!$existingCp || $existingCp->user_id !== auth()->id()) {
+                            $this->pushError($rowNumber, 'Komponen penilaian ini bukan milik Anda: ' . $payload['nama_komponen']);
+                            continue;
+                        }
+                    }
                     $existing->update($payload);
                 } else {
-                    // Create new
                     KomponenNilai::create($payload);
                 }
             } catch (\Exception $e) {
