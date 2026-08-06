@@ -233,6 +233,7 @@
 </div>
 
 @push('js')
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js" integrity="" referrerpolicy="origin"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // initial data from server (use old values when present)
@@ -361,15 +362,8 @@ document.addEventListener('DOMContentLoaded', function () {
     updateToolbarButtons();
     applyFormattingToDocument();
 
-    // Load TinyMCE dynamically and initialize rich editors
-    function loadScript(src, cb){
-        const s = document.createElement('script'); s.src = src; s.referrerPolicy = 'origin'; s.onload = cb; document.head.appendChild(s);
-    }
-
-    const richFields = ['achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment'];
-
-    loadScript('https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js', function(){
-        if (typeof tinymce === 'undefined') return;
+    // Initialize TinyMCE (script already loaded synchronously above)
+    if (typeof tinymce !== 'undefined') {
         tinymce.init({
             selector: 'textarea.rich-editor',
             plugins: 'lists link image table code help advlist autolink',
@@ -394,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const ed = tinymce.get(ta.id);
             if (ed) ed.setContent(ta.value || '');
         });
-    });
+    }
 });
 </script>
 @endpush
