@@ -12,7 +12,6 @@
             <div class="card-body">
                 <form action="{{ route('rencana_pembelajaran.store') }}" method="POST">
                     @csrf
-
                     <input type="hidden" name="mata_pelajaran_id" value="{{ $mataPelajaran->id }}">
 
                     <div class="row">
@@ -49,113 +48,14 @@
 
                         <div class="col-md-12 mb-3">
                             <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">2. Capaian Pembelajaran</h5>
-                                <label class="form-label">Capaian Pembelajaran</label>
-                                <textarea name="capaian_pembelajaran" class="form-control tiny-editor @error('capaian_pembelajaran') is-invalid @enderror" rows="4">{{ old('capaian_pembelajaran') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Tuliskan Capaian pembelajaran untuk masing-masing mapel berdasarkan Kep BSKAP 046/2025 (bagi mapel umum) dan Kep BKPDM 020/2026 (bagi mapel PAI dan Budi Pekerti).
+                                <h5 class="mb-2">2. Editor Dokumen</h5>
+                                <div class="form-text text-muted mb-3">
+                                    Editor sederhana: masukkan isi RPP di bawah ini. (OnlyOffice telah dinonaktifkan.)
                                 </div>
-                                @error('capaian_pembelajaran')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">3. Tujuan Pembelajaran</h5>
-                                <label class="form-label">Tujuan Pembelajaran</label>
-                                <textarea name="tujuan" class="form-control tiny-editor @error('tujuan') is-invalid @enderror" rows="4">{{ old('tujuan') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Sebutkan Tujuan pembelajaran yang mengacu pada capaian pembelajaran.
+                                <div class="mb-2">
+                                    <label class="form-label">Isi Rencana Pembelajaran</label>
+                                    <textarea name="capaian_pembelajaran" class="form-control" rows="18">{{ old('capaian_pembelajaran') }}</textarea>
                                 </div>
-                                @error('tujuan')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">4. Praktik Pedagogis</h5>
-                                <label class="form-label">Praktik Pedagogis</label>
-                                <textarea name="praktik_pedagogis" class="form-control tiny-editor @error('praktik_pedagogis') is-invalid @enderror" rows="4">{{ old('praktik_pedagogis') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Jelaskan metode dan model pembelajaran yang akan digunakan.
-                                </div>
-                                @error('praktik_pedagogis')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">5. Lingkungan Pembelajaran</h5>
-                                <label class="form-label">Lingkungan Pembelajaran</label>
-                                <textarea name="lingkungan_pembelajaran" class="form-control tiny-editor @error('lingkungan_pembelajaran') is-invalid @enderror" rows="4">{{ old('lingkungan_pembelajaran') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Jelaskan ruang fisik, ruang virtual, dan budaya belajar.
-                                </div>
-                                @error('lingkungan_pembelajaran')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">6. Pemanfaatan Digital</h5>
-                                <label class="form-label">Pemanfaatan Digital</label>
-                                <textarea name="pemanfaatan_digital" class="form-control tiny-editor @error('pemanfaatan_digital') is-invalid @enderror" rows="4">{{ old('pemanfaatan_digital') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Sebutkan referensi buku, link, atau sumber lain yang digunakan.
-                                </div>
-                                @error('pemanfaatan_digital')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">7. Pengalaman Pembelajaran</h5>
-                                <label class="form-label">Pengalaman Pembelajaran</label>
-                                <textarea name="pengalaman_pembelajaran" class="form-control tiny-editor @error('pengalaman_pembelajaran') is-invalid @enderror" rows="4">{{ old('pengalaman_pembelajaran') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Sebutkan gambaran singkat kegiatan pendahuluan, inti, dan penutup.
-                                </div>
-                                @error('pengalaman_pembelajaran')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">8. Refleksi Pembelajaran</h5>
-                                <label class="form-label">Refleksi Pembelajaran</label>
-                                <textarea name="refleksi_pembelajaran" class="form-control tiny-editor @error('refleksi_pembelajaran') is-invalid @enderror" rows="4">{{ old('refleksi_pembelajaran') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Sebutkan refleksi pembelajaran (opsional) jika dilakukan refleksi.
-                                </div>
-                                @error('refleksi_pembelajaran')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">9. Asesmen</h5>
-                                <label class="form-label">Deskripsi Asesmen</label>
-                                <textarea name="penilaian" class="form-control tiny-editor @error('penilaian') is-invalid @enderror" rows="4">{{ old('penilaian') }}</textarea>
-                                <div class="form-text text-muted">
-                                    Sebutkan bentuk instrumen (Lembar Kerja Murid) dan kriteria asesmen kognitif / psikomotorik / afektif.
-                                </div>
-                                @error('penilaian')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
                             </div>
                         </div>
 
@@ -208,21 +108,100 @@
 </div>
 
 @push('js')
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js"></script>
 <script>
-    if (typeof tinymce !== 'undefined') {
-        tinymce.init({
-            selector: 'textarea.tiny-editor',
-            plugins: 'lists link image table code help wordcount',
-            toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
-            language: 'id',
-            height: 320,
-            menubar: false,
-            statusbar: true,
-            license_key: 'gpl',
-            content_style: 'body { color: #212529; font-family: inherit; }'
-        });
-    }
+    document.addEventListener('DOMContentLoaded', function () {
+        const editorContainer = document.getElementById('onlyoffice-editor');
+        const docKey = '{{ $docKey }}';
+        const docTitle = '{{ $docTitle }}';
+        const originHost = window.location.origin;
+        const fileUrl = originHost + '{{ route('rencana_pembelajaran.onlyoffice_file', ['docKey' => $docKey], false) }}';
+        const callbackUrl = originHost + '{{ route('rencana_pembelajaran.onlyoffice_callback', [], false) }}';
+
+        const onlyOfficeHost = @json(env('ONLYOFFICE_SERVER_HOST', '')) || originHost;
+        const onlyOfficeScriptUrl = onlyOfficeHost + '/web-apps/apps/api/documents/api.js';
+
+        console.log('OnlyOffice script URL:', onlyOfficeScriptUrl);
+        console.log('OnlyOffice fileUrl:', fileUrl);
+        console.log('OnlyOffice callbackUrl:', callbackUrl);
+
+        function showOnlyOfficeError(message) {
+            if (!editorContainer) return;
+            editorContainer.innerHTML = `
+                <div class="alert alert-danger m-0" style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:40px;">
+                    <i class="ti ti-alert-triangle" style="font-size:48px; margin-bottom:16px;"></i>
+                    <h4 class="mb-2">Gagal memuat Editor Dokumen</h4>
+                    <p class="mb-3">${message}</p>
+                    <a href="${fileUrl}" class="btn btn-outline-primary" download>
+                        <i class="ti ti-download me-1"></i>Download Template DOCX
+                    </a>
+                    <p class="text-muted small mt-3">Pastikan server OnlyOffice berjalan dan dapat diakses, lalu muat ulang halaman ini.</p>
+                </div>
+            `;
+        }
+
+        function loadOnlyOfficeScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = callback;
+            script.onerror = function () {
+                console.error('Gagal memuat OnlyOffice API dari', src);
+                showOnlyOfficeError('OnlyOffice API tidak berhasil dimuat dari: ' + src);
+            };
+            document.head.appendChild(script);
+        }
+
+        function initOnlyOffice() {
+            if (typeof DocsAPI === 'undefined') {
+                showOnlyOfficeError('OnlyOffice API tidak berhasil dimuat setelah script selesai.');
+                return;
+            }
+
+            const config = {
+                width: '100%',
+                height: '800px',
+                type: 'desktop',
+                documentType: 'word',
+                document: {
+                    title: docTitle,
+                    url: fileUrl,
+                    fileType: 'docx',
+                    key: docKey
+                },
+                editorConfig: {
+                    callbackUrl: callbackUrl,
+                    lang: 'id',
+                    mode: 'edit',
+                    customization: {
+                        forcesave: true,
+                        chat: false,
+                        comments: false,
+                        toolbarNoTabs: false
+                    },
+                    permissions: {
+                        edit: true,
+                        download: true,
+                        print: true
+                    }
+                },
+                events: {
+                    onError: function(event) {
+                        console.error('OnlyOffice error:', event);
+                        showOnlyOfficeError('Terjadi kesalahan pada editor OnlyOffice: ' + (event.data ? event.data.message : 'Unknown error'));
+                    }
+                }
+            };
+
+            try {
+                new DocsAPI.DocEditor('onlyoffice-editor', config);
+            } catch (e) {
+                console.error('Gagal inisialisasi OnlyOffice:', e);
+                showOnlyOfficeError('Gagal menginisialisasi editor: ' + e.message);
+            }
+        }
+
+        loadOnlyOfficeScript(onlyOfficeScriptUrl, initOnlyOffice);
+    });
 </script>
 @endpush
 @endsection

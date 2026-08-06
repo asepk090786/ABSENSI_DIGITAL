@@ -146,7 +146,6 @@
                 selector: 'textarea.tiny-editor',
                 plugins: 'lists link image table code help wordcount',
                 toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
-                language: 'id',
                 height: 320,
                 menubar: false,
                 statusbar: true,

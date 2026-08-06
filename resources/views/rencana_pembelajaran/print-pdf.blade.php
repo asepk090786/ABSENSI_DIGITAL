@@ -139,17 +139,26 @@
         ];
     @endphp
 
-    @foreach($sections as $field => $section)
-        @if(!empty($rencanaPembelajaran->{$field}))
-            <div class="section">
-                <span class="section-header">{{ $section['title'] }}</span>
-                <div class="section-content">
-                    <span class="label-muted">{{ $section['hint'] }}</span>
-                    <div class="content-block">{!! nl2br(e($rencanaPembelajaran->{$field})) !!}</div>
-                </div>
+    @if(!empty($rencanaPembelajaran->html_content))
+        <div class="section">
+            <span class="section-header">Preview Dokumen HTML</span>
+            <div class="section-content">
+                <div class="content-block">{!! $rencanaPembelajaran->html_content !!}</div>
             </div>
-        @endif
-    @endforeach
+        </div>
+    @else
+        @foreach($sections as $field => $section)
+            @if(!empty($rencanaPembelajaran->{$field}))
+                <div class="section">
+                    <span class="section-header">{{ $section['title'] }}</span>
+                    <div class="section-content">
+                        <span class="label-muted">{{ $section['hint'] }}</span>
+                        <div class="content-block">{!! nl2br(e($rencanaPembelajaran->{$field})) !!}</div>
+                    </div>
+                </div>
+            @endif
+        @endforeach
+    @endif
 
     @if($rencanaPembelajaran->komponenNilai->count() > 0)
         <div class="section">

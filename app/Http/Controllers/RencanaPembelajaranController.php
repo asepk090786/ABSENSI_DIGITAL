@@ -10,6 +10,7 @@ use App\Models\CapaianPembelajaran;
 use App\Models\JadwalKbm;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class RencanaPembelajaranController extends Controller
 {
@@ -235,6 +236,7 @@ class RencanaPembelajaranController extends Controller
             'kelas_ids' => 'required|array|min:1',
             'kelas_ids.*' => 'exists:kelas,id',
             'judul' => 'required|string|max:255',
+            
             'capaian_pembelajaran' => 'nullable|string',
             'tujuan' => 'nullable|string',
             'metode' => 'nullable|string',
@@ -285,6 +287,14 @@ class RencanaPembelajaranController extends Controller
             unset($data['kelas_ids']);
             unset($data['komponen_nilai_ids']);
             
+            if (!empty($validated['doc_key'])) {
+                $docPath = 'onlyoffice/rencana_pembelajaran/' . $validated['doc_key'] . '.docx';
+                if (Storage::exists($docPath)) {
+                    $data['original_docx_path'] = $docPath;
+                    $data['html_content'] = $this->convertDocxToHtml(storage_path('app/' . $docPath));
+                }
+            }
+
             $rencana = RencanaPembelajaran::create($data);
             
             // Sync komponen penilaian
@@ -924,7 +934,7 @@ class RencanaPembelajaranController extends Controller
         $text = preg_replace('/\r\n?/', "\n", $text);
         $text = trim($text);
 
-        $lines = array_filter(array_map('trim', explode("\n", $text)), fn($line) => $line !== '');
+        $lines = array_filter(array_map(fn($line) => trim(strip_tags($line)), explode("\n", $text)), fn($line) => $line !== '');
 
         $headingMap = [
             'JUDUL' => 'judul',
@@ -1042,17 +1052,165 @@ class RencanaPembelajaranController extends Controller
         return $data;
     }
 
-    private function convertDocxToHtml(string $filePath)
+    public function onlyOfficeFile(string $docKey)
     {
-        try {
-            $phpWord = \PhpOffice\PhpWord\IOFactory::load($filePath);
-            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
-            ob_start();
-            $writer->save('php://output');
-            return ob_get_clean();
-        } catch (\Throwable $e) {
-            return '<div class="alert alert-warning">Preview HTML tidak tersedia karena gagal mengonversi DOCX: ' . e($e->getMessage()) . '</div>';
+        $path = 'onlyoffice/rencana_pembelajaran/' . $docKey . '.docx';
+        if (!Storage::exists($path)) {
+            abort(404);
         }
+
+        return response()->file(storage_path('app/' . $path), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
+    }
+
+    public function onlyOfficeCallback(Request $request)
+    {
+        $payload = $request->all();
+        $document = $payload['document'] ?? [];
+        $status = $payload['status'] ?? null;
+        $docKey = $document['key'] ?? null;
+        $downloadUrl = $payload['url'] ?? null;
+
+        if (in_array($status, [2, 6], true) && $docKey && $downloadUrl) {
+            $path = 'onlyoffice/rencana_pembelajaran/' . $docKey . '.docx';
+            try {
+                $contents = Http::get($downloadUrl)->body();
+                Storage::put($path, $contents);
+            } catch (\Throwable $e) {
+                return response()->json(['error' => 1, 'message' => $e->getMessage()]);
+            }
+        }
+
+        return response()->json(['error' => 0]);
+    }
+
+    private function ensureOnlyOfficeTempDoc(string $docKey, string $title): string
+    {
+        $path = 'onlyoffice/rencana_pembelajaran/' . $docKey . '.docx';
+        if (!Storage::exists($path)) {
+            $phpWord = new \PhpOffice\PhpWord\PhpWord();
+            $phpWord->setDefaultFontName('Arial');
+            $phpWord->setDefaultFontSize(11);
+            $this->populateRencanaPembelajaranTemplate($phpWord, $title);
+
+            if (!Storage::exists('onlyoffice/rencana_pembelajaran')) {
+                Storage::makeDirectory('onlyoffice/rencana_pembelajaran');
+            }
+            $phpWord->save(storage_path('app/' . $path));
+        }
+        return $path;
+    }
+
+    private function populateRencanaPembelajaranTemplate(\PhpOffice\PhpWord\PhpWord $phpWord, string $title = null)
+    {
+        $section = $phpWord->addSection();
+
+        if ($title) {
+            $section->addText($title, ['name' => 'Times New Roman', 'size' => 14, 'bold' => true]);
+            $section->addText('');
+        }
+
+        // Template header
+        $section->addText(
+            'TEMPLATE RENCANA PEMBELAJARAN',
+            ['bold' => true, 'size' => 14],
+            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]
+        );
+
+        $section->addText('');
+        $section->addText('INFORMASI UMUM', ['bold' => true, 'size' => 12]);
+
+        $table = $section->addTable(['borderSize' => 6, 'borderColor' => '000000']);
+        $table->addRow();
+        $table->addCell(2500)->addText('Judul', ['bold' => true]);
+        $table->addCell(5500)->addText('[Masukkan judul rencana pembelajaran di sini]');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Mata Pelajaran', ['bold' => true]);
+        $table->addCell(5500)->addText('[Nama mata pelajaran]');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Kelas / Fase', ['bold' => true]);
+        $table->addCell(5500)->addText('[Kelas / Fase]');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Status', ['bold' => true]);
+        $table->addCell(5500)->addText('[Draft / Published]');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Alokasi Waktu', ['bold' => true]);
+        $table->addCell(5500)->addText('[... JP]');
+
+        $section->addText('');
+        $section->addText('CAPAIAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Tuliskan capaian pembelajaran sesuai dengan format yang berlaku]');
+        $section->addText('');
+
+        $section->addText('TUJUAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Sebutkan tujuan pembelajaran yang mengacu pada capaian pembelajaran]');
+        $section->addText('');
+
+        $section->addText('METODE PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Metode: ceramah, diskusi, tanya jawab, presentasi, penugasan, refleksi, dll.]');
+        $section->addText('');
+
+        $section->addText('MEDIA PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Buku, SIMADIS, GeoGebra, PowerPoint, Video, Internet, LKPD Digital, dll.]');
+        $section->addText('');
+
+        $section->addText('SUMBER BELAJAR', ['bold' => true, 'size' => 12]);
+        $section->addText('[Referensi buku, website, lembar kegiatan, atau sumber lain]');
+        $section->addText('');
+
+        $section->addText('PRAKTIK PEDAGOGIS', ['bold' => true, 'size' => 12]);
+        $section->addText('[Model Pembelajaran, Metode, Pendekatan, dll.]');
+        $section->addText('');
+
+        $section->addText('LINGKUNGAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Ruang fisik, ruang virtual, budaya belajar, dukungan lingkungan]');
+        $section->addText('');
+
+        $section->addText('PEMANFAATAN DIGITAL', ['bold' => true, 'size' => 12]);
+        $section->addText('[Buku, SIMADIS, GeoGebra, PowerPoint, Video, Internet, LKPD Digital, dll.]');
+        $section->addText('');
+
+        $section->addText('PENGALAMAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Pendahuluan, Inti, Penutup. Tuliskan kegiatan pembelajaran pada setiap tahap.]');
+        $section->addText('');
+
+        $section->addText('REFLEKSI PEMBELAJARAN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Refleksi guru dan peserta didik]');
+        $section->addText('');
+
+        $section->addText('ASESMEN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Bentuk instrumen asesmen, kriteria distribusi, rubrik, dan/atau penilaian formatif dan sumatif]');
+    }
+
+
+    private function sanitizeImportedHtml(string $html): string
+    {
+        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+        $html = preg_replace('/on[a-z]+\s*=\s*("[^"]*"|' . "'[^']*'" . '|[^\s>]+)/i', '', $html);
+
+        $css = '<style>
+            body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #000; line-height: 1.6; padding: 40px; margin: 0; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+            table td, table th { border: 1px solid #333; padding: 6px 8px; vertical-align: top; text-align: left; }
+            table th { background: #f2f2f2; font-weight: bold; }
+            p { margin-bottom: 10px; }
+            h1, h2, h3, h4 { margin-top: 14px; margin-bottom: 8px; font-family: "Times New Roman", Times, serif; }
+            ul, ol { margin-left: 20px; margin-bottom: 10px; }
+            .preview-content { white-space: pre-wrap; }
+        </style>';
+
+        if (preg_match('/<head[^>]*>/i', $html)) {
+            $html = preg_replace('/<head[^>]*>/i', '$0' . $css, $html, 1);
+        } else {
+            $html = $css . $html;
+        }
+
+        return $html;
     }
 
     private function renderHtmlPreview(array $data)
