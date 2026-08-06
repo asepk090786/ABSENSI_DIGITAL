@@ -256,6 +256,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const formatState = { fontFamily: 'Source Serif 4', fontSize: '13', bold: false, italic: false, underline: false, color: '#111827' };
     const listFields = ['objectives','methods','media','resources'];
+        const richFields = ['achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment'];
 
     function applyFormattingToDocument() {
         const docPage = document.querySelector('.document-page');
@@ -290,7 +291,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const input = document.getElementById('input-' + field);
         const preview = document.getElementById('preview-' + field);
         if (!input || !preview) return;
-        if (listFields.includes(field)) {
+            // If field is a rich editor, render HTML
+            if (richFields.includes(field)) {
+                preview.innerHTML = input.value || '';
+                // Apply formatting styles to newly inserted elements
+                applyFormattingToDocument();
+                return;
+            }
+            if (listFields.includes(field)) {
             setList(preview, input.value || '');
         } else {
             preview.textContent = input.value || '';
