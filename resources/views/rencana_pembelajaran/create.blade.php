@@ -356,7 +356,37 @@ document.addEventListener('DOMContentLoaded', function () {
         el.addEventListener('change', () => updatePreview(field));
     });
 
-    document.getElementById('print-button').addEventListener('click', () => window.print());
+    document.getElementById('print-button').addEventListener('click', () => {
+        const doc = document.querySelector('.document-page');
+        if (!doc) return window.print();
+
+        const style = `
+            body{margin:0;color:#202124;font-family: 'Source Serif 4', Georgia, serif}
+            .document-page{box-sizing:border-box;width:840px;margin:0 auto;padding:70px 76px 84px;background:#fff}
+            .doc-title{font-size:25px;text-align:center;margin-bottom:20px}
+            .info-table{width:100%;border-collapse:collapse;margin-bottom:18px}
+            .info-table th,.info-table td{border:1px solid #aeb9c8;padding:8px 10px;text-align:left;vertical-align:top}
+            .info-table th{background:#eaf1fb;color:#1e3a62}
+            .preview-text{white-space:pre-wrap}
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write('<!doctype html><html><head><title>Print RPP</title>');
+        printWindow.document.write('<meta charset="utf-8">');
+        printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">');
+        printWindow.document.write('<style>' + style + '</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(doc.outerHTML);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        // Wait a short moment for fonts/images to load
+        setTimeout(() => {
+            printWindow.print();
+            // Do not auto-close to let user inspect; close after small delay
+            setTimeout(() => { try { printWindow.close(); } catch (e) {} }, 500);
+        }, 250);
+    });
 
     populateForm();
     updateToolbarButtons();
