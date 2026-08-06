@@ -149,11 +149,21 @@
     @else
         @foreach($sections as $field => $section)
             @if(!empty($rencanaPembelajaran->{$field}))
+                @php
+                    $fieldValue = $rencanaPembelajaran->{$field};
+                    $hasHtmlTags = preg_match('/<\s*(table|ul|ol|p|br|div|span|h[1-6]|strong|em|b|i|u)[^>]*>/i', $fieldValue);
+                @endphp
                 <div class="section">
                     <span class="section-header">{{ $section['title'] }}</span>
                     <div class="section-content">
                         <span class="label-muted">{{ $section['hint'] }}</span>
-                        <div class="content-block">{!! nl2br(e($rencanaPembelajaran->{$field})) !!}</div>
+                        <div class="content-block">
+                            @if($hasHtmlTags)
+                                {!! $fieldValue !!}
+                            @else
+                                {!! nl2br(e($fieldValue)) !!}
+                            @endif
+                        </div>
                     </div>
                 </div>
             @endif

@@ -34,7 +34,7 @@
                 <div class="mb-4">
                     <h5>Preview HTML</h5>
                     <div class="card card-body bg-light" style="min-height: 500px;">
-                        <iframe id="docxPreviewFrame" style="width:100%; min-height:500px; border:1px solid #d8dce0;" sandbox="allow-same-origin allow-scripts"></iframe>
+                        <iframe id="docxPreviewFrame" style="width:100%; min-height:500px; border:1px solid #d8dce0;" sandbox></iframe>
                     </div>
                 </div>
 
@@ -107,6 +107,11 @@
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Refleksi Pembelajaran</label>
                             <textarea name="refleksi_pembelajaran" class="form-control tiny-editor" rows="3">{{ old('refleksi_pembelajaran', $importData['refleksi_pembelajaran'] ?? '') }}</textarea>
+                        </div>
+
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label">Asesmen / Penilaian</label>
+                            <textarea name="penilaian" class="form-control tiny-editor" rows="3">{{ old('penilaian', $importData['penilaian'] ?? '') }}</textarea>
                         </div>
 
                         <div class="col-md-6 mb-2">

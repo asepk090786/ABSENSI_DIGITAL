@@ -460,107 +460,22 @@ class RencanaPembelajaranController extends Controller
     public function templateDownload()
     {
         $phpWord = new \PhpOffice\PhpWord\PhpWord();
-        
-        // Set default font
         $phpWord->setDefaultFontName('Arial');
         $phpWord->setDefaultFontSize(11);
-        
-        $section = $phpWord->addSection();
-        
-        // Title
-        $section->addText(
-            'TEMPLATE RENCANA PEMBELAJARAN',
-            ['bold' => true, 'size' => 14],
-            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]
-        );
-        
-        $section->addText('');
-        
-        // Information section
-        $section->addText('INFORMASI UMUM', ['bold' => true, 'size' => 12]);
-        
-        $table = $section->addTable(['borderSize' => 6, 'borderColor' => '000000']);
-        
-        $table->addRow();
-        $table->addCell(2500)->addText('Judul', ['bold' => true]);
-        $table->addCell(5500)->addText('[Masukkan judul rencana pembelajaran di sini]');
-        
-        $table->addRow();
-        $table->addCell(2500)->addText('Mata Pelajaran', ['bold' => true]);
-        $table->addCell(5500)->addText('[Nama mata pelajaran]');
-        
-        $table->addRow();
-        $table->addCell(2500)->addText('Kelas / Fase', ['bold' => true]);
-        $table->addCell(5500)->addText('[Kelas / Fase]');
-        
-        $table->addRow();
-        $table->addCell(2500)->addText('Status', ['bold' => true]);
-        $table->addCell(5500)->addText('[Draft / Published]');
-        
-        $table->addRow();
-        $table->addCell(2500)->addText('Alokasi Waktu', ['bold' => true]);
-        $table->addCell(5500)->addText('[... JP]');
-        
-        $section->addText('');
-        
-        $section->addText('CAPAIAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Tuliskan capaian pembelajaran sesuai dengan format yang berlaku]');
-        $section->addText('');
-        
-        $section->addText('TUJUAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Sebutkan tujuan pembelajaran yang mengacu pada capaian pembelajaran]');
-        $section->addText('');
-        
-        $section->addText('METODE PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Metode: ceramah, diskusi, tanya jawab, presentasi, penugasan, refleksi, dll.]');
-        $section->addText('');
-        
-        $section->addText('MEDIA PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Buku, SIMADIS, GeoGebra, PowerPoint, Video, Internet, LKPD Digital, dll.]');
-        $section->addText('');
-        
-        $section->addText('SUMBER BELAJAR', ['bold' => true, 'size' => 12]);
-        $section->addText('[Referensi buku, website, lembar kegiatan, atau sumber lain]');
-        $section->addText('');
-        
-        $section->addText('PRAKTIK PEDAGOGIS', ['bold' => true, 'size' => 12]);
-        $section->addText('[Model Pembelajaran, Metode, Pendekatan, dll.]');
-        $section->addText('');
-        
-        $section->addText('LINGKUNGAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Ruang fisik, ruang virtual, budaya belajar, dukungan lingkungan]');
-        $section->addText('');
-        
-        $section->addText('PEMANFAATAN DIGITAL', ['bold' => true, 'size' => 12]);
-        $section->addText('[Buku, SIMADIS, GeoGebra, PowerPoint, Video, Internet, LKPD Digital, dll.]');
-        $section->addText('');
-        
-        $section->addText('PENGALAMAN PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Pendahuluan, Inti, Penutup. Tuliskan kegiatan pembelajaran pada setiap tahap.]');
-        $section->addText('');
-        
-        $section->addText('REFLEKSI PEMBELAJARAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Refleksi guru dan peserta didik]');
-        $section->addText('');
-        
-        $section->addText('ASESMEN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Bentuk instrumen asesmen, kriteria distribusi, rubrik, dan/atau penilaian formatif dan sumatif]');
-        
-        // Generate filename using the attached template name
+
+        $this->populateRencanaPembelajaranTemplate($phpWord);
+
         $filename = 'Template_Rencana_Pembelajaran.docx';
-        
-        // Create writer and output to stream
         $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
-        
-        // Use output buffering to capture the output
+
         ob_start();
         $writer->save('php://output');
         $content = ob_get_clean();
-        
-        return response($content)
-            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
-            ->header('Content-Length', strlen($content));
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     /**
@@ -739,32 +654,8 @@ class RencanaPembelajaranController extends Controller
             $docxPath = \Storage::putFile('rencana_pembelajaran/docx', $file);
             $filePath = storage_path('app/' . $docxPath);
 
-            $phpWord = \PhpOffice\PhpWord\IOFactory::load($filePath);
-
-            $extractedText = '';
-            foreach ($phpWord->getSections() as $section) {
-                foreach ($section->getElements() as $element) {
-                    if ($element instanceof \PhpOffice\PhpWord\Element\Table) {
-                        foreach ($element->getRows() as $row) {
-                            $cells = [];
-                            foreach ($row->getCells() as $cell) {
-                                $cells[] = $this->extractWordElementText($cell);
-                            }
-                            $rowText = trim(implode(' | ', array_filter($cells)));
-                            if ($rowText !== '') {
-                                $extractedText .= $rowText . "\n";
-                            }
-                        }
-                    } else {
-                        $line = $this->extractWordElementText($element);
-                        if ($line !== '') {
-                            $extractedText .= $line . "\n";
-                        }
-                    }
-                }
-            }
-
-            $data = $this->parseWordDocument($extractedText);
+            $data['html_content'] = $this->convertDocxToHtml($filePath);
+            $data = $this->parseWordDocument($data['html_content']);
 
             if (empty($data['judul'])) {
                 return back()->with('error', 'Tidak dapat menemukan judul dalam dokumen Word.');
@@ -775,7 +666,6 @@ class RencanaPembelajaranController extends Controller
                 $data['status'] = 'draft';
             }
 
-            $data['html_content'] = $this->convertDocxToHtml($filePath);
             $mataPelajaranId = $request->input('mata_pelajaran_id');
             $kelasIds = $request->input('kelas_ids');
             $selectedKelas = Kelas::whereIn('id', $kelasIds)->get();
@@ -930,6 +820,10 @@ class RencanaPembelajaranController extends Controller
      */
     private function parseWordDocument($text)
     {
+        if (preg_match('/<\/?(?:html|body|table|tr|td|th|p|div|span|h[1-6]|ul|ol)/i', $text)) {
+            return $this->parseWordDocumentHtml($text);
+        }
+
         $data = [];
         $text = preg_replace('/\r\n?/', "\n", $text);
         $text = trim($text);
@@ -987,9 +881,20 @@ class RencanaPembelajaranController extends Controller
                     break;
                 }
 
-                if (strpos($upperLine, $heading . ' |') === 0) {
+                if (stripos($upperLine, $heading . ' |') === 0 || stripos($upperLine, $heading . ':') === 0 || stripos($upperLine, $heading . ' -') === 0) {
                     $currentSection = $field;
-                    $value = trim(substr($line, strlen($heading) + 1));
+                    $delimiter = strpos($line, '|') !== false ? '|' : (strpos($line, ':') !== false ? ':' : '-');
+                    $value = trim(substr($line, strpos($line, $delimiter) + 1));
+                    if ($value !== '') {
+                        $data[$currentSection] = $value;
+                    }
+                    $matched = true;
+                    break;
+                }
+
+                if (preg_match('/^' . preg_quote($heading, '/') . '\s+(.+)$/i', $line, $matches)) {
+                    $currentSection = $field;
+                    $value = trim($matches[1]);
                     if ($value !== '') {
                         $data[$currentSection] = $value;
                     }
@@ -1050,6 +955,138 @@ class RencanaPembelajaranController extends Controller
         }
 
         return $data;
+    }
+
+    private function parseWordDocumentHtml(string $html)
+    {
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->loadHTML('<?xml encoding="utf-8"?>' . $html, LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED);
+        libxml_clear_errors();
+
+        $headingMap = [
+            'JUDUL' => 'judul',
+            'MATA PELAJARAN' => 'mata_pembelajaran',
+            'KELAS' => 'kelas',
+            'KELAS / FASE' => 'kelas',
+            'STATUS' => 'status',
+            'DESKRIPSI' => 'capaian_pembelajaran',
+            'DESKRIPSI / CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'TUJUAN PEMBELAJARAN' => 'tujuan',
+            'TUJUAN' => 'tujuan',
+            'METODE PEMBELAJARAN' => 'metode',
+            'METODE' => 'metode',
+            'MEDIA PEMBELAJARAN' => 'media',
+            'MEDIA' => 'media',
+            'SUMBER BELAJAR' => 'sumber',
+            'SUMBER' => 'sumber',
+            'ALOKASI WAKTU' => 'alokasi_waktu',
+            'PRAKTIK PEDAGOGIS' => 'praktik_pedagogis',
+            'PRAKTIK PEDAGOGI' => 'praktik_pedagogis',
+            'LINGKUNGAN PEMBELAJARAN' => 'lingkungan_pembelajaran',
+            'PEMANFAATAN DIGITAL' => 'pemanfaatan_digital',
+            'PENGALAMAN PEMBELAJARAN' => 'pengalaman_pembelajaran',
+            'REFLEKSI PEMBELAJARAN' => 'refleksi_pembelajaran',
+            'ASESMEN' => 'penilaian',
+            'PENILAIAN' => 'penilaian',
+        ];
+
+        $data = [];
+        $xpath = new \DOMXPath($dom);
+        $body = $dom->getElementsByTagName('body')->item(0) ?? $dom;
+        $currentSection = null;
+
+        foreach ($body->childNodes as $node) {
+            if ($node->nodeType === XML_TEXT_NODE && trim($node->textContent) === '') {
+                continue;
+            }
+
+            if ($node->nodeType === XML_ELEMENT_NODE) {
+                $tag = strtolower($node->nodeName);
+                $text = trim($node->textContent);
+
+                if (in_array($tag, ['p', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])) {
+                    $normalized = preg_replace('/\s+/', ' ', strtoupper($text));
+                    $matchedHeading = false;
+                    foreach ($headingMap as $heading => $field) {
+                        if ($normalized === $heading || preg_match('/^' . preg_quote($heading, '/') . '\s*[:\-\|]+\s*(.*)$/i', $text)) {
+                            $currentSection = $field;
+                            $matchedHeading = true;
+                            break;
+                        }
+                    }
+                    if ($matchedHeading) {
+                        $next = $node->nextSibling;
+                        while ($next && $next->nodeType === XML_TEXT_NODE && trim($next->textContent) === '') {
+                            $next = $next->nextSibling;
+                        }
+                        if ($next && $next->nodeType === XML_ELEMENT_NODE && strtolower($next->nodeName) === 'table') {
+                            $data[$currentSection] = $this->getElementInnerHtml($next);
+                            $currentSection = null;
+                            continue;
+                        }
+                        continue;
+                    }
+                }
+
+                if ($tag === 'table') {
+                    $rows = $node->getElementsByTagName('tr');
+                    foreach ($rows as $row) {
+                        $cells = $row->getElementsByTagName('td');
+                        if ($cells->length >= 2) {
+                            $label = trim($cells->item(0)->textContent);
+                            $normalizedLabel = preg_replace('/\s+/', ' ', strtoupper($label));
+                            if (isset($headingMap[$normalizedLabel])) {
+                                $field = $headingMap[$normalizedLabel];
+                                $valueHtml = '';
+                                for ($i = 1; $i < $cells->length; $i++) {
+                                    $valueHtml .= $this->getElementInnerHtml($cells->item($i));
+                                }
+                                $data[$field] = trim($valueHtml);
+                                break 2;
+                            }
+                        }
+                    }
+                }
+
+                if ($currentSection) {
+                    $contentHtml = $this->getElementInnerHtml($node);
+                    if ($contentHtml !== '') {
+                        $existing = $data[$currentSection] ?? '';
+                        $data[$currentSection] = trim($existing . ($existing !== '' ? "\n" : '') . $contentHtml);
+                    }
+                }
+            }
+        }
+
+        if (empty($data['judul'])) {
+            foreach ($xpath->query('.//p', $body) as $paragraph) {
+                $text = trim($paragraph->textContent);
+                $upper = preg_replace('/\s+/', ' ', strtoupper($text));
+                if ($text === '' || stripos($upper, 'TEMPLATE RENCANA PEMBELAJARAN') !== false) {
+                    continue;
+                }
+                if (preg_match('/^(JUDUL|MATA PELAJARAN|KELAS|STATUS|DESKRIPSI|CAPAIAN PEMBELAJARAN|TUJUAN PEMBELAJARAN|TUJUAN|METODE PEMBELAJARAN|MEDIA PEMBELAJARAN|SUMBER BELAJAR|SUMBER|ALOKASI WAKTU|PRAKTIK PEDAGOGIS|LINGKUNGAN PEMBELAJARAN|PEMANFAATAN DIGITAL|PENGALAMAN PEMBELAJARAN|REFLEKSI PEMBELAJARAN|ASESMEN|PENILAIAN)\b/', $upper)) {
+                    continue;
+                }
+                if (strlen($text) > 5) {
+                    $data['judul'] = $text;
+                    break;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function getElementInnerHtml(\DOMNode $node): string
+    {
+        $html = '';
+        foreach ($node->childNodes as $child) {
+            $html .= $node->ownerDocument->saveHTML($child);
+        }
+        return $html;
     }
 
     public function onlyOfficeFile(string $docKey)
@@ -1188,13 +1225,40 @@ class RencanaPembelajaranController extends Controller
     }
 
 
+    private function convertDocxToHtml(string $path): string
+    {
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
+
+            ob_start();
+            $writer->save('php://output');
+            $html = ob_get_clean();
+
+            return $this->sanitizeImportedHtml($html);
+        } catch (\Throwable $e) {
+            // Fallback to plain text conversion when HTML writer fails
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+            $html = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    $line = e($this->extractWordElementText($element));
+                    if ($line !== '') {
+                        $html .= '<p>' . nl2br($line) . '</p>';
+                    }
+                }
+            }
+            return $this->sanitizeImportedHtml($html);
+        }
+    }
+
     private function sanitizeImportedHtml(string $html): string
     {
         $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
         $html = preg_replace('/on[a-z]+\s*=\s*("[^"]*"|' . "'[^']*'" . '|[^\s>]+)/i', '', $html);
 
         $css = '<style>
-            body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #000; line-height: 1.6; padding: 40px; margin: 0; }
+            body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #000; line-height: 1.6; padding: 20px; margin: 0; }
             table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
             table td, table th { border: 1px solid #333; padding: 6px 8px; vertical-align: top; text-align: left; }
             table th { background: #f2f2f2; font-weight: bold; }

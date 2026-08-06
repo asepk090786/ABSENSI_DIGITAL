@@ -73,3 +73,8 @@ Thumbs.db
 /public/storage_backup/
 /storage/app/public/pengembangan/
 /storage/app/public/sk_tugas/
+
+# Non-production artifacts left in repo root or public
+/public/Penilaian_Sistem_Absensi.doc
+/template/absene1.sql
+/storage/app/rencana_pembelajaran/docx/
