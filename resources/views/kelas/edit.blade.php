@@ -241,6 +241,14 @@
 
                 
                 <div class="mb-2 d-flex gap-2 align-items-center flex-wrap">
+                    <div class="btn-group" role="group" aria-label="List and grid view toggle">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" id="btnListView">
+                            <i class="ti ti-list"></i> List
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnGridView">
+                            <i class="ti ti-layout-grid"></i> Grid
+                        </button>
+                    </div>
                     <input type="text" id="searchSiswa" class="form-control" placeholder="Cari nama atau NIS..." style="max-width: 250px;">
                     <div id="bulkActionsContainer" style="display: none;">
                         <form id="bulkActionForm" method="POST" style="display: inline;">
@@ -261,7 +269,7 @@
                     </div>
                 </div>
 
-                <div class="table-responsive">
+                <div id="siswaListView" class="table-responsive">
                     <table class="table table-vcenter table-hover table-tabler" id="siswaTabel">
                         <thead>
                             <tr>
@@ -269,6 +277,7 @@
                                     <input type="checkbox" id="checkAllSiswa" class="form-check-input">
                                 </th>
                                 <th>No</th>
+                                <th>Foto</th>
                                 <th>ID</th>
                                 <th>NIS</th>
                                 <th>NISN</th>
@@ -282,11 +291,22 @@
                         </thead>
                         <tbody>
                         @forelse($kelas->siswa as $index => $s)
+                            @php
+                                $fotoPath = $s->user->foto ?? null;
+                                if ($fotoPath && \Storage::disk('public')->exists($fotoPath)) {
+                                    $fotoUrl = asset('storage/' . $fotoPath);
+                                } else {
+                                    $fotoUrl = $s->jenis_kelamin === 'P' ? asset('images/default-avatar-female.svg') : asset('images/default-avatar-male.svg');
+                                }
+                            @endphp
                             <tr class="siswa-row">
                                 <td>
                                     <input type="checkbox" class="form-check-input siswa-checkbox" value="{{ $s->id }}" data-nama="{{ $s->nama }}">
                                 </td>
                                 <td>{{ $index + 1 }}</td>
+                                <td class="align-middle">
+                                    <img src="{{ $fotoUrl }}" alt="Foto {{ $s->nama }}" class="rounded" style="width: 48px; height: 64px; object-fit: cover;">
+                                </td>
                                 <td><code>{{ $s->id }}</code></td>
                                 <td>{{ $s->nis }}</td>
                                 <td>{{ $s->nisn }}</td>
@@ -330,13 +350,52 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center text-muted">
+                                <td colspan="12" class="text-center text-muted">
                                     <i class="ti ti-info-circle me-2"></i>Belum ada siswa di kelas ini.
                                 </td>
                             </tr>
                         @endforelse
                         </tbody>
                     </table>
+                </div>
+                <div id="siswaGridView" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3 d-none">
+                    @forelse($kelas->siswa as $s)
+                        @php
+                            $fotoPath = $s->user->foto ?? null;
+                            if ($fotoPath && \Storage::disk('public')->exists($fotoPath)) {
+                                $fotoUrl = asset('storage/' . $fotoPath);
+                            } else {
+                                $fotoUrl = $s->jenis_kelamin === 'P' ? asset('images/default-avatar-female.svg') : asset('images/default-avatar-male.svg');
+                            }
+                        @endphp
+                        <div class="col siswa-card" data-nama="{{ strtolower($s->nama) }}" data-nis="{{ strtolower($s->nis) }}">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body d-flex gap-3">
+                                    <div class="flex-shrink-0">
+                                        <img src="{{ $fotoUrl }}" alt="Foto {{ $s->nama }}" class="rounded" style="width: 90px; height: 120px; object-fit: cover;">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ $s->nama }}</h6>
+                                        <div class="text-muted small mb-1">NIS: {{ $s->nis }} | NISN: {{ $s->nisn }}</div>
+                                        <div class="text-muted small mb-1">Username: {{ $s->user->username ?? '-' }}</div>
+                                        <div class="text-muted small mb-1">Email: {{ $s->user->email ?? $s->email ?? '-' }}</div>
+                                        <div class="text-muted small mb-1">Jenis Kelamin: {{ $s->jenis_kelamin == 'P' ? 'Perempuan' : ($s->jenis_kelamin == 'L' ? 'Laki-laki' : '-') }}</div>
+                                        <div class="text-muted small">Jabatan: @switch($s->jabatan_kelas)
+                                                @case('ketua') Ketua Kelas @break
+                                                @case('wakil') Wakil Ketua Kelas @break
+                                                @case('sekretaris') Sekretaris Kelas @break
+                                                @default -
+                                            @endswitch
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12 text-center text-muted py-4">
+                            <i class="ti ti-info-circle me-2"></i>Belum ada siswa di kelas ini.
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -454,10 +513,11 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('keyup', function() {
             const searchTerm = this.value.toLowerCase();
             const rows = document.querySelectorAll('.siswa-row');
+            const cards = document.querySelectorAll('.siswa-card');
             
             rows.forEach(row => {
                 const nama = row.querySelector('.nama-siswa')?.textContent.toLowerCase() || '';
-                const nis = row.querySelector('td:nth-child(4)')?.textContent.toLowerCase() || '';
+                const nis = row.querySelector('td:nth-child(5)')?.textContent.toLowerCase() || '';
                 
                 if (nama.includes(searchTerm) || nis.includes(searchTerm)) {
                     row.style.display = '';
@@ -467,32 +527,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            updateCheckAllStatus();
-            updateBulkActionsVisibility();
-        });
-    }
-
-    function updateCheckAllStatus() {
-        if (!checkAllSiswa) return;
-        
-        const visibleCheckboxes = Array.from(siswaCheckboxes).filter(cb => {
-            const row = cb.closest('.siswa-row');
-            return row && row.style.display !== 'none';
-        });
-        
-        if (visibleCheckboxes.length === 0) {
-            checkAllSiswa.checked = false;
-            checkAllSiswa.indeterminate = false;
-            return;
-        }
-        
-        const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
-        
-        if (checkedCount === 0) {
-            checkAllSiswa.checked = false;
-            checkAllSiswa.indeterminate = false;
-        } else if (checkedCount === visibleCheckboxes.length) {
-            checkAllSiswa.checked = true;
+            cards.forEach(card => {
+                const nama = card.dataset.nama || '';
+                const nis = card.dataset.nis || '';
+                if (nama.includes(searchTerm) || nis.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                        }
+                    });
+                    
+                    updateCheckAllStatus();
             checkAllSiswa.indeterminate = false;
         } else {
             checkAllSiswa.checked = false;
@@ -510,6 +555,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 .map(cb => cb.value);
             bulkSiswaIds.value = JSON.stringify(selectedIds);
         }
+    }
+
+    const btnListView = document.getElementById('btnListView');
+    const btnGridView = document.getElementById('btnGridView');
+    const siswaListView = document.getElementById('siswaListView');
+    const siswaGridView = document.getElementById('siswaGridView');
+
+    if (btnListView && btnGridView && siswaListView && siswaGridView) {
+        btnListView.addEventListener('click', function() {
+            btnListView.classList.add('active');
+            btnGridView.classList.remove('active');
+            siswaGridView.classList.add('d-none');
+        });
+
+        btnGridView.addEventListener('click', function() {
+            btnGridView.classList.add('active');
+            btnListView.classList.remove('active');
+            siswaGridView.classList.remove('d-none');
+        });
     }
 
     window.submitBulkAction = function(action, message) {

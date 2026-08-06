@@ -147,6 +147,86 @@
             gap: 0.15rem;
         }
 
+        .sidebar-admin-nav {
+            gap: 0.35rem;
+        }
+        .sidebar-admin-group {
+            padding: 0.2rem 0 0.15rem;
+        }
+        .sidebar-admin-group-label {
+            font-size: 0.64rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--sidebar-group-title);
+            padding: 0.8rem 0.7rem 0.35rem;
+            font-weight: 700;
+        }
+        .sidebar-admin-trigger,
+        .sidebar-admin-link,
+        .sidebar-admin-sublink {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: var(--sidebar-text);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: 0.5rem;
+            font: inherit;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .sidebar-admin-trigger:hover,
+        .sidebar-admin-link:hover,
+        .sidebar-admin-sublink:hover {
+            background: var(--sidebar-hover);
+            color: #f1f5f9;
+        }
+        .sidebar-admin-trigger.is-active,
+        .sidebar-admin-link.is-active,
+        .sidebar-admin-sublink.is-active {
+            background: var(--sidebar-active);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--primary);
+        }
+        .sidebar-admin-trigger .nav-arrow {
+            margin-left: auto;
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+            opacity: 0.6;
+        }
+        .sidebar-admin-trigger[aria-expanded="true"] .nav-arrow {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+        .sidebar-admin-submenu {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.22s ease;
+        }
+        .sidebar-admin-submenu.is-open {
+            grid-template-rows: 1fr;
+        }
+        .sidebar-admin-submenu-inner {
+            overflow: hidden;
+            margin-left: 1rem;
+            padding-left: 0.75rem;
+            border-left: 1px solid rgba(148, 163, 184, 0.24);
+        }
+        .sidebar-admin-sublink {
+            font-size: 0.78rem;
+            padding: 0.4rem 0.7rem;
+            opacity: 0.85;
+            margin-top: 0.1rem;
+        }
+        .sidebar-admin-sublink:hover { opacity: 1; }
+
         /* Sidebar Group Title */
         .sidebar-group-title {
             font-size: 0.64rem;
@@ -818,6 +898,120 @@
                 }
             @endphp
 
+            @php
+                $isAdminSidebar = $user && $user->hasRole('Admin');
+                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','pengembangan.*','sk_tugas.*']);
+                $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*']);
+                $isAdminSettingActive = request()->routeIs(['profile.edit','profile.panduan','tahun_ajaran.index','setting.*','help.admin.*']);
+            @endphp
+
+            @if($isAdminSidebar)
+            <ul class="sidebar-nav sidebar-admin-nav">
+                <li class="nav-item">
+                    <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
+                        <i class="ti ti-layout-dashboard"></i> Dashboard
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Akademik</div>
+                        <button type="button" class="sidebar-admin-trigger {{ $isAdminAkademikActive ? 'is-active' : '' }}" data-target="#subAkademikAdmin" aria-expanded="{{ $isAdminAkademikActive ? 'true' : 'false' }}" aria-controls="subAkademikAdmin">
+                            <i class="ti ti-school"></i>
+                            <span>Jadwal &amp; Akademik</span>
+                            <i class="ti ti-chevron-down nav-arrow"></i>
+                        </button>
+                        <div class="sidebar-admin-submenu {{ $isAdminAkademikActive ? 'is-open' : '' }}" id="subAkademikAdmin">
+                            <div class="sidebar-admin-submenu-inner">
+                                <a href="{{ route('jadwal-kbm.index') }}" class="sidebar-admin-sublink {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'is-active' : '' }}">Jadwal KBM</a>
+                                <a href="{{ route('guru_piket.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_piket.*') ? 'is-active' : '' }}">Jadwal Piket</a>
+                                <a href="{{ url('/pengaturan-jam') }}" class="sidebar-admin-sublink {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'is-active' : '' }}">Pengaturan Jam</a>
+                                <a href="{{ route('pengembangan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pengembangan.*') ? 'is-active' : '' }}">Pengembangan Diri</a>
+                            </div>
+                        </div>
+                        <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-link {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-briefcase"></i> Beban Kerja Guru
+                        </a>
+                        <a href="{{ route('sk_tugas.index') }}" class="sidebar-admin-link {{ request()->routeIs('sk_tugas.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-file-badge"></i> SK Tugas
+                        </a>
+                        <a href="{{ route('komponen_nilai.index') }}" class="sidebar-admin-link {{ request()->routeIs('komponen_nilai.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-notes"></i> Komponen Penilaian
+                        </a>
+                        <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs(['mata_pelajaran.index','mata_pelajaran.*']) ? 'is-active' : '' }}">
+                            <i class="ti ti-book"></i> Mata Pelajaran
+                        </a>
+                        <a href="{{ route('rencana_pembelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs('rencana_pembelajaran.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-clipboard-list"></i> Rencana Pembelajaran
+                        </a>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Master Data</div>
+                        <button type="button" class="sidebar-admin-trigger {{ $isAdminMasterActive ? 'is-active' : '' }}" data-target="#subMasterAdmin" aria-expanded="{{ $isAdminMasterActive ? 'true' : 'false' }}" aria-controls="subMasterAdmin">
+                            <i class="ti ti-database"></i>
+                            <span>Master Data</span>
+                            <i class="ti ti-chevron-down nav-arrow"></i>
+                        </button>
+                        <div class="sidebar-admin-submenu {{ $isAdminMasterActive ? 'is-open' : '' }}" id="subMasterAdmin">
+                            <div class="sidebar-admin-submenu-inner">
+                                <a href="{{ route('sekolah.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('sekolah.*') ? 'is-active' : '' }}">Data Sekolah</a>
+                                <a href="{{ route('kepala_sekolah.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kepala_sekolah.*') ? 'is-active' : '' }}">Kepala Sekolah</a>
+                                <a href="{{ route('wakil_kepala_sekolah.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('wakil_kepala_sekolah.*') ? 'is-active' : '' }}">Wakil Kepala</a>
+                                <a href="{{ route('guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru.*') ? 'is-active' : '' }}">Guru</a>
+                                <a href="{{ route('guru_bk.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_bk.*') ? 'is-active' : '' }}">Guru BK</a>
+                                <a href="{{ route('guru_piket.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_piket.*') ? 'is-active' : '' }}">Guru Piket</a>
+                                <a href="{{ route('pembina.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pembina.*') ? 'is-active' : '' }}">Pembina</a>
+                                <a href="{{ route('users.admin') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'is-active' : '' }}">Admin</a>
+                                <a href="{{ route('users.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.index') && !request()->has('role') ? 'is-active' : '' }}">Akun Pengguna</a>
+                                <a href="{{ route('kelas.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kelas.*') ? 'is-active' : '' }}">Kelas</a>
+                                <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">Mata Pelajaran</a>
+                                <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">Tugas Guru</a>
+                                <a href="{{ route('siswa.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('siswa.*') ? 'is-active' : '' }}">Siswa</a>
+                                <a href="{{ route('ekskul.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('ekskul.*') ? 'is-active' : '' }}">Ekstrakurikuler</a>
+                                <a href="{{ route('jenis_pelanggaran.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('jenis_pelanggaran.*') ? 'is-active' : '' }}">Jenis Pelanggaran</a>
+                                <a href="{{ route('asc_timetable.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('asc_timetable.*') ? 'is-active' : '' }}">ASC Time Table</a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Pengaturan</div>
+                        <a href="{{ route('profile.edit') }}" class="sidebar-admin-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">
+                            <i class="ti ti-user"></i> Profile
+                        </a>
+                        <a href="{{ route('tahun_ajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs('tahun_ajaran.index') ? 'is-active' : '' }}">
+                            <i class="ti ti-calendar-range"></i> Tahun Ajaran
+                        </a>
+                        <a href="{{ route('setting.semester') }}" class="sidebar-admin-link {{ request()->routeIs('setting.semester*') ? 'is-active' : '' }}">
+                            <i class="ti ti-layers"></i> Semester
+                        </a>
+                        <a href="{{ route('setting.header') }}" class="sidebar-admin-link {{ request()->routeIs('setting.header*') ? 'is-active' : '' }}">
+                            <i class="ti ti-panel-top"></i> Edit Header
+                        </a>
+                        <a href="{{ route('setting.absensi') }}" class="sidebar-admin-link {{ request()->routeIs('setting.absensi*') ? 'is-active' : '' }}">
+                            <i class="ti ti-clipboard-check"></i> Pengaturan Absen
+                        </a>
+                        <a href="{{ route('setting.backup') }}" class="sidebar-admin-link {{ request()->routeIs('setting.backup') ? 'is-active' : '' }}">
+                            <i class="ti ti-database"></i> Backup Database
+                        </a>
+                        <a href="{{ route('profile.panduan') }}" class="sidebar-admin-link {{ request()->routeIs('profile.panduan') ? 'is-active' : '' }}">
+                            <i class="ti ti-book"></i> Panduan
+                        </a>
+                        <a href="{{ route('setting.about') }}" class="sidebar-admin-link {{ request()->routeIs('setting.about') ? 'is-active' : '' }}">
+                            <i class="ti ti-info-circle"></i> About
+                        </a>
+                        <a href="{{ route('help.admin.index') }}" class="sidebar-admin-link {{ request()->routeIs('help.admin.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-help-circle"></i> Help
+                        </a>
+                    </div>
+                </li>
+            </ul>
+            @else
             <ul class="sidebar-nav">
                 <!-- Dashboard -->
                 <li class="nav-item">
@@ -1136,6 +1330,7 @@
                     </div>
                 </li>
             </ul>
+            @endif
         </nav>
 
         <!-- Footer -->
@@ -1325,6 +1520,38 @@
     // Initialize Toast and Topbar interactions
     document.addEventListener('DOMContentLoaded', function() {
         applySidebarState();
+
+        document.querySelectorAll('.sidebar-admin-trigger').forEach(function(trigger) {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                var targetSelector = this.getAttribute('data-target');
+                var target = targetSelector ? document.querySelector(targetSelector) : null;
+                var willOpen = this.getAttribute('aria-expanded') !== 'true';
+
+                document.querySelectorAll('.sidebar-admin-trigger').forEach(function(otherTrigger) {
+                    otherTrigger.setAttribute('aria-expanded', 'false');
+                    var otherTarget = otherTrigger.getAttribute('data-target') ? document.querySelector(otherTrigger.getAttribute('data-target')) : null;
+                    if (otherTarget) {
+                        otherTarget.classList.remove('is-open');
+                    }
+                });
+
+                this.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                if (target) {
+                    target.classList.toggle('is-open', willOpen);
+                }
+            });
+        });
+
+        document.querySelectorAll('.sidebar-admin-link, .sidebar-admin-sublink').forEach(function(item) {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-admin-link, .sidebar-admin-sublink').forEach(function(otherItem) {
+                    otherItem.classList.remove('is-active');
+                });
+                this.classList.add('is-active');
+            });
+        });
+
         // Manual collapse toggle for sidebar nav to fix freeze issue
         document.querySelectorAll('.sidebar-nav .nav-link[data-bs-toggle="collapse"]').forEach(function(link) {
             link.addEventListener('click', function(e) {

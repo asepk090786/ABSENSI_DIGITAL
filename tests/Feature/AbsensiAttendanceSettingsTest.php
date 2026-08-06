@@ -3,8 +3,9 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\AbsensiController;
+use App\Http\Controllers\AgendaKelasController;
 use Carbon\Carbon;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class AbsensiAttendanceSettingsTest extends TestCase
 {
@@ -99,5 +100,43 @@ class AbsensiAttendanceSettingsTest extends TestCase
         };
 
         $this->assertTrue($controller->testCanModifyStudentAttendanceStatus($user, Carbon::yesterday()->toDateString(), false));
+    }
+
+    public function test_teacher_can_edit_past_agenda_when_setting_enabled(): void
+    {
+        $path = __DIR__ . '/../../storage/app/settings.json';
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        file_put_contents($path, json_encode([
+            'attendance' => [
+                'allow_edit_past_for_guru' => true,
+            ],
+        ], JSON_PRETTY_PRINT));
+
+        $controller = new class extends AgendaKelasController {
+            public function __construct()
+            {
+            }
+
+            public function testCanEditPastAgenda($user): bool
+            {
+                return $this->canEditPastAgenda($user);
+            }
+        };
+
+        $user = new class {
+            public function hasAnyRole(array $roles): bool
+            {
+                return in_array('Guru', $roles, true);
+            }
+            public function hasRole(string $role): bool
+            {
+                return $role === 'Guru';
+            }
+        };
+
+        $this->assertTrue($controller->testCanEditPastAgenda($user));
     }
 }

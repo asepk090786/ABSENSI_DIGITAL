@@ -6,6 +6,7 @@ use App\Models\AgendaKelas;
 use App\Models\AgendaGuru;
 use App\Models\Kelas;
 use App\Services\AgendaKelasStorageService;
+use App\Services\SettingsManager;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -1072,13 +1073,22 @@ class AgendaKelasController extends Controller
         return false;
     }
 
-    private function canEditPastAgenda($user): bool
+    protected function canEditPastAgenda($user): bool
     {
-        return $user && (
-            $user->hasAnyRole(['Admin', 'Kepala Sekolah']) ||
-            $user->hasRole('Wali Kelas') ||
-            $user->hasRole('Guru BK')
-        );
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(['Admin', 'Kepala Sekolah']) || $user->hasRole('Wali Kelas') || $user->hasRole('Guru BK')) {
+            return true;
+        }
+
+        if ($user->hasRole('Guru') || $user->hasRole('Guru Mapel') || $user->hasRole('Guru Kelas')) {
+            $settings = new SettingsManager();
+            return (bool) $settings->get('attendance.allow_edit_past_for_guru', false);
+        }
+
+        return false;
     }
 
     private function isPastDate($date): bool

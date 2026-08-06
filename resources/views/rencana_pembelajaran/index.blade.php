@@ -226,6 +226,9 @@
                                             <a href="{{ route('rencana_pembelajaran.export_word', $item->id) }}" class="btn btn-sm btn-outline-success" title="Export Word">
                                                 <i class="ti ti-download"></i>
                                             </a>
+                                            <a href="{{ route('rencana_pembelajaran.export_pdf', $item->id) }}" class="btn btn-sm btn-outline-danger" title="Export PDF" target="_blank">
+                                                <i class="ti ti-file-pdf"></i>
+                                            </a>
                                             <a href="{{ route('rencana_pembelajaran.edit', $item->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                                 <i class="ti ti-edit"></i>
                                             </a>

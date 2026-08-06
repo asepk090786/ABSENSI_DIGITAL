@@ -14,7 +14,7 @@
                 @method('PUT')
 
                 <div class="alert alert-info small mb-4">
-                    Aturan ini mengontrol apakah guru atau siswa dengan jabatan kelas dapat mengubah absensi untuk tanggal yang sudah lewat, sedangkan tanggal di masa depan tetap selalu diblokir.
+                    Aturan ini mengontrol apakah guru atau siswa dengan jabatan kelas dapat mengubah absensi untuk tanggal yang sudah lewat, serta apakah guru dapat mengedit agenda kelas di tanggal sebelumnya. Tanggal di masa depan tetap selalu diblokir.
                 </div>
 
                 <div class="row">
@@ -26,7 +26,7 @@
                                     <input class="form-check-input" type="checkbox" id="allow_edit_past_for_guru" name="allow_edit_past_for_guru" value="1" {{ old('allow_edit_past_for_guru', $settings['allow_edit_past_for_guru']) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="allow_edit_past_for_guru">Izinkan guru mengedit absensi tanggal lampau</label>
                                 </div>
-                                <div class="form-text mt-2">Jika aktif, guru bisa mengubah absensi untuk tanggal sebelumnya. Jika nonaktif, hanya admin/kepala/wali kelas/guru BK yang bisa.</div>
+                                <div class="form-text mt-2">Jika aktif, guru bisa mengubah absensi untuk tanggal sebelumnya dan juga mengedit agenda kelas yang dibuat di tanggal sebelumnya. Jika nonaktif, hanya admin/kepala/wali kelas/guru BK yang bisa.</div>
                             </div>
                         </div>
                     </div>

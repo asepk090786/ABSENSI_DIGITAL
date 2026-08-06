@@ -7,7 +7,25 @@ class SettingsManager
 
     public function __construct()
     {
-        $this->path = storage_path('app/settings.json');
+        $this->path = $this->resolveDefaultPath();
+    }
+
+    protected function resolveDefaultPath(): string
+    {
+        if (function_exists('storage_path')) {
+            try {
+                return storage_path('app/settings.json');
+            } catch (\Throwable $e) {
+                // Fall back to a filesystem path when the Laravel app container is not bootstrapped.
+            }
+        }
+
+        $basePath = dirname(__DIR__, 2) . '/storage';
+        if (is_dir($basePath)) {
+            return $basePath . '/app/settings.json';
+        }
+
+        return sys_get_temp_dir() . '/absensi_settings.json';
     }
 
     public function all()

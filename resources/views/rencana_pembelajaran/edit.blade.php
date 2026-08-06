@@ -15,104 +15,150 @@
                     @method('PUT')
 
                     <div class="row">
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Mata Pelajaran</label>
-                            <input type="text" class="form-control" value="{{ $item->mataPelajaran->nama_mapel }}" disabled>
-                        </div>
-
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Kelas <span class="text-danger">*</span></label>
-                            <div class="@error('kelas_id') is-invalid @enderror">
+                        <div class="col-md-12 mb-3">
+                            <h5 class="mb-2">1. Informasi Umum</h5>
+                            <div class="mb-2">
+                                <label class="form-label">Mata Pelajaran</label>
+                                <input type="text" class="form-control" value="{{ $item->mataPelajaran->nama_mapel }}" disabled>
+                            </div>
+                            <div class="mb-2 @error('kelas_id') is-invalid @enderror">
+                                <label class="form-label">Kelas <span class="text-danger">*</span></label>
                                 @forelse($kelas as $k)
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="kelas_id" value="{{ $k->id }}" id="kelas_{{ $k->id }}" {{ $item->kelas_id == $k->id ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="kelas_{{ $k->id }}">
-                                            {{ $k->nama_kelas }}
-                                        </label>
+                                        <label class="form-check-label" for="kelas_{{ $k->id }}">{{ $k->nama_kelas }}</label>
                                     </div>
                                 @empty
                                     <div class="alert alert-info alert-sm mb-0">
                                         <i class="ti ti-info-circle me-2"></i>Belum ada kelas untuk mata pelajaran ini
                                     </div>
                                 @endforelse
+                                @error('kelas_id')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
                             </div>
-                            @error('kelas_id')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
+                            <div class="mb-2">
+                                <label class="form-label">Judul <span class="text-danger">*</span></label>
+                                <input type="text" name="judul" class="form-control @error('judul') is-invalid @enderror" value="{{ old('judul', $item->judul) }}" required>
+                                @error('judul')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Judul <span class="text-danger">*</span></label>
-                            <input type="text" name="judul" class="form-control @error('judul') is-invalid @enderror" value="{{ old('judul', $item->judul) }}" required>
-                            @error('judul')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">2. Capaian Pembelajaran</h5>
+                                <label class="form-label">Capaian Pembelajaran</label>
+                                <textarea name="capaian_pembelajaran" class="form-control @error('capaian_pembelajaran') is-invalid @enderror" rows="4">{{ old('capaian_pembelajaran', $item->capaian_pembelajaran) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Tuliskan Capaian pembelajaran untuk masing-masing mapel berdasarkan Kep BSKAP 046/2025 (bagi mapel umum) dan Kep BKPDM 020/2026 (bagi mapel PAI dan Budi Pekerti).
+                                </div>
+                                @error('capaian_pembelajaran')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Deskripsi / Capaian Pembelajaran</label>
-                            <textarea name="capaian_pembelajaran" class="form-control @error('capaian_pembelajaran') is-invalid @enderror" rows="3">{{ old('capaian_pembelajaran', $item->capaian_pembelajaran) }}</textarea>
-                            @error('capaian_pembelajaran')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">3. Tujuan Pembelajaran</h5>
+                                <label class="form-label">Tujuan Pembelajaran</label>
+                                <textarea name="tujuan" class="form-control @error('tujuan') is-invalid @enderror" rows="4">{{ old('tujuan', $item->tujuan) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Sebutkan Tujuan pembelajaran yang mengacu pada capaian pembelajaran.
+                                </div>
+                                @error('tujuan')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Capaian Pembelajaran</label>
-                            <select name="capaian_pembelajaran_id" id="capaianPembelajaranSelect" class="form-select @error('capaian_pembelajaran_id') is-invalid @enderror">
-                                <option value="">-- Pilih Capaian Pembelajaran --</option>
-                                @foreach($capaianPembelajaran as $cp)
-                                <option value="{{ $cp->id }}" data-tujuan="{{ $cp->tujuan_pembelajaran }}" {{ $item->capaian_pembelajaran_id == $cp->id ? 'selected' : '' }}>
-                                    [{{ $cp->fase ?? '-' }}] {{ $cp->nama_capaian_pembelajaran }}
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('capaian_pembelajaran_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">4. Praktik Pedagogis</h5>
+                                <label class="form-label">Praktik Pedagogis</label>
+                                <textarea name="praktik_pedagogis" class="form-control @error('praktik_pedagogis') is-invalid @enderror" rows="4">{{ old('praktik_pedagogis', $item->praktik_pedagogis) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Jelaskan metode dan model pembelajaran yang akan digunakan.
+                                </div>
+                                @error('praktik_pedagogis')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Tujuan Pembelajaran</label>
-                            <textarea name="tujuan" id="tujuanPembelajaranTextarea" class="form-control @error('tujuan') is-invalid @enderror" rows="3">{{ old('tujuan', $item->tujuan) }}</textarea>
-                            @error('tujuan')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">5. Lingkungan Pembelajaran</h5>
+                                <label class="form-label">Lingkungan Pembelajaran</label>
+                                <textarea name="lingkungan_pembelajaran" class="form-control @error('lingkungan_pembelajaran') is-invalid @enderror" rows="4">{{ old('lingkungan_pembelajaran', $item->lingkungan_pembelajaran) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Jelaskan ruang fisik, ruang virtual, dan budaya belajar.
+                                </div>
+                                @error('lingkungan_pembelajaran')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Metode Pembelajaran</label>
-                            <textarea name="metode" class="form-control @error('metode') is-invalid @enderror" rows="2">{{ old('metode', $item->metode) }}</textarea>
-                            @error('metode')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">6. Pemanfaatan Digital</h5>
+                                <label class="form-label">Pemanfaatan Digital</label>
+                                <textarea name="pemanfaatan_digital" class="form-control @error('pemanfaatan_digital') is-invalid @enderror" rows="4">{{ old('pemanfaatan_digital', $item->pemanfaatan_digital) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Sebutkan referensi buku, link, atau sumber lain yang digunakan.
+                                </div>
+                                @error('pemanfaatan_digital')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Media Pembelajaran</label>
-                            <textarea name="media" class="form-control @error('media') is-invalid @enderror" rows="2">{{ old('media', $item->media) }}</textarea>
-                            @error('media')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">7. Pengalaman Pembelajaran</h5>
+                                <label class="form-label">Pengalaman Pembelajaran</label>
+                                <textarea name="pengalaman_pembelajaran" class="form-control @error('pengalaman_pembelajaran') is-invalid @enderror" rows="4">{{ old('pengalaman_pembelajaran', $item->pengalaman_pembelajaran) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Sebutkan gambaran singkat kegiatan pendahuluan, inti, dan penutup.
+                                </div>
+                                @error('pengalaman_pembelajaran')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Sumber Belajar</label>
-                            <textarea name="sumber" class="form-control @error('sumber') is-invalid @enderror" rows="2">{{ old('sumber', $item->sumber) }}</textarea>
-                            @error('sumber')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">8. Refleksi Pembelajaran</h5>
+                                <label class="form-label">Refleksi Pembelajaran</label>
+                                <textarea name="refleksi_pembelajaran" class="form-control @error('refleksi_pembelajaran') is-invalid @enderror" rows="4">{{ old('refleksi_pembelajaran', $item->refleksi_pembelajaran) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Sebutkan refleksi pembelajaran (opsional) jika dilakukan refleksi.
+                                </div>
+                                @error('refleksi_pembelajaran')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label">Penilaian</label>
-                            <textarea name="penilaian" class="form-control @error('penilaian') is-invalid @enderror" rows="2">{{ old('penilaian', $item->penilaian) }}</textarea>
-                            @error('penilaian')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        <div class="col-md-12 mb-3">
+                            <div class="card card-body p-3 border-0 shadow-sm">
+                                <h5 class="mb-2">9. Asesmen</h5>
+                                <label class="form-label">Deskripsi Asesmen</label>
+                                <textarea name="penilaian" class="form-control @error('penilaian') is-invalid @enderror" rows="4">{{ old('penilaian', $item->penilaian) }}</textarea>
+                                <div class="form-text text-muted">
+                                    Sebutkan bentuk instrumen (Lembar Kerja Murid) dan kriteria asesmen kognitif / psikomotorik / afektif.
+                                </div>
+                                @error('penilaian')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Komponen Penilaian</label>
                             <div class="@error('komponen_nilai_ids') is-invalid @enderror">
                                 @forelse($komponenNilai as $komponen)
@@ -159,28 +205,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const capaianSelect = document.getElementById('capaianPembelajaranSelect');
-    const tujuanTextarea = document.getElementById('tujuanPembelajaranTextarea');
-
-    if (capaianSelect && tujuanTextarea) {
-        capaianSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const tujuanValue = selectedOption.getAttribute('data-tujuan') || '';
-            tujuanTextarea.value = tujuanValue;
-        });
-
-        // Auto-populate on page load if a Capaian Pembelajaran is already selected
-        if (capaianSelect.value) {
-            const selectedOption = capaianSelect.options[capaianSelect.selectedIndex];
-            const tujuanValue = selectedOption.getAttribute('data-tujuan') || '';
-            if (tujuanValue && !tujuanTextarea.value) {
-                tujuanTextarea.value = tujuanValue;
-            }
-        }
-    }
-});
-</script>
 @endsection

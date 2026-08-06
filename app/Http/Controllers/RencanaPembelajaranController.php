@@ -8,6 +8,7 @@ use App\Models\Kelas;
 use App\Models\KomponenNilai;
 use App\Models\CapaianPembelajaran;
 use App\Models\JadwalKbm;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class RencanaPembelajaranController extends Controller
@@ -532,8 +533,8 @@ class RencanaPembelajaranController extends Controller
         $section->addText('[Refleksi guru dan peserta didik]');
         $section->addText('');
         
-        $section->addText('PENILAIAN', ['bold' => true, 'size' => 12]);
-        $section->addText('[Diagnostik, Formatif, Observasi, Kuis, Sumatif, dll.]');
+        $section->addText('ASESMEN', ['bold' => true, 'size' => 12]);
+        $section->addText('[Bentuk instrumen asesmen, kriteria distribusi, rubrik, dan/atau penilaian formatif dan sumatif]');
         
         // Generate filename using the attached template name
         $filename = 'Template_Rencana_Pembelajaran.docx';
@@ -668,6 +669,18 @@ class RencanaPembelajaranController extends Controller
             ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->header('Content-Length', strlen($content));
+    }
+
+    public function exportPdf(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
+        $pdf = Pdf::loadView('rencana_pembelajaran.print-pdf', compact('rencanaPembelajaran'));
+        $pdf->setPaper('a4', 'portrait');
+
+        $filename = 'Rencana_Pembelajaran_' . \Illuminate\Support\Str::slug($rencanaPembelajaran->judul) . '_' . date('Ymd') . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     /**
@@ -917,6 +930,7 @@ class RencanaPembelajaranController extends Controller
             'JUDUL' => 'judul',
             'MATA PELAJARAN' => 'mata_pembelajaran',
             'KELAS' => 'kelas',
+            'KELAS / FASE' => 'kelas',
             'STATUS' => 'status',
             'DESKRIPSI' => 'capaian_pembelajaran',
             'DESKRIPSI / CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
@@ -936,6 +950,7 @@ class RencanaPembelajaranController extends Controller
             'PEMANFAATAN DIGITAL' => 'pemanfaatan_digital',
             'PENGALAMAN PEMBELAJARAN' => 'pengalaman_pembelajaran',
             'REFLEKSI PEMBELAJARAN' => 'refleksi_pembelajaran',
+            'ASESMEN' => 'penilaian',
             'PENILAIAN' => 'penilaian',
         ];
 
@@ -1014,7 +1029,7 @@ class RencanaPembelajaranController extends Controller
                 if (stripos($upper, 'TEMPLATE RENCANA PEMBELAJARAN') !== false) {
                     continue;
                 }
-                if (preg_match('/^(JUDUL|MATA PELAJARAN|KELAS|STATUS|DESKRIPSI|CAPAIAN PEMBELAJARAN|TUJUAN PEMBELAJARAN|TUJUAN|METODE PEMBELAJARAN|MEDIA PEMBELAJARAN|SUMBER BELAJAR|SUMBER|ALOKASI WAKTU|PRAKTIK PEDAGOGIS|LINGKUNGAN PEMBELAJARAN|PEMANFAATAN DIGITAL|PENGALAMAN PEMBELAJARAN|REFLEKSI PEMBELAJARAN|PENILAIAN)\b/', $upper)) {
+                if (preg_match('/^(JUDUL|MATA PELAJARAN|KELAS|STATUS|DESKRIPSI|CAPAIAN PEMBELAJARAN|TUJUAN PEMBELAJARAN|TUJUAN|METODE PEMBELAJARAN|MEDIA PEMBELAJARAN|SUMBER BELAJAR|SUMBER|ALOKASI WAKTU|PRAKTIK PEDAGOGIS|LINGKUNGAN PEMBELAJARAN|PEMANFAATAN DIGITAL|PENGALAMAN PEMBELAJARAN|REFLEKSI PEMBELAJARAN|ASESMEN|PENILAIAN)\b/', $upper)) {
                     continue;
                 }
                 if (strlen($line) > 5) {
@@ -1068,7 +1083,7 @@ class RencanaPembelajaranController extends Controller
             'pemanfaatan_digital' => 'Pemanfaatan Digital',
             'pengalaman_pembelajaran' => 'Pengalaman Pembelajaran',
             'refleksi_pembelajaran' => 'Refleksi Pembelajaran',
-            'penilaian' => 'Penilaian',
+            'penilaian' => 'Asesmen',
         ];
 
         foreach ($sections as $field => $label) {

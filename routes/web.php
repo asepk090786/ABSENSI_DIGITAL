@@ -297,6 +297,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('rencana_pembelajaran/import-word', 'App\Http\Controllers\RencanaPembelajaranController@import')->name('rencana_pembelajaran.import_word');
     Route::post('rencana_pembelajaran/import-confirm', 'App\Http\Controllers\RencanaPembelajaranController@importConfirm')->name('rencana_pembelajaran.import_confirm');
     Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-word', 'App\Http\Controllers\RencanaPembelajaranController@export')->name('rencana_pembelajaran.export_word');
+    Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-pdf', 'App\Http\Controllers\RencanaPembelajaranController@exportPdf')->name('rencana_pembelajaran.export_pdf');
     Route::resource('rencana_pembelajaran', 'App\Http\Controllers\RencanaPembelajaranController');
     
     // Materi Pembelajaran routes
