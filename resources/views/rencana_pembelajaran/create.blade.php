@@ -48,13 +48,138 @@
 
                         <div class="col-md-12 mb-3">
                             <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">2. Editor Dokumen</h5>
-                                <div class="form-text text-muted mb-3">
-                                    Editor sederhana: masukkan isi RPP di bawah ini. (OnlyOffice telah dinonaktifkan.)
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Isi Rencana Pembelajaran</label>
-                                    <textarea name="capaian_pembelajaran" class="form-control" rows="18">{{ old('capaian_pembelajaran') }}</textarea>
+                                <h5 class="mb-2">2. Editor RPP (Pratinjau Interaktif)</h5>
+                                <div class="form-text text-muted mb-3">Gunakan form di kiri untuk mengisi RPP, pratinjau akan diperbarui otomatis.</div>
+
+                                <div id="rpp-interactive-root">
+                                    <!-- Inline adaptation of the provided UI. Keep existing kelas/komponen/status logic intact. -->
+                                    <div class="app-shell">
+                                        <main class="workspace" style="grid-template-columns: minmax(360px, .9fr) minmax(480px, 1.4fr);">
+                                            <aside class="form-panel">
+                                                <div id="rpp-mini-form">
+                                                    <section class="form-group">
+                                                        <h3>Informasi &amp; Metadata</h3>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Judul</label>
+                                                            <input id="input-title" name="judul" class="editor-input form-control" value="{{ old('judul') }}">
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Mata Pelajaran</label>
+                                                            <input id="input-subject" class="editor-input form-control" value="{{ $mataPelajaran->nama_mapel }}" disabled>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Alokasi Waktu</label>
+                                                            <input id="input-duration" name="alokasi_waktu" class="editor-input form-control" value="{{ old('alokasi_waktu') }}">
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Status</label>
+                                                            <select id="input-status" name="status" class="editor-input form-control">
+                                                                <option value="draft" {{ old('status') === 'draft' ? 'selected' : '' }}>Draft</option>
+                                                                <option value="published" {{ old('status') === 'published' ? 'selected' : '' }}>Published</option>
+                                                            </select>
+                                                        </div>
+                                                    </section>
+
+                                                    <section class="form-group">
+                                                        <h3>Isi RPP</h3>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Capaian Pembelajaran</label>
+                                                            <textarea id="input-achievement" name="capaian_pembelajaran" class="editor-textarea form-control">{{ old('capaian_pembelajaran') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Tujuan / Objektif</label>
+                                                            <textarea id="input-objectives" name="tujuan" class="editor-textarea form-control">{{ old('tujuan') }}</textarea>
+                                                            <p class="helper">Pisahkan baris untuk setiap butir tujuan.</p>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Metode</label>
+                                                            <textarea id="input-methods" name="metode" class="editor-textarea form-control">{{ old('metode') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Media</label>
+                                                            <textarea id="input-media" name="media" class="editor-textarea form-control">{{ old('media') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Sumber / Referensi</label>
+                                                            <textarea id="input-resources" name="sumber" class="editor-textarea form-control">{{ old('sumber') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Praktik Pedagogis</label>
+                                                            <textarea id="input-practice" name="praktik_pedagogis" class="editor-textarea form-control">{{ old('praktik_pedagogis') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Lingkungan Pembelajaran</label>
+                                                            <textarea id="input-environment" name="lingkungan_pembelajaran" class="editor-textarea form-control">{{ old('lingkungan_pembelajaran') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Pemanfaatan Digital</label>
+                                                            <textarea id="input-digital" name="pemanfaatan_digital" class="editor-textarea form-control">{{ old('pemanfaatan_digital') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Pengalaman Pembelajaran</label>
+                                                            <textarea id="input-experience" name="pengalaman_pembelajaran" class="editor-textarea form-control">{{ old('pengalaman_pembelajaran') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Refleksi Pembelajaran</label>
+                                                            <textarea id="input-reflection" name="refleksi_pembelajaran" class="editor-textarea form-control">{{ old('refleksi_pembelajaran') }}</textarea>
+                                                        </div>
+                                                        <div class="field-row">
+                                                            <label class="field-label">Asesmen / Penilaian</label>
+                                                            <textarea id="input-assessment" name="penilaian" class="editor-textarea form-control">{{ old('penilaian') }}</textarea>
+                                                        </div>
+                                                    </section>
+                                                </div>
+                                            </aside>
+
+                                            <section class="preview-panel">
+                                                <div class="format-toolbar">
+                                                    <select id="font-family" class="toolbar-select"><option value="Source Serif 4">Serif</option><option value="Libre Franklin">Sans-serif</option><option value="monospace">Monospace</option></select>
+                                                    <select id="font-size" class="toolbar-select"><option value="11">11</option><option value="12">12</option><option value="13" selected>13</option><option value="14">14</option></select>
+                                                    <div class="toolbar-divider"></div>
+                                                    <button id="btn-bold" class="toolbar-button" type="button"><strong>B</strong></button>
+                                                    <button id="btn-italic" class="toolbar-button" type="button"><em>I</em></button>
+                                                    <button id="btn-underline" class="toolbar-button" type="button"><u>U</u></button>
+                                                    <div class="toolbar-divider"></div>
+                                                    <select id="color-select" class="toolbar-select"><option value="#111827">Black</option><option value="#173b70">Dark Blue</option><option value="#185abd">Blue</option></select>
+                                                    <div class="toolbar-divider"></div>
+                                                    <button id="btn-reset-format" class="toolbar-button" type="button">Reset</button>
+                                                    <div style="flex:1"></div>
+                                                    <button id="print-button" class="btn btn-light btn-sm" type="button">Print</button>
+                                                </div>
+                                                <div class="preview-scroll">
+                                                    <article class="document-page">
+                                                        <h1 id="preview-title" class="doc-title"></h1>
+                                                        <table class="info-table"><tbody>
+                                                            <tr><th>Subjek</th><td id="preview-subject"></td></tr>
+                                                            <tr><th>Kelas</th><td id="preview-class"></td></tr>
+                                                            <tr><th>Status</th><td id="preview-status"></td></tr>
+                                                            <tr><th>Alokasi Waktu</th><td id="preview-duration"></td></tr>
+                                                        </tbody></table>
+                                                        <h2>Tujuan / Capaian</h2>
+                                                        <p id="preview-achievement" class="preview-text"></p>
+                                                        <h2>Tujuan Operasional</h2>
+                                                        <ul id="preview-objectives" class="preview-list"></ul>
+                                                        <h2>Metode</h2>
+                                                        <ul id="preview-methods" class="preview-list"></ul>
+                                                        <h2>Media &amp; Sumber</h2>
+                                                        <ul id="preview-media" class="preview-list"></ul>
+                                                        <h2>Praktik Pedagogis</h2>
+                                                        <p id="preview-practice" class="preview-text"></p>
+                                                        <h2>Lingkungan Pembelajaran</h2>
+                                                        <p id="preview-environment" class="preview-text"></p>
+                                                        <h2>Pemanfaatan Digital</h2>
+                                                        <p id="preview-digital" class="preview-text"></p>
+                                                        <h2>Pengalaman Pembelajaran</h2>
+                                                        <p id="preview-experience" class="preview-text"></p>
+                                                        <h2>Refleksi</h2>
+                                                        <p id="preview-reflection" class="preview-text"></p>
+                                                        <h2>Asesmen</h2>
+                                                        <p id="preview-assessment" class="preview-text"></p>
+                                                    </article>
+                                                </div>
+                                            </section>
+                                        </main>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -109,99 +234,125 @@
 
 @push('js')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const editorContainer = document.getElementById('onlyoffice-editor');
-        const docKey = '{{ $docKey }}';
-        const docTitle = '{{ $docTitle }}';
-        const originHost = window.location.origin;
-        const fileUrl = originHost + '{{ route('rencana_pembelajaran.onlyoffice_file', ['docKey' => $docKey], false) }}';
-        const callbackUrl = originHost + '{{ route('rencana_pembelajaran.onlyoffice_callback', [], false) }}';
+document.addEventListener('DOMContentLoaded', function () {
+    // initial data from server (use old values when present)
+    const initialData = {
+        title: @json(old('judul', '')),
+        subject: @json($mataPelajaran->nama_mapel),
+        duration: @json(old('alokasi_waktu', '')),
+        status: @json(old('status', 'draft')),
+        achievement: @json(old('capaian_pembelajaran', '')),
+        objectives: @json(old('tujuan', '')),
+        methods: @json(old('metode', '')),
+        media: @json(old('media', '')),
+        resources: @json(old('sumber', '')),
+        practice: @json(old('praktik_pedagogis', '')),
+        environment: @json(old('lingkungan_pembelajaran', '')),
+        digital: @json(old('pemanfaatan_digital', '')),
+        experience: @json(old('pengalaman_pembelajaran', '')),
+        reflection: @json(old('refleksi_pembelajaran', '')),
+        assessment: @json(old('penilaian', '')),
+    };
 
-        const onlyOfficeHost = @json(env('ONLYOFFICE_SERVER_HOST', '')) || originHost;
-        const onlyOfficeScriptUrl = onlyOfficeHost + '/web-apps/apps/api/documents/api.js';
+    const formatState = { fontFamily: 'Source Serif 4', fontSize: '13', bold: false, italic: false, underline: false, color: '#111827' };
+    const listFields = ['objectives','methods','media','resources'];
 
-        console.log('OnlyOffice script URL:', onlyOfficeScriptUrl);
-        console.log('OnlyOffice fileUrl:', fileUrl);
-        console.log('OnlyOffice callbackUrl:', callbackUrl);
+    function applyFormattingToDocument() {
+        const docPage = document.querySelector('.document-page');
+        if (!docPage) return;
+        const elements = docPage.querySelectorAll('.preview-text, .preview-list, .info-table');
+        elements.forEach(el => {
+            el.style.fontFamily = formatState.fontFamily;
+            el.style.fontSize = formatState.fontSize + 'px';
+            el.style.fontWeight = formatState.bold ? '700' : '400';
+            el.style.fontStyle = formatState.italic ? 'italic' : 'normal';
+            el.style.textDecoration = formatState.underline ? 'underline' : 'none';
+            el.style.color = formatState.color;
+        });
+    }
 
-        function showOnlyOfficeError(message) {
-            if (!editorContainer) return;
-            editorContainer.innerHTML = `
-                <div class="alert alert-danger m-0" style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:40px;">
-                    <i class="ti ti-alert-triangle" style="font-size:48px; margin-bottom:16px;"></i>
-                    <h4 class="mb-2">Gagal memuat Editor Dokumen</h4>
-                    <p class="mb-3">${message}</p>
-                    <a href="${fileUrl}" class="btn btn-outline-primary" download>
-                        <i class="ti ti-download me-1"></i>Download Template DOCX
-                    </a>
-                    <p class="text-muted small mt-3">Pastikan server OnlyOffice berjalan dan dapat diakses, lalu muat ulang halaman ini.</p>
-                </div>
-            `;
+    function setList(target, value) {
+        target.replaceChildren();
+        value.split('\n').map(item => item.trim()).filter(Boolean).forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.replace(/^[•\-\d.]+\s*/, '');
+            li.style.fontFamily = formatState.fontFamily;
+            li.style.fontSize = formatState.fontSize + 'px';
+            li.style.fontWeight = formatState.bold ? '700' : '400';
+            li.style.fontStyle = formatState.italic ? 'italic' : 'normal';
+            li.style.textDecoration = formatState.underline ? 'underline' : 'none';
+            li.style.color = formatState.color;
+            target.appendChild(li);
+        });
+    }
+
+    function updatePreview(field) {
+        const input = document.getElementById('input-' + field);
+        const preview = document.getElementById('preview-' + field);
+        if (!input || !preview) return;
+        if (listFields.includes(field)) {
+            setList(preview, input.value || '');
+        } else {
+            preview.textContent = input.value || '';
+            preview.style.fontFamily = formatState.fontFamily;
+            preview.style.fontSize = formatState.fontSize + 'px';
+            preview.style.fontWeight = formatState.bold ? '700' : '400';
+            preview.style.fontStyle = formatState.italic ? 'italic' : 'normal';
+            preview.style.textDecoration = formatState.underline ? 'underline' : 'none';
+            preview.style.color = formatState.color;
         }
+    }
 
-        function loadOnlyOfficeScript(src, callback) {
-            const script = document.createElement('script');
-            script.src = src;
-            script.async = true;
-            script.onload = callback;
-            script.onerror = function () {
-                console.error('Gagal memuat OnlyOffice API dari', src);
-                showOnlyOfficeError('OnlyOffice API tidak berhasil dimuat dari: ' + src);
-            };
-            document.head.appendChild(script);
-        }
+    function populateForm() {
+        Object.keys(initialData).forEach(field => {
+            const el = document.getElementById('input-' + field);
+            if (el) el.value = initialData[field] || '';
+            updatePreview(field);
+        });
+        // Subject preview
+        const subjEl = document.getElementById('preview-subject');
+        if (subjEl) subjEl.textContent = initialData.subject || '';
+    }
 
-        function initOnlyOffice() {
-            if (typeof DocsAPI === 'undefined') {
-                showOnlyOfficeError('OnlyOffice API tidak berhasil dimuat setelah script selesai.');
-                return;
-            }
+    function updateToolbarButtons() {
+        document.getElementById('btn-bold').classList.toggle('active', formatState.bold);
+        document.getElementById('btn-bold').setAttribute('aria-pressed', String(formatState.bold));
+        document.getElementById('btn-italic').classList.toggle('active', formatState.italic);
+        document.getElementById('btn-italic').setAttribute('aria-pressed', String(formatState.italic));
+        document.getElementById('btn-underline').classList.toggle('active', formatState.underline);
+        document.getElementById('btn-underline').setAttribute('aria-pressed', String(formatState.underline));
+    }
 
-            const config = {
-                width: '100%',
-                height: '800px',
-                type: 'desktop',
-                documentType: 'word',
-                document: {
-                    title: docTitle,
-                    url: fileUrl,
-                    fileType: 'docx',
-                    key: docKey
-                },
-                editorConfig: {
-                    callbackUrl: callbackUrl,
-                    lang: 'id',
-                    mode: 'edit',
-                    customization: {
-                        forcesave: true,
-                        chat: false,
-                        comments: false,
-                        toolbarNoTabs: false
-                    },
-                    permissions: {
-                        edit: true,
-                        download: true,
-                        print: true
-                    }
-                },
-                events: {
-                    onError: function(event) {
-                        console.error('OnlyOffice error:', event);
-                        showOnlyOfficeError('Terjadi kesalahan pada editor OnlyOffice: ' + (event.data ? event.data.message : 'Unknown error'));
-                    }
-                }
-            };
-
-            try {
-                new DocsAPI.DocEditor('onlyoffice-editor', config);
-            } catch (e) {
-                console.error('Gagal inisialisasi OnlyOffice:', e);
-                showOnlyOfficeError('Gagal menginisialisasi editor: ' + e.message);
-            }
-        }
-
-        loadOnlyOfficeScript(onlyOfficeScriptUrl, initOnlyOffice);
+    // Bind toolbar
+    document.getElementById('font-family').addEventListener('change', e => { formatState.fontFamily = e.target.value; applyFormattingToDocument(); });
+    document.getElementById('font-size').addEventListener('change', e => { formatState.fontSize = e.target.value; applyFormattingToDocument(); });
+    document.getElementById('btn-bold').addEventListener('click', () => { formatState.bold = !formatState.bold; updateToolbarButtons(); applyFormattingToDocument(); });
+    document.getElementById('btn-italic').addEventListener('click', () => { formatState.italic = !formatState.italic; updateToolbarButtons(); applyFormattingToDocument(); });
+    document.getElementById('btn-underline').addEventListener('click', () => { formatState.underline = !formatState.underline; updateToolbarButtons(); applyFormattingToDocument(); });
+    document.getElementById('color-select').addEventListener('change', e => { formatState.color = e.target.value; applyFormattingToDocument(); });
+    document.getElementById('btn-reset-format').addEventListener('click', () => {
+        Object.assign(formatState, { fontFamily: 'Source Serif 4', fontSize: '13', bold: false, italic: false, underline: false, color: '#111827' });
+        document.getElementById('font-family').value = formatState.fontFamily;
+        document.getElementById('font-size').value = formatState.fontSize;
+        document.getElementById('color-select').value = formatState.color;
+        updateToolbarButtons(); applyFormattingToDocument();
     });
+
+    // Bind inputs -> preview and keep values for form submission
+    ['title','duration','achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment','status'].forEach(field => {
+        const el = document.getElementById('input-' + field);
+        if (!el) return;
+        el.addEventListener('input', () => updatePreview(field));
+        // update select changes
+        el.addEventListener('change', () => updatePreview(field));
+    });
+
+    document.getElementById('print-button').addEventListener('click', () => window.print());
+
+    populateForm();
+    updateToolbarButtons();
+    applyFormattingToDocument();
+});
 </script>
 @endpush
 @endsection
