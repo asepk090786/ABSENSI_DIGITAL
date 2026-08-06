@@ -76,6 +76,12 @@
                         <i class="ti ti-download"></i> Update dari GitHub
                     </button>
                 </form>
+                <form action="{{ route('setting.about.bump_from_git') }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-secondary">
+                        <i class="ti ti-git-branch"></i> Sinkronkan Versi dari Git
+                    </button>
+                </form>
             </div>
             <table class="table table-sm mb-0">
                 <tbody>
@@ -87,6 +93,24 @@
                     <tr><th>Pesan</th><td>{{ $appInfo['update_message'] }}</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>What’s New</strong>
+        </div>
+        <div class="card-body">
+            @php($latest = $appInfo['whats_new'] ?? [])
+            @if(!empty($latest))
+                <div class="alert alert-info mb-3">
+                    <div class="fw-bold">{{ $latest['version'] ?? '-' }}</div>
+                    <div class="small text-muted">{{ $latest['date'] ?? '-' }} • {{ $latest['source'] ?? '-' }}</div>
+                    <div class="mt-2">{{ $latest['notes'] ?? '-' }}</div>
+                </div>
+            @else
+                <div class="text-muted">Belum ada informasi perubahan terbaru.</div>
+            @endif
         </div>
     </div>
 

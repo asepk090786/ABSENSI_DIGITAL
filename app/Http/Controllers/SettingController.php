@@ -311,6 +311,14 @@ class SettingController extends Controller
         return view('setting.header', compact('sekolah'));
     }
 
+    public function bumpVersionFromGit(Request $request)
+    {
+        $versionService = new AppVersionService();
+        $result = $versionService->syncFromGit('manual_sync', $request->input('notes'));
+
+        return back()->with('success', 'Versi SIMADIS dinaikkan menjadi ' . $result['version'] . ' dan keterangan update disimpan.');
+    }
+
     // About: server specifications & installed library/plugin status
     public function about()
     {
@@ -361,7 +369,7 @@ class SettingController extends Controller
 
         if ($success) {
             $versionService = new AppVersionService();
-            $versionService->bumpVersion('github_update', 'Update diterapkan dari GitHub');
+            $versionService->syncFromGit('github_update', 'Update diterapkan dari GitHub');
         }
 
         return back()->with($success ? 'success' : 'error', $message);
@@ -414,6 +422,7 @@ class SettingController extends Controller
             'update_available' => (bool) ($status['has_update'] ?? false),
             'update_message' => $status['message'] ?? 'Belum ada informasi update.',
             'history' => $versionInfo['history'],
+            'whats_new' => $versionInfo['whats_new'] ?? [],
         ];
     }
 
@@ -477,6 +486,10 @@ class SettingController extends Controller
             $message = $hasUpdate
                 ? 'Versi terbaru tersedia di GitHub. Anda dapat melakukan update melalui tombol di bawah ini.'
                 : 'Versi aplikasi Anda sudah sesuai dengan repository GitHub.';
+        }
+
+        if ($hasUpdate && $currentCommit !== $remoteCommit) {
+            $versionService->syncFromGit('remote_update');
         }
 
         return [

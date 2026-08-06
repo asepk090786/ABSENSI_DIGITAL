@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Str;
+
 class AppVersionService
 {
     protected string $statePath;
@@ -38,10 +40,11 @@ class AppVersionService
             'patch' => (int) ($state['patch'] ?? 26),
             'year' => (int) ($state['year'] ?? date('Y')),
             'history' => $this->getHistory(),
+            'whats_new' => $this->getWhatsNew(),
         ];
     }
 
-    public function bumpVersion(string $source = 'manual', ?string $notes = null): array
+    public function bumpVersion(string $source = 'manual', ?string $notes = null, array $extraState = []): array
     {
         $state = $this->readState();
         $year = (int) date('Y');
@@ -68,15 +71,18 @@ class AppVersionService
             'patch' => $patch,
             'updated_at' => now()->toDateTimeString(),
             'source' => $source,
+            ...$extraState,
         ];
 
         $this->writeState($newState);
 
         $history = $this->getHistory();
+        $notesText = $notes ?: $this->buildAutoReleaseNotes();
+
         $history[] = [
             'version' => $version,
             'date' => now()->toDateString(),
-            'notes' => $notes ?: 'Release diterbitkan melalui update aplikasi',
+            'notes' => $notesText,
             'source' => $source,
         ];
 
@@ -89,7 +95,41 @@ class AppVersionService
             'patch' => $patch,
             'year' => $year,
             'history' => $history,
+            'whats_new' => $this->getWhatsNew(),
         ];
+    }
+
+    public function syncFromGit(string $source = 'git_push', ?string $notes = null, ?string $repoPath = null): array
+    {
+        $repoPath = $repoPath ?: base_path();
+        $branch = $this->getGitBranch($repoPath);
+        $commit = $this->runGitCommand(['git', 'rev-parse', '--short', 'HEAD'], $repoPath);
+
+        if (! $commit) {
+            return $this->bumpVersion($source, $notes ?: 'Tidak ada commit Git yang dapat dibaca.');
+        }
+
+        $state = $this->readState();
+        if (($state['git_commit'] ?? null) === $commit && ($state['git_branch'] ?? null) === $branch) {
+            return $this->getVersionInfo();
+        }
+
+        $message = $this->runGitCommand(['git', 'log', '-1', '--pretty=%s'], $repoPath);
+        $body = $this->runGitCommand(['git', 'log', '-1', '--pretty=%b'], $repoPath);
+        $releaseNotes = $notes ?: trim($message ?: 'Perubahan aplikasi diterapkan');
+
+        if ($branch) {
+            $releaseNotes .= ' [branch: ' . $branch . ']';
+        }
+
+        if ($body) {
+            $releaseNotes .= ' — ' . Str::limit(trim($body), 140);
+        }
+
+        return $this->bumpVersion($source, $releaseNotes, [
+            'git_commit' => $commit,
+            'git_branch' => $branch,
+        ]);
     }
 
     public function getHistory(): array
@@ -108,6 +148,63 @@ class AppVersionService
         }
 
         return [];
+    }
+
+    public function getWhatsNew(): array
+    {
+        $history = $this->getHistory();
+        $latest = end($history);
+
+        if (! is_array($latest)) {
+            return [];
+        }
+
+        return [
+            'version' => $latest['version'] ?? null,
+            'date' => $latest['date'] ?? null,
+            'notes' => $latest['notes'] ?? null,
+            'source' => $latest['source'] ?? null,
+        ];
+    }
+
+    protected function buildAutoReleaseNotes(): string
+    {
+        $repoPath = base_path();
+        $branch = $this->getGitBranch($repoPath);
+        $commit = $this->runGitCommand(['git', 'log', '-1', '--pretty=%s'], $repoPath);
+        $body = $this->runGitCommand(['git', 'log', '-1', '--pretty=%b'], $repoPath);
+
+        $notes = trim($commit ?: 'Pembaruan aplikasi');
+        if ($branch) {
+            $notes .= ' [branch: ' . $branch . ']';
+        }
+        if ($body) {
+            $notes .= ' — ' . Str::limit(trim($body), 140);
+        }
+
+        return $notes;
+    }
+
+    protected function getGitBranch(string $repoPath): ?string
+    {
+        $branch = $this->runGitCommand(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], $repoPath);
+        return $branch ?: null;
+    }
+
+    protected function runGitCommand(array $command, string $repoPath): ?string
+    {
+        if (! is_dir($repoPath . '/.git')) {
+            return null;
+        }
+
+        $process = new \Symfony\Component\Process\Process($command, $repoPath, null, null, 30);
+        $process->run();
+
+        if (! $process->isSuccessful()) {
+            return null;
+        }
+
+        return trim($process->getOutput());
     }
 
     protected function readState(): array
