@@ -355,4 +355,31 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+@push('css')
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Core layout adapted from provided template */
+        #rpp-interactive-root .app-shell { width:100%; min-height:420px; background:#e4e5e7; display:flex; flex-direction:column; }
+        #rpp-interactive-root .titlebar{ background:#185abd; color:#fff; min-height:54px; display:flex; align-items:center; gap:14px; padding:0 20px; box-shadow:0 1px 0 rgba(0,0,0,.15); }
+        #rpp-interactive-root .word-mark{ width:29px;height:29px; display:grid; place-items:center; background:#fff;color:#185abd;border-radius:3px; font-family:Georgia,serif; font-weight:700; font-size:20px }
+        #rpp-interactive-root .workspace { width:100%; flex:1; display:grid; grid-template-columns: minmax(310px, .84fr) minmax(480px, 1.4fr); overflow:hidden; }
+        #rpp-interactive-root .form-panel { background:#f5f6f8; border-right:1px solid #c8cbd0; overflow-y:auto; padding:22px 20px 40px; }
+        #rpp-interactive-root .form-group { background:#fff; border:1px solid #d6d9de; border-radius:5px; padding:15px; margin-bottom:13px; box-shadow:0 1px 2px rgba(24,36,50,.04); }
+        #rpp-interactive-root .field-label{ display:block; margin-bottom:6px; color:#3d4753; font-size:12px; font-weight:700 }
+        #rpp-interactive-root .editor-input, #rpp-interactive-root .editor-textarea{ width:100%; border:1px solid #b9c1cb; color:#202124; border-radius:3px; background:#fff; padding:8px 9px; font-size:13px }
+        #rpp-interactive-root .editor-textarea{ min-height:92px; resize:vertical }
+        #rpp-interactive-root .preview-panel{ overflow:auto; padding:0; background:#e4e5e7; display:flex; flex-direction:column }
+        #rpp-interactive-root .format-toolbar{ background:#f5f6f8; border-bottom:1px solid #c8cbd0; padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-right:1px solid #c8cbd0 }
+        #rpp-interactive-root .toolbar-select{ padding:5px 8px; border:1px solid #b9c1cb; border-radius:3px; background:#fff; font-size:12px }
+        #rpp-interactive-root .toolbar-button{ width:28px;height:28px;border:1px solid #b9c1cb;border-radius:3px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center }
+        #rpp-interactive-root .preview-scroll{ overflow:auto; flex:1; padding:32px 28px 48px; background-image:radial-gradient(#d2d4d7 .65px, transparent .65px); background-size:13px 13px }
+        #rpp-interactive-root .document-page{ width:min(100%,840px); min-height:1120px; margin:0 auto; padding:70px 76px 84px; background:#fff; box-shadow:0 2px 7px rgba(0,0,0,.18), 0 18px 38px rgba(0,0,0,.12) }
+        #rpp-interactive-root .doc-title{ font-family:'Source Serif 4', Georgia, serif; font-size:25px; text-align:center; color:#111827; margin:0 0 31px; font-weight:700 }
+        #rpp-interactive-root .info-table{ width:100%; border-collapse:collapse; margin-bottom:18px }
+        #rpp-interactive-root .info-table th, #rpp-interactive-root .info-table td{ border:1px solid #aeb9c8; padding:8px 10px; text-align:left; vertical-align:top }
+        #rpp-interactive-root .info-table th{ width:180px; background:#eaf1fb; color:#1e3a62; font-weight:700 }
+        #rpp-interactive-root .preview-text{ white-space:pre-wrap }
+        @media (max-width:930px){ #rpp-interactive-root .workspace{ grid-template-columns:1fr; } #rpp-interactive-root .form-panel{ border-right:0; border-bottom:1px solid #c8cbd0 } }
+    </style>
+@endpush
 @endsection
