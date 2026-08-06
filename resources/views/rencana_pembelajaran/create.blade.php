@@ -84,48 +84,48 @@
                                                         <h3>Isi RPP</h3>
                                                         <div class="field-row">
                                                             <label class="field-label">Capaian Pembelajaran</label>
-                                                            <textarea id="input-achievement" name="capaian_pembelajaran" class="editor-textarea form-control">{{ old('capaian_pembelajaran') }}</textarea>
+                                                            <textarea id="input-achievement" name="capaian_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('capaian_pembelajaran') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Tujuan / Objektif</label>
-                                                            <textarea id="input-objectives" name="tujuan" class="editor-textarea form-control">{{ old('tujuan') }}</textarea>
+                                                            <textarea id="input-objectives" name="tujuan" class="editor-textarea form-control rich-editor">{{ old('tujuan') }}</textarea>
                                                             <p class="helper">Pisahkan baris untuk setiap butir tujuan.</p>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Metode</label>
-                                                            <textarea id="input-methods" name="metode" class="editor-textarea form-control">{{ old('metode') }}</textarea>
+                                                            <textarea id="input-methods" name="metode" class="editor-textarea form-control rich-editor">{{ old('metode') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Media</label>
-                                                            <textarea id="input-media" name="media" class="editor-textarea form-control">{{ old('media') }}</textarea>
+                                                            <textarea id="input-media" name="media" class="editor-textarea form-control rich-editor">{{ old('media') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Sumber / Referensi</label>
-                                                            <textarea id="input-resources" name="sumber" class="editor-textarea form-control">{{ old('sumber') }}</textarea>
+                                                            <textarea id="input-resources" name="sumber" class="editor-textarea form-control rich-editor">{{ old('sumber') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Praktik Pedagogis</label>
-                                                            <textarea id="input-practice" name="praktik_pedagogis" class="editor-textarea form-control">{{ old('praktik_pedagogis') }}</textarea>
+                                                            <textarea id="input-practice" name="praktik_pedagogis" class="editor-textarea form-control rich-editor">{{ old('praktik_pedagogis') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Lingkungan Pembelajaran</label>
-                                                            <textarea id="input-environment" name="lingkungan_pembelajaran" class="editor-textarea form-control">{{ old('lingkungan_pembelajaran') }}</textarea>
+                                                            <textarea id="input-environment" name="lingkungan_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('lingkungan_pembelajaran') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Pemanfaatan Digital</label>
-                                                            <textarea id="input-digital" name="pemanfaatan_digital" class="editor-textarea form-control">{{ old('pemanfaatan_digital') }}</textarea>
+                                                            <textarea id="input-digital" name="pemanfaatan_digital" class="editor-textarea form-control rich-editor">{{ old('pemanfaatan_digital') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Pengalaman Pembelajaran</label>
-                                                            <textarea id="input-experience" name="pengalaman_pembelajaran" class="editor-textarea form-control">{{ old('pengalaman_pembelajaran') }}</textarea>
+                                                            <textarea id="input-experience" name="pengalaman_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('pengalaman_pembelajaran') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Refleksi Pembelajaran</label>
-                                                            <textarea id="input-reflection" name="refleksi_pembelajaran" class="editor-textarea form-control">{{ old('refleksi_pembelajaran') }}</textarea>
+                                                            <textarea id="input-reflection" name="refleksi_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('refleksi_pembelajaran') }}</textarea>
                                                         </div>
                                                         <div class="field-row">
                                                             <label class="field-label">Asesmen / Penilaian</label>
-                                                            <textarea id="input-assessment" name="penilaian" class="editor-textarea form-control">{{ old('penilaian') }}</textarea>
+                                                            <textarea id="input-assessment" name="penilaian" class="editor-textarea form-control rich-editor">{{ old('penilaian') }}</textarea>
                                                         </div>
                                                     </section>
                                                 </div>
@@ -352,6 +352,41 @@ document.addEventListener('DOMContentLoaded', function () {
     populateForm();
     updateToolbarButtons();
     applyFormattingToDocument();
+
+    // Load TinyMCE dynamically and initialize rich editors
+    function loadScript(src, cb){
+        const s = document.createElement('script'); s.src = src; s.referrerPolicy = 'origin'; s.onload = cb; document.head.appendChild(s);
+    }
+
+    const richFields = ['achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment'];
+
+    loadScript('https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js', function(){
+        if (typeof tinymce === 'undefined') return;
+        tinymce.init({
+            selector: 'textarea.rich-editor',
+            plugins: 'lists link image table code help advlist autolink',
+            toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
+            menubar: false,
+            height: 220,
+            content_style: 'body { font-family: inherit; color: #202124; }',
+            setup: function(editor) {
+                editor.on('Change KeyUp', function() {
+                    const ta = document.getElementById(editor.id);
+                    if (ta) ta.value = editor.getContent();
+                    const field = editor.id.replace('input-','');
+                    if (richFields.includes(field)) updatePreview(field);
+                });
+            }
+        });
+
+        // After init ensure editor contents reflect initial textarea values
+        richFields.forEach(f => {
+            const ta = document.getElementById('input-' + f);
+            if (!ta) return;
+            const ed = tinymce.get(ta.id);
+            if (ed) ed.setContent(ta.value || '');
+        });
+    });
 });
 </script>
 @endpush
