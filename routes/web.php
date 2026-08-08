@@ -10,6 +10,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KurikulumController;
+use App\Http\Controllers\RencanaPembelajaranController;
+use App\Http\Controllers\OnlyofficeProxyController;
 use App\Http\Controllers\JadwalKbmController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\KegiatanController;
@@ -30,7 +32,25 @@ Route::middleware('guest')->group(function () {
 // Note: public Help page removed temporarily. Admin editor remains under /help/admin
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
+Route::middleware(['web'])->group(function () {
+    Route::match(['get', 'post', 'put'], 'public/modul-ajar/temp/{tempKey}/document', [RencanaPembelajaranController::class, 'documentTemp'])
+        ->name('rencana_pembelajaran.document_temp');
+    Route::post('modul-ajar/temp/{tempKey}/onlyoffice-temp-callback', [RencanaPembelajaranController::class, 'onlyOfficeTempCallback'])
+        ->name('rencana_pembelajaran.onlyoffice_temp_callback');
+});
+
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
+
+Route::any('onlyoffice/{path?}', [OnlyofficeProxyController::class, 'proxy'])
+    ->where('path', '.*');
+
+// Collabora WOPI routes (public)
+Route::get('collabora/wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'checkFileInfo'])->name('collabora.check_file_info');
+Route::get('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'getFile'])->name('collabora.get_file');
+Route::post('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('collabora.put_file');
+Route::post('collabora/wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'lock'])->name('collabora.lock');
+Route::post('collabora/wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'unlock'])->name('collabora.unlock');
+Route::post('collabora/wopi/files/{tempKey}/refreshlock', [App\Http\Controllers\CollaboraController::class, 'refreshLock'])->name('collabora.refresh_lock');
 
 // Wali Kelas routes
 Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(function () {
@@ -130,6 +150,8 @@ Route::middleware(['auth'])->group(function(){
     Route::post('piket-kbm/pelanggaran', ['App\Http\Controllers\PiketPelanggaranController', 'store'])->name('piket.pelanggaran.store');
     Route::get('absensi/bk-monitoring/export', ['App\Http\Controllers\AbsensiController', 'exportBkMonitoring'])->name('absensi.bk-monitoring.export');
     Route::post('absensi/{absensi}/laporan-siswa', ['App\Http\Controllers\AbsensiController', 'storeLaporanSiswa'])->name('absensi.laporan-siswa.store');
+    Route::post('absensi/{absensi}/izin-kegiatan', ['App\Http\Controllers\AbsensiController', 'storeIzinKegiatan'])->name('absensi.izin-kegiatan.store');
+    Route::post('ekskul/{ekskul}/izin-kegiatan', ['App\Http\Controllers\EkskulController', 'storeIzinKegiatan'])->name('ekskul.izin-kegiatan.store');
     // Pikret: allow update status for a student in an absensi record
     Route::post('absensi/{absensi}/siswa/{siswa}/status', ['App\Http\Controllers\AbsensiController', 'updateSiswaStatus'])->name('absensi.siswa.update_status');
     Route::post('absensi/verify-student', ['App\Http\Controllers\AbsensiController', 'verifyStudent'])->name('absensi.verify.student');
@@ -289,17 +311,15 @@ Route::middleware(['auth'])->group(function(){
     Route::get('sk-tugas/{sk_tugas}/download', [App\Http\Controllers\SkTugasController::class, 'download'])->name('sk_tugas.download');
 
     Route::resource('tugas_guru', 'App\Http\Controllers\TugasGuruController');
-    
-    // Rencana Pembelajaran routes - custom routes BEFORE resource to avoid conflicts
-    Route::get('rencana_pembelajaran/import-form', 'App\Http\Controllers\RencanaPembelajaranController@importForm')->name('rencana_pembelajaran.import_form');
-    Route::get('rencana_pembelajaran/template-download', 'App\Http\Controllers\RencanaPembelajaranController@templateDownload')->name('rencana_pembelajaran.template');
-    Route::post('rencana_pembelajaran/bulk-delete', 'App\Http\Controllers\RencanaPembelajaranController@bulkDelete')->name('rencana_pembelajaran.bulkDelete');
-    Route::post('rencana_pembelajaran/import-word', 'App\Http\Controllers\RencanaPembelajaranController@import')->name('rencana_pembelajaran.import_word');
-    Route::post('rencana_pembelajaran/import-confirm', 'App\Http\Controllers\RencanaPembelajaranController@importConfirm')->name('rencana_pembelajaran.import_confirm');
-    Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-word', 'App\Http\Controllers\RencanaPembelajaranController@export')->name('rencana_pembelajaran.export_word');
-    Route::get('rencana_pembelajaran/{rencanaPembelajaran}/export-pdf', 'App\Http\Controllers\RencanaPembelajaranController@exportPdf')->name('rencana_pembelajaran.export_pdf');
-    // OnlyOffice integration removed: routes disabled
-    Route::resource('rencana_pembelajaran', 'App\Http\Controllers\RencanaPembelajaranController');
+
+    Route::get('modul-ajar', [RencanaPembelajaranController::class, 'index'])->name('rencana_pembelajaran.index');
+    Route::get('modul-ajar/editor', [RencanaPembelajaranController::class, 'editor'])->name('rencana_pembelajaran.editor');
+    Route::get('modul-ajar/create', [RencanaPembelajaranController::class, 'create'])->name('rencana_pembelajaran.create');
+    Route::post('modul-ajar', [RencanaPembelajaranController::class, 'store'])->name('rencana_pembelajaran.store');
+    Route::get('modul-ajar/{id}/edit', [RencanaPembelajaranController::class, 'edit'])->name('rencana_pembelajaran.edit');
+    Route::get('modul-ajar/template', [RencanaPembelajaranController::class, 'downloadTemplate'])->name('rencana_pembelajaran.template');
+    Route::post('modul-ajar/import', [RencanaPembelajaranController::class, 'import'])->name('rencana_pembelajaran.import');
+
     
     // Materi Pembelajaran routes
     Route::resource('materi_pembelajaran', 'App\Http\Controllers\MateriPembelajaranController');
@@ -381,6 +401,10 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
         Route::get('/setting/absensi', [SettingController::class, 'absensi'])->name('setting.absensi');
         Route::put('/setting/absensi', [SettingController::class, 'updateAbsensi'])->name('setting.absensi.update');
+        Route::get('/setting/menu', [SettingController::class, 'menu'])->name('setting.menu');
+        Route::post('/setting/menu', [SettingController::class, 'updateMenu'])->name('setting.menu.update');
+        Route::get('/setting/onlyoffice', [SettingController::class, 'onlyOffice'])->name('setting.onlyoffice');
+        Route::put('/setting/onlyoffice', [SettingController::class, 'updateOnlyOffice'])->name('setting.onlyoffice.update');
         Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
         // Database backup settings and actions
         Route::get('/setting/backup', [SettingController::class, 'backupIndex'])->name('setting.backup');

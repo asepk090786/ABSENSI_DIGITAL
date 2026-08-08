@@ -4,5 +4,17 @@
         "date": "2026-07-31",
         "notes": "test version bump",
         "source": "manual"
+    },
+    {
+        "version": "Ver.1.0.28",
+        "date": "2026-08-06",
+        "notes": "Clean production files, update Word import preview and PDF export rendering, add gitignore exclusions for temp uploads [branch: main]",
+        "source": "manual_sync"
+    },
+    {
+        "version": "Ver.1.0.29",
+        "date": "2026-08-08",
+        "notes": "Add tabbed Pengaturan page and sidebar menu visibility toggles for Guru/Siswa",
+        "source": "manual"
     }
 ]

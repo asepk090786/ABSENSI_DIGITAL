@@ -32,11 +32,47 @@ class SettingController extends Controller
     {
         $settings = new SettingsManager();
 
-        return view('setting.absensi', [
-            'settings' => [
+        return view('setting.pengaturan', [
+            'absensiSettings' => [
                 'allow_edit_past_for_guru' => (bool) $settings->get('attendance.allow_edit_past_for_guru', false),
                 'allow_edit_past_for_siswa_officer' => (bool) $settings->get('attendance.allow_edit_past_for_siswa_officer', false),
                 'verification_timeout_seconds' => (int) $settings->get('attendance.verification_timeout_seconds', 300),
+            ],
+            'menuVisibility' => $settings->get('menu_visibility', [
+                'guru' => [],
+                'siswa' => [],
+            ]),
+            'standardGuruMenus' => [
+                'akademik_jadwal_kbm',
+                'akademik_jadwal_piket',
+                'akademik_pengaturan_jam',
+                'akademik_pengembangan_diri',
+                'akademik_beban_kerja_guru',
+                'akademik_sk_tugas',
+                'akademik_komponen_penilaian',
+                'akademik_mata_pelajaran',
+                'akademik_modul_ajar',
+                'akademik_editor_modul',
+                'pembelajaran_absensi',
+                'pembelajaran_agenda_kelas',
+                'pembelajaran_agenda_guru',
+                'pembelajaran_nilai',
+                'pembelajaran_rekap_nilai',
+                'pembelajaran_materi',
+                'pembelajaran_pembina_ekskul',
+                'piket_kbm_absensi_guru',
+                'piket_kbm_absensi_siswa',
+                'piket_kbm_pelanggaran',
+                'wali_kelas_dashboard',
+                'wali_kelas_data_siswa',
+                'wali_kelas_absensi_kelas',
+                'wali_kelas_laporan_guru',
+                'wali_kelas_nilai_siswa',
+                'wali_kelas_rekap_nilai',
+                'guru_bk',
+            ],
+            'standardSiswaMenus' => [
+                'pembelajaran_materi',
             ],
         ]);
     }
@@ -55,6 +91,96 @@ class SettingController extends Controller
         $settings->set('attendance.verification_timeout_seconds', (int) ($validated['verification_timeout_seconds'] ?? 300));
 
         return redirect()->route('setting.absensi')->with('success', 'Pengaturan absensi disimpan.');
+    }
+
+    public function menu()
+    {
+        $settings = new SettingsManager();
+        $menuVisibility = $settings->get('menu_visibility', [
+            'guru' => [],
+            'siswa' => [],
+        ]);
+
+        $standardGuruMenus = [
+            'akademik_jadwal_kbm',
+            'akademik_jadwal_piket',
+            'akademik_pengaturan_jam',
+            'akademik_pengembangan_diri',
+            'akademik_beban_kerja_guru',
+            'akademik_sk_tugas',
+            'akademik_komponen_penilaian',
+            'akademik_mata_pelajaran',
+            'akademik_modul_ajar',
+            'akademik_editor_modul',
+            'pembelajaran_absensi',
+            'pembelajaran_agenda_kelas',
+            'pembelajaran_agenda_guru',
+            'pembelajaran_nilai',
+            'pembelajaran_rekap_nilai',
+            'pembelajaran_materi',
+            'pembelajaran_pembina_ekskul',
+            'piket_kbm_absensi_guru',
+            'piket_kbm_absensi_siswa',
+            'piket_kbm_pelanggaran',
+        ];
+
+        $standardSiswaMenus = [
+            'pembelajaran_materi',
+        ];
+
+        return view('setting.pengaturan', [
+            'absensiSettings' => [
+                'allow_edit_past_for_guru' => (bool) $settings->get('attendance.allow_edit_past_for_guru', false),
+                'allow_edit_past_for_siswa_officer' => (bool) $settings->get('attendance.allow_edit_past_for_siswa_officer', false),
+                'verification_timeout_seconds' => (int) $settings->get('attendance.verification_timeout_seconds', 300),
+            ],
+            'menuVisibility' => $menuVisibility,
+            'standardGuruMenus' => $standardGuruMenus,
+            'standardSiswaMenus' => $standardSiswaMenus,
+        ]);
+    }
+
+    public function updateMenu(Request $request)
+    {
+        $validated = $request->validate([
+            'guru_menus' => 'nullable|array',
+            'guru_menus.*' => 'string',
+            'siswa_menus' => 'nullable|array',
+            'siswa_menus.*' => 'string',
+        ]);
+
+        $settings = new SettingsManager();
+        $settings->set('menu_visibility.guru', $validated['guru_menus'] ?? []);
+        $settings->set('menu_visibility.siswa', $validated['siswa_menus'] ?? []);
+
+        return redirect()->route('setting.menu')->with('success', 'Pengaturan menu disimpan.');
+    }
+
+    public function onlyOffice()
+    {
+        $settings = new SettingsManager();
+
+        return view('setting.onlyoffice', [
+            'settings' => [
+                'server_url' => $settings->get('onlyoffice.server_url', env('ONLYOFFICE_SERVER_URL', 'http://127.0.0.1:8082')),
+                'server_secret' => $settings->get('onlyoffice.server_secret', ''),
+            ],
+        ]);
+    }
+
+    public function updateOnlyOffice(Request $request)
+    {
+        $validated = $request->validate([
+            'server_url' => 'required|url',
+            'server_secret' => 'nullable|string|max:255',
+        ]);
+
+        $settings = new SettingsManager();
+        $settings->set('onlyoffice.server_url', rtrim($validated['server_url'], '/'));
+        $secret = trim($validated['server_secret'] ?? '');
+        $settings->set('onlyoffice.server_secret', $secret === '' ? null : $secret);
+
+        return redirect()->route('setting.onlyoffice')->with('success', 'Pengaturan OnlyOffice disimpan.');
     }
 
     public function tahunAjaran()
