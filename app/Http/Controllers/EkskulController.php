@@ -146,6 +146,35 @@ class EkskulController extends Controller
         return view('ekskul.anggota', compact('ekskul', 'anggota', 'kelasList', 'existingSiswaIds'));
     }
 
+    public function getSiswa($ekskul, Request $request)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($ekskul);
+        $this->authorizePembinaOrAdmin($ekskul);
+
+        $kelasId = $request->get('kelas_id');
+
+        if (!$kelasId) {
+            return response()->json(['siswa' => []]);
+        }
+
+        $siswa = Siswa::with('kelas')
+            ->where('kelas_id', $kelasId)
+            ->orderBy('nama')
+            ->get(['id', 'nis', 'nama', 'kelas_id'])
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'nis' => $item->nis,
+                    'nama' => $item->nama,
+                    'kelas' => $item->kelas->nama_kelas ?? '',
+                ];
+            });
+
+        return response()->json([
+            'siswa' => $siswa,
+        ]);
+    }
+
     public function storeAnggotaBulk(Request $request, $id)
     {
         $ekskul = Ekstrakurikuler::findOrFail($id);

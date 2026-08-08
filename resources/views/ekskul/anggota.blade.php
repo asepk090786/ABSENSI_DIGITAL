@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         siswaContainer.innerHTML = '<div class="text-center py-4"><i class="ti ti-loader spinner me-2"></i>Memuat data siswa...</div>';
 
-        fetch('{{ route('absensi.get-siswa') }}?kelas_id=' + kelasId)
+        fetch('{{ route('ekskul.get-siswa', $ekskul->id) }}?kelas_id=' + kelasId)
             .then(function(res){ return res.json(); })
             .then(function(data){
                 var siswa = data.siswa || data.data || data || [];
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 siswa.forEach(function(s) {
                     var sId = s.id || s.siswa_id || '';
                     var sNis = s.nis || '';
-                    var sNama = s.nama || s.nama_siswa || '';
+                    var sNama = s.nama || '';
                     var isExisting = existingIds.indexOf(sId) !== -1;
                     html += '<label class="list-group-item list-group-item-action d-flex align-items-center gap-3 ' + (isExisting ? 'bg-light text-muted' : '') + '">';
                     html += '<input type="checkbox" name="siswa_ids[]" value="' + sId + '" class="form-check-input siswa-check" ' + (isExisting ? 'disabled' : '') + '>';

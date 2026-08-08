@@ -50,9 +50,9 @@ Route::options('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\
 Route::options('collabora/wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'options']);
 Route::options('collabora/wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'options']);
 Route::options('collabora/wopi/files/{tempKey}/refreshlock', [App\Http\Controllers\CollaboraController::class, 'options']);
-Route::get('collabora/wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'checkFileInfo'])->name('collabora.check_file_info');
+Route::match(['get', 'post'], 'collabora/wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'handleFileRequest'])->name('collabora.check_file_info');
 Route::get('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'getFile'])->name('collabora.get_file');
-Route::match(['post', 'put'], 'collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('collabora.put_file');
+Route::match(['post', 'put'], 'collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('collabora.put_file_contents');
 Route::post('collabora/wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'lock'])->name('collabora.lock');
 Route::post('collabora/wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'unlock'])->name('collabora.unlock');
 Route::post('collabora/wopi/files/{tempKey}/refreshlock', [App\Http\Controllers\CollaboraController::class, 'refreshLock'])->name('collabora.refresh_lock');
@@ -97,6 +97,7 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'update'])->name('update');
         Route::delete('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'destroy'])->name('destroy');
         Route::get('/{ekskul}/anggota', [App\Http\Controllers\EkskulController::class, 'manageAnggota'])->name('anggota');
+        Route::get('/{ekskul}/siswa', [App\Http\Controllers\EkskulController::class, 'getSiswa'])->name('get-siswa');
         Route::post('/{ekskul}/anggota/status', [App\Http\Controllers\EkskulController::class, 'updateStatusAnggota'])->name('anggota.status');
         Route::post('/{ekskul}/anggota/bulk', [App\Http\Controllers\EkskulController::class, 'storeAnggotaBulk'])->name('anggota.bulk');
         Route::post('/{ekskul}/daftar', [App\Http\Controllers\EkskulController::class, 'daftar'])->name('daftar');
