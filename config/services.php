@@ -31,4 +31,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'onlyoffice' => [
+        'onlyoffice_url' => env('ONLYOFFICE_URL'),
+        'server_url' => env('ONLYOFFICE_SERVER_URL', env('ONLYOFFICE_URL')),
+        'onlyoffice_secret' => env('ONLYOFFICE_SECRET'),
+    ],
+    'collabora' => [
+        'server_url' => env('COLLABORA_SERVER_URL'),
+        'collabora_secret' => env('COLLABORA_SECRET'),
+    ],
+
 ];
