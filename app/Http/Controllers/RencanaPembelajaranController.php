@@ -185,6 +185,11 @@ class RencanaPembelajaranController extends Controller
         ]);
     }
 
+    public function editor()
+    {
+        return view('rencana_pembelajaran.editor');
+    }
+
     public function create()
     {
         $user = Auth::user();
