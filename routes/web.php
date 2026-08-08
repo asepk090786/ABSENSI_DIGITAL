@@ -47,7 +47,7 @@ Route::any('onlyoffice/{path?}', [OnlyofficeProxyController::class, 'proxy'])
 // Collabora WOPI routes (public)
 Route::get('collabora/wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'checkFileInfo'])->name('collabora.check_file_info');
 Route::get('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'getFile'])->name('collabora.get_file');
-Route::post('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('collabora.put_file');
+Route::match(['post', 'put'], 'collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('collabora.put_file');
 Route::post('collabora/wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'lock'])->name('collabora.lock');
 Route::post('collabora/wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'unlock'])->name('collabora.unlock');
 Route::post('collabora/wopi/files/{tempKey}/refreshlock', [App\Http\Controllers\CollaboraController::class, 'refreshLock'])->name('collabora.refresh_lock');
