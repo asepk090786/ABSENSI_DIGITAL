@@ -1072,9 +1072,6 @@
                             @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_modul_ajar', $guruEnabledMenus)))
                                 <li class="nav-item"><a href="{{ url('/modul-ajar') }}" class="nav-link {{ request()->is('modul-ajar*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Modul Ajar</a></li>
                             @endif
-                            @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_editor_modul', $guruEnabledMenus)))
-                                <li class="nav-item"><a href="{{ route('rencana_pembelajaran.editor') }}" class="nav-link {{ request()->routeIs('rencana_pembelajaran.editor') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Editor Modul</a></li>
-                            @endif
                         </ul>
                     </div>
                 </li>

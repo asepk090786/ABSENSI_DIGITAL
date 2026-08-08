@@ -12,9 +12,6 @@
                         <h4 class="card-title">Edit Rencana Pembelajaran</h4>
                     </div>
                     <div class="col-auto d-flex gap-2">
-                        <a href="{{ route('rencana_pembelajaran.onlyoffice', $item->id) }}" class="btn btn-primary btn-sm">
-                            <i class="ti ti-edit me-1"></i>Edit di OnlyOffice
-                        </a>
                         <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $item->mata_pelajaran_id, 'tingkat' => $item->kelas->tingkat_kelas]) }}" class="btn btn-secondary btn-sm">
                             <i class="ti ti-arrow-left me-1"></i>Kembali
                         </a>
@@ -62,17 +59,12 @@
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">2. Editor RPP (Pratinjau OnlyOffice)</h5>
-                                <div class="form-text text-muted mb-3">Dokumen RPP dimuat langsung dari file yang sudah disimpan. Anda dapat melihat dan mengedit dokumen di bawah ini.</div>
-                                <x-onlyoffice
-                                    :file-url="$fileUrl"
-                                    :callback-url="$callbackUrl"
-                                    :file-type="$fileType"
-                                    :title="$item->judul"
-                                    :readonly="false"
-                                    :token="$onlyOfficeJwtToken"
-                                    container-id="onlyoffice-editor-container"
-                                />
+                                <h5 class="mb-2">2. Editor RPP</h5>
+                                <div class="form-text text-muted mb-3">Editor dokumen eksternal telah dinonaktifkan. Anda dapat menyimpan data formulir tanpa preview editor.</div>
+                                <div class="alert alert-secondary mb-0">
+                                    <strong>Editor eksternal sedang tidak tersedia.</strong>
+                                    <p class="mb-0">Fitur editor dokumen eksternal telah dihapus. Anda dapat menyimpan data formulir tanpa editor dokumen tersemat.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -130,7 +122,4 @@
 
 @push('css')
     <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        #onlyoffice-editor-container { border: 1px solid #d6d9de; border-radius: 5px; height: 520px; }
-    </style>
 @endpush

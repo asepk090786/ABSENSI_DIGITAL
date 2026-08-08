@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use App\Models\TugasGuru;
 use App\Models\MataPelajaran;
@@ -19,8 +17,6 @@ use App\Models\RencanaPembelajaran;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Style\Font;
-use App\Services\OnlyOfficeCallbackService;
-use App\Services\SettingsManager;
 use Illuminate\Http\Response;
 // show/download removed to restore original WYSIWYG flow
 
@@ -176,15 +172,6 @@ class RencanaPembelajaranController extends Controller
         [$editorMataPelajaranList, $editorKelasList] = $this->loadMataPelajaranAndKelas();
         $editorFaseOptions = $this->buildFaseOptions();
 
-        $editorTempKey = uniqid('modul_ajar_', true);
-        $editorTemplateUrl = route('rencana_pembelajaran.document_temp', ['tempKey' => $editorTempKey]);
-        $editorCallbackUrl = route('rencana_pembelajaran.onlyoffice_temp_callback', ['tempKey' => $editorTempKey]);
-        $editorDocumentKey = sha1($editorTemplateUrl . $editorTempKey . time());
-        $editorOnlyOfficeJwtToken = $this->generateOnlyOfficeJwtToken([
-            'url' => $editorCallbackUrl,
-            'document_key' => $editorDocumentKey,
-        ]);
-
         return view('rencana_pembelajaran.index', [
             'modules' => $modules,
             'sekolah' => $sekolah,
@@ -192,11 +179,6 @@ class RencanaPembelajaranController extends Controller
             'guruNip' => $guruNip,
             'kepalaName' => $kepalaName,
             'kepalaNip' => $kepalaNip,
-            'editorTempKey' => $editorTempKey,
-            'editorTemplateUrl' => $editorTemplateUrl,
-            'editorCallbackUrl' => $editorCallbackUrl,
-            'editorDocumentKey' => $editorDocumentKey,
-            'editorOnlyOfficeJwtToken' => $editorOnlyOfficeJwtToken,
             'editorMataPelajaranList' => $editorMataPelajaranList,
             'editorKelasList' => $editorKelasList,
             'editorFaseOptions' => $editorFaseOptions,
@@ -460,20 +442,6 @@ class RencanaPembelajaranController extends Controller
     private function buildRoleAwareDocxPath(string $fileName): string
     {
         return 'uploads/rencana_pembelajaran/docx/' . $this->resolveRoleAwareStorageSegment() . '/' . $fileName;
-    }
-
-    private function buildCollaboraEditorUrl(string $collaboraServerUrl, string $fileUrl, string $fileName): string
-    {
-        if (empty($collaboraServerUrl)) {
-            return '';
-        }
-
-        if (str_starts_with($collaboraServerUrl, 'http://')) {
-            $collaboraServerUrl = preg_replace('#^http://#', 'https://', $collaboraServerUrl);
-        }
-
-        $browserPath = '/browser/2229109277/cool.html';
-        return $collaboraServerUrl . $browserPath . '?WOPISrc=' . urlencode($fileUrl) . '&lang=id&mode=edit';
     }
 
     public function downloadTemplate()
@@ -747,69 +715,8 @@ class RencanaPembelajaranController extends Controller
             'message' => 'Import berhasil',
             'images' => $allImages,
             'images_html' => $imagesHtml,
-            'placeholders' => $placeholders,
+             'placeholders' => $placeholders,
         ], $data));
-    }
-
-    public function editor()
-    {
-        [$editorMataPelajaranList, $editorKelasList] = $this->loadMataPelajaranAndKelas();
-        $editorFaseOptions = $this->buildFaseOptions();
-
-        $editorTempKey = uniqid('modul_ajar_', true);
-
-        $collaboraServerUrl = rtrim(config('services.collabora.server_url', env('COLLABORA_SERVER_URL', '')), '/');
-        $collaboraWopiSrc = route('collabora.check_file_info', ['tempKey' => $editorTempKey]);
-        $collaboraEditorUrl = $this->buildCollaboraEditorUrl($collaboraServerUrl, $collaboraWopiSrc, 'modul-ajar.docx');
-
-        return view('rencana_pembelajaran.editor', [
-            'editorTempKey' => $editorTempKey,
-            'editorMataPelajaranList' => $editorMataPelajaranList,
-            'editorKelasList' => $editorKelasList,
-            'editorFaseOptions' => $editorFaseOptions,
-            'collaboraServerUrl' => $collaboraServerUrl,
-            'collaboraEditorUrl' => $collaboraEditorUrl,
-        ]);
-    }
-
-    public function documentTemp(Request $request, string $tempKey)
-    {
-        $tempKey = preg_replace('/[^A-Za-z0-9_\-]/', '', $tempKey);
-        $tempDir = public_path('uploads/rencana_pembelajaran/docx/temp');
-        $tempFile = $tempDir . '/' . $tempKey . '.docx';
-
-        if ($request->isMethod('put') || $request->isMethod('post')) {
-            if (!file_exists($tempDir)) {
-                mkdir($tempDir, 0755, true);
-            }
-            $content = $request->getContent();
-            file_put_contents($tempFile, $content);
-            return response('OK', 200);
-        }
-
-        if (!file_exists($tempFile)) {
-            $path = storage_path('app/templates/template_modul_ajar.docx');
-            if (!file_exists($path)) {
-                abort(404, 'Template dokumen tidak ditemukan.');
-            }
-            return response()->file($path, [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'Content-Disposition' => 'inline; filename="template_modul_ajar.docx"',
-            ]);
-        }
-
-        return response()->file($tempFile, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition' => 'inline; filename="modul-ajar.docx"',
-        ]);
-    }
-
-    public function onlyOfficeTempCallback(Request $request, string $tempKey, OnlyOfficeCallbackService $service)
-    {
-        $tempKey = preg_replace('/[^A-Za-z0-9_\-]/', '', $tempKey);
-        $tempPath = 'rencana_pembelajaran/docx/temp/' . $tempKey . '.docx';
-        $result = $service->handleTempCallback($request, $tempPath);
-        return response()->json($result);
     }
 
     public function downloadSavedDocument(string $id)
@@ -834,79 +741,6 @@ class RencanaPembelajaranController extends Controller
         }
 
         return response()->download($filePath, Str::slug($module['title'] ?? 'modul_ajar') . '.docx');
-    }
-
-    public function tryExportPdfViaOnlyOffice(RencanaPembelajaran $rencanaPembelajaran, string $serverUrl, ?string $jwtToken = null)
-    {
-        $documentUrl = URL::temporarySignedRoute('rencana_pembelajaran.document', ['id' => $rencanaPembelajaran->id], now()->addMinutes(30));
-
-        $payload = [
-            'async' => false,
-            'url' => $documentUrl,
-            'outputtype' => 'pdf',
-            'title' => $rencanaPembelajaran->judul ?? 'Rencana_Pembelajaran',
-        ];
-
-        $response = Http::withHeaders(array_filter([
-            'Authorization' => $jwtToken ? 'Bearer ' . $jwtToken : null,
-        ]))->post($serverUrl . '/ConvertService.ashx', $payload);
-
-        if ($response->successful() && !empty($response->json('fileUrl'))) {
-            $pdfResponse = Http::get($response->json('fileUrl'));
-            if ($pdfResponse->successful()) {
-                $filename = 'Rencana_Pembelajaran_' . Str::slug($rencanaPembelajaran->judul ?? 'rencana-pembelajaran') . '.pdf';
-                return response($pdfResponse->body(), 200)
-                    ->header('Content-Type', $pdfResponse->header('Content-Type') ?: 'application/pdf')
-                    ->header('Content-Disposition', 'inline; filename="' . $filename . '"');
-            }
-        }
-
-        return response()->json(['error' => 'Unable to convert document'], 500);
-    }
-
-    private function generateOnlyOfficeJwtToken(array $payload = []): ?string
-    {
-        $secret = $this->getOnlyOfficeSecret();
-        if (empty($secret)) {
-            return null;
-        }
-
-        $header = ['alg' => 'HS256', 'typ' => 'JWT'];
-        $payload = array_merge([
-            'iat' => time(),
-            'exp' => time() + 3600,
-            'iss' => config('app.url'),
-            'user' => [
-                'id' => Auth::id() ?? 'guest',
-                'name' => Auth::user()?->name ?? 'Guest',
-            ],
-        ], $payload);
-
-        $segments = [
-            $this->jwtBase64UrlEncode(json_encode($header, JSON_UNESCAPED_SLASHES)),
-            $this->jwtBase64UrlEncode(json_encode($payload, JSON_UNESCAPED_SLASHES)),
-        ];
-
-        $signature = hash_hmac('sha256', implode('.', $segments), $secret, true);
-        $segments[] = $this->jwtBase64UrlEncode($signature);
-
-        return implode('.', $segments);
-    }
-
-    private function jwtBase64UrlEncode(string $value): string
-    {
-        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
-    }
-
-    private function getOnlyOfficeSecret(): ?string
-    {
-        $settings = new SettingsManager();
-        $secret = $settings->get('onlyoffice.server_secret', null);
-        if (! empty($secret)) {
-            return $secret;
-        }
-
-        return config('services.onlyoffice.onlyoffice_secret', env('ONLYOFFICE_SECRET'));
     }
 
     private function loadMataPelajaranAndKelas(): array

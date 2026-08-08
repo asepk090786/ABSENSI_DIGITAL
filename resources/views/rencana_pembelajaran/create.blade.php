@@ -20,13 +20,12 @@
     <aside class="form-panel" style="background:#f5f6f8;border-right:1px solid #c8cbd0;overflow-y:auto;padding:22px 20px 40px;" aria-label="Form editor RPP">
       <div style="border-bottom:1px solid #cbd2da;padding-bottom:15px;margin-bottom:18px;">
         <h1 style="margin:0 0 4px;font-size:18px;font-weight:700;color:#185abd;">Buat Rencana Pembelajaran</h1>
-        <p style="margin:0;font-size:12px;color:#68717d;">Isi formulir di sebelah kiri, lalu edit dokumen RPP di sebelah kanan menggunakan OnlyOffice.</p>
+        <p style="margin:0;font-size:12px;color:#68717d;">Isi formulir di bawah untuk menyimpan data rencana pembelajaran.</p>
       </div>
 
       <form action="{{ route('rencana_pembelajaran.store') }}" method="POST" id="rpp-form">
         @csrf
         <input type="hidden" name="mata_pelajaran_id" value="{{ $mataPelajaran->id }}">
-        <input type="hidden" name="temp_key" value="{{ $tempKey ?? '' }}">
         <div id="hidden-kelas-inputs"></div>
         <div id="selected-kelas-tags" class="mb-3"></div>
 
@@ -108,49 +107,10 @@
       </form>
     </aside>
 
-    <section class="preview-panel" style="overflow:hidden;padding:0;background-color:#e4e5e7;display:flex;flex-direction:column;" aria-label="Editor OnlyOffice">
-      <div id="onlyoffice-preview-summary" style="background:#ffffff;border-bottom:1px solid #dce5f2;padding:16px 20px;">
-        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
-          <div style="min-width:160px;">
-            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Judul</div>
-            <div id="preview-field-judul" style="font-size:14px;color:#1f2937;">-</div>
-          </div>
-          <div style="min-width:160px;">
-            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Fase</div>
-            <div id="preview-field-fase" style="font-size:14px;color:#1f2937;">-</div>
-          </div>
-          <div style="min-width:160px;">
-            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Kelas</div>
-            <div id="preview-field-kelas" style="font-size:14px;color:#1f2937;">-</div>
-          </div>
-          <div style="min-width:160px;">
-            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Status</div>
-            <div id="preview-field-status" style="font-size:14px;color:#1f2937;">-</div>
-          </div>
-          <div style="min-width:160px;">
-            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Pengguna Aktif</div>
-            <div id="preview-field-active_users" style="font-size:14px;color:#1f2937;">-</div>
-          </div>
-          <div style="min-width:160px;">
-            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Alokasi Waktu</div>
-            <div id="preview-field-alokasi_waktu" style="font-size:14px;color:#1f2937;">-</div>
-          </div>
-        </div>
-        <div style="margin-top:16px;">
-          <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Komponen Penilaian</div>
-          <div id="preview-field-komponen_nilai" style="font-size:14px;color:#1f2937;min-height:1.4rem;">-</div>
-        </div>
-      </div>
-      <div style="flex:1;position:relative;min-height:calc(100vh - 240px);max-height:calc(100vh - 240px);">
-<x-onlyoffice
-    :file-url="$templateUrl"
-    :callback-url="$callbackUrl"
-    file-type="docx"
-    :title="'Rencana Pembelajaran - ' . $mataPelajaran->nama_mapel"
-    :readonly="false"
-    :token="$onlyOfficeJwtToken"
-    container-id="onlyoffice-editor-container"
-/>
+    <section class="preview-panel" style="overflow:hidden;padding:0;background-color:#e4e5e7;display:flex;flex-direction:column;" aria-label="Editor Terbatas">
+      <div class="alert alert-secondary m-4">
+        <h5 class="mb-2">Editor eksternal dinonaktifkan</h5>
+        <p class="mb-0">Gunakan formulir di sebelah kiri untuk mengisi dan menyimpan data rencana pembelajaran.</p>
       </div>
     </section>
   </main>
@@ -354,7 +314,6 @@ document.addEventListener('DOMContentLoaded', function () {
   renderTags();
   syncHiddenInputs();
   syncPreviewFields();
-  bindOnlyOfficeSync();
 });
 
 function syncPreviewFields() {
@@ -401,62 +360,6 @@ function syncPreviewFields() {
   });
 
   updatePreview();
-}
-
-function bindOnlyOfficeSync() {
-  const titleInput = document.getElementById('input-title');
-  const durationInput = document.getElementById('input-duration');
-  const statusSelect = document.querySelector('select[name="status"]');
-  const faseSelector = document.getElementById('fase-selector');
-
-  let syncTimer = null;
-  const scheduleSync = () => {
-    if (syncTimer) clearTimeout(syncTimer);
-    syncTimer = setTimeout(syncToOnlyOffice, 400);
-  };
-
-  const syncToOnlyOffice = () => {
-    const editor = window.onlyOfficeEditor;
-    if (!editor) return;
-
-    const title = titleInput?.value || '';
-    const duration = durationInput?.value || '';
-    const status = statusSelect?.value || '';
-    const fase = faseSelector?.value || '';
-
-    try {
-      if (typeof editor.setDocumentTitle === 'function') {
-        editor.setDocumentTitle(title || 'Rencana Pembelajaran');
-      }
-    } catch (e) {
-      console.warn('Gagal update judul OnlyOffice:', e);
-    }
-
-    try {
-      if (typeof editor.serviceCommand === 'function') {
-        editor.serviceCommand('info', {
-          key: 'rpp-meta',
-          userdata: JSON.stringify({
-            title,
-            fase,
-            status,
-            alokasi_waktu: duration,
-          }),
-        });
-      }
-    } catch (e) {
-      console.warn('Gagal kirim metadata OnlyOffice:', e);
-    }
-  };
-
-  titleInput?.addEventListener('input', scheduleSync);
-  durationInput?.addEventListener('input', scheduleSync);
-  statusSelect?.addEventListener('change', scheduleSync);
-  faseSelector?.addEventListener('change', scheduleSync);
-
-  document.addEventListener('onlyoffice:ready', () => {
-    syncToOnlyOffice();
-  });
 }
 </script>
 @endpush

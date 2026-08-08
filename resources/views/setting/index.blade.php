@@ -9,9 +9,6 @@
         <a href="{{ route('setting.backup') }}" class="btn btn-outline-secondary">
             <i class="ti ti-database me-1"></i> Backup Database
         </a>
-        <a href="{{ route('setting.onlyoffice') }}" class="btn btn-outline-primary ms-2">
-            <i class="ti ti-file-text me-1"></i> Pengaturan OnlyOffice
-        </a>
     </div>
 
     <div class="row mt-4">

@@ -156,33 +156,6 @@ class SettingController extends Controller
         return redirect()->route('setting.menu')->with('success', 'Pengaturan menu disimpan.');
     }
 
-    public function onlyOffice()
-    {
-        $settings = new SettingsManager();
-
-        return view('setting.onlyoffice', [
-            'settings' => [
-                'server_url' => $settings->get('onlyoffice.server_url', env('ONLYOFFICE_SERVER_URL', 'http://127.0.0.1:8082')),
-                'server_secret' => $settings->get('onlyoffice.server_secret', ''),
-            ],
-        ]);
-    }
-
-    public function updateOnlyOffice(Request $request)
-    {
-        $validated = $request->validate([
-            'server_url' => 'required|url',
-            'server_secret' => 'nullable|string|max:255',
-        ]);
-
-        $settings = new SettingsManager();
-        $settings->set('onlyoffice.server_url', rtrim($validated['server_url'], '/'));
-        $secret = trim($validated['server_secret'] ?? '');
-        $settings->set('onlyoffice.server_secret', $secret === '' ? null : $secret);
-
-        return redirect()->route('setting.onlyoffice')->with('success', 'Pengaturan OnlyOffice disimpan.');
-    }
-
     public function tahunAjaran()
     {
         $tahuns = TahunAjaran::all();

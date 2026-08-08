@@ -11,7 +11,6 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\RencanaPembelajaranController;
-use App\Http\Controllers\OnlyofficeProxyController;
 use App\Http\Controllers\JadwalKbmController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\KegiatanController;
@@ -32,30 +31,7 @@ Route::middleware('guest')->group(function () {
 // Note: public Help page removed temporarily. Admin editor remains under /help/admin
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
-Route::middleware(['web'])->group(function () {
-    Route::match(['get', 'post', 'put'], 'public/modul-ajar/temp/{tempKey}/document', [RencanaPembelajaranController::class, 'documentTemp'])
-        ->name('rencana_pembelajaran.document_temp');
-    Route::post('modul-ajar/temp/{tempKey}/onlyoffice-temp-callback', [RencanaPembelajaranController::class, 'onlyOfficeTempCallback'])
-        ->name('rencana_pembelajaran.onlyoffice_temp_callback');
-});
-
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
-
-Route::any('onlyoffice/{path?}', [OnlyofficeProxyController::class, 'proxy'])
-    ->where('path', '.*');
-
-// Collabora WOPI routes (public)
-Route::options('collabora/wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'options']);
-Route::options('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'options']);
-Route::options('collabora/wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'options']);
-Route::options('collabora/wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'options']);
-Route::options('collabora/wopi/files/{tempKey}/refreshlock', [App\Http\Controllers\CollaboraController::class, 'options']);
-Route::match(['get', 'post'], 'collabora/wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'handleFileRequest'])->name('collabora.check_file_info');
-Route::get('collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'getFile'])->name('collabora.get_file');
-Route::match(['post', 'put'], 'collabora/wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('collabora.put_file_contents');
-Route::post('collabora/wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'lock'])->name('collabora.lock');
-Route::post('collabora/wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'unlock'])->name('collabora.unlock');
-Route::post('collabora/wopi/files/{tempKey}/refreshlock', [App\Http\Controllers\CollaboraController::class, 'refreshLock'])->name('collabora.refresh_lock');
 
 // Wali Kelas routes
 Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(function () {
@@ -409,8 +385,6 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/setting/absensi', [SettingController::class, 'updateAbsensi'])->name('setting.absensi.update');
         Route::get('/setting/menu', [SettingController::class, 'menu'])->name('setting.menu');
         Route::post('/setting/menu', [SettingController::class, 'updateMenu'])->name('setting.menu.update');
-        Route::get('/setting/onlyoffice', [SettingController::class, 'onlyOffice'])->name('setting.onlyoffice');
-        Route::put('/setting/onlyoffice', [SettingController::class, 'updateOnlyOffice'])->name('setting.onlyoffice.update');
         Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
         // Database backup settings and actions
         Route::get('/setting/backup', [SettingController::class, 'backupIndex'])->name('setting.backup');
