@@ -103,22 +103,42 @@
                                         @endif
                                         </span>
                                     </td>
-                                    <td class="keterangan-{{ $abs->siswa->id }}">{{ $abs->keterangan ?? '-' }}</td>
+                                    <td class="keterangan-{{ $abs->siswa->id }}">
+                                        {{ $abs->keterangan ?? '-' }}
+                                        @php
+                                            $activeIzinForStudent = $activeIzinKegiatan->get($abs->siswa->id, collect());
+                                            $izinWithSurat = $activeIzinForStudent->first(fn($izin) => !empty($izin->surat_tugas));
+                                        @endphp
+                                        @if($izinWithSurat)
+                                            <br><a href="{{ asset('storage/' . $izinWithSurat->surat_tugas) }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1"><i class="ti ti-file-text me-1"></i>Lihat Surat</a>
+                                        @endif
+                                    </td>
                                     <td>
+                                        @php
+                                            $hasActiveDispensasi = false;
+                                            $activeIzinForStudent = $activeIzinKegiatan->get($abs->siswa->id, collect());
+                                            if ($activeIzinForStudent->isNotEmpty()) {
+                                                $hasActiveDispensasi = $activeIzinForStudent->contains(fn($izin) => $izin->jenis_kegiatan === 'dispensasi');
+                                            }
+                                        @endphp
                                         @if(auth()->user()->guru_id)
                                             @if(($isGuruPiket ?? false) || auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
-                                                <form method="POST" action="{{ route('absensi.siswa.update_status', ['absensi' => $absensi->id, 'siswa' => $abs->siswa->id]) }}" class="d-flex gap-2 align-items-center ajax-update-absensi" data-siswa-id="{{ $abs->siswa->id }}">
-                                                    @csrf
-                                                    <select name="status" class="form-select form-select-sm">
-                                                        <option value="hadir" {{ strtolower($abs->status) === 'hadir' ? 'selected' : '' }}>Hadir</option>
-                                                        <option value="terlambat" {{ in_array(strtolower($abs->status), ['terlambat','telat']) ? 'selected' : '' }}>Terlambat</option>
-                                                        <option value="sakit" {{ strtolower($abs->status) === 'sakit' ? 'selected' : '' }}>Sakit</option>
-                                                        <option value="izin" {{ in_array(strtolower($abs->status), ['izin','ijin']) ? 'selected' : '' }}>Izin</option>
-                                                        <option value="alpa" {{ in_array(strtolower($abs->status), ['alpa','alpha','alfa','absen']) ? 'selected' : '' }}>Alpa</option>
-                                                    </select>
-                                                    <input type="text" name="keterangan" class="form-control form-control-sm" placeholder="Keterangan" value="{{ $abs->keterangan ?? '' }}">
-                                                    <button type="submit" class="btn btn-sm btn-primary btn-save">Simpan</button>
-                                                </form>
+                                                @if($hasActiveDispensasi && !auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
+                                                    <span class="text-muted">Terkunci</span>
+                                                @else
+                                                    <form method="POST" action="{{ route('absensi.siswa.update_status', ['absensi' => $absensi->id, 'siswa' => $abs->siswa->id]) }}" class="d-flex gap-2 align-items-center ajax-update-absensi" data-siswa-id="{{ $abs->siswa->id }}">
+                                                        @csrf
+                                                        <select name="status" class="form-select form-select-sm">
+                                                            <option value="hadir" {{ strtolower($abs->status) === 'hadir' ? 'selected' : '' }}>Hadir</option>
+                                                            <option value="terlambat" {{ in_array(strtolower($abs->status), ['terlambat','telat']) ? 'selected' : '' }}>Terlambat</option>
+                                                            <option value="sakit" {{ strtolower($abs->status) === 'sakit' ? 'selected' : '' }}>Sakit</option>
+                                                            <option value="izin" {{ in_array(strtolower($abs->status), ['izin','ijin']) ? 'selected' : '' }}>Izin</option>
+                                                            <option value="alpa" {{ in_array(strtolower($abs->status), ['alpa','alpha','alfa','absen']) ? 'selected' : '' }}>Alpa</option>
+                                                        </select>
+                                                        <input type="text" name="keterangan" class="form-control form-control-sm" placeholder="Keterangan" value="{{ $abs->keterangan ?? '' }}">
+                                                        <button type="submit" class="btn btn-sm btn-primary btn-save">Simpan</button>
+                                                    </form>
+                                                @endif
                                             @else
                                                 <button
                                                     type="button"

@@ -22,9 +22,10 @@ class KomponenNilaiController extends Controller
     private function scopedCapaianQuery()
     {
         $query = CapaianPembelajaran::query();
+        $user = auth()->user();
 
-        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
-            $query->where('user_id', auth()->id());
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id)) {
+            $query->where('user_id', $user->id);
         }
 
         return $query;
@@ -33,10 +34,14 @@ class KomponenNilaiController extends Controller
     private function scopedKomponenQuery()
     {
         $query = KomponenNilai::query();
+        $user = auth()->user();
 
-        if ($this->isTeacherUser()) {
-            $query->whereHas('capaianPembelajaran', function ($subQuery) {
-                $subQuery->where('user_id', auth()->id());
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id)) {
+            $query->where(function ($q) use ($user) {
+                $q->whereNull('capaian_pembelajaran_id')
+                  ->orWhereHas('capaianPembelajaran', function ($q2) use ($user) {
+                      $q2->where('user_id', $user->id);
+                  });
             });
         }
 

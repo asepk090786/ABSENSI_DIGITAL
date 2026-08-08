@@ -108,6 +108,12 @@
                             </thead>
                             <tbody>
                             @forelse($siswa as $index => $s)
+                                @php
+                                    $izinAktif = $activeIzinKegiatan->get($s->siswa_id);
+                                    $lockedByIzin = (bool) $izinAktif;
+                                    $existingStatus = $lockedByIzin ? 'hadir' : ($existingAbsensi->get($s->siswa_id)->status ?? 'hadir');
+                                    $existingKeterangan = $existingAbsensi->get($s->siswa_id)->keterangan ?? '';
+                                @endphp
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>
@@ -119,7 +125,7 @@
                                         <img src="{{ $fotoUrl }}" alt="" class="rounded-circle" style="width:36px;height:36px;object-fit:cover;">
                                         @else
                                         <span class="avatar avatar-xs rounded-circle" style="width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:#e9ecef;font-weight:600;font-size:0.8rem;color:#6c757d;">
-                                            {{ substr($s->siswa->nama ?? '?', 0, 1) }}
+                                            {{ substr($s->siswa->nama ?? '?', 0, 1) }
                                         </span>
                                         @endif
                                     </td>
@@ -127,21 +133,27 @@
                                     <td>{{ $s->siswa->nama ?? '-' }}</td>
                                     <td>{{ $s->siswa->kelas->nama_kelas ?? '-' }}</td>
                                     <td>
-                                        @php $existingStatus = $existingAbsensi->get($s->siswa_id)->status ?? 'hadir'; @endphp
                                         <select name="absensi[{{ $index }}][siswa_id]" hidden>
                                             <option value="{{ $s->siswa_id }}" selected></option>
                                         </select>
-                                        <select name="absensi[{{ $index }}][status]" class="form-select form-select-sm status-select">
+                                        <select name="absensi[{{ $index }}][status]" class="form-select form-select-sm status-select" {{ $lockedByIzin ? 'disabled' : '' }}>
                                             <option value="hadir" {{ $existingStatus === 'hadir' ? 'selected' : '' }}>Hadir</option>
                                             <option value="izin" {{ $existingStatus === 'izin' ? 'selected' : '' }}>Izin</option>
                                             <option value="sakit" {{ $existingStatus === 'sakit' ? 'selected' : '' }}>Sakit</option>
                                             <option value="alpa" {{ $existingStatus === 'alpa' ? 'selected' : '' }}>Alpa</option>
                                             <option value="tanpa_keterangan" {{ $existingStatus === 'tanpa_keterangan' ? 'selected' : '' }}>Tanpa Keterangan</option>
                                         </select>
+                                        @if($lockedByIzin)
+                                            <input type="hidden" name="absensi[{{ $index }}][status]" value="hadir">
+                                            <div class="form-text mt-1"><span class="badge bg-info">Izin Kegiatan</span></div>
+                                        @endif
                                     </td>
                                     <td>
                                         <input type="text" name="absensi[{{ $index }}][keterangan]" class="form-control form-control-sm"
-                                               value="{{ $existingAbsensi->get($s->siswa_id)->keterangan ?? '' }}" maxlength="200">
+                                               value="{{ $lockedByIzin ? ($izinAktif->keterangan_kegiatan ?? '') : $existingKeterangan }}" maxlength="200" {{ $lockedByIzin ? 'readonly' : '' }}>
+                                        @if($lockedByIzin)
+                                            <input type="hidden" name="absensi[{{ $index }}][keterangan]" value="{{ $izinAktif->keterangan_kegiatan ?? '' }}">
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -155,9 +167,10 @@
                     <div id="gridView" class="grid-container" style="display:none;">
                         @forelse($siswa as $index => $s)
                             @php
-                                $foto = $s->siswa->user->foto ?? null;
-                                $fotoUrl = $foto ? (str_contains($foto, '://') ? $foto : asset('storage/' . $foto)) : null;
-                                $existingStatus = $existingAbsensi->get($s->siswa_id)->status ?? 'hadir';
+                                $izinAktif = $activeIzinKegiatan->get($s->siswa_id);
+                                $lockedByIzin = (bool) $izinAktif;
+                                $existingStatus = $lockedByIzin ? 'hadir' : ($existingAbsensi->get($s->siswa_id)->status ?? 'hadir');
+                                $existingKeterangan = $existingAbsensi->get($s->siswa_id)->keterangan ?? '';
                             @endphp
                             <div class="grid-card">
                                 @if($fotoUrl)
@@ -173,15 +186,21 @@
                                 <select name="absensi[{{ $index }}][siswa_id]" hidden>
                                     <option value="{{ $s->siswa_id }}" selected></option>
                                 </select>
-                                <select name="absensi[{{ $index }}][status]" class="form-select form-select-sm status-select mb-1">
+                                <select name="absensi[{{ $index }}][status]" class="form-select form-select-sm status-select mb-1" {{ $lockedByIzin ? 'disabled' : '' }}>
                                     <option value="hadir" {{ $existingStatus === 'hadir' ? 'selected' : '' }}>Hadir</option>
                                     <option value="izin" {{ $existingStatus === 'izin' ? 'selected' : '' }}>Izin</option>
                                     <option value="sakit" {{ $existingStatus === 'sakit' ? 'selected' : '' }}>Sakit</option>
                                     <option value="alpa" {{ $existingStatus === 'alpa' ? 'selected' : '' }}>Alpa</option>
                                     <option value="tanpa_keterangan" {{ $existingStatus === 'tanpa_keterangan' ? 'selected' : '' }}>Tanpa Keterangan</option>
                                 </select>
+                                @if($lockedByIzin)
+                                    <input type="hidden" name="absensi[{{ $index }}][status]" value="hadir">
+                                @endif
                                 <input type="text" name="absensi[{{ $index }}][keterangan]" class="form-control form-control-sm"
-                                       value="{{ $existingAbsensi->get($s->siswa_id)->keterangan ?? '' }}" maxlength="200" placeholder="Catatan">
+                                       value="{{ $lockedByIzin ? ($izinAktif->keterangan_kegiatan ?? '') : $existingKeterangan }}" maxlength="200" placeholder="Catatan" {{ $lockedByIzin ? 'readonly' : '' }}>
+                                @if($lockedByIzin)
+                                    <input type="hidden" name="absensi[{{ $index }}][keterangan]" value="{{ $izinAktif->keterangan_kegiatan ?? '' }}">
+                                @endif
                             </div>
                         @empty
                             <div class="col-12 text-center text-muted py-4">Belum ada anggota yang diterima.</div>

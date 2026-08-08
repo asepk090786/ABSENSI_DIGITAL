@@ -13,6 +13,7 @@ use App\Models\JamBelajar;
 use App\Models\Siswa;
 use App\Models\AbsensiSiswa;
 use App\Models\AbsensiGuru;
+use App\Models\IzinKegiatan;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\JadwalKbm;
@@ -1875,6 +1876,14 @@ class AbsensiController extends Controller
         $absensiSiswa = $request->input('absensi_siswa', []);
         $keteranganSiswa = $request->input('keterangan_siswa', []);
 
+        $activeIzinKegiatan = IzinKegiatan::query()
+            ->where('kelas_id', $validated['kelas_id'])
+            ->where('is_active', true)
+            ->whereDate('tanggal_mulai', '<=', $validated['tanggal'])
+            ->whereDate('tanggal_selesai', '>=', $validated['tanggal'])
+            ->get()
+            ->keyBy('siswa_id');
+
         if ($this->isFutureDate($validated['tanggal'])) {
             return back()->withInput()->withErrors(['tanggal' => 'Tanggal absensi tidak boleh lebih dari hari ini.']);
         }
@@ -2144,13 +2153,17 @@ class AbsensiController extends Controller
                 }
 
                 foreach ($absensiSiswa as $siswaId => $status) {
+                    $izin = $activeIzinKegiatan->get($siswaId);
+                    if ($izin) {
+                        $status = 'hadir';
+                    }
                     $normalizedStatus = $this->normalizeAttendanceStatus($status);
                     if (!empty($normalizedStatus)) {
                         AbsensiSiswa::create([
                             'absensi_kelas_id' => $absensi->id,
                             'siswa_id' => $siswaId,
                             'status' => $normalizedStatus,
-                            'keterangan' => $keteranganSiswa[$siswaId] ?? null,
+                            'keterangan' => $izin ? ($izin->keterangan_kegiatan ?? null) : ($keteranganSiswa[$siswaId] ?? null),
                         ]);
                         $savedAbsensiSiswaCount++;
                     }
@@ -2226,7 +2239,16 @@ class AbsensiController extends Controller
             $isGuruPiket = in_array($todayIndo, $hariPiketArr, true);
         }
 
-        return view('absensi.show', compact('absensi', 'isGuruPiket'));
+        $activeIzinKegiatan = IzinKegiatan::query()
+            ->with('siswa')
+            ->where('kelas_id', $absensi->kelas_id)
+            ->where('is_active', true)
+            ->whereDate('tanggal_mulai', '<=', $absensi->tanggal)
+            ->whereDate('tanggal_selesai', '>=', $absensi->tanggal)
+            ->get()
+            ->groupBy('siswa_id');
+
+        return view('absensi.show', compact('absensi', 'isGuruPiket', 'activeIzinKegiatan'));
     }
 
     private function canEditPastAttendance($user): bool
@@ -2308,6 +2330,92 @@ class AbsensiController extends Controller
         return Carbon::parse($date)->startOfDay()->lt(Carbon::today());
     }
 
+    public function storeIzinKegiatan(Request $request, $absensiId)
+    {
+        $user = auth()->user();
+        if (! $user || empty($user->guru_id)) {
+            abort(403, 'Akses ditolak. Hanya guru yang dapat membuat izin kegiatan.');
+        }
+
+        $absensi = AbsensiKelas::findOrFail($absensiId);
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array',
+            'siswa_ids.*' => 'exists:siswa,id',
+            'jenis_kegiatan' => 'required|string|in:internal,external,dispensasi,keterangan',
+            'keterangan_kegiatan' => 'nullable|string|max:255',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+        ]);
+
+        $siswaIds = collect($validated['siswa_ids'])->filter(fn ($id) => (int) $id > 0)->all();
+        $students = Siswa::whereIn('id', $siswaIds)->where('kelas_id', $absensi->kelas_id)->get();
+
+        if ($students->count() !== count($siswaIds)) {
+            return redirect()->back()->withErrors(['error' => 'Beberapa siswa tidak ditemukan di kelas absensi ini.']);
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($students as $siswa) {
+                IzinKegiatan::updateOrCreate(
+                    [
+                        'kelas_id' => $absensi->kelas_id,
+                        'siswa_id' => $siswa->id,
+                        'tanggal_mulai' => Carbon::parse($validated['tanggal_mulai'])->toDateString(),
+                        'tanggal_selesai' => Carbon::parse($validated['tanggal_selesai'])->toDateString(),
+                    ],
+                    [
+                        'jenis_kegiatan' => $validated['jenis_kegiatan'],
+                        'keterangan_kegiatan' => $validated['keterangan_kegiatan'],
+                        'is_active' => true,
+                        'created_by' => $user->id,
+                    ]
+                );
+
+                $startDate = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
+                $endDate = Carbon::parse($validated['tanggal_selesai'])->startOfDay();
+                $loopDate = $startDate->copy();
+
+                while ($loopDate->lte($endDate)) {
+                    $attendanceRecords = AbsensiKelas::query()
+                        ->where('kelas_id', $absensi->kelas_id)
+                        ->whereDate('tanggal', $loopDate->toDateString())
+                        ->get();
+
+                    foreach ($attendanceRecords as $attendanceRecordItem) {
+                        $attendanceRecord = AbsensiSiswa::where('absensi_kelas_id', $attendanceRecordItem->id)
+                            ->where('siswa_id', $siswa->id)
+                            ->first();
+
+                        $payload = [
+                            'status' => 'hadir',
+                            'keterangan' => $validated['keterangan_kegiatan'] ?? ($validated['jenis_kegiatan'] === 'dispensasi' ? 'Dispensasi kegiatan' : 'Izin kegiatan'),
+                            'updated_by' => $user->id,
+                        ];
+
+                        if ($attendanceRecord) {
+                            $attendanceRecord->update($payload);
+                        } else {
+                            AbsensiSiswa::create(array_merge($payload, [
+                                'absensi_kelas_id' => $attendanceRecordItem->id,
+                                'siswa_id' => $siswa->id,
+                            ]));
+                        }
+                    }
+
+                    $loopDate->addDay();
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('absensi.show', $absensi->id)
+                ->with('success', 'Izin kegiatan berhasil disimpan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Gagal menyimpan izin kegiatan: ' . $e->getMessage()]);
+        }
+    }
+
     public function updateSiswaStatus(Request $request, $absensiId, $siswaId)
     {
         $user = auth()->user();
@@ -2336,6 +2444,18 @@ class AbsensiController extends Controller
         $absensi = AbsensiKelas::findOrFail($absensiId);
         if (! $this->canModifyStudentAttendanceStatus($user, $absensi->tanggal, $isGuruPiket)) {
             abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengubah status absensi ini.');
+        }
+
+        $hasActiveIzinKegiatan = IzinKegiatan::query()
+            ->where('kelas_id', $absensi->kelas_id)
+            ->where('siswa_id', $siswaId)
+            ->where('is_active', true)
+            ->whereDate('tanggal_mulai', '<=', $absensi->tanggal)
+            ->whereDate('tanggal_selesai', '>=', $absensi->tanggal)
+            ->exists();
+
+        if ($hasActiveIzinKegiatan && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403, 'Status siswa ini dikunci karena sedang dalam masa izin kegiatan.');
         }
 
         $validated = $request->validate([
@@ -2750,10 +2870,29 @@ class AbsensiController extends Controller
                 }
             }
 
+            $activeIzinList = [];
+            if ($tanggal) {
+                $activeIzinList = IzinKegiatan::where('kelas_id', $kelasId)
+                    ->where('is_active', true)
+                    ->whereDate('tanggal_mulai', '<=', $tanggal)
+                    ->whereDate('tanggal_selesai', '>=', $tanggal)
+                    ->get()
+                    ->keyBy('siswa_id');
+            }
+
             return response()->json([
                 'siswa' => $siswa,
                 'count' => $siswa->count(),
                 'existing_absensi' => $existing,
+                'active_izin_kegiatan' => $activeIzinList->map(function ($izin) {
+                    return [
+                        'id' => $izin->id,
+                        'jenis_kegiatan' => $izin->jenis_kegiatan,
+                        'keterangan_kegiatan' => $izin->keterangan_kegiatan,
+                        'tanggal_mulai' => $izin->tanggal_mulai,
+                        'tanggal_selesai' => $izin->tanggal_selesai,
+                    ];
+                }),
             ]);
         } catch (\Exception $e) {
             return response()->json([

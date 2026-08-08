@@ -2,451 +2,535 @@
 
 @section('title', 'Tambah Rencana Pembelajaran')
 
-@section('content')
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header border-0 pt-3 pb-2">
-                <h4 class="card-title">Tambah Rencana Pembelajaran</h4>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('rencana_pembelajaran.store') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="mata_pelajaran_id" value="{{ $mataPelajaran->id }}">
-
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <h5 class="mb-2">1. Informasi Umum</h5>
-                            <div class="mb-2">
-                                <label class="form-label">Mata Pelajaran</label>
-                                <input type="text" class="form-control" value="{{ $mataPelajaran->nama_mapel }}" disabled>
-                            </div>
-                            <div class="mb-2 @error('kelas_ids') is-invalid @enderror">
-                                <label class="form-label">Kelas <span class="text-danger">*</span></label>
-                                @forelse($kelas as $k)
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="kelas_ids[]" value="{{ $k->id }}" id="kelas_{{ $k->id }}" {{ in_array($k->id, old('kelas_ids', [])) ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="kelas_{{ $k->id }}">{{ $k->nama_kelas }}</label>
-                                    </div>
-                                @empty
-                                    <div class="alert alert-info alert-sm mb-0">
-                                        <i class="ti ti-info-circle me-2"></i>Belum ada kelas untuk mata pelajaran ini
-                                    </div>
-                                @endforelse
-                                @error('kelas_ids')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Judul <span class="text-danger">*</span></label>
-                                <input type="text" name="judul" class="form-control @error('judul') is-invalid @enderror" value="{{ old('judul') }}" required>
-                                @error('judul')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="card card-body p-3 border-0 shadow-sm">
-                                <h5 class="mb-2">2. Editor RPP (Pratinjau Interaktif)</h5>
-                                <div class="form-text text-muted mb-3">Gunakan form di kiri untuk mengisi RPP, pratinjau akan diperbarui otomatis.</div>
-
-                                <div id="rpp-interactive-root">
-                                    <!-- Inline adaptation of the provided UI. Keep existing kelas/komponen/status logic intact. -->
-                                    <div class="app-shell">
-                                        <main class="workspace" style="grid-template-columns: minmax(360px, .9fr) minmax(480px, 1.4fr);">
-                                            <aside class="form-panel">
-                                                <div id="rpp-mini-form">
-                                                    <section class="form-group">
-                                                        <h3>Informasi &amp; Metadata</h3>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Judul</label>
-                                                            <input id="input-title" name="judul" class="editor-input form-control" value="{{ old('judul') }}">
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Mata Pelajaran</label>
-                                                            <input id="input-subject" class="editor-input form-control" value="{{ $mataPelajaran->nama_mapel }}" disabled>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Alokasi Waktu</label>
-                                                            <input id="input-duration" name="alokasi_waktu" class="editor-input form-control" value="{{ old('alokasi_waktu') }}">
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Status</label>
-                                                            <select id="input-status" name="status" class="editor-input form-control">
-                                                                <option value="draft" {{ old('status') === 'draft' ? 'selected' : '' }}>Draft</option>
-                                                                <option value="published" {{ old('status') === 'published' ? 'selected' : '' }}>Published</option>
-                                                            </select>
-                                                        </div>
-                                                    </section>
-
-                                                    <section class="form-group">
-                                                        <h3>Isi RPP</h3>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Capaian Pembelajaran</label>
-                                                            <textarea id="input-achievement" name="capaian_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('capaian_pembelajaran') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Tujuan / Objektif</label>
-                                                            <textarea id="input-objectives" name="tujuan" class="editor-textarea form-control rich-editor">{{ old('tujuan') }}</textarea>
-                                                            <p class="helper">Pisahkan baris untuk setiap butir tujuan.</p>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Metode</label>
-                                                            <textarea id="input-methods" name="metode" class="editor-textarea form-control rich-editor">{{ old('metode') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Media</label>
-                                                            <textarea id="input-media" name="media" class="editor-textarea form-control rich-editor">{{ old('media') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Sumber / Referensi</label>
-                                                            <textarea id="input-resources" name="sumber" class="editor-textarea form-control rich-editor">{{ old('sumber') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Praktik Pedagogis</label>
-                                                            <textarea id="input-practice" name="praktik_pedagogis" class="editor-textarea form-control rich-editor">{{ old('praktik_pedagogis') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Lingkungan Pembelajaran</label>
-                                                            <textarea id="input-environment" name="lingkungan_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('lingkungan_pembelajaran') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Pemanfaatan Digital</label>
-                                                            <textarea id="input-digital" name="pemanfaatan_digital" class="editor-textarea form-control rich-editor">{{ old('pemanfaatan_digital') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Pengalaman Pembelajaran</label>
-                                                            <textarea id="input-experience" name="pengalaman_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('pengalaman_pembelajaran') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Refleksi Pembelajaran</label>
-                                                            <textarea id="input-reflection" name="refleksi_pembelajaran" class="editor-textarea form-control rich-editor">{{ old('refleksi_pembelajaran') }}</textarea>
-                                                        </div>
-                                                        <div class="field-row">
-                                                            <label class="field-label">Asesmen / Penilaian</label>
-                                                            <textarea id="input-assessment" name="penilaian" class="editor-textarea form-control rich-editor">{{ old('penilaian') }}</textarea>
-                                                        </div>
-                                                    </section>
-                                                </div>
-                                            </aside>
-
-                                            <section class="preview-panel">
-                                                <div class="format-toolbar">
-                                                    <select id="font-family" class="toolbar-select"><option value="Source Serif 4">Serif</option><option value="Libre Franklin">Sans-serif</option><option value="monospace">Monospace</option></select>
-                                                    <select id="font-size" class="toolbar-select"><option value="11">11</option><option value="12">12</option><option value="13" selected>13</option><option value="14">14</option></select>
-                                                    <div class="toolbar-divider"></div>
-                                                    <button id="btn-bold" class="toolbar-button" type="button"><strong>B</strong></button>
-                                                    <button id="btn-italic" class="toolbar-button" type="button"><em>I</em></button>
-                                                    <button id="btn-underline" class="toolbar-button" type="button"><u>U</u></button>
-                                                    <div class="toolbar-divider"></div>
-                                                    <select id="color-select" class="toolbar-select"><option value="#111827">Black</option><option value="#173b70">Dark Blue</option><option value="#185abd">Blue</option></select>
-                                                    <div class="toolbar-divider"></div>
-                                                    <button id="btn-reset-format" class="toolbar-button" type="button">Reset</button>
-                                                    <div style="flex:1"></div>
-                                                    <button id="print-button" class="btn btn-light btn-sm" type="button">Print</button>
-                                                </div>
-                                                <div class="preview-scroll">
-                                                    <article class="document-page">
-                                                        <h1 id="preview-title" class="doc-title"></h1>
-                                                        <table class="info-table"><tbody>
-                                                            <tr><th>Subjek</th><td id="preview-subject"></td></tr>
-                                                            <tr><th>Kelas</th><td id="preview-class"></td></tr>
-                                                            <tr><th>Status</th><td id="preview-status"></td></tr>
-                                                            <tr><th>Alokasi Waktu</th><td id="preview-duration"></td></tr>
-                                                        </tbody></table>
-                                                        <h2>Tujuan / Capaian</h2>
-                                                        <p id="preview-achievement" class="preview-text"></p>
-                                                        <h2>Tujuan Operasional</h2>
-                                                        <ul id="preview-objectives" class="preview-list"></ul>
-                                                        <h2>Metode</h2>
-                                                        <ul id="preview-methods" class="preview-list"></ul>
-                                                        <h2>Media &amp; Sumber</h2>
-                                                        <ul id="preview-media" class="preview-list"></ul>
-                                                        <h2>Praktik Pedagogis</h2>
-                                                        <p id="preview-practice" class="preview-text"></p>
-                                                        <h2>Lingkungan Pembelajaran</h2>
-                                                        <p id="preview-environment" class="preview-text"></p>
-                                                        <h2>Pemanfaatan Digital</h2>
-                                                        <p id="preview-digital" class="preview-text"></p>
-                                                        <h2>Pengalaman Pembelajaran</h2>
-                                                        <p id="preview-experience" class="preview-text"></p>
-                                                        <h2>Refleksi</h2>
-                                                        <p id="preview-reflection" class="preview-text"></p>
-                                                        <h2>Asesmen</h2>
-                                                        <p id="preview-assessment" class="preview-text"></p>
-                                                    </article>
-                                                </div>
-                                            </section>
-                                        </main>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">Komponen Penilaian</label>
-                            <div class="@error('komponen_nilai_ids') is-invalid @enderror">
-                                @forelse($komponenNilai as $komponen)
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="komponen_nilai_ids[]" value="{{ $komponen->id }}" id="komponen_{{ $komponen->id }}" {{ in_array($komponen->id, old('komponen_nilai_ids', [])) ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="komponen_{{ $komponen->id }}">
-                                            {{ $komponen->nama_komponen }}
-                                            @if($komponen->bobot)
-                                                <span class="text-muted">({{ $komponen->bobot }}%)</span>
-                                            @endif
-                                        </label>
-                                    </div>
-                                @empty
-                                    <div class="alert alert-info alert-sm mb-0">
-                                        <i class="ti ti-info-circle me-2"></i>Belum ada komponen penilaian
-                                    </div>
-                                @endforelse
-                            </div>
-                            @error('komponen_nilai_ids')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Status <span class="text-danger">*</span></label>
-                            <select name="status" class="form-select @error('status') is-invalid @enderror" required>
-                                <option value="draft" {{ old('status') === 'draft' ? 'selected' : '' }}>Draft</option>
-                                <option value="published" {{ old('status') === 'published' ? 'selected' : '' }}>Published</option>
-                            </select>
-                            @error('status')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="form-footer">
-                        <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-link">Batal</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ti ti-check me-1"></i>Simpan
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+@section('page-header')
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
+    <div>
+        <h1 class="page-title" style="margin:0;font-size:1.1rem;font-weight:700;color:#0f172a;">Rencana Pembelajaran</h1>
+        <p class="page-subtitle" style="margin:.35rem 0 0;color:#64748b;font-size:.95rem;">{{ $mataPelajaran->nama_mapel }} - Tingkat {{ $tingkat }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2" style="align-items:center;">
+        <span class="badge bg-secondary" style="font-size:.85rem;padding:.7rem .9rem;">RPP Baru</span>
     </div>
 </div>
+@endsection
+
+@section('content')
+<div class="rpp-editor-container">
+  <main class="rpp-editor-grid">
+    <aside class="form-panel" style="background:#f5f6f8;border-right:1px solid #c8cbd0;overflow-y:auto;padding:22px 20px 40px;" aria-label="Form editor RPP">
+      <div style="border-bottom:1px solid #cbd2da;padding-bottom:15px;margin-bottom:18px;">
+        <h1 style="margin:0 0 4px;font-size:18px;font-weight:700;color:#185abd;">Buat Rencana Pembelajaran</h1>
+        <p style="margin:0;font-size:12px;color:#68717d;">Isi formulir di sebelah kiri, lalu edit dokumen RPP di sebelah kanan menggunakan OnlyOffice.</p>
+      </div>
+
+      <form action="{{ route('rencana_pembelajaran.store') }}" method="POST" id="rpp-form">
+        @csrf
+        <input type="hidden" name="mata_pelajaran_id" value="{{ $mataPelajaran->id }}">
+        <input type="hidden" name="temp_key" value="{{ $tempKey ?? '' }}">
+        <div id="hidden-kelas-inputs"></div>
+        <div id="selected-kelas-tags" class="mb-3"></div>
+
+        <section class="form-card-section" style="background:#fff;border:1px solid #d6d9de;border-radius:5px;padding:15px;margin-bottom:13px;box-shadow:0 1px 2px rgba(24,36,50,.04);">
+          <h2 style="color:#185abd;border-bottom:1px solid #dce5f2;padding-bottom:8px;margin:0 0 12px;font-size:13px;font-weight:700;">Informasi Umum</h2>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;margin-bottom:5px;color:#3d4753;font-size:11px;font-weight:700;">Mata Pelajaran</label>
+            <input type="text" class="editor-input" value="{{ $mataPelajaran->nama_mapel }}" disabled style="width:100%;border:1px solid #b9c1cb;color:#202124;border-radius:3px;background:#f5f6f8;padding:8px 9px;font-size:12px;">
+          </div>
+          <div class="info-umum-row">
+            <div>
+              <label style="display:block;margin-bottom:5px;color:#3d4753;font-size:11px;font-weight:700;">Fase</label>
+              <select id="fase-selector" class="form-select" style="width:100%;border:1px solid #b9c1cb;color:#202124;border-radius:3px;background:#fff;padding:8px 9px;font-size:12px;">
+                @foreach($faseOptions as $value => $label)
+                  <option value="{{ $value }}" {{ $selectedFase == $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:5px;color:#3d4753;font-size:11px;font-weight:700;">Kelas</label>
+              <button type="button" id="btn-pilih-kelas-header" class="btn btn-outline-primary" style="width:100%;min-height:38px;"> <i class="ti ti-school me-1"></i><span id="label-pilih-kelas">Pilih Kelas...</span></button>
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;margin-bottom:5px;color:#3d4753;font-size:11px;font-weight:700;">Judul <span style="color:#dc2626;">*</span></label>
+            <input type="text" name="judul" id="input-title" class="editor-input" value="{{ old('judul') }}" required style="width:100%;border:1px solid #b9c1cb;color:#202124;border-radius:3px;background:#fff;padding:8px 9px;font-size:12px;">
+            @error('judul')
+              <div style="color:#dc2626;font-size:11px;margin-top:4px;">{{ $message }}</div>
+            @enderror
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;margin-bottom:5px;color:#3d4753;font-size:11px;font-weight:700;">Alokasi Waktu</label>
+            <input type="text" name="alokasi_waktu" id="input-duration" class="editor-input" value="{{ old('alokasi_waktu') }}" style="width:100%;border:1px solid #b9c1cb;color:#202124;border-radius:3px;background:#fff;padding:8px 9px;font-size:12px;">
+          </div>
+        </section>
+
+        <section class="form-card-section" style="background:#fff;border:1px solid #d6d9de;border-radius:5px;padding:15px;margin-bottom:13px;box-shadow:0 1px 2px rgba(24,36,50,.04);">
+          <h2 style="color:#185abd;border-bottom:1px solid #dce5f2;padding-bottom:8px;margin:0 0 12px;font-size:13px;font-weight:700;">Komponen Penilaian</h2>
+          <div>
+            @forelse($komponenNilai as $komponen)
+              <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" name="komponen_nilai_ids[]" value="{{ $komponen->id }}" id="komponen_{{ $komponen->id }}" {{ in_array($komponen->id, old('komponen_nilai_ids', [])) ? 'checked' : '' }} style="width:14px;height:14px;accent-color:#185abd;">
+                <label for="komponen_{{ $komponen->id }}" style="font-size:12px;color:#202124;cursor:pointer;">
+                  {{ $komponen->nama_komponen }}
+                  @if($komponen->bobot)
+                    <span style="color:#68717d;font-size:11px;">({{ $komponen->bobot }}%)</span>
+                  @endif
+                </label>
+              </div>
+            @empty
+              <div style="background:#eef6ff;border:1px solid #c5d9f5;border-radius:4px;padding:10px;font-size:12px;color:#185abd;">
+                <i class="ti ti-info-circle" style="margin-right:6px;"></i>Belum ada komponen penilaian
+              </div>
+            @endforelse
+          </div>
+          @error('komponen_nilai_ids')
+            <div style="color:#dc2626;font-size:11px;margin-top:4px;">{{ $message }}</div>
+          @enderror
+        </section>
+
+        <section class="form-card-section" style="background:#fff;border:1px solid #d6d9de;border-radius:5px;padding:15px;margin-bottom:13px;box-shadow:0 1px 2px rgba(24,36,50,.04);">
+          <h2 style="color:#185abd;border-bottom:1px solid #dce5f2;padding-bottom:8px;margin:0 0 12px;font-size:13px;font-weight:700;">Pengaturan</h2>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;margin-bottom:5px;color:#3d4753;font-size:11px;font-weight:700;">Status <span style="color:#dc2626;">*</span></label>
+            <select name="status" class="editor-input" required style="width:100%;border:1px solid #b9c1cb;color:#202124;border-radius:3px;background:#fff;padding:8px 9px;font-size:12px;">
+              <option value="draft" {{ old('status') === 'draft' ? 'selected' : '' }}>Draft</option>
+              <option value="published" {{ old('status') === 'published' ? 'selected' : '' }}>Published</option>
+            </select>
+            @error('status')
+              <div style="color:#dc2626;font-size:11px;margin-top:4px;">{{ $message }}</div>
+            @enderror
+          </div>
+        </section>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" style="color:#185abd;text-decoration:none;font-size:12px;font-weight:600;">Batal</a>
+          <button type="submit" style="background:#185abd;color:white;border:0;border-radius:4px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;">Simpan</button>
+        </div>
+      </form>
+    </aside>
+
+    <section class="preview-panel" style="overflow:hidden;padding:0;background-color:#e4e5e7;display:flex;flex-direction:column;" aria-label="Editor OnlyOffice">
+      <div id="onlyoffice-preview-summary" style="background:#ffffff;border-bottom:1px solid #dce5f2;padding:16px 20px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          <div style="min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Judul</div>
+            <div id="preview-field-judul" style="font-size:14px;color:#1f2937;">-</div>
+          </div>
+          <div style="min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Fase</div>
+            <div id="preview-field-fase" style="font-size:14px;color:#1f2937;">-</div>
+          </div>
+          <div style="min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Kelas</div>
+            <div id="preview-field-kelas" style="font-size:14px;color:#1f2937;">-</div>
+          </div>
+          <div style="min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Status</div>
+            <div id="preview-field-status" style="font-size:14px;color:#1f2937;">-</div>
+          </div>
+          <div style="min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Pengguna Aktif</div>
+            <div id="preview-field-active_users" style="font-size:14px;color:#1f2937;">-</div>
+          </div>
+          <div style="min-width:160px;">
+            <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Alokasi Waktu</div>
+            <div id="preview-field-alokasi_waktu" style="font-size:14px;color:#1f2937;">-</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <div style="font-size:11px;font-weight:700;color:#0f172a;letter-spacing:.03em;">Komponen Penilaian</div>
+          <div id="preview-field-komponen_nilai" style="font-size:14px;color:#1f2937;min-height:1.4rem;">-</div>
+        </div>
+      </div>
+      <div style="flex:1;position:relative;min-height:calc(100vh - 240px);max-height:calc(100vh - 240px);">
+<x-onlyoffice
+    :file-url="$templateUrl"
+    :callback-url="$callbackUrl"
+    file-type="docx"
+    :title="'Rencana Pembelajaran - ' . $mataPelajaran->nama_mapel"
+    :readonly="false"
+    :token="$onlyOfficeJwtToken"
+    container-id="onlyoffice-editor-container"
+/>
+      </div>
+    </section>
+  </main>
+</div>
+@endsection
+
+<div class="modal fade" id="modalPilihKelas" tabindex="-1" aria-labelledby="modalPilihKelasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPilihKelasLabel">Pilih Kelas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <input type="text" class="form-control" id="search-kelas" placeholder="Cari kelas...">
+        </div>
+        <div class="list-group list-group-flush" id="daftar-kelas" style="max-height: 50vh; overflow-y: auto;">
+          @php
+            $faseMap = [
+                'I' => 'A', 'II' => 'A',
+                'III' => 'B', 'IV' => 'B',
+                'V' => 'C', 'VI' => 'C',
+                'VII' => 'D', 'VIII' => 'D', 'IX' => 'D',
+                'X' => 'E',
+                'XI' => 'F', 'XII' => 'F',
+            ];
+          @endphp
+          @foreach($kelas as $k)
+            @php $fase = $faseMap[$k->tingkat_kelas] ?? ''; @endphp
+            <label class="list-group-item list-group-item-action d-flex align-items-center gap-2" data-nama="{{ strtolower($k->nama_kelas) }}" data-fase="{{ $fase }}">
+              <input class="form-check-input m-0 kelas-checkbox" type="checkbox" name="kelas_ids[]" value="{{ $k->id }}">
+              <span>{{ $k->nama_kelas }}</span>
+            </label>
+          @endforeach
+        </div>
+        @if($kelas->isEmpty())
+          <div class="alert alert-info mb-0">
+            <i class="ti ti-info-circle me-2"></i>Belum ada kelas untuk mata pelajaran ini
+          </div>
+        @endif
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-primary" id="btn-pilih-kelas-ok">Pilih</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 @push('js')
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6.7.0/tinymce.min.js" integrity="" referrerpolicy="origin"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // initial data from server (use old values when present)
-    const initialData = {
-        title: @json(old('judul', '')),
-        subject: @json($mataPelajaran->nama_mapel),
-        duration: @json(old('alokasi_waktu', '')),
-        status: @json(old('status', 'draft')),
-        achievement: @json(old('capaian_pembelajaran', '')),
-        objectives: @json(old('tujuan', '')),
-        methods: @json(old('metode', '')),
-        media: @json(old('media', '')),
-        resources: @json(old('sumber', '')),
-        practice: @json(old('praktik_pedagogis', '')),
-        environment: @json(old('lingkungan_pembelajaran', '')),
-        digital: @json(old('pemanfaatan_digital', '')),
-        experience: @json(old('pengalaman_pembelajaran', '')),
-        reflection: @json(old('refleksi_pembelajaran', '')),
-        assessment: @json(old('penilaian', '')),
-    };
+  const btnPilihHeader = document.getElementById('btn-pilih-kelas-header');
+  const btnPilihForm = document.getElementById('btn-pilih-kelas');
+  const modalEl = document.getElementById('modalPilihKelas');
+  const searchInput = document.getElementById('search-kelas');
+  const daftarKelas = document.getElementById('daftar-kelas');
+  const btnOk = document.getElementById('btn-pilih-kelas-ok');
+  const labelPilihHeader = document.getElementById('label-pilih-kelas');
+  const labelPilihForm = document.getElementById('label-pilih-kelas-form') || labelPilihHeader;
+  const tagsContainer = document.getElementById('selected-kelas-tags');
+  const faseSelector = document.getElementById('fase-selector');
+  const oldChecked = {!! json_encode(old('kelas_ids', [])) !!};
 
-    const formatState = { fontFamily: 'Source Serif 4', fontSize: '13', bold: false, italic: false, underline: false, color: '#111827' };
-    const listFields = ['objectives','methods','media','resources'];
-        const richFields = ['achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment'];
+  function initCheckboxes() {
+    const checkboxes = daftarKelas.querySelectorAll('.kelas-checkbox');
+    checkboxes.forEach(cb => {
+      const id = cb.value;
+      const label = cb.closest('label');
+      const checked = oldChecked.includes(id) || oldChecked.includes(parseInt(id, 10));
+      cb.checked = checked;
+      label.dataset.selected = checked ? '1' : '0';
+    });
+  }
 
-    function applyFormattingToDocument() {
-        const docPage = document.querySelector('.document-page');
-        if (!docPage) return;
-        const elements = docPage.querySelectorAll('.preview-text, .preview-list, .info-table');
-        elements.forEach(el => {
-            el.style.fontFamily = formatState.fontFamily;
-            el.style.fontSize = formatState.fontSize + 'px';
-            el.style.fontWeight = formatState.bold ? '700' : '400';
-            el.style.fontStyle = formatState.italic ? 'italic' : 'normal';
-            el.style.textDecoration = formatState.underline ? 'underline' : 'none';
-            el.style.color = formatState.color;
-        });
+  let modalInstance = null;
+
+  function updateSelectedState() {
+    const checkboxes = daftarKelas.querySelectorAll('.kelas-checkbox');
+    checkboxes.forEach(cb => {
+      cb.checked = cb.closest('label').dataset.selected === '1';
+    });
+  }
+
+  function syncSelectedFromCheckboxes() {
+    const items = daftarKelas.querySelectorAll('label[data-nama]');
+    items.forEach(label => {
+      const cb = label.querySelector('.kelas-checkbox');
+      label.dataset.selected = cb.checked ? '1' : '0';
+    });
+  }
+
+  function syncHiddenInputs() {
+    const container = document.getElementById('hidden-kelas-inputs');
+    if (!container) return;
+    container.innerHTML = '';
+    const checkboxes = daftarKelas.querySelectorAll('.kelas-checkbox:checked');
+    checkboxes.forEach(cb => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'kelas_ids[]';
+      input.value = cb.value;
+      container.appendChild(input);
+    });
+  }
+
+  function renderTags() {
+    if (!tagsContainer) return;
+    tagsContainer.innerHTML = '';
+    const checkboxes = daftarKelas.querySelectorAll('.kelas-checkbox:checked');
+    checkboxes.forEach(cb => {
+      const id = cb.value;
+      const nama = cb.closest('label').querySelector('span').textContent.trim();
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-primary text-white d-inline-flex align-items-center gap-1';
+      badge.innerHTML = `${nama} <button type="button" class="btn btn-sm btn-link text-white p-0 ms-1 lh-1" data-hapus-kelas="${id}">&times;</button>`;
+      tagsContainer.appendChild(badge);
+    });
+
+    const count = tagsContainer.querySelectorAll('button[data-hapus-kelas]').length;
+    const text = count > 0 ? `${count} kelas dipilih` : 'Pilih kelas...';
+    labelPilihHeader.textContent = text;
+    if (labelPilihForm) {
+      labelPilihForm.textContent = text;
     }
 
-    function setList(target, value) {
-        target.replaceChildren();
-        value.split('\n').map(item => item.trim()).filter(Boolean).forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item.replace(/^[•\-\d.]+\s*/, '');
-            li.style.fontFamily = formatState.fontFamily;
-            li.style.fontSize = formatState.fontSize + 'px';
-            li.style.fontWeight = formatState.bold ? '700' : '400';
-            li.style.fontStyle = formatState.italic ? 'italic' : 'normal';
-            li.style.textDecoration = formatState.underline ? 'underline' : 'none';
-            li.style.color = formatState.color;
-            target.appendChild(li);
-        });
-    }
-
-    function updatePreview(field) {
-        const input = document.getElementById('input-' + field);
-        const preview = document.getElementById('preview-' + field);
-        if (!input || !preview) return;
-            // If field is a rich editor, render HTML
-            if (richFields.includes(field)) {
-                preview.innerHTML = input.value || '';
-                // Apply formatting styles to newly inserted elements
-                applyFormattingToDocument();
-                return;
-            }
-            if (listFields.includes(field)) {
-            setList(preview, input.value || '');
-        } else {
-            preview.textContent = input.value || '';
-            preview.style.fontFamily = formatState.fontFamily;
-            preview.style.fontSize = formatState.fontSize + 'px';
-            preview.style.fontWeight = formatState.bold ? '700' : '400';
-            preview.style.fontStyle = formatState.italic ? 'italic' : 'normal';
-            preview.style.textDecoration = formatState.underline ? 'underline' : 'none';
-            preview.style.color = formatState.color;
+    tagsContainer.querySelectorAll('button[data-hapus-kelas]').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.dataset.hapusKelas;
+        const cb = daftarKelas.querySelector(`.kelas-checkbox[value="${id}"]`);
+        if (cb) {
+          cb.checked = false;
+          cb.closest('label').dataset.selected = '0';
         }
-    }
+        renderTags();
+        syncHiddenInputs();
+      });
+    });
+  }
 
-    function populateForm() {
-        Object.keys(initialData).forEach(field => {
-            const el = document.getElementById('input-' + field);
-            if (el) el.value = initialData[field] || '';
-            updatePreview(field);
-        });
-        // Subject preview
-        const subjEl = document.getElementById('preview-subject');
-        if (subjEl) subjEl.textContent = initialData.subject || '';
-    }
+  function openModal() {
+    syncSelectedFromCheckboxes();
+    updateSelectedState();
+    renderTags();
+    syncHiddenInputs();
+    searchInput.value = '';
+    applyFilters();
+    modalInstance.show();
+  }
 
-    function updateToolbarButtons() {
-        document.getElementById('btn-bold').classList.toggle('active', formatState.bold);
-        document.getElementById('btn-bold').setAttribute('aria-pressed', String(formatState.bold));
-        document.getElementById('btn-italic').classList.toggle('active', formatState.italic);
-        document.getElementById('btn-italic').setAttribute('aria-pressed', String(formatState.italic));
-        document.getElementById('btn-underline').classList.toggle('active', formatState.underline);
-        document.getElementById('btn-underline').setAttribute('aria-pressed', String(formatState.underline));
-    }
+  function applyFilters() {
+    const keyword = (searchInput.value || '').toLowerCase();
+    const fase = faseSelector ? faseSelector.value : '';
+    const items = daftarKelas.querySelectorAll('label[data-nama]');
+    items.forEach(label => {
+      const nama = label.dataset.nama || '';
+      const itemFase = label.dataset.fase || '';
+      const matchKeyword = nama.includes(keyword);
+      const matchFase = !fase || itemFase === fase;
+      label.style.display = (matchKeyword && matchFase) ? '' : 'none';
+    });
+  }
 
-    // Bind toolbar
-    document.getElementById('font-family').addEventListener('change', e => { formatState.fontFamily = e.target.value; applyFormattingToDocument(); });
-    document.getElementById('font-size').addEventListener('change', e => { formatState.fontSize = e.target.value; applyFormattingToDocument(); });
-    document.getElementById('btn-bold').addEventListener('click', () => { formatState.bold = !formatState.bold; updateToolbarButtons(); applyFormattingToDocument(); });
-    document.getElementById('btn-italic').addEventListener('click', () => { formatState.italic = !formatState.italic; updateToolbarButtons(); applyFormattingToDocument(); });
-    document.getElementById('btn-underline').addEventListener('click', () => { formatState.underline = !formatState.underline; updateToolbarButtons(); applyFormattingToDocument(); });
-    document.getElementById('color-select').addEventListener('change', e => { formatState.color = e.target.value; applyFormattingToDocument(); });
-    document.getElementById('btn-reset-format').addEventListener('click', () => {
-        Object.assign(formatState, { fontFamily: 'Source Serif 4', fontSize: '13', bold: false, italic: false, underline: false, color: '#111827' });
-        document.getElementById('font-family').value = formatState.fontFamily;
-        document.getElementById('font-size').value = formatState.fontSize;
-        document.getElementById('color-select').value = formatState.color;
-        updateToolbarButtons(); applyFormattingToDocument();
+  if (btnPilihHeader && modalEl) {
+    modalInstance = new bootstrap.Modal(modalEl);
+
+    btnPilihHeader.addEventListener('click', openModal);
+    if (btnPilihForm) btnPilihForm.addEventListener('click', openModal);
+
+    btnOk.addEventListener('click', function () {
+      syncSelectedFromCheckboxes();
+      renderTags();
+      syncHiddenInputs();
+      modalInstance.hide();
     });
 
-    // Bind inputs -> preview and keep values for form submission
-    ['title','duration','achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment','status'].forEach(field => {
-        const el = document.getElementById('input-' + field);
-        if (!el) return;
-        el.addEventListener('input', () => updatePreview(field));
-        // update select changes
-        el.addEventListener('change', () => updatePreview(field));
+    searchInput.addEventListener('input', function () {
+      applyFilters();
     });
 
-    document.getElementById('print-button').addEventListener('click', () => {
-        const doc = document.querySelector('.document-page');
-        if (!doc) return window.print();
-
-        const style = `
-            body{margin:0;color:#202124;font-family: 'Source Serif 4', Georgia, serif}
-            .document-page{box-sizing:border-box;width:840px;margin:0 auto;padding:70px 76px 84px;background:#fff}
-            .doc-title{font-size:25px;text-align:center;margin-bottom:20px}
-            .info-table{width:100%;border-collapse:collapse;margin-bottom:18px}
-            .info-table th,.info-table td{border:1px solid #aeb9c8;padding:8px 10px;text-align:left;vertical-align:top}
-            .info-table th{background:#eaf1fb;color:#1e3a62}
-            .preview-text{white-space:pre-wrap}
-        `;
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write('<!doctype html><html><head><title>Print RPP</title>');
-        printWindow.document.write('<meta charset="utf-8">');
-        printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">');
-        printWindow.document.write('<style>' + style + '</style>');
-        printWindow.document.write('</head><body>');
-        printWindow.document.write(doc.outerHTML);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        // Wait a short moment for fonts/images to load
-        setTimeout(() => {
-            printWindow.print();
-            // Do not auto-close to let user inspect; close after small delay
-            setTimeout(() => { try { printWindow.close(); } catch (e) {} }, 500);
-        }, 250);
-    });
-
-    populateForm();
-    updateToolbarButtons();
-    applyFormattingToDocument();
-
-    // Initialize TinyMCE (script already loaded synchronously above)
-    if (typeof tinymce !== 'undefined') {
-        tinymce.init({
-            selector: 'textarea.rich-editor',
-            plugins: 'lists link image table code help advlist autolink',
-            toolbar: 'undo redo | formatselect | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | code help',
-            menubar: false,
-            height: 220,
-            content_style: 'body { font-family: inherit; color: #202124; }',
-            setup: function(editor) {
-                editor.on('Change KeyUp', function() {
-                    const ta = document.getElementById(editor.id);
-                    if (ta) ta.value = editor.getContent();
-                    const field = editor.id.replace('input-','');
-                    if (richFields.includes(field)) updatePreview(field);
-                });
-            }
-        });
-
-        // After init ensure editor contents reflect initial textarea values
-        richFields.forEach(f => {
-            const ta = document.getElementById('input-' + f);
-            if (!ta) return;
-            const ed = tinymce.get(ta.id);
-            if (ed) ed.setContent(ta.value || '');
-        });
+    if (faseSelector) {
+      faseSelector.addEventListener('change', function () {
+        if (modalInstance && modalEl.classList.contains('show')) {
+          applyFilters();
+        }
+      });
     }
+  }
+
+  function filterKelas(keyword) {
+    const items = daftarKelas.querySelectorAll('label[data-nama]');
+    items.forEach(label => {
+      const nama = label.dataset.nama || '';
+      label.style.display = nama.includes(keyword) ? '' : 'none';
+    });
+  }
+
+  initCheckboxes();
+  renderTags();
+  syncHiddenInputs();
+  syncPreviewFields();
+  bindOnlyOfficeSync();
 });
+
+function syncPreviewFields() {
+  const fieldMap = {
+    judul: 'Judul',
+    fase: 'Fase',
+    kelas: 'Kelas',
+    status: 'Status',
+    alokasi_waktu: 'Alokasi Waktu',
+  };
+
+  const previewNodes = {};
+  Object.keys(fieldMap).forEach(key => {
+    previewNodes[key] = document.getElementById('preview-field-' + key);
+  });
+
+  const updatePreview = () => {
+    const judul = document.getElementById('input-title')?.value || '-';
+    const fase = document.getElementById('fase-selector')?.value || '-';
+    const status = document.querySelector('select[name="status"]')?.value || '-';
+    const alokasiWaktu = document.getElementById('input-duration')?.value || '-';
+    const checkedKomponen = Array.from(document.querySelectorAll('input[name="komponen_nilai_ids[]"]:checked'))
+      .map(el => el.closest('label')?.textContent.trim())
+      .filter(Boolean);
+
+    if (previewNodes.judul) previewNodes.judul.textContent = judul || '-';
+    if (previewNodes.fase) previewNodes.fase.textContent = fase || '-';
+    if (previewNodes.kelas) previewNodes.kelas.textContent = checkedKomponen.length > 0 ? checkedKomponen.join(', ') : 'Belum dipilih';
+    if (previewNodes.status) previewNodes.status.textContent = status || '-';
+    if (previewNodes.alokasi_waktu) previewNodes.alokasi_waktu.textContent = alokasiWaktu || '-';
+    if (previewNodes.komponen_nilai) previewNodes.komponen_nilai.textContent = checkedKomponen.length > 0 ? checkedKomponen.join(', ') : '-';
+  };
+
+  document.getElementById('input-title')?.addEventListener('input', updatePreview);
+  document.getElementById('fase-selector')?.addEventListener('input', updatePreview);
+  document.getElementById('input-duration')?.addEventListener('input', updatePreview);
+  document.querySelector('select[name="status"]')?.addEventListener('change', updatePreview);
+  document.querySelectorAll('input[name="komponen_nilai_ids[]"]').forEach(el => {
+    el.addEventListener('change', updatePreview);
+  });
+
+  document.getElementById('btn-pilih-kelas-header')?.addEventListener('click', () => {
+    setTimeout(updatePreview, 100);
+  });
+
+  updatePreview();
+}
+
+function bindOnlyOfficeSync() {
+  const titleInput = document.getElementById('input-title');
+  const durationInput = document.getElementById('input-duration');
+  const statusSelect = document.querySelector('select[name="status"]');
+  const faseSelector = document.getElementById('fase-selector');
+
+  let syncTimer = null;
+  const scheduleSync = () => {
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncToOnlyOffice, 400);
+  };
+
+  const syncToOnlyOffice = () => {
+    const editor = window.onlyOfficeEditor;
+    if (!editor) return;
+
+    const title = titleInput?.value || '';
+    const duration = durationInput?.value || '';
+    const status = statusSelect?.value || '';
+    const fase = faseSelector?.value || '';
+
+    try {
+      if (typeof editor.setDocumentTitle === 'function') {
+        editor.setDocumentTitle(title || 'Rencana Pembelajaran');
+      }
+    } catch (e) {
+      console.warn('Gagal update judul OnlyOffice:', e);
+    }
+
+    try {
+      if (typeof editor.serviceCommand === 'function') {
+        editor.serviceCommand('info', {
+          key: 'rpp-meta',
+          userdata: JSON.stringify({
+            title,
+            fase,
+            status,
+            alokasi_waktu: duration,
+          }),
+        });
+      }
+    } catch (e) {
+      console.warn('Gagal kirim metadata OnlyOffice:', e);
+    }
+  };
+
+  titleInput?.addEventListener('input', scheduleSync);
+  durationInput?.addEventListener('input', scheduleSync);
+  statusSelect?.addEventListener('change', scheduleSync);
+  faseSelector?.addEventListener('change', scheduleSync);
+
+  document.addEventListener('onlyoffice:ready', () => {
+    syncToOnlyOffice();
+  });
+}
 </script>
 @endpush
+
 @push('css')
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Core layout adapted from provided template */
-        #rpp-interactive-root .app-shell { width:100%; min-height:420px; background:#e4e5e7; display:flex; flex-direction:column; }
-        #rpp-interactive-root .titlebar{ background:#185abd; color:#fff; min-height:54px; display:flex; align-items:center; gap:14px; padding:0 20px; box-shadow:0 1px 0 rgba(0,0,0,.15); }
-        #rpp-interactive-root .word-mark{ width:29px;height:29px; display:grid; place-items:center; background:#fff;color:#185abd;border-radius:3px; font-family:Georgia,serif; font-weight:700; font-size:20px }
-        #rpp-interactive-root .workspace { width:100%; flex:1; display:grid; grid-template-columns: minmax(310px, .84fr) minmax(480px, 1.4fr); overflow:hidden; }
-        #rpp-interactive-root .form-panel { background:#f5f6f8; border-right:1px solid #c8cbd0; overflow-y:auto; padding:22px 20px 40px; }
-        #rpp-interactive-root .form-group { background:#fff; border:1px solid #d6d9de; border-radius:5px; padding:15px; margin-bottom:13px; box-shadow:0 1px 2px rgba(24,36,50,.04); }
-        #rpp-interactive-root .field-label{ display:block; margin-bottom:6px; color:#3d4753; font-size:12px; font-weight:700 }
-        #rpp-interactive-root .editor-input, #rpp-interactive-root .editor-textarea{ width:100%; border:1px solid #b9c1cb; color:#202124; border-radius:3px; background:#fff; padding:8px 9px; font-size:13px }
-        #rpp-interactive-root .editor-textarea{ min-height:92px; resize:vertical }
-        #rpp-interactive-root .preview-panel{ overflow:auto; padding:0; background:#e4e5e7; display:flex; flex-direction:column }
-        #rpp-interactive-root .format-toolbar{ background:#f5f6f8; border-bottom:1px solid #c8cbd0; padding:10px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-right:1px solid #c8cbd0 }
-        #rpp-interactive-root .toolbar-select{ padding:5px 8px; border:1px solid #b9c1cb; border-radius:3px; background:#fff; font-size:12px }
-        #rpp-interactive-root .toolbar-button{ width:28px;height:28px;border:1px solid #b9c1cb;border-radius:3px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center }
-        #rpp-interactive-root .preview-scroll{ overflow:auto; flex:1; padding:32px 28px 48px; background-image:radial-gradient(#d2d4d7 .65px, transparent .65px); background-size:13px 13px }
-        #rpp-interactive-root .document-page{ width:min(100%,840px); min-height:1120px; margin:0 auto; padding:70px 76px 84px; background:#fff; box-shadow:0 2px 7px rgba(0,0,0,.18), 0 18px 38px rgba(0,0,0,.12) }
-        #rpp-interactive-root .doc-title{ font-family:'Source Serif 4', Georgia, serif; font-size:25px; text-align:center; color:#111827; margin:0 0 31px; font-weight:700 }
-        #rpp-interactive-root .info-table{ width:100%; border-collapse:collapse; margin-bottom:18px }
-        #rpp-interactive-root .info-table th, #rpp-interactive-root .info-table td{ border:1px solid #aeb9c8; padding:8px 10px; text-align:left; vertical-align:top }
-        #rpp-interactive-root .info-table th{ width:180px; background:#eaf1fb; color:#1e3a62; font-weight:700 }
-        #rpp-interactive-root .preview-text{ white-space:pre-wrap }
-        @media (max-width:930px){ #rpp-interactive-root .workspace{ grid-template-columns:1fr; } #rpp-interactive-root .form-panel{ border-right:0; border-bottom:1px solid #c8cbd0 } }
-    </style>
+<style>
+.rpp-editor-container {
+    width: 100%;
+    min-height: 80vh;
+    overflow: hidden;
+}
+.rpp-editor-grid {
+    display: grid;
+    grid-template-columns: 20% 80%;
+    gap: 20px;
+    min-height: auto;
+}
+.rpp-editor-grid .form-panel,
+.rpp-editor-grid .preview-panel {
+    min-height: 720px;
+}
+.rpp-editor-grid .preview-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 220px);
+}
+.rpp-editor-grid .preview-panel > div:last-child {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+@media (max-width: 991px) {
+    .rpp-editor-grid {
+        grid-template-columns: 1fr;
+    }
+    .rpp-editor-grid .form-panel,
+    .rpp-editor-grid .preview-panel {
+        min-height: auto;
+    }
+    .rpp-editor-grid .preview-panel {
+        min-height: 520px;
+    }
+    .info-umum-row,
+    .form-card-section {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
+.info-umum-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: end;
+    width: 100%;
+    max-width: 520px;
+}
+
+.info-umum-row > div {
+    width: 100%;
+}
+
+.info-umum-row button {
+    width: 100%;
+    min-width: 140px;
+}
+
+.form-card-section {
+    width: 100%;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style>
 @endpush
-@endsection

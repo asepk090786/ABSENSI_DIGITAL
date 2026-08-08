@@ -24,11 +24,6 @@ class KomponenNilaiExport implements FromCollection, WithHeadings, WithMapping, 
     {
         $query = KomponenNilai::with('capaianPembelajaran')->orderBy('nama_komponen');
 
-        if ($this->user && ! $this->user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
-            $query->whereHas('capaianPembelajaran', function ($subQuery) {
-                $subQuery->where('user_id', $this->user->id);
-            });
-        }
 
         return $query->get();
     }

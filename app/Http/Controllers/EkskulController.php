@@ -14,6 +14,11 @@ use App\Models\EkskulBuktiKegiatan;
 use App\Models\Guru;
 use App\Models\Siswa;
 use App\Models\Kelas;
+use App\Models\AbsensiKelas;
+use App\Models\AbsensiSiswa;
+use App\Models\IzinKegiatan;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class EkskulController extends Controller
@@ -28,7 +33,7 @@ class EkskulController extends Controller
         $user = auth()->user();
 
         if ($user->hasRole('Admin')) {
-            $items = Ekstrakurikuler::with(['guru', 'pembina.guru'])
+            $items = Ekstrakurikuler::with(['guru', 'pembina.guru', 'anggota.siswa'])
                 ->withCount(['anggota as anggota_diterima_count' => function ($q) {
                     $q->where('status_pendaftaran', 'diterima');
                 }])
@@ -39,7 +44,7 @@ class EkskulController extends Controller
             $ekskulIds = EkskulAnggota::where('siswa_id', $user->siswa->id)
                 ->where('status_pendaftaran', 'diterima')
                 ->pluck('ekstrakurikuler_id');
-            $items = Ekstrakurikuler::with(['guru', 'pembina.guru'])
+            $items = Ekstrakurikuler::with(['guru', 'pembina.guru', 'anggota.siswa'])
                 ->whereIn('id', $ekskulIds)
                 ->withCount(['anggota as anggota_diterima_count' => function ($q) {
                     $q->where('status_pendaftaran', 'diterima');
@@ -50,7 +55,7 @@ class EkskulController extends Controller
         } else {
             $guruId = $user->guru?->id;
             $ekskulIds = EkskulPembina::where('guru_id', $guruId)->pluck('ekstrakurikuler_id');
-            $items = Ekstrakurikuler::with(['guru', 'pembina.guru'])
+            $items = Ekstrakurikuler::with(['guru', 'pembina.guru', 'anggota.siswa'])
                 ->where(function ($q) use ($guruId, $ekskulIds) {
                     $q->whereIn('id', $ekskulIds)->orWhere('guru_id', $guruId);
                 })
@@ -288,6 +293,7 @@ class EkskulController extends Controller
             ->get();
         $agenda = null;
         $existingAbsensi = collect();
+        $tanggalAbsensi = \Carbon\Carbon::parse(request('tanggal_absensi', date('Y-m-d')))->toDateString();
         if ($agendaId) {
             $agenda = EkskulAgenda::findOrFail($agendaId);
             $existingAbsensi = EkskulAbsensi::where('ekstrakurikuler_id', $id)
@@ -296,7 +302,16 @@ class EkskulController extends Controller
                 ->keyBy('siswa_id');
         }
         $agendaList = $ekskul->agenda()->orderBy('tanggal', 'desc')->get();
-        return view('ekskul.absensi', compact('ekskul', 'siswa', 'agenda', 'agendaList', 'agendaId', 'existingAbsensi'));
+
+        $activeIzinKegiatan = IzinKegiatan::query()
+            ->whereIn('siswa_id', $siswa->pluck('siswa_id')->filter()->all())
+            ->where('is_active', true)
+            ->whereDate('tanggal_mulai', '<=', $tanggalAbsensi)
+            ->whereDate('tanggal_selesai', '>=', $tanggalAbsensi)
+            ->get()
+            ->keyBy('siswa_id');
+
+        return view('ekskul.absensi', compact('ekskul', 'siswa', 'agenda', 'agendaList', 'agendaId', 'existingAbsensi', 'activeIzinKegiatan', 'tanggalAbsensi'));
     }
 
     public function storeAbsensi(Request $request, $id)
@@ -310,15 +325,130 @@ class EkskulController extends Controller
             'absensi.*.status'     => 'required|in:hadir,izin,sakit,alpa,tanpa_keterangan',
             'absensi.*.keterangan' => 'nullable|string',
         ]);
+        $tanggal = \Carbon\Carbon::parse($validated['tanggal'])->toDateString();
         $guruId = auth()->user()->guru?->id;
+
+        $activeIzinKegiatan = IzinKegiatan::query()
+            ->where('is_active', true)
+            ->whereDate('tanggal_mulai', '<=', $tanggal)
+            ->whereDate('tanggal_selesai', '>=', $tanggal)
+            ->get()
+            ->keyBy('siswa_id');
+
         foreach ($validated['absensi'] as $item) {
+            $izin = $activeIzinKegiatan->get($item['siswa_id']);
+            if ($izin) {
+                $item['status'] = 'hadir';
+                $item['keterangan'] = $izin->keterangan_kegiatan;
+            }
+
             EkskulAbsensi::updateOrCreate(
-                ['ekstrakurikuler_id' => $id, 'siswa_id' => $item['siswa_id'], 'tanggal' => $validated['tanggal']],
+                ['ekstrakurikuler_id' => $id, 'siswa_id' => $item['siswa_id'], 'tanggal' => $tanggal],
                 ['ekskul_agenda_id' => $validated['ekskul_agenda_id'] ?? null, 'status' => $item['status'], 'keterangan' => $item['keterangan'] ?? null, 'dibukukan_oleh' => $guruId]
             );
         }
         return redirect()->route('ekskul.absensi', [$id, 'agenda' => $validated['ekskul_agenda_id'] ?? ''])
             ->with('success', 'Absensi berhasil disimpan.');
+    }
+
+    public function storeIzinKegiatan(Request $request, $id)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($id);
+        $this->authorizePembinaOrAdmin($ekskul);
+
+        $validated = $request->validate([
+            'siswa_ids' => 'required|array',
+            'siswa_ids.*' => 'exists:siswa,id',
+            'jenis_kegiatan' => 'required|string|in:internal,external,dispensasi,keterangan',
+            'keterangan_kegiatan' => 'nullable|string|max:255',
+            'surat_tugas' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+        ]);
+
+        $suratPath = null;
+        if ($request->hasFile('surat_tugas')) {
+            $suratPath = $request->file('surat_tugas')->store('izin_kegiatan/surat', 'public');
+        }
+
+        $siswaIds = collect($validated['siswa_ids'])->filter(fn ($siswaId) => (int) $siswaId > 0)->all();
+        $members = EkskulAnggota::where('ekstrakurikuler_id', $ekskul->id)
+            ->where('status_pendaftaran', 'diterima')
+            ->whereIn('siswa_id', $siswaIds)
+            ->with('siswa')
+            ->get();
+
+        if ($members->count() !== count($siswaIds)) {
+            return redirect()->back()->withErrors(['error' => 'Beberapa siswa tidak ditemukan sebagai anggota ekskul ini.']);
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($members as $member) {
+                $siswa = $member->siswa;
+                if (! $siswa) {
+                    continue;
+                }
+
+                IzinKegiatan::updateOrCreate(
+                    [
+                        'kelas_id' => $siswa->kelas_id,
+                        'siswa_id' => $siswa->id,
+                        'tanggal_mulai' => Carbon::parse($validated['tanggal_mulai'])->toDateString(),
+                        'tanggal_selesai' => Carbon::parse($validated['tanggal_selesai'])->toDateString(),
+                    ],
+                    [
+                        'jenis_kegiatan' => $validated['jenis_kegiatan'],
+                        'keterangan_kegiatan' => $validated['keterangan_kegiatan'],
+                        'surat_tugas' => $suratPath,
+                        'is_active' => true,
+                        'created_by' => auth()->id(),
+                    ]
+                );
+
+                if ($validated['jenis_kegiatan'] === 'dispensasi') {
+                    $startDate = Carbon::parse($validated['tanggal_mulai'])->startOfDay();
+                    $endDate = Carbon::parse($validated['tanggal_selesai'])->startOfDay();
+                    $loopDate = $startDate->copy();
+
+                    while ($loopDate->lte($endDate)) {
+                        $attendanceRecords = AbsensiKelas::query()
+                            ->where('kelas_id', $siswa->kelas_id)
+                            ->whereDate('tanggal', $loopDate->toDateString())
+                            ->get();
+
+                        foreach ($attendanceRecords as $attendanceRecordItem) {
+                            $attendanceRecord = AbsensiSiswa::where('absensi_kelas_id', $attendanceRecordItem->id)
+                                ->where('siswa_id', $siswa->id)
+                                ->first();
+
+                            $payload = [
+                                'status' => 'hadir',
+                                'keterangan' => $validated['keterangan_kegiatan'] ?? 'Dispensasi kegiatan',
+                                'updated_by' => auth()->id(),
+                            ];
+
+                            if ($attendanceRecord) {
+                                $attendanceRecord->update($payload);
+                            } else {
+                                AbsensiSiswa::create(array_merge($payload, [
+                                    'absensi_kelas_id' => $attendanceRecordItem->id,
+                                    'siswa_id' => $siswa->id,
+                                ]));
+                            }
+                        }
+
+                        $loopDate->addDay();
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('ekskul.index')->with('success', 'Izin kegiatan berhasil disimpan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Gagal menyimpan izin kegiatan: ' . $e->getMessage()]);
+        }
     }
 
     public function absensiPembina($id)

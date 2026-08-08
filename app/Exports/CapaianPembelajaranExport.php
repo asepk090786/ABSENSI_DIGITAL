@@ -24,9 +24,10 @@ class CapaianPembelajaranExport implements FromCollection, WithHeadings, WithMap
     public function collection()
     {
         $query = CapaianPembelajaran::query();
+        $user = auth()->user();
 
-        if ($this->user && ! $this->user->hasAnyRole(['Admin', 'Kepala Sekolah']) && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
-            $query->where('user_id', $this->user->id);
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id)) {
+            $query->where('user_id', $user->id);
         }
 
         return $query->orderBy('nama_capaian_pembelajaran')->get();

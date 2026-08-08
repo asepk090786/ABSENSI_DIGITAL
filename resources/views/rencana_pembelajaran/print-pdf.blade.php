@@ -4,50 +4,106 @@
     <meta charset="UTF-8">
     <title>Rencana Pembelajaran - {{ $rencanaPembelajaran->judul }}</title>
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 20mm;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        body {
+        html, body {
+            width: 100%;
+            min-height: 100%;
             font-family: 'DejaVu Sans', Arial, sans-serif;
             color: #222;
-            background: white;
+            background: #fff;
             line-height: 1.5;
-            padding: 18px;
-            font-size: 10pt;
-        }
-        h1 {
-            font-size: 16pt;
-            margin-bottom: 6px;
-        }
-        h2 {
-            font-size: 12pt;
-            margin-bottom: 4px;
-        }
-        h3 {
-            font-size: 11pt;
-            margin-bottom: 4px;
-        }
-        .section {
-            margin-bottom: 14px;
-        }
-        .section-header {
-            display: block;
-            background: #f0f0f0;
-            border-radius: 4px;
-            padding: 6px 10px;
-            margin-bottom: 8px;
-            font-weight: bold;
             font-size: 11pt;
         }
-        .section-content {
-            padding-left: 8px;
+        body {
+            padding: 0;
         }
-        .field-table {
+        .document-body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        .document-body p {
+            margin-bottom: 10px;
+        }
+        .document-body table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 12px;
+        }
+        .document-body table th,
+        .document-body table td {
+            border: 1px solid #333;
+            padding: 6px 8px;
+        }
+        .document-body table th {
+            background: #f7f7f7;
+            font-weight: 700;
+        }
+        .document-body h1,
+        .document-body h2,
+        .document-body h3,
+        .document-body h4 {
+            margin: 18px 0 8px;
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-weight: 700;
+        }
+        .document-body ul,
+        .document-body ol {
+            margin: 0 0 10px 20px;
+            padding: 0;
+        }
+        .document-body li {
+            margin-bottom: 6px;
+        }
+        .document-body strong,
+        .document-body b {
+            font-weight: 700;
+        }
+        .fallback-section {
+            margin-bottom: 16px;
+        }
+        .fallback-section .section-header {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 12pt;
+        }
+        .fallback-section .content-block {
+            margin-bottom: 12px;
+        }
+        .fallback-section .content-block p {
+            margin-bottom: 10px;
+        }
+        .komponen-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .komponen-list li {
+            margin-bottom: 6px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fbfbfb;
+        }
+        .label-muted {
+            color: #555;
+            font-size: 9pt;
+            margin-bottom: 6px;
+            display: block;
+        }
+    </style>
+        .field-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
         }
         .field-table th,
         .field-table td {
@@ -56,23 +112,55 @@
             vertical-align: top;
         }
         .field-table th {
-            width: 200px;
-            background: #fafafa;
+            width: 180px;
+            background: #f7f7f7;
             text-align: left;
+            font-weight: 700;
+        }
+        .section {
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        .section-header {
+            display: block;
+            background: #f7f8fa;
+            border-radius: 4px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 12pt;
+        }
+        .section-content {
+            padding-left: 4px;
         }
         .content-block {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            word-wrap: break-word;
         }
         .content-block p {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .content-block ul,
+        .content-block ol {
+            margin: 0 0 10px 18px;
+        }
+        .content-block table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .content-block table th,
+        .content-block table td {
+            border: 1px solid #d0d0d0;
+            padding: 6px 8px;
         }
         .komponen-list {
             list-style: none;
             padding-left: 0;
         }
         .komponen-list li {
-            margin-bottom: 4px;
-            padding: 6px 10px;
+            margin-bottom: 6px;
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             background: #fbfbfb;
@@ -80,84 +168,109 @@
         .label-muted {
             color: #555;
             font-size: 9pt;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             display: block;
+        }
+        .doc-kicker {
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: .1em;
+            color: #5b6770;
+            font-size: 9pt;
+            font-weight: 700;
+        }
+        .document-body,
+        .document-page p,
+        .document-page li,
+        .document-page td,
+        .document-page th {
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-size: 11pt;
+            line-height: 1.7;
+        }
+        .document-page h2,
+        .document-page h3,
+        .document-page h4 {
+            margin-top: 18px;
+            margin-bottom: 8px;
+            font-family: 'Source Serif 4', Georgia, serif;
+            font-weight: 700;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .document-page {
+                box-shadow: none;
+                margin: 0;
+                width: auto;
+                min-height: auto;
+                page-break-after: always;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Rencana Pembelajaran</h1>
-    <p style="margin-bottom: 16px; color:#555;">{{ $rencanaPembelajaran->mataPelajaran->nama_mapel }} - {{ $rencanaPembelajaran->kelas->nama_kelas }}</p>
-
-    <table class="field-table">
-        <tr>
-            <th>Judul</th>
-            <td>{{ $rencanaPembelajaran->judul }}</td>
-        </tr>
-        <tr>
-            <th>Mata Pelajaran</th>
-            <td>{{ $rencanaPembelajaran->mataPelajaran->nama_mapel }}</td>
-        </tr>
-        <tr>
-            <th>Kelas</th>
-            <td>{{ $rencanaPembelajaran->kelas->nama_kelas }}</td>
-        </tr>
-        <tr>
-            <th>Status</th>
-            <td>{{ ucfirst($rencanaPembelajaran->status) }}</td>
-        </tr>
-        @if($rencanaPembelajaran->tanggal_mulai || $rencanaPembelajaran->tanggal_selesai)
-            <tr>
-                <th>Periode</th>
-                <td>
-                    @if($rencanaPembelajaran->tanggal_mulai)
-                        {{ $rencanaPembelajaran->tanggal_mulai->format('d/m/Y') }}
-                        @if($rencanaPembelajaran->tanggal_selesai)
-                            - {{ $rencanaPembelajaran->tanggal_selesai->format('d/m/Y') }}
-                        @endif
-                    @else
-                        -
-                    @endif
-                </td>
-            </tr>
-        @endif
-    </table>
-
-    @php
-        $sections = [
-            'capaian_pembelajaran' => ['title' => 'Capaian Pembelajaran', 'hint' => 'Tuliskan capaian pembelajaran sesuai ketentuan.'],
-            'tujuan' => ['title' => 'Tujuan Pembelajaran', 'hint' => 'Tuliskan tujuan pembelajaran yang mengacu pada capaian.'],
-            'metode' => ['title' => 'Metode Pembelajaran', 'hint' => 'Jelaskan metode yang digunakan.'],
-            'media' => ['title' => 'Media Pembelajaran', 'hint' => 'Cantumkan media pembelajaran yang dipakai.'],
-            'sumber' => ['title' => 'Sumber Belajar', 'hint' => 'Cantumkan sumber referensi atau bahan ajar.'],
-            'praktik_pedagogis' => ['title' => 'Praktik Pedagogis', 'hint' => 'Jelaskan praktik atau pendekatan pedagogis.'],
-            'lingkungan_pembelajaran' => ['title' => 'Lingkungan Pembelajaran', 'hint' => 'Jelaskan lingkungan fisik atau virtual pembelajaran.'],
-            'pemanfaatan_digital' => ['title' => 'Pemanfaatan Digital', 'hint' => 'Jelaskan pemanfaatan sumber digital.'],
-            'pengalaman_pembelajaran' => ['title' => 'Pengalaman Pembelajaran', 'hint' => 'Jelaskan rangkaian kegiatan pembelajaran.'],
-            'refleksi_pembelajaran' => ['title' => 'Refleksi Pembelajaran', 'hint' => 'Tuliskan refleksi pembelajaran jika ada.'],
-            'penilaian' => ['title' => 'Asesmen', 'hint' => 'Tuliskan bentuk dan kriteria asesmen.'],
-        ];
-    @endphp
-
-    @if(!empty($rencanaPembelajaran->html_content))
-        <div class="section">
-            <span class="section-header">Preview Dokumen HTML</span>
-            <div class="section-content">
-                <div class="content-block">{!! $rencanaPembelajaran->html_content !!}</div>
+        @if(!empty($rencanaPembelajaran->html_content))
+            @php
+                $htmlContent = $rencanaPembelajaran->html_content;
+                $htmlContent = preg_replace('/<\s*html[^>]*>/i', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*\/\s*html\s*>/i', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*head[^>]*>.*?<\s*\/\s*head\s*>/is', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*body[^>]*>/i', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*\/\s*body\s*>/i', '', $htmlContent);
+                $htmlContent = trim($htmlContent);
+                $htmlContent = preg_replace('/<\s*div[^>]*class="office-shell"[^>]*>/i', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*header[^>]*>.*?<\s*\/\s*header\s*>/is', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*nav[^>]*>.*?<\s*\/\s*nav\s*>/is', '', $htmlContent);
+                $htmlContent = preg_replace('/<\s*main[^>]*>.*?<\s*\/\s*main\s*>/is', '$1', $htmlContent);
+                $htmlContent = preg_replace('/<\s*footer[^>]*>.*?<\s*\/\s*footer\s*>/is', '', $htmlContent);
+                $htmlContent = trim($htmlContent);
+            @endphp
+            <div class="document-body">
+                {!! $htmlContent !!}
             </div>
-        </div>
-    @else
-        @foreach($sections as $field => $section)
-            @if(!empty($rencanaPembelajaran->{$field}))
-                @php
-                    $fieldValue = $rencanaPembelajaran->{$field};
-                    $hasHtmlTags = preg_match('/<\s*(table|ul|ol|p|br|div|span|h[1-6]|strong|em|b|i|u)[^>]*>/i', $fieldValue);
-                @endphp
-                <div class="section">
-                    <span class="section-header">{{ $section['title'] }}</span>
-                    <div class="section-content">
-                        <span class="label-muted">{{ $section['hint'] }}</span>
+        @else
+            <div class="document-body">
+                <p><strong>Judul:</strong> {{ $rencanaPembelajaran->judul }}</p>
+                <p><strong>Mata Pelajaran:</strong> {{ $rencanaPembelajaran->mataPelajaran->nama_mapel }}</p>
+                <p><strong>Kelas:</strong> {{ $rencanaPembelajaran->kelas->nama_kelas }}</p>
+                <p><strong>Status:</strong> {{ ucfirst($rencanaPembelajaran->status) }}</p>
+                @if($rencanaPembelajaran->tanggal_mulai || $rencanaPembelajaran->tanggal_selesai)
+                    <p><strong>Periode:</strong>
+                        @if($rencanaPembelajaran->tanggal_mulai)
+                            {{ $rencanaPembelajaran->tanggal_mulai->format('d/m/Y') }}
+                            @if($rencanaPembelajaran->tanggal_selesai)
+                                - {{ $rencanaPembelajaran->tanggal_selesai->format('d/m/Y') }}
+                            @endif
+                        @else
+                            -
+                        @endif
+                    </p>
+                @endif
+
+                @foreach([
+                'capaian_pembelajaran' => 'Capaian Pembelajaran',
+                'tujuan' => 'Tujuan Pembelajaran',
+                'metode' => 'Metode Pembelajaran',
+                'media' => 'Media Pembelajaran',
+                'sumber' => 'Sumber Belajar',
+                'praktik_pedagogis' => 'Praktik Pedagogis',
+                'lingkungan_pembelajaran' => 'Lingkungan Pembelajaran',
+                'pemanfaatan_digital' => 'Pemanfaatan Digital',
+                'pengalaman_pembelajaran' => 'Pengalaman Pembelajaran',
+                'refleksi_pembelajaran' => 'Refleksi Pembelajaran',
+                'penilaian' => 'Asesmen',
+            ] as $field => $title)
+                @if(!empty($rencanaPembelajaran->{$field}))
+                    <div class="section">
+                        <span class="section-header">{{ $title }}</span>
                         <div class="content-block">
+                            @php
+                                $fieldValue = $rencanaPembelajaran->{$field};
+                                $hasHtmlTags = preg_match('/<\s*(table|ul|ol|p|br|div|span|h[1-6]|strong|em|b|i|u)[^>]*>/i', $fieldValue);
+                            @endphp
                             @if($hasHtmlTags)
                                 {!! $fieldValue !!}
                             @else
@@ -165,27 +278,25 @@
                             @endif
                         </div>
                     </div>
-                </div>
-            @endif
-        @endforeach
-    @endif
+                @endif
+            @endforeach
+        @endif
 
-    @if($rencanaPembelajaran->komponenNilai->count() > 0)
-        <div class="section">
-            <span class="section-header">Komponen Penilaian</span>
-            <div class="section-content">
-                <ul class="komponen-list">
+        @if($rencanaPembelajaran->komponenNilai->count() > 0)
+            <div class="section">
+                <span class="section-header">Komponen Penilaian</span>
+                <div class="komponen-list">
                     @foreach($rencanaPembelajaran->komponenNilai as $komponen)
-                        <li>
+                        <div class="content-block">
                             <strong>{{ $komponen->nama_komponen }}</strong>
                             @if($komponen->bobot)
                                 <div>Bobot: {{ $komponen->bobot }}%</div>
                             @endif
-                        </li>
+                        </div>
                     @endforeach
-                </ul>
-            </div>
-        </div>
-    @endif
+                </div>
+            @endforeach
+        @endif
+    </div>
 </body>
 </html>

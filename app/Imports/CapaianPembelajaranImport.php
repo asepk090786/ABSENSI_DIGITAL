@@ -19,7 +19,6 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
     public function __construct()
     {
         $this->userId = auth()->id();
-        $this->isGuruMapel = auth()->check() && auth()->user()->hasRole('Guru Mapel');
         $this->hasUserIdColumn = Schema::hasColumn('capaian_pembelajarans', 'user_id');
     }
 
@@ -53,9 +52,9 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
             }
 
             try {
-                // Check if already exists by nama (scoped for Guru Mapel)
+                // Check if already exists by nama (scoped by user for teachers)
                 $existingQuery = CapaianPembelajaran::where('nama_capaian_pembelajaran', $payload['nama_capaian_pembelajaran']);
-                if ($this->isGuruMapel && $this->hasUserIdColumn) {
+                if ($this->hasUserIdColumn && auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty(auth()->user()->guru_id)) {
                     $existingQuery->where('user_id', $this->userId);
                 }
                 $existing = $existingQuery->first();
@@ -72,7 +71,7 @@ class CapaianPembelajaranImport implements ToCollection, WithHeadingRow
                 } else {
                     // Create new
                     $createPayload = $payload;
-                    if ($this->hasUserIdColumn) {
+                    if ($this->hasUserIdColumn && auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty(auth()->user()->guru_id)) {
                         $createPayload['user_id'] = $this->userId;
                     }
 

@@ -56,27 +56,27 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Deskripsi / Capaian Pembelajaran</label>
-                            <textarea name="capaian_pembelajaran" class="form-control tiny-editor" rows="3">{{ old('capaian_pembelajaran', $importData['capaian_pembelajaran'] ?? '') }}</textarea>
+                            <textarea name="capaian_pembelajaran" class="form-control tiny-editor" rows="3">{!! old('capaian_pembelajaran', $importData['capaian_pembelajaran'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Tujuan Pembelajaran</label>
-                            <textarea name="tujuan" class="form-control tiny-editor" rows="3">{{ old('tujuan', $importData['tujuan'] ?? '') }}</textarea>
+                            <textarea name="tujuan" class="form-control tiny-editor" rows="3">{!! old('tujuan', $importData['tujuan'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Metode Pembelajaran</label>
-                            <textarea name="metode" class="form-control tiny-editor" rows="2">{{ old('metode', $importData['metode'] ?? '') }}</textarea>
+                            <textarea name="metode" class="form-control tiny-editor" rows="2">{!! old('metode', $importData['metode'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Media Pembelajaran</label>
-                            <textarea name="media" class="form-control tiny-editor" rows="2">{{ old('media', $importData['media'] ?? '') }}</textarea>
+                            <textarea name="media" class="form-control tiny-editor" rows="2">{!! old('media', $importData['media'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Sumber Belajar</label>
-                            <textarea name="sumber" class="form-control tiny-editor" rows="2">{{ old('sumber', $importData['sumber'] ?? '') }}</textarea>
+                            <textarea name="sumber" class="form-control tiny-editor" rows="2">{!! old('sumber', $importData['sumber'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
@@ -86,32 +86,32 @@
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Praktik Pedagogis</label>
-                            <textarea name="praktik_pedagogis" class="form-control tiny-editor" rows="3">{{ old('praktik_pedagogis', $importData['praktik_pedagogis'] ?? '') }}</textarea>
+                            <textarea name="praktik_pedagogis" class="form-control tiny-editor" rows="3">{!! old('praktik_pedagogis', $importData['praktik_pedagogis'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Lingkungan Pembelajaran</label>
-                            <textarea name="lingkungan_pembelajaran" class="form-control tiny-editor" rows="3">{{ old('lingkungan_pembelajaran', $importData['lingkungan_pembelajaran'] ?? '') }}</textarea>
+                            <textarea name="lingkungan_pembelajaran" class="form-control tiny-editor" rows="3">{!! old('lingkungan_pembelajaran', $importData['lingkungan_pembelajaran'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Pemanfaatan Digital</label>
-                            <textarea name="pemanfaatan_digital" class="form-control tiny-editor" rows="3">{{ old('pemanfaatan_digital', $importData['pemanfaatan_digital'] ?? '') }}</textarea>
+                            <textarea name="pemanfaatan_digital" class="form-control tiny-editor" rows="3">{!! old('pemanfaatan_digital', $importData['pemanfaatan_digital'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Pengalaman Pembelajaran</label>
-                            <textarea name="pengalaman_pembelajaran" class="form-control tiny-editor" rows="3">{{ old('pengalaman_pembelajaran', $importData['pengalaman_pembelajaran'] ?? '') }}</textarea>
+                            <textarea name="pengalaman_pembelajaran" class="form-control tiny-editor" rows="3">{!! old('pengalaman_pembelajaran', $importData['pengalaman_pembelajaran'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Refleksi Pembelajaran</label>
-                            <textarea name="refleksi_pembelajaran" class="form-control tiny-editor" rows="3">{{ old('refleksi_pembelajaran', $importData['refleksi_pembelajaran'] ?? '') }}</textarea>
+                            <textarea name="refleksi_pembelajaran" class="form-control tiny-editor" rows="3">{!! old('refleksi_pembelajaran', $importData['refleksi_pembelajaran'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Asesmen / Penilaian</label>
-                            <textarea name="penilaian" class="form-control tiny-editor" rows="3">{{ old('penilaian', $importData['penilaian'] ?? '') }}</textarea>
+                            <textarea name="penilaian" class="form-control tiny-editor" rows="3">{!! old('penilaian', $importData['penilaian'] ?? '') !!}</textarea>
                         </div>
 
                         <div class="col-md-6 mb-2">

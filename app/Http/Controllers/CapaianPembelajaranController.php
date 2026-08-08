@@ -21,9 +21,10 @@ class CapaianPembelajaranController extends Controller
     private function scopedCapaianQuery()
     {
         $query = CapaianPembelajaran::query();
+        $user = auth()->user();
 
-        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id')) {
-            $query->where('user_id', auth()->id());
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id)) {
+            $query->where('user_id', $user->id);
         }
 
         return $query;
@@ -51,7 +52,7 @@ class CapaianPembelajaranController extends Controller
 
     public function update(Request $request, CapaianPembelajaran $capaianPembelajaran)
     {
-        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
+        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && ! empty($capaianPembelajaran->user_id) && $capaianPembelajaran->user_id !== auth()->id()) {
             abort(403, 'Anda tidak diizinkan mengubah CP milik guru lain.');
         }
 
@@ -71,7 +72,7 @@ class CapaianPembelajaranController extends Controller
 
     public function destroy(CapaianPembelajaran $capaianPembelajaran)
     {
-        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && $capaianPembelajaran->user_id !== auth()->id()) {
+        if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && ! empty($capaianPembelajaran->user_id) && $capaianPembelajaran->user_id !== auth()->id()) {
             abort(403, 'Anda tidak diizinkan menghapus CP milik guru lain.');
         }
 

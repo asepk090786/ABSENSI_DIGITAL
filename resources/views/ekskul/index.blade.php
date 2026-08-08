@@ -79,6 +79,11 @@
                                         <a href="{{ route('ekskul.bukti', $item->id) }}" class="btn btn-outline-dark" title="Bukti Kegiatan">
                                             <i class="ti ti-photo"></i>
                                         </a>
+                                        @if(auth()->user()->hasRole('Admin') || auth()->user()->hasAnyRole(['Pembina','Guru']))
+                                        <button type="button" class="btn btn-outline-info" title="Izin Kegiatan" data-bs-toggle="modal" data-bs-target="#modalIzinKegiatan{{ $item->id }}">
+                                            <i class="ti ti-file-description"></i>
+                                        </button>
+                                        @endif
                                         <a href="{{ route('ekskul.rekap', $item->id) }}" class="btn btn-outline-purple" title="Rekap">
                                             <i class="ti ti-report-analytics"></i>
                                         </a>
@@ -107,4 +112,72 @@
         </div>
     </div>
 </div>
+@foreach($items as $item)
+    @if(auth()->user()->hasRole('Admin') || auth()->user()->hasAnyRole(['Pembina','Guru']))
+    <div class="modal fade" id="modalIzinKegiatan{{ $item->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="POST" action="{{ route('ekskul.izin-kegiatan.store', $item->id) }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tambah Izin Kegiatan / Dispensasi</h5>
+                        <button type="button" class="close" data-bs-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Siswa <span class="text-danger">*</span></label>
+                            <div class="border rounded p-2" style="max-height:220px;overflow-y:auto;">
+                                @foreach($item->anggota as $anggota)
+                                    @if($anggota->status_pendaftaran === 'diterima' && $anggota->siswa)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="siswa_ids[]" value="{{ $anggota->siswa->id }}" id="izin_siswa_{{ $item->id }}_{{ $anggota->siswa->id }}">
+                                            <label class="form-check-label" for="izin_siswa_{{ $item->id }}_{{ $anggota->siswa->id }}">
+                                                {{ $anggota->siswa->nama ?? '-' }}
+                                            </label>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Jenis Kegiatan <span class="text-danger">*</span></label>
+                                <select name="jenis_kegiatan" class="form-select" required>
+                                    <option value="internal">Kegiatan Internal</option>
+                                    <option value="external">Kegiatan Eksternal</option>
+                                    <option value="dispensasi">Dispensasi</option>
+                                    <option value="keterangan">Keterangan Kegiatan</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Keterangan</label>
+                                <input type="text" name="keterangan_kegiatan" class="form-control" placeholder="Opsional">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Mulai <span class="text-danger">*</span></label>
+                                <input type="date" name="tanggal_mulai" class="form-control" value="{{ now()->toDateString() }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Selesai <span class="text-danger">*</span></label>
+                                <input type="date" name="tanggal_selesai" class="form-control" value="{{ now()->toDateString() }}" required>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Surat Tugas / Dispensasi</label>
+                            <input type="file" name="surat_tugas" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                            <div class="form-text">Opsional: Upload surat tugas atau dispensasi (PDF, DOC, DOCX, JPG, PNG, maks 2MB).</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+@endforeach
 @endsection

@@ -43,9 +43,6 @@ class NilaiController extends Controller
             ->select('komponen_nilai.*')
             ->orderBy('komponen_nilai.nama_komponen');
 
-        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
-            $komponenQuery->where('cp.user_id', $user->id);
-        }
 
         $komponenList = $komponenQuery->get();
         $guru = $user ? $user->guru : null;

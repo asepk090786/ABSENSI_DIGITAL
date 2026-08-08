@@ -66,12 +66,6 @@
                 <span>Mata Pelajaran</span>
             </a>
         </li>
-        <li>
-            <a href="{{ route('rencana_pembelajaran.index') }}" class="menu-item {{ request()->routeIs('rencana_pembelajaran.*') ? 'active' : '' }}">
-                <i class="material-icons">description</i>
-                <span>Rencana Pembelajaran</span>
-            </a>
-        </li>
         @endif
         <li>
             <a href="{{ route('jam_belajar.index') }}" class="menu-item {{ request()->routeIs('jam_belajar.*') ? 'active' : '' }}">

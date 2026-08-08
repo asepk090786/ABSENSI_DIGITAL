@@ -12,7 +12,7 @@
                         <h4 class="card-title fw-semibold m-0">Import Rencana Pembelajaran dari Word</h4>
                     </div>
                     <div class="col-auto">
-                        <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat]) }}" class="btn btn-secondary btn-sm">
+                        <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => optional($mataPelajaran)->id, 'tingkat' => $tingkat]) }}" class="btn btn-secondary btn-sm">
                             <i class="ti ti-arrow-left me-1"></i>Kembali
                         </a>
                     </div>
@@ -29,7 +29,7 @@
                 <form action="{{ route('rencana_pembelajaran.import_word') }}" method="POST" enctype="multipart/form-data">
                     @csrf
 
-                    <input type="hidden" name="mata_pelajaran_id" value="{{ $mataPelajaran->id }}">
+                    <input type="hidden" name="mata_pelajaran_id" value="{{ optional($mataPelajaran)->id }}">
 
                     <div class="row mb-4">
                         <div class="col-md-12">
@@ -55,7 +55,7 @@
                     <div class="row">
                         <div class="col-md-12 mb-2">
                             <label class="form-label">Mata Pelajaran</label>
-                            <input type="text" class="form-control" value="{{ $mataPelajaran->nama_mapel }}" disabled>
+                            <input type="text" class="form-control" value="{{ optional($mataPelajaran)->nama_mapel ?? '' }}" disabled>
                         </div>
 
                         <div class="col-md-12 mb-2">

@@ -49,16 +49,7 @@
                                         <a href="{{ route('materi_pembelajaran.index', ['rencana_pembelajaran_id' => $rencana->id]) }}" class="btn btn-sm btn-outline-primary" title="Kelola Materi">
                                             <i class="ti ti-book-2"></i>
                                         </a>
-                                        <a href="{{ route('rencana_pembelajaran.edit', $rencana->id) }}" class="btn btn-sm btn-outline-info" title="Edit Rencana">
-                                            <i class="ti ti-edit"></i>
-                                        </a>
-                                        <form action="{{ route('rencana_pembelajaran.destroy', $rencana->id) }}" method="POST" style="display:inline" onsubmit="return confirm('Hapus rencana pembelajaran ini? Semua materi di dalamnya juga akan terhapus.')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                                <i class="ti ti-trash"></i>
-                                            </button>
-                                        </form>
+                                        <span class="text-muted">-</span>
                                     </td>
                                 </tr>
                             @empty

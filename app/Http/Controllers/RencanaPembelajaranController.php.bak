@@ -1,0 +1,1368 @@
+<?php
+
+namespace App\Http\Controllers;
+
+class RencanaPembelajaranController extends Controller
+{
+}
+        $originalRoot = URL::to('/');
+        $appRoot = config('app.url') ?: $originalRoot;
+        URL::forceRootUrl(rtrim($appRoot, '/'));
+
+        $templateUrl = URL::temporarySignedRoute(
+            'rencana_pembelajaran.document_temp',
+            now()->addMinutes(60),
+            ['tempKey' => $tempKey]
+        );
+
+        $callbackUrl = URL::temporarySignedRoute(
+            'rencana_pembelajaran.onlyoffice_temp_callback',
+            now()->addMinutes(60),
+            ['tempKey' => $tempKey]
+        );
+
+        $documentKey = sha1($templateUrl . 'Rencana Pembelajaran - ' . $mataPelajaran->nama_mapel);
+        $onlyOfficeJwtToken = null;
+        $secret = $this->getOnlyOfficeServerSecret();
+        if ($secret) {
+            $onlyOfficeJwtToken = $this->createOnlyOfficeJwt([
+                'user' => [
+                    'id' => auth()->id() ?? 'guest',
+                    'name' => optional(auth()->user())->name ?? 'Guru',
+                ],
+                'document' => [
+                    'key' => $documentKey,
+                    'url' => $templateUrl,
+                ],
+                'editorConfig' => [
+                    'callbackUrl' => $callbackUrl,
+                    'mode' => 'edit',
+                ],
+            ], $secret);
+        }
+
+        URL::forceRootUrl($originalRoot);
+
+        return view('rencana_pembelajaran.create', [
+            'mataPelajaran' => $mataPelajaran,
+            'tingkat' => $tingkat,
+            'kelas' => $kelas,
+            'komponenNilai' => $komponenNilai,
+            'tempKey' => $tempKey,
+            'onlyOfficeServerUrl' => $onlyOfficeServerUrl,
+            'templateUrl' => $templateUrl,
+            'callbackUrl' => $callbackUrl,
+            'documentKey' => $documentKey,
+            'onlyOfficeJwtToken' => $onlyOfficeJwtToken,
+            'faseOptions' => $faseOptions,
+            'selectedFase' => $selectedFase,
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_ids' => 'required|array|min:1',
+            'kelas_ids.*' => 'exists:kelas,id',
+            'judul' => 'required|string|max:255',
+            'temp_key' => 'nullable|string',
+            'komponen_nilai_ids' => 'nullable|array',
+            'komponen_nilai_ids.*' => 'exists:komponen_nilai,id',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date',
+            'status' => 'required|in:draft,published',
+        ]);
+
+        $guru = auth()->user()->guru;
+        $mataPelajaranId = $validated['mata_pelajaran_id'];
+        $tingkat = Kelas::find($validated['kelas_ids'][0])->tingkat_kelas;
+        $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
+
+        $tempKey = $validated['temp_key'] ?? null;
+        $tempPath = $tempKey ? 'rencana_pembelajaran/docx/temp/' . $tempKey . '.docx' : null;
+        $storageTempFile = $tempPath ? storage_path('app/' . $tempPath) : null;
+        $publicTempFile = $tempPath ? public_path('uploads/' . $tempPath) : null;
+
+        if ($tempPath && $storageTempFile && file_exists($storageTempFile)) {
+            $htmlContent = $this->convertDocxToHtml($storageTempFile);
+            $parsedData = $this->parseWordDocument($htmlContent);
+
+            $validated['original_docx_path'] = $tempPath;
+            $validated['html_content'] = $htmlContent;
+            $validated['capaian_pembelajaran'] = $parsedData['capaian_pembelajaran'] ?? null;
+            $validated['tujuan'] = $parsedData['tujuan'] ?? null;
+            $validated['metode'] = $parsedData['metode'] ?? null;
+            $validated['media'] = $parsedData['media'] ?? null;
+            $validated['sumber'] = $parsedData['sumber'] ?? null;
+            $validated['alokasi_waktu'] = $parsedData['alokasi_waktu'] ?? null;
+            $validated['praktik_pedagogis'] = $parsedData['praktik_pedagogis'] ?? null;
+            $validated['lingkungan_pembelajaran'] = $parsedData['lingkungan_pembelajaran'] ?? null;
+            $validated['pemanfaatan_digital'] = $parsedData['pemanfaatan_digital'] ?? null;
+            $validated['pengalaman_pembelajaran'] = $parsedData['pengalaman_pembelajaran'] ?? null;
+            $validated['refleksi_pembelajaran'] = $parsedData['refleksi_pembelajaran'] ?? null;
+            $validated['penilaian'] = $parsedData['penilaian'] ?? null;
+        } elseif ($tempPath && $publicTempFile && file_exists($publicTempFile)) {
+            $htmlContent = $this->convertDocxToHtml($publicTempFile);
+            $parsedData = $this->parseWordDocument($htmlContent);
+
+            $validated['original_docx_path'] = $tempPath;
+            $validated['html_content'] = $htmlContent;
+            $validated['capaian_pembelajaran'] = $parsedData['capaian_pembelajaran'] ?? null;
+            $validated['tujuan'] = $parsedData['tujuan'] ?? null;
+            $validated['metode'] = $parsedData['metode'] ?? null;
+            $validated['media'] = $parsedData['media'] ?? null;
+            $validated['sumber'] = $parsedData['sumber'] ?? null;
+            $validated['alokasi_waktu'] = $parsedData['alokasi_waktu'] ?? null;
+            $validated['praktik_pedagogis'] = $parsedData['praktik_pedagogis'] ?? null;
+            $validated['lingkungan_pembelajaran'] = $parsedData['lingkungan_pembelajaran'] ?? null;
+            $validated['pemanfaatan_digital'] = $parsedData['pemanfaatan_digital'] ?? null;
+            $validated['pengalaman_pembelajaran'] = $parsedData['pengalaman_pembelajaran'] ?? null;
+            $validated['refleksi_pembelajaran'] = $parsedData['refleksi_pembelajaran'] ?? null;
+            $validated['penilaian'] = $parsedData['penilaian'] ?? null;
+        } elseif ($tempPath && Storage::exists($tempPath)) {
+            $htmlContent = $this->convertDocxToHtml(storage_path('app/' . $tempPath));
+            $parsedData = $this->parseWordDocument($htmlContent);
+
+            $validated['original_docx_path'] = $tempPath;
+            $validated['html_content'] = $htmlContent;
+            $validated['capaian_pembelajaran'] = $parsedData['capaian_pembelajaran'] ?? null;
+            $validated['tujuan'] = $parsedData['tujuan'] ?? null;
+            $validated['metode'] = $parsedData['metode'] ?? null;
+            $validated['media'] = $parsedData['media'] ?? null;
+            $validated['sumber'] = $parsedData['sumber'] ?? null;
+            $validated['alokasi_waktu'] = $parsedData['alokasi_waktu'] ?? null;
+            $validated['praktik_pedagogis'] = $parsedData['praktik_pedagogis'] ?? null;
+            $validated['lingkungan_pembelajaran'] = $parsedData['lingkungan_pembelajaran'] ?? null;
+            $validated['pemanfaatan_digital'] = $parsedData['pemanfaatan_digital'] ?? null;
+            $validated['pengalaman_pembelajaran'] = $parsedData['pengalaman_pembelajaran'] ?? null;
+            $validated['refleksi_pembelajaran'] = $parsedData['refleksi_pembelajaran'] ?? null;
+            $validated['penilaian'] = $parsedData['penilaian'] ?? null;
+        } else {
+            return back()->with('error', 'Dokumen OnlyOffice belum disimpan. Silakan edit dokumen di OnlyOffice dan tunggu beberapa saat sebelum menyimpan.');
+        }
+
+        $originalDocxPath = $validated['original_docx_path'] ?? null;
+        $publicOriginalTempFile = $originalDocxPath ? public_path('uploads/' . $originalDocxPath) : null;
+        $storageOriginalTempFile = $originalDocxPath ? storage_path('app/' . $originalDocxPath) : null;
+
+        if ($originalDocxPath && $storageOriginalTempFile && file_exists($storageOriginalTempFile)) {
+            if (str_contains($originalDocxPath, '/temp/') || str_contains($originalDocxPath, '\\temp\\')) {
+                $slug = \Illuminate\Support\Str::slug($validated['judul']);
+                $finalFilename = ($slug ?: 'rencana-pembelajaran') . '_' . time() . '.docx';
+                $finalPath = 'rencana_pembelajaran/docx/' . $finalFilename;
+                $storageFinalPath = storage_path('app/' . $finalPath);
+                if (!file_exists($storageFinalPath)) {
+                    if (!is_dir(dirname($storageFinalPath))) {
+                        mkdir(dirname($storageFinalPath), 0755, true);
+                    }
+                    rename($storageOriginalTempFile, $storageFinalPath);
+                }
+                $validated['original_docx_path'] = $finalPath;
+            }
+        } elseif ($originalDocxPath && $publicOriginalTempFile && file_exists($publicOriginalTempFile)) {
+            if (str_contains($originalDocxPath, '/temp/') || str_contains($originalDocxPath, '\\temp\\')) {
+                $slug = \Illuminate\Support\Str::slug($validated['judul']);
+                $finalFilename = ($slug ?: 'rencana-pembelajaran') . '_' . time() . '.docx';
+                $finalPath = 'rencana_pembelajaran/docx/' . $finalFilename;
+                $storageFinalPath = storage_path('app/' . $finalPath);
+                if (!file_exists($storageFinalPath)) {
+                    if (!is_dir(dirname($storageFinalPath))) {
+                        mkdir(dirname($storageFinalPath), 0755, true);
+                    }
+                    rename($publicOriginalTempFile, $storageFinalPath);
+                }
+                $validated['original_docx_path'] = $finalPath;
+            }
+        }
+
+        if (!$this->isAdminOrKepala()) {
+            $allowedKelasIds = $this->getAllowedKelasIdsForRencana($mataPelajaranId, $tingkat)->toArray();
+            if (count(array_diff($validated['kelas_ids'], $allowedKelasIds)) > 0) {
+                abort(403, 'Salah satu kelas tidak termasuk dalam jadwal pelajaran Anda.');
+            }
+        }
+
+        if (!empty($komponenNilaiIds) && auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+            $allowedKomponenIds = $this->scopedKomponenNilaiQuery()
+                ->whereIn('id', $komponenNilaiIds)
+                ->pluck('id')
+                ->toArray();
+
+            if (count($allowedKomponenIds) !== count($komponenNilaiIds)) {
+                abort(403, 'Akses ditolak untuk salah satu komponen penilaian.');
+            }
+        }
+
+        // Create rencana pembelajaran for each selected class
+        foreach ($validated['kelas_ids'] as $kelasId) {
+            $data = $validated;
+            $data['guru_id'] = $guru->id;
+            $data['kelas_id'] = $kelasId;
+            unset($data['kelas_ids']);
+            unset($data['komponen_nilai_ids']);
+            unset($data['temp_key']);
+
+            $rencana = RencanaPembelajaran::create($data);
+            
+            // Sync komponen penilaian
+            if (!empty($komponenNilaiIds)) {
+                $rencana->komponenNilai()->sync($komponenNilaiIds);
+            }
+        }
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'tingkat' => $tingkat,
+            ])
+            ->with('success', 'Rencana pembelajaran berhasil dibuat untuk ' . count($validated['kelas_ids']) . ' kelas.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    private function isAdminOrKepala(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']);
+    }
+
+    private function authorizeRencanaPembelajaran(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        if ($this->isAdminOrKepala()) {
+            return;
+        }
+
+        $guru = auth()->user()->guru;
+        if (!$guru || $rencanaPembelajaran->guru_id !== $guru->id) {
+            abort(403, 'Anda tidak memiliki akses ke rencana pembelajaran ini.');
+        }
+    }
+
+    public function show(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        return $this->disabledPage();
+    }
+
+    public function showLegacy(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
+        $onlyOfficeServerUrl = $this->getOnlyOfficeServerUrl();
+        $originalRoot = URL::to('/');
+        $appRoot = config('app.url') ?: $originalRoot;
+        URL::forceRootUrl(rtrim($appRoot, '/'));
+
+        $fileUrl = URL::temporarySignedRoute(
+            'rencana_pembelajaran.document',
+            now()->addMinutes(60),
+            ['rencanaPembelajaran' => $rencanaPembelajaran->id]
+        );
+
+        $documentKey = md5($rencanaPembelajaran->id . '_' . ($rencanaPembelajaran->updated_at?->timestamp ?? time()));
+        $fileType = strtolower(pathinfo($rencanaPembelajaran->original_docx_path, PATHINFO_EXTENSION) ?: 'docx');
+
+        $onlyOfficeJwtToken = null;
+        $secret = $this->getOnlyOfficeServerSecret();
+        if ($secret) {
+            $onlyOfficeJwtToken = $this->createOnlyOfficeJwt([
+                'user' => [
+                    'id' => auth()->id() ?? 'guest',
+                    'name' => optional(auth()->user())->name ?? 'Guru',
+                ],
+                'document' => [
+                    'key' => $documentKey,
+                    'url' => $fileUrl,
+                ],
+                'editorConfig' => [
+                    'mode' => 'view',
+                ],
+            ], $secret);
+        }
+
+        URL::forceRootUrl($originalRoot);
+
+        return view('rencana_pembelajaran.show', [
+            'item' => $rencanaPembelajaran,
+            'onlyOfficeServerUrl' => $onlyOfficeServerUrl,
+            'fileUrl' => $fileUrl,
+            'documentKey' => $documentKey,
+            'fileType' => $fileType,
+            'onlyOfficeJwtToken' => $onlyOfficeJwtToken,
+        ]);
+    }
+
+    public function editOnlyOffice(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        return $this->disabledPage();
+    }
+
+    public function editOnlyOfficeLegacy(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
+        if (empty($rencanaPembelajaran->original_docx_path) || !Storage::exists($rencanaPembelajaran->original_docx_path)) {
+            return redirect()->route('rencana_pembelajaran.show', $rencanaPembelajaran->id)
+                ->with('error', 'Dokumen Word asli tidak tersedia untuk pengeditan OnlyOffice.');
+        }
+
+        $onlyOfficeServerUrl = $this->getOnlyOfficeServerUrl();
+        // Use the application's public URL (APP_URL) for signed routes so DocService can
+        // request the file from the Laravel server. Fallback to current root if APP_URL
+        // is not configured.
+        $originalRoot = URL::to('/');
+        $appRoot = config('app.url') ?: $originalRoot;
+        URL::forceRootUrl(rtrim($appRoot, '/'));
+        $fileUrl = URL::temporarySignedRoute(
+            'rencana_pembelajaran.document',
+            now()->addMinutes(60),
+            ['rencanaPembelajaran' => $rencanaPembelajaran->id]
+        );
+        $callbackUrl = URL::temporarySignedRoute(
+            'rencana_pembelajaran.onlyoffice_callback',
+            now()->addMinutes(60),
+            ['rencanaPembelajaran' => $rencanaPembelajaran->id]
+        );
+        URL::forceRootUrl($originalRoot);
+        $documentKey = md5($rencanaPembelajaran->id . '_' . ($rencanaPembelajaran->updated_at?->timestamp ?? time()));
+        $fileType = strtolower(pathinfo($rencanaPembelajaran->original_docx_path, PATHINFO_EXTENSION) ?: 'docx');
+
+        $onlyOfficeJwtToken = null;
+        $secret = $this->getOnlyOfficeServerSecret();
+        if ($secret) {
+            $onlyOfficeJwtToken = $this->createOnlyOfficeJwt([
+                'user' => [
+                    'id' => auth()->id() ?? 'guest',
+                    'name' => optional(auth()->user())->name ?? 'Guru',
+                ],
+                'document' => [
+                    'key' => $documentKey,
+                    'url' => $fileUrl,
+                ],
+                'editorConfig' => [
+                    'callbackUrl' => $callbackUrl,
+                    'mode' => 'edit',
+                ],
+            ], $secret);
+        }
+
+        return view('rencana_pembelajaran.onlyoffice', [
+            'item' => $rencanaPembelajaran,
+            'onlyOfficeServerUrl' => $onlyOfficeServerUrl,
+            'fileUrl' => $fileUrl,
+            'callbackUrl' => $callbackUrl,
+            'documentKey' => $documentKey,
+            'fileType' => $fileType,
+            'onlyOfficeJwtToken' => $onlyOfficeJwtToken,
+        ]);
+    }
+
+    public function document(Request $request, RencanaPembelajaran $rencanaPembelajaran)
+    {
+        if (empty($rencanaPembelajaran->original_docx_path) || !Storage::exists($rencanaPembelajaran->original_docx_path)) {
+            abort(404);
+        }
+
+        $path = storage_path('app/' . $rencanaPembelajaran->original_docx_path);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+        ]);
+    }
+
+    public function documentTemp(Request $request, string $tempKey)
+    {
+        $tempKey = preg_replace('/[^A-Za-z0-9_\-]/', '', $tempKey);
+        $tempPath = 'rencana_pembelajaran/docx/temp/' . $tempKey . '.docx';
+
+        if (!Storage::exists($tempPath)) {
+            abort(404);
+        }
+
+        $path = storage_path('app/' . $tempPath);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
+        ]);
+    }
+
+    public function onlyOfficeTempCallback(Request $request, string $tempKey, OnlyOfficeCallbackService $service)
+    {
+        $tempKey = preg_replace('/[^A-Za-z0-9_\-]/', '', $tempKey);
+        $tempPath = 'rencana_pembelajaran/docx/temp/' . $tempKey . '.docx';
+
+        return response()->json($service->handleTempCallback($request, $tempPath));
+    }
+
+    public function onlyOfficeCallback(Request $request, RencanaPembelajaran $rencanaPembelajaran, OnlyOfficeCallbackService $service)
+    {
+        return response()->json($service->handleCallback($request, $rencanaPembelajaran));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        return $this->disabledPage();
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, RencanaPembelajaran $rencanaPembelajaran)
+    {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
+        $validated = $request->validate([
+            'kelas_id' => 'required|exists:kelas,id',
+            'judul' => 'required|string|max:255',
+            'capaian_pembelajaran' => 'nullable|string',
+            'tujuan' => 'nullable|string',
+            'metode' => 'nullable|string',
+            'media' => 'nullable|string',
+            'sumber' => 'nullable|string',
+            'alokasi_waktu' => 'nullable|string',
+            'praktik_pedagogis' => 'nullable|string',
+            'lingkungan_pembelajaran' => 'nullable|string',
+            'pemanfaatan_digital' => 'nullable|string',
+            'pengalaman_pembelajaran' => 'nullable|string',
+            'refleksi_pembelajaran' => 'nullable|string',
+            'penilaian' => 'nullable|string',
+            'komponen_nilai_ids' => 'nullable|array',
+            'komponen_nilai_ids.*' => 'exists:komponen_nilai,id',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date',
+            'status' => 'required|in:draft,published',
+        ]);
+
+        $komponenNilaiIds = $validated['komponen_nilai_ids'] ?? [];
+        unset($validated['komponen_nilai_ids']);
+
+        if (!empty($komponenNilaiIds) && auth()->check() && auth()->user()->hasRole('Guru Mapel')) {
+            $allowedKomponenIds = $this->scopedKomponenNilaiQuery()
+                ->whereIn('id', $komponenNilaiIds)
+                ->pluck('id')
+                ->toArray();
+
+            if (count($allowedKomponenIds) !== count($komponenNilaiIds)) {
+                abort(403, 'Akses ditolak untuk salah satu komponen penilaian.');
+            }
+        }
+
+        $rencanaPembelajaran->update($validated);
+        
+        // Sync komponen penilaian
+        $rencanaPembelajaran->komponenNilai()->sync($komponenNilaiIds);
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $rencanaPembelajaran->mata_pelajaran_id,
+                'tingkat' => $rencanaPembelajaran->kelas->tingkat_kelas,
+            ])
+            ->with('success', 'Rencana pembelajaran berhasil diperbarui.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
+        $mataPelajaranId = $rencanaPembelajaran->mata_pelajaran_id;
+        $tingkat = $rencanaPembelajaran->kelas->tingkat_kelas;
+
+        \App\Models\AgendaGuru::where('rencana_pembelajaran_id', $rencanaPembelajaran->id)->delete();
+        $rencanaPembelajaran->delete();
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'tingkat' => $tingkat,
+            ])
+            ->with('success', 'Rencana pembelajaran berhasil dihapus.');
+    }
+
+    /**
+     * Download template Word untuk Rencana Pembelajaran
+     */
+    public function templateDownload()
+    {
+        $path = $this->getDefaultTemplateStoragePath();
+
+        if (!$this->ensureDefaultTemplateExists() || !file_exists($path)) {
+            abort(404);
+        }
+
+        return response()->download($path, 'Template_Rencana_Pembelajaran.docx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
+    }
+
+    /**
+     * Export rencana pembelajaran to Word document
+     */
+    public function export(RencanaPembelajaran $rencanaPembelajaran)
+    {
+        $this->authorizeRencanaPembelajaran($rencanaPembelajaran);
+
+        if (!empty($rencanaPembelajaran->original_docx_path) && Storage::exists($rencanaPembelajaran->original_docx_path)) {
+            $path = storage_path('app/' . $rencanaPembelajaran->original_docx_path);
+            $filename = 'RP_' . Str::slug($rencanaPembelajaran->judul ?: 'rencana-pembelajaran') . '_' . ($rencanaPembelajaran->updated_at?->timestamp ?? time()) . '.docx';
+
+            return response()->download($path, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ]);
+        }
+
+        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        
+        // Set default font
+        $phpWord->setDefaultFontName('Arial');
+        $phpWord->setDefaultFontSize(11);
+        
+        $section = $phpWord->addSection();
+        
+        // Title
+        $section->addText(
+            'RENCANA PEMBELAJARAN',
+            ['bold' => true, 'size' => 14],
+            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]
+        );
+        
+        $section->addText(
+            $rencanaPembelajaran->mataPelajaran->nama_mapel . ' - ' . $rencanaPembelajaran->kelas->nama_kelas,
+            ['size' => 12],
+            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]
+        );
+        
+        $section->addText('');
+        
+        // Information table
+        $table = $section->addTable(['borderSize' => 6, 'borderColor' => '000000']);
+        
+        $rowStyle = ['bgColor' => 'D3D3D3'];
+        $table->addRow();
+        $table->addCell(2000)->addText('Judul', ['bold' => true]);
+        $table->addCell(6000)->addText($rencanaPembelajaran->judul);
+        
+        $table->addRow();
+        $table->addCell(2000)->addText('Mata Pelajaran', ['bold' => true]);
+        $table->addCell(6000)->addText($rencanaPembelajaran->mataPelajaran->nama_mapel);
+        
+        $table->addRow();
+        $table->addCell(2000)->addText('Kelas', ['bold' => true]);
+        $table->addCell(6000)->addText($rencanaPembelajaran->kelas->nama_kelas);
+        
+        $table->addRow();
+        $table->addCell(2000)->addText('Status', ['bold' => true]);
+        $table->addCell(6000)->addText(ucfirst($rencanaPembelajaran->status));
+        
+        if ($rencanaPembelajaran->tanggal_mulai || $rencanaPembelajaran->tanggal_selesai) {
+            $table->addRow();
+            $table->addCell(2000)->addText('Periode', ['bold' => true]);
+            $periode = '';
+            if ($rencanaPembelajaran->tanggal_mulai) {
+                $periode = $rencanaPembelajaran->tanggal_mulai->format('d/m/Y');
+            }
+            if ($rencanaPembelajaran->tanggal_selesai) {
+                $periode .= ' - ' . $rencanaPembelajaran->tanggal_selesai->format('d/m/Y');
+            }
+            $table->addCell(6000)->addText($periode);
+        }
+        
+        $section->addText('');
+        
+        // Details sections
+        if ($rencanaPembelajaran->capaian_pembelajaran) {
+            $section->addText('Capaian Pembelajaran', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->capaian_pembelajaran);
+            $section->addText('');
+        }
+        
+        if ($rencanaPembelajaran->tujuan) {
+            $section->addText('Tujuan Pembelajaran', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->tujuan);
+            $section->addText('');
+        }
+        
+        if ($rencanaPembelajaran->metode) {
+            $section->addText('Metode Pembelajaran', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->metode);
+            $section->addText('');
+        }
+        
+        if ($rencanaPembelajaran->media) {
+            $section->addText('Media Pembelajaran', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->media);
+            $section->addText('');
+        }
+        
+        if ($rencanaPembelajaran->sumber) {
+            $section->addText('Sumber Belajar', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->sumber);
+            $section->addText('');
+        }
+        
+        if ($rencanaPembelajaran->penilaian) {
+            $section->addText('Penilaian', ['bold' => true, 'size' => 12]);
+            $section->addText($rencanaPembelajaran->penilaian);
+        }
+        
+        // Generate filename
+        $filename = 'RP_' . \Illuminate\Support\Str::slug($rencanaPembelajaran->judul) . '_' . time() . '.docx';
+        
+        // Create writer and output to stream
+        $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+        
+        // Use output buffering to capture the output
+        ob_start();
+        $writer->save('php://output');
+        $content = ob_get_clean();
+        
+        return response($content)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Content-Length', strlen($content));
+    }
+
+
+    /**
+     * Show import form
+     */
+    public function importForm(Request $request)
+    {
+        $mataPelajaranId = $request->query('mata_pelajaran_id');
+        $tingkat = $request->query('tingkat');
+
+        if (empty($mataPelajaranId) || empty($tingkat)) {
+            return redirect()->route('rencana_pembelajaran.index')->with('error', 'Parameter mata pelajaran atau tingkat tidak ditemukan.');
+        }
+
+        $guru = auth()->user()->guru;
+        if (!$guru) {
+            return redirect()->route('rencana_pembelajaran.index')->with('error', 'Akun guru tidak ditemukan. Silakan login kembali.');
+        }
+
+        $mataPelajaran = MataPelajaran::find($mataPelajaranId);
+        if (!$mataPelajaran) {
+            return redirect()->route('rencana_pembelajaran.index')->with('error', 'Mata pelajaran tidak ditemukan.');
+        }
+
+        $kelas = \App\Models\JadwalKbm::where('guru_id', $guru->id)
+            ->where('mata_pelajaran_id', $mataPelajaranId)
+            ->with('kelas')
+            ->get()
+            ->pluck('kelas')
+            ->filter(function($k) use ($tingkat) {
+                return $k->tingkat_kelas == $tingkat;
+            })
+            ->unique('id')
+            ->sortBy('nama_kelas');
+
+        if ($kelas->isEmpty()) {
+            return redirect()->route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $mataPelajaran->id, 'tingkat' => $tingkat])
+                ->with('error', 'Tidak ada kelas yang sesuai untuk mata pelajaran ini.');
+        }
+
+        return view('rencana_pembelajaran.import', [
+            'mataPelajaran' => $mataPelajaran,
+            'tingkat' => $tingkat,
+            'kelas' => $kelas,
+        ]);
+    }
+
+    /**
+     * Process import from Word document
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:docx|max:5120', // 5MB max
+            'kelas_ids' => 'required|array|min:1',
+            'kelas_ids.*' => 'exists:kelas,id',
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $docxPath = \Storage::putFile('rencana_pembelajaran/docx', $file);
+            $filePath = storage_path('app/' . $docxPath);
+
+            $htmlContent = $this->convertDocxToHtml($filePath);
+            $data = $this->parseWordDocument($htmlContent);
+            $data['html_content'] = $htmlContent;
+
+            if (empty($data['judul'])) {
+                return back()->with('error', 'Tidak dapat menemukan judul dalam dokumen Word.');
+            }
+
+            $data['status'] = isset($data['status']) ? strtolower(trim($data['status'])) : 'draft';
+            if (! in_array($data['status'], ['draft', 'published'])) {
+                $data['status'] = 'draft';
+            }
+
+            $mataPelajaranId = $request->input('mata_pelajaran_id');
+            $kelasIds = $request->input('kelas_ids');
+            $selectedKelas = Kelas::whereIn('id', $kelasIds)->get();
+            $mataPelajaran = MataPelajaran::find($mataPelajaranId);
+
+            if (!$this->isAdminOrKepala()) {
+                $tingkat = $selectedKelas->first()->tingkat_kelas ?? null;
+                $allowedKelasIds = $this->getAllowedKelasIdsForRencana($mataPelajaranId, $tingkat)->toArray();
+                if (count(array_diff($kelasIds, $allowedKelasIds)) > 0) {
+                    return back()->with('error', 'Salah satu kelas tidak termasuk dalam jadwal pelajaran Anda.');
+                }
+            }
+
+            return view('rencana_pembelajaran.import_preview', [
+                'mataPelajaran' => $mataPelajaran,
+                'selectedKelas' => $selectedKelas,
+                'selectedKelasIds' => $kelasIds,
+                'importData' => $data,
+                'originalDocxPath' => $docxPath,
+                'fileName' => $file->getClientOriginalName(),
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error saat membaca dokumen: ' . $e->getMessage());
+        }
+    }
+
+    public function importConfirm(Request $request)
+    {
+        $validated = $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_ids' => 'required|array|min:1',
+            'kelas_ids.*' => 'exists:kelas,id',
+            'original_docx_path' => 'required|string',
+            'judul' => 'required|string|max:255',
+            'capaian_pembelajaran' => 'nullable|string',
+            'tujuan' => 'nullable|string',
+            'metode' => 'nullable|string',
+            'media' => 'nullable|string',
+            'sumber' => 'nullable|string',
+            'alokasi_waktu' => 'nullable|string',
+            'praktik_pedagogis' => 'nullable|string',
+            'lingkungan_pembelajaran' => 'nullable|string',
+            'pemanfaatan_digital' => 'nullable|string',
+            'pengalaman_pembelajaran' => 'nullable|string',
+            'refleksi_pembelajaran' => 'nullable|string',
+            'penilaian' => 'nullable|string',
+            'status' => 'required|in:draft,published',
+            'html_content' => 'nullable|string',
+        ]);
+
+        if (!\Storage::exists($validated['original_docx_path'])) {
+            return back()->with('error', 'File DOCX asli tidak ditemukan di server. Silakan ulangi proses upload.');
+        }
+
+        $guru = auth()->user()->guru;
+        $mataPelajaranId = $validated['mata_pelajaran_id'];
+        $kelasIds = $validated['kelas_ids'];
+        $status = $validated['status'];
+        $htmlContent = isset($validated['html_content']) ? base64_decode($validated['html_content']) : null;
+
+        if (empty($htmlContent) && \Storage::exists($validated['original_docx_path'])) {
+            $htmlContent = $this->convertDocxToHtml(storage_path('app/' . $validated['original_docx_path']));
+        }
+
+        if (!$this->isAdminOrKepala()) {
+            $tingkat = Kelas::find($kelasIds[0])->tingkat_kelas;
+            $allowedKelasIds = $this->getAllowedKelasIdsForRencana($mataPelajaranId, $tingkat)->toArray();
+            if (count(array_diff($kelasIds, $allowedKelasIds)) > 0) {
+                return back()->with('error', 'Salah satu kelas tidak termasuk dalam jadwal pelajaran Anda.');
+            }
+        }
+
+        foreach ($kelasIds as $kelasId) {
+            $rencana = new RencanaPembelajaran();
+            $rencana->guru_id = $guru->id;
+            $rencana->mata_pelajaran_id = $mataPelajaranId;
+            $rencana->kelas_id = $kelasId;
+            $rencana->judul = $validated['judul'];
+            $rencana->capaian_pembelajaran = $validated['capaian_pembelajaran'] ?? null;
+            $rencana->tujuan = $validated['tujuan'] ?? null;
+            $rencana->metode = $validated['metode'] ?? null;
+            $rencana->media = $validated['media'] ?? null;
+            $rencana->sumber = $validated['sumber'] ?? null;
+            $rencana->alokasi_waktu = $validated['alokasi_waktu'] ?? null;
+            $rencana->praktik_pedagogis = $validated['praktik_pedagogis'] ?? null;
+            $rencana->lingkungan_pembelajaran = $validated['lingkungan_pembelajaran'] ?? null;
+            $rencana->pemanfaatan_digital = $validated['pemanfaatan_digital'] ?? null;
+            $rencana->pengalaman_pembelajaran = $validated['pengalaman_pembelajaran'] ?? null;
+            $rencana->refleksi_pembelajaran = $validated['refleksi_pembelajaran'] ?? null;
+            $rencana->penilaian = $validated['penilaian'] ?? null;
+            $rencana->status = $status;
+            $rencana->html_content = $htmlContent;
+            $rencana->original_docx_path = $validated['original_docx_path'];
+            $rencana->save();
+        }
+
+        $tingkat = Kelas::find($kelasIds[0])->tingkat_kelas;
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'tingkat' => $tingkat,
+            ])
+            ->with('success', 'Rencana pembelajaran berhasil diimport untuk ' . count($kelasIds) . ' kelas.');
+    }
+
+    /**
+     * Bulk delete rencana pembelajaran
+     */
+    public function bulkDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = array_filter(explode(',', $request->input('ids')));
+        
+        if (empty($ids)) {
+            return back()->with('error', 'Tidak ada item yang dipilih');
+        }
+
+        $guru = auth()->user()->guru;
+        
+        // Get first rencana for redirect info
+        $firstRencana = RencanaPembelajaran::whereIn('id', $ids)
+            ->where('guru_id', $guru->id)
+            ->first();
+
+        if (!$firstRencana) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk menghapus item ini');
+        }
+
+        $mataPelajaranId = $firstRencana->mata_pelajaran_id;
+        $tingkat = $firstRencana->kelas->tingkat_kelas;
+        $deletedCount = 0;
+
+        // Delete only rencana that belong to this guru
+        $idsToDelete = RencanaPembelajaran::whereIn('id', $ids)
+            ->where('guru_id', $guru->id)
+            ->pluck('id')
+            ->toArray();
+
+        \App\Models\AgendaGuru::whereIn('rencana_pembelajaran_id', $idsToDelete)->delete();
+
+        $deletedCount = RencanaPembelajaran::whereIn('id', $idsToDelete)->delete();
+
+        return redirect()
+            ->route('rencana_pembelajaran.index', [
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'tingkat' => $tingkat,
+            ])
+            ->with('success', $deletedCount . ' rencana pembelajaran berhasil dihapus.');
+    }
+
+    /**
+     * Parse Word document content and extract data
+     */
+    private function parseWordDocument($text)
+    {
+        if (preg_match('/<\/?(?:html|body|table|tr|td|th|p|div|span|h[1-6]|ul|ol)/i', $text)) {
+            return $this->parseWordDocumentHtml($text);
+        }
+
+        $data = [];
+        $text = preg_replace('/\r\n?/', "\n", $text);
+        $text = trim($text);
+
+        $lines = array_filter(array_map(fn($line) => trim(strip_tags($line)), explode("\n", $text)), fn($line) => $line !== '');
+
+        $headingMap = [
+            'JUDUL' => 'judul',
+            'MATA PELAJARAN' => 'mata_pembelajaran',
+            'KELAS' => 'kelas',
+            'KELAS / FASE' => 'kelas',
+            'STATUS' => 'status',
+            'DESKRIPSI' => 'capaian_pembelajaran',
+            'DESKRIPSI / CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'TUJUAN PEMBELAJARAN' => 'tujuan',
+            'TUJUAN' => 'tujuan',
+            'METODE PEMBELAJARAN' => 'metode',
+            'METODE' => 'metode',
+            'MEDIA PEMBELAJARAN' => 'media',
+            'MEDIA' => 'media',
+            'SUMBER BELAJAR' => 'sumber',
+            'SUMBER' => 'sumber',
+            'ALOKASI WAKTU' => 'alokasi_waktu',
+            'PRAKTIK PEDAGOGIS' => 'praktik_pedagogis',
+            'PRAKTIK PEDAGOGI' => 'praktik_pedagogis',
+            'LINGKUNGAN PEMBELAJARAN' => 'lingkungan_pembelajaran',
+            'PEMANFAATAN DIGITAL' => 'pemanfaatan_digital',
+            'PENGALAMAN PEMBELAJARAN' => 'pengalaman_pembelajaran',
+            'REFLEKSI PEMBELAJARAN' => 'refleksi_pembelajaran',
+            'ASESMEN' => 'penilaian',
+            'PENILAIAN' => 'penilaian',
+        ];
+
+        $currentSection = null;
+
+        foreach ($lines as $line) {
+            $upperLine = preg_replace('/\s+/', ' ', strtoupper($line));
+            $matched = false;
+
+            foreach ($headingMap as $heading => $field) {
+                if ($upperLine === $heading) {
+                    $currentSection = $field;
+                    $matched = true;
+                    break;
+                }
+
+                if (preg_match('/^' . preg_quote($heading, '/') . '\s*[:\-\|]+\s*(.*)$/i', $line, $matches)) {
+                    $currentSection = $field;
+                    $value = trim($matches[1]);
+                    if ($value !== '') {
+                        $data[$currentSection] = $value;
+                    }
+                    $matched = true;
+                    break;
+                }
+
+                if (stripos($upperLine, $heading . ' |') === 0 || stripos($upperLine, $heading . ':') === 0 || stripos($upperLine, $heading . ' -') === 0) {
+                    $currentSection = $field;
+                    $delimiter = strpos($line, '|') !== false ? '|' : (strpos($line, ':') !== false ? ':' : '-');
+                    $value = trim(substr($line, strpos($line, $delimiter) + 1));
+                    if ($value !== '') {
+                        $data[$currentSection] = $value;
+                    }
+                    $matched = true;
+                    break;
+                }
+
+                if (preg_match('/^' . preg_quote($heading, '/') . '\s+(.+)$/i', $line, $matches)) {
+                    $currentSection = $field;
+                    $value = trim($matches[1]);
+                    if ($value !== '') {
+                        $data[$currentSection] = $value;
+                    }
+                    $matched = true;
+                    break;
+                }
+            }
+
+            if ($matched) {
+                continue;
+            }
+
+            if (strpos($line, ':') !== false || strpos($line, '-') !== false) {
+                $parts = preg_split('/\s*[:\-]\s*/', $line, 2);
+                if (count($parts) === 2) {
+                    $left = trim($parts[0]);
+                    $right = trim($parts[1]);
+                    $upperLeft = preg_replace('/\s+/', ' ', strtoupper($left));
+                    if (isset($headingMap[$upperLeft])) {
+                        $data[$headingMap[$upperLeft]] = $right;
+                        $currentSection = null;
+                        continue;
+                    }
+                }
+            }
+
+            if (strpos($line, '|') !== false) {
+                [$left, $right] = array_map('trim', explode('|', $line, 2));
+                $upperLeft = preg_replace('/\s+/', ' ', strtoupper($left));
+                if (isset($headingMap[$upperLeft])) {
+                    $data[$headingMap[$upperLeft]] = $right;
+                    $currentSection = null;
+                    continue;
+                }
+            }
+
+            if ($currentSection) {
+                $data[$currentSection] = isset($data[$currentSection])
+                    ? trim($data[$currentSection] . "\n" . $line)
+                    : $line;
+            }
+        }
+
+        if (empty($data['judul'])) {
+            foreach ($lines as $line) {
+                $upper = preg_replace('/\s+/', ' ', strtoupper($line));
+                if (stripos($upper, 'TEMPLATE RENCANA PEMBELAJARAN') !== false) {
+                    continue;
+                }
+                if (preg_match('/^(JUDUL|MATA PELAJARAN|KELAS|STATUS|DESKRIPSI|CAPAIAN PEMBELAJARAN|TUJUAN PEMBELAJARAN|TUJUAN|METODE PEMBELAJARAN|MEDIA PEMBELAJARAN|SUMBER BELAJAR|SUMBER|ALOKASI WAKTU|PRAKTIK PEDAGOGIS|LINGKUNGAN PEMBELAJARAN|PEMANFAATAN DIGITAL|PENGALAMAN PEMBELAJARAN|REFLEKSI PEMBELAJARAN|ASESMEN|PENILAIAN)\b/', $upper)) {
+                    continue;
+                }
+                if (strlen($line) > 5) {
+                    $data['judul'] = $line;
+                    break;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function parseWordDocumentHtml(string $html)
+    {
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->loadHTML('<?xml encoding="utf-8"?>' . $html, LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED);
+        libxml_clear_errors();
+
+        $headingMap = [
+            'JUDUL' => 'judul',
+            'MATA PELAJARAN' => 'mata_pembelajaran',
+            'KELAS' => 'kelas',
+            'KELAS / FASE' => 'kelas',
+            'STATUS' => 'status',
+            'DESKRIPSI' => 'capaian_pembelajaran',
+            'DESKRIPSI / CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'CAPAIAN PEMBELAJARAN' => 'capaian_pembelajaran',
+            'TUJUAN PEMBELAJARAN' => 'tujuan',
+            'TUJUAN' => 'tujuan',
+            'METODE PEMBELAJARAN' => 'metode',
+            'METODE' => 'metode',
+            'MEDIA PEMBELAJARAN' => 'media',
+            'MEDIA' => 'media',
+            'SUMBER BELAJAR' => 'sumber',
+            'SUMBER' => 'sumber',
+            'ALOKASI WAKTU' => 'alokasi_waktu',
+            'PRAKTIK PEDAGOGIS' => 'praktik_pedagogis',
+            'PRAKTIK PEDAGOGI' => 'praktik_pedagogis',
+            'LINGKUNGAN PEMBELAJARAN' => 'lingkungan_pembelajaran',
+            'PEMANFAATAN DIGITAL' => 'pemanfaatan_digital',
+            'PENGALAMAN PEMBELAJARAN' => 'pengalaman_pembelajaran',
+            'REFLEKSI PEMBELAJARAN' => 'refleksi_pembelajaran',
+            'ASESMEN' => 'penilaian',
+            'PENILAIAN' => 'penilaian',
+        ];
+
+        $data = [];
+        $xpath = new \DOMXPath($dom);
+        $body = $dom->getElementsByTagName('body')->item(0) ?? $dom;
+        $currentSection = null;
+
+        // Table extraction: get values from all table rows first.
+        foreach ($xpath->query('.//table//tr', $body) as $row) {
+            $cells = $row->getElementsByTagName('td');
+            if ($cells->length < 2) {
+                continue;
+            }
+
+            $label = trim($cells->item(0)->textContent);
+            $normalizedLabel = preg_replace('/\s+/', ' ', strtoupper($label));
+            if (!isset($headingMap[$normalizedLabel])) {
+                continue;
+            }
+
+            $field = $headingMap[$normalizedLabel];
+            $valueHtml = '';
+            for ($i = 1; $i < $cells->length; $i++) {
+                $valueHtml .= $this->getElementInnerHtml($cells->item($i));
+            }
+            // Decode any HTML entities produced by the DOCX->HTML writer so
+            // stored content contains real tags instead of literal entities.
+            $valueHtml = html_entity_decode($valueHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $data[$field] = trim($valueHtml);
+        }
+
+        foreach ($body->childNodes as $node) {
+            if ($node->nodeType === XML_TEXT_NODE && trim($node->textContent) === '') {
+                continue;
+            }
+
+            if ($node->nodeType === XML_ELEMENT_NODE) {
+                $tag = strtolower($node->nodeName);
+                $text = trim($node->textContent);
+
+                if (in_array($tag, ['p', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])) {
+                    $normalized = preg_replace('/\s+/', ' ', strtoupper($text));
+                    $matchedHeading = false;
+                    foreach ($headingMap as $heading => $field) {
+                        if ($normalized === $heading || preg_match('/^' . preg_quote($heading, '/') . '\s*[:\-\|]+\s*(.*)$/i', $text)) {
+                            $currentSection = $field;
+                            $matchedHeading = true;
+                            break;
+                        }
+                    }
+                    if ($matchedHeading) {
+                        $next = $node->nextSibling;
+                        while ($next && $next->nodeType === XML_TEXT_NODE && trim($next->textContent) === '') {
+                            $next = $next->nextSibling;
+                        }
+                        if ($next && $next->nodeType === XML_ELEMENT_NODE && strtolower($next->nodeName) === 'table') {
+                            $data[$currentSection] = html_entity_decode($this->getElementInnerHtml($next), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                            $currentSection = null;
+                            continue;
+                        }
+                        continue;
+                    }
+                }
+
+                if ($currentSection) {
+                    $contentHtml = $this->getElementInnerHtml($node);
+                    $contentHtml = html_entity_decode($contentHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    if ($contentHtml !== '') {
+                        $existing = $data[$currentSection] ?? '';
+                        $data[$currentSection] = trim($existing . ($existing !== '' ? "\n" : '') . $contentHtml);
+                    }
+                }
+            }
+        }
+
+        if (empty($data['judul'])) {
+            foreach ($xpath->query('.//p', $body) as $paragraph) {
+                $text = trim($paragraph->textContent);
+                $upper = preg_replace('/\s+/', ' ', strtoupper($text));
+                if ($text === '' || stripos($upper, 'TEMPLATE RENCANA PEMBELAJARAN') !== false) {
+                    continue;
+                }
+                if (preg_match('/^(JUDUL|MATA PELAJARAN|KELAS|STATUS|DESKRIPSI|CAPAIAN PEMBELAJARAN|TUJUAN PEMBELAJARAN|TUJUAN|METODE PEMBELAJARAN|MEDIA PEMBELAJARAN|SUMBER BELAJAR|SUMBER|ALOKASI WAKTU|PRAKTIK PEDAGOGIS|LINGKUNGAN PEMBELAJARAN|PEMANFAATAN DIGITAL|PENGALAMAN PEMBELAJARAN|REFLEKSI PEMBELAJARAN|ASESMEN|PENILAIAN)\b/', $upper)) {
+                    continue;
+                }
+                if (strlen($text) > 5) {
+                    $data['judul'] = $text;
+                    break;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function getElementInnerHtml(\DOMNode $node): string
+    {
+        $html = '';
+        foreach ($node->childNodes as $child) {
+            $html .= $node->ownerDocument->saveHTML($child);
+        }
+        return $html;
+    }
+
+    private const DEFAULT_TEMPLATE_PATH = 'rencana_pembelajaran/docx/temp/Template_Rencana_Pembelajaran.docx';
+
+    private function getDefaultTemplateStoragePath(): string
+    {
+        return storage_path('app/' . self::DEFAULT_TEMPLATE_PATH);
+    }
+
+    private function ensureDefaultTemplateExists(): bool
+    {
+        $path = $this->getDefaultTemplateStoragePath();
+        if (file_exists($path)) {
+            return true;
+        }
+
+        $fallback = public_path('storage/rencana_pembelajaran/docx/temp/Template_Rencana_Pembelajaran.docx');
+        if (file_exists($fallback)) {
+            @mkdir(dirname($path), 0755, true);
+            return copy($fallback, $path);
+        }
+
+        return false;
+    }
+
+    private function populateRencanaPembelajaranTemplate(\PhpOffice\PhpWord\PhpWord $phpWord, string $title = null)
+    {
+        $section = $phpWord->addSection();
+
+        if ($title) {
+            $section->addText($title, ['name' => 'Times New Roman', 'size' => 14, 'bold' => true]);
+            $section->addText('');
+        }
+
+        $section->addText(
+            'RENCANA PEMBELAJARAN',
+            ['bold' => true, 'size' => 14],
+            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]
+        );
+
+        $section->addText('');
+        $section->addText(
+            'Isi setiap bagian di bawah ini. Anda dapat menambahkan teks, gambar, tabel, atau elemen lain sesuai kebutuhan.',
+            ['italic' => true, 'size' => 10],
+            ['spacing' => 120]
+        );
+        $section->addText('');
+
+        $section->addText('INFORMASI UMUM', ['bold' => true, 'size' => 12]);
+        $section->addText('Biarkan placeholder di bawah tetap ada agar sistem dapat mengenali dan mengisi bidangnya secara otomatis.');
+        $section->addText('');
+
+        $table = $section->addTable(['borderSize' => 6, 'borderColor' => '000000']);
+        $table->addRow();
+        $table->addCell(2500)->addText('Judul', ['bold' => true]);
+        $table->addCell(5500)->addText('{{JUDUL}}');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Mata Pelajaran', ['bold' => true]);
+        $table->addCell(5500)->addText('{{MATA_PELAJARAN}}');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Kelas / Fase', ['bold' => true]);
+        $table->addCell(5500)->addText('{{KELAS}} / {{FASE}}');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Status', ['bold' => true]);
+        $table->addCell(5500)->addText('{{STATUS}}');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Alokasi Waktu', ['bold' => true]);
+        $table->addCell(5500)->addText('{{ALOKASI_WAKTU}}');
+
+        $table->addRow();
+        $table->addCell(2500)->addText('Komponen Penilaian', ['bold' => true]);
+        $table->addCell(5500)->addText('{{KOMPONEN_PENILAIAN}}');
+
+        $section->addText('');
+
+        $templateSections = [
+            'CAPAIAN PEMBELAJARAN' => '{{CAPAIAN_PEMBELAJARAN}}',
+            'TUJUAN PEMBELAJARAN' => '{{TUJUAN_PEMBELAJARAN}}',
+            'METODE PEMBELAJARAN' => '{{METODE_PEMBELAJARAN}}',
+            'MEDIA PEMBELAJARAN' => '{{MEDIA_PEMBELAJARAN}}',
+            'SUMBER BELAJAR' => '{{SUMBER_BELAJAR}}',
+            'PRAKTIK PEDAGOGIS' => '{{PRAKTIK_PEDAGOGIS}}',
+            'LINGKUNGAN PEMBELAJARAN' => '{{LINGKUNGAN_PEMBELAJARAN}}',
+            'PEMANFAATAN DIGITAL' => '{{PEMANFAATAN_DIGITAL}}',
+            'PENGALAMAN PEMBELAJARAN' => '{{PENGALAMAN_PEMBELAJARAN}}',
+            'REFLEKSI PEMBELAJARAN' => '{{REFLEKSI_PEMBELAJARAN}}',
+            'ASESMEN / PENILAIAN' => '{{ASESMEN}}',
+        ];
+
+        foreach ($templateSections as $heading => $placeholder) {
+            $section->addText($heading, ['bold' => true, 'size' => 12]);
+            $section->addText($placeholder);
+            $section->addText('');
+        }
+    }
+
+
+    private function convertDocxToHtml(string $path): string
+    {
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+            $writer = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'HTML');
+
+            ob_start();
+            $writer->save('php://output');
+            $html = ob_get_clean();
+
+            return $this->sanitizeImportedHtml($html);
+        } catch (\Throwable $e) {
+            // Fallback to plain text conversion when HTML writer fails
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($path);
+            $html = '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    $line = e($this->extractWordElementText($element));
+                    if ($line !== '') {
+                        $html .= '<p>' . nl2br($line) . '</p>';
+                    }
+                }
+            }
+            return $this->sanitizeImportedHtml($html);
+        }
+    }
+
+    private function sanitizeImportedHtml(string $html): string
+    {
+        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+        $html = preg_replace('/on[a-z]+\s*=\s*("[^"]*"|' . "'[^']*'" . '|[^\s>]+)/i', '', $html);
+
+        $css = '<style>
+            body { font-family: "Times New Roman", Times, serif; font-size: 12pt; color: #000; line-height: 1.6; padding: 20px; margin: 0; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+            table td, table th { border: 1px solid #333; padding: 6px 8px; vertical-align: top; text-align: left; }
+            table th { background: #f2f2f2; font-weight: bold; }
+            p { margin-bottom: 10px; }
+            h1, h2, h3, h4 { margin-top: 14px; margin-bottom: 8px; font-family: "Times New Roman", Times, serif; }
+            ul, ol { margin-left: 20px; margin-bottom: 10px; }
+            .preview-content { white-space: pre-wrap; }
+        </style>';
+
+        if (preg_match('/<head[^>]*>/i', $html)) {
+            $html = preg_replace('/<head[^>]*>/i', '$0' . $css, $html, 1);
+        } else {
+            $html = $css . $html;
+        }
+
+        // Normalize common writer artifacts: unwrap <p> inside <li> so lists render
+        // correctly in the preview and editors (many Word->HTML writers wrap list
+        // items in <p> tags).
+        $html = preg_replace('#<li>\s*<p[^>]*>(.*?)</p>\s*</li>#is', '<li>$1</li>', $html);
+
+        return $html;
+    }
+
+    private function renderHtmlPreview(array $data)
+    {
+        $html = '<div class="rpp-preview">';
+
+        if (!empty($data['judul'])) {
+            $html .= '<h2>' . e($data['judul']) . '</h2>';
+        }
+
+        $html .= '<table class="table table-bordered"><tbody>';
+        foreach (['mata_pembelajaran' => 'Mata Pelajaran', 'kelas' => 'Kelas', 'status' => 'Status'] as $field => $label) {
+            if (!empty($data[$field])) {
+                $html .= '<tr><th>' . e($label) . '</th><td>' . e($data[$field]) . '</td></tr>';
+            }
+        }
+        $html .= '</tbody></table>';
+
+        $sections = [
+            'capaian_pembelajaran' => 'Deskripsi / Capaian Pembelajaran',
+            'tujuan' => 'Tujuan Pembelajaran',
+            'metode' => 'Metode Pembelajaran',
+            'media' => 'Media Pembelajaran',
+            'sumber' => 'Sumber Belajar',
+            'alokasi_waktu' => 'Alokasi Waktu',
+            'praktik_pedagogis' => 'Praktik Pedagogis',
+            'lingkungan_pembelajaran' => 'Lingkungan Pembelajaran',
+            'pemanfaatan_digital' => 'Pemanfaatan Digital',
+            'pengalaman_pembelajaran' => 'Pengalaman Pembelajaran',
+            'refleksi_pembelajaran' => 'Refleksi Pembelajaran',
+            'penilaian' => 'Asesmen',
+        ];
+
+        foreach ($sections as $field => $label) {
+            if (!empty($data[$field])) {
+                // The imported content already contains HTML from the DOCX conversion and
+                // has been sanitized by `sanitizeImportedHtml()` earlier. To preserve
+                // structure (paragraphs, lists, tables) we must not escape it here —
+                // render raw HTML so the preview shows formatted content instead of
+                // literal tags like "<p>...</p>".
+                $content = $data[$field];
+                $html .= '<h4>' . e($label) . '</h4>';
+                $html .= '<div>' . $content . '</div>';
+            }
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    private function extractWordElementText($element)
+    {
+        if (method_exists($element, 'getText')) {
+            return trim($element->getText());
+        }
+
+        if (method_exists($element, 'getElements')) {
+            $text = '';
+            foreach ($element->getElements() as $child) {
+                $childText = $this->extractWordElementText($child);
+                if ($childText !== '') {
+                    $text .= ($text === '' ? '' : ' ') . $childText;
+                }
+            }
+            return trim($text);
+        }
+
+        return '';
+    }
+}

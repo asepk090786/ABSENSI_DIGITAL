@@ -160,7 +160,6 @@
                                 @if(!auth()->user()->hasRole('Siswa'))
                                     <a href="{{ route('komponen_nilai.index') }}" class="dropdown-item"><i class="ti ti-checklist me-2"></i>Komponen Penilaian</a>
                                     <a href="{{ route('mata_pelajaran.guru') }}" class="dropdown-item"><i class="ti ti-book me-2"></i>Mata Pelajaran</a>
-                                    <a href="{{ route('rencana_pembelajaran.index') }}" class="dropdown-item"><i class="ti ti-file-description me-2"></i>Rencana Pembelajaran</a>
                                 @endif
                             </div>
                         </li>

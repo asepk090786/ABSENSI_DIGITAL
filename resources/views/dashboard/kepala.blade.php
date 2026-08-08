@@ -218,7 +218,6 @@
                 <div class="list-group list-group-flush">
                     <a href="{{ route('absensi.index') }}" class="list-group-item list-group-item-action">Absensi Kelas</a>
                     <a href="{{ route('rekap_nilai.index') }}" class="list-group-item list-group-item-action">Rekap Nilai</a>
-                    <a href="{{ route('rencana_pembelajaran.index') }}" class="list-group-item list-group-item-action">Rencana Pembelajaran</a>
                     <a href="{{ route('komponen_nilai.index') }}" class="list-group-item list-group-item-action">Komponen Penilaian</a>
                     <a href="{{ route('guru_bk.index') }}" class="list-group-item list-group-item-action">Guru BK</a>
                 </div>

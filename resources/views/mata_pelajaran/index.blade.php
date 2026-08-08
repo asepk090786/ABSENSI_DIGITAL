@@ -97,9 +97,7 @@
                                 <td>{{ $it->kelas_names ?? '-' }}</td>
                                 @if($isGuruView)
                                     <td>
-                                        <a href="{{ route('rencana_pembelajaran.index', ['mata_pelajaran_id' => $it->id, 'tingkat' => $it->tingkat]) }}" class="btn btn-sm btn-outline-secondary" title="Rencana Pembelajaran">
-                                            <i class="ti ti-book me-1"></i>Kelola
-                                        </a>
+                                        <span class="text-muted">-</span>
                                     </td>
                                 @endif
                                 @unless($isGuruView)

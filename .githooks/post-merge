@@ -24,4 +24,10 @@ if [ -f package.json ]; then
     fi
 fi
 
+if [ -f "$DIR/scripts/ensure-onlyoffice-config.sh" ]; then
+    echo "[post-merge] Running OnlyOffice config bootstrap"
+    chmod +x "$DIR/scripts/ensure-onlyoffice-config.sh"
+    "$DIR/scripts/ensure-onlyoffice-config.sh" || echo "onlyoffice config bootstrap failed"
+fi
+
 echo "[post-merge] Done."

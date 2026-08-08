@@ -17,11 +17,6 @@ class RekapNilaiController extends Controller
         $query = KomponenNilai::query();
         $user = auth()->user();
 
-        if ($user && $user->hasRole('Guru Mapel')) {
-            $query->whereHas('capaianPembelajaran', function ($subQuery) use ($user) {
-                $subQuery->where('user_id', $user->id);
-            });
-        }
 
         return $query;
     }

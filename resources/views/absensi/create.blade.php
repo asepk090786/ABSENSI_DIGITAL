@@ -1634,14 +1634,13 @@
                 .then(data => {
                     console.log('Response data:', data);
                     if (data.siswa && data.siswa.length > 0) {
-                        // cache fetched siswa and existing absensi map
                         window._siswaCache = data.siswa;
                         window._existingAbsensiCache = data.existing_absensi || {};
+                        window._activeIzinKegiatanCache = data.active_izin_kegiatan || {};
                         siswaContainer.style.display = 'block';
                         btnSubmit.disabled = false;
                         renderSiswaItems();
 
-                        // Attach search filter
                         const searchInput = document.getElementById('searchSiswa');
                         if (searchInput && !searchInput.dataset.bound) {
                             searchInput.dataset.bound = '1';
@@ -1651,12 +1650,12 @@
                         }
                         setTimeout(function() {
                             applyExistingAttendanceStatuses(window._existingAbsensiCache);
+                            applyIzinKegiatanLocks();
                             applyPendingAttendanceUpdates();
                         }, 50);
                         console.log('Siswa loaded successfully, count:', data.siswa.length);
                     } else {
                         siswaContainer.style.display = 'block';
-                        // show empty state
                         var tblBody = document.getElementById('siswaTableBody');
                         if (tblBody) tblBody.innerHTML = '<tr><td colspan="12" class="text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</td></tr>';
                         if (siswaGrid) siswaGrid.innerHTML = '<div class="col-12 text-center text-warning"><i class="ti ti-alert-circle me-1"></i>Tidak ada siswa di kelas ini</div>';
@@ -1814,6 +1813,70 @@
         }
     }
 
+    function applyIzinKegiatanLocks() {
+        var izinMap = window._activeIzinKegiatanCache || {};
+        if (!Object.keys(izinMap).length) return;
+
+        Object.keys(izinMap).forEach(function(siswaId) {
+            var izin = izinMap[siswaId];
+            var groupName = 'absensi_siswa[' + siswaId + ']';
+            var radios = Array.from(document.getElementsByName(groupName));
+            var hadirRadio = radios.find(function(r) { return r.value === 'hadir'; });
+            if (hadirRadio && !hadirRadio.checked) {
+                hadirRadio.checked = true;
+                hadirRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            radios.forEach(function(r) { r.disabled = true; });
+            syncStatusButtonStates(groupName);
+
+            var row = hadirRadio ? hadirRadio.closest('tr') : null;
+            if (row) {
+                row.classList.add('bg-success-subtle');
+                var badgeCell = row.querySelector('.izin-lock-badge');
+                if (!badgeCell) {
+                    var keteranganCell = row.querySelector('input[name="keterangan_siswa['+siswaId+']"]');
+                    if (keteranganCell && !keteranganCell.parentElement.querySelector('.izin-lock-badge')) {
+                        var badge = document.createElement('span');
+                        badge.className = 'badge bg-info ms-1 izin-lock-badge';
+                        badge.textContent = 'Izin Kegiatan';
+                        keteranganCell.parentElement.appendChild(badge);
+                    }
+                }
+            }
+
+            var keteranganInputs = document.querySelectorAll('input[name="keterangan_siswa['+siswaId+']"]');
+            keteranganInputs.forEach(function(input) {
+                if (izin && izin.keterangan_kegiatan) {
+                    input.value = izin.keterangan_kegiatan;
+                }
+                input.readOnly = true;
+                input.classList.add('bg-light');
+            });
+
+            var gridCard = document.querySelector('.student-card[data-siswa-id="'+siswaId+'"]');
+            if (gridCard) {
+                var gridKeterangan = gridCard.querySelector('input[name="keterangan_siswa['+siswaId+']"]');
+                if (gridKeterangan) {
+                    if (izin && izin.keterangan_kegiatan) {
+                        gridKeterangan.value = izin.keterangan_kegiatan;
+                    }
+                    gridKeterangan.readOnly = true;
+                    gridKeterangan.classList.add('bg-light');
+                }
+                var lockBadge = gridCard.querySelector('.izin-lock-badge');
+                if (!lockBadge) {
+                    var info = gridCard.querySelector('.text-muted');
+                    if (info && !gridCard.querySelector('.izin-lock-badge')) {
+                        var badge = document.createElement('span');
+                        badge.className = 'badge bg-info ms-1 izin-lock-badge';
+                        badge.textContent = 'Izin Kegiatan';
+                        info.appendChild(badge);
+                    }
+                }
+            }
+        });
+    }
+
     function renderListSiswaItems(data, existingStatuses, isTableMode) {
         var tbody = document.getElementById('siswaTableBody');
         if (!tbody) return;
@@ -1890,6 +1953,8 @@
             radio.addEventListener('change', statusRadioHandler);
         });
         refreshAllStatusButtonStates();
+
+        applyIzinKegiatanLocks();
     }
 
     function statusRadioHandler() {
