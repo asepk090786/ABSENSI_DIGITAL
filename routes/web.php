@@ -296,6 +296,10 @@ Route::middleware(['auth'])->group(function(){
 
     Route::get('modul-ajar', [RencanaPembelajaranController::class, 'index'])->name('rencana_pembelajaran.index');
     Route::get('modul-ajar/editor', [RencanaPembelajaranController::class, 'editor'])->name('rencana_pembelajaran.editor');
+    Route::post('modul-ajar/editor/upload', [RencanaPembelajaranController::class, 'uploadEditorDocx'])->name('rencana_pembelajaran.editor_upload');
+    Route::get('modul-ajar/editor/{id}', [RencanaPembelajaranController::class, 'editorEdit'])->name('rencana_pembelajaran.editor_edit');
+    Route::get('modul-ajar/editor/{id}/file', [RencanaPembelajaranController::class, 'editorFile'])->name('rencana_pembelajaran.editor_file');
+    Route::post('modul-ajar/editor/{id}/callback', [RencanaPembelajaranController::class, 'editorCallback'])->name('rencana_pembelajaran.editor_callback');
     Route::get('modul-ajar/create', [RencanaPembelajaranController::class, 'create'])->name('rencana_pembelajaran.create');
     Route::post('modul-ajar', [RencanaPembelajaranController::class, 'store'])->name('rencana_pembelajaran.store');
     Route::get('modul-ajar/{id}/edit', [RencanaPembelajaranController::class, 'edit'])->name('rencana_pembelajaran.edit');

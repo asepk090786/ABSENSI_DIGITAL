@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use App\Models\TugasGuru;
 use App\Models\MataPelajaran;
@@ -188,6 +190,128 @@ class RencanaPembelajaranController extends Controller
     public function editor()
     {
         return view('rencana_pembelajaran.editor');
+    }
+
+    public function uploadEditorDocx(Request $request)
+    {
+        $request->validate([
+            'judul' => 'nullable|string|max:255',
+            'file' => 'required|file|mimes:docx|max:10240',
+        ]);
+
+        $file = $request->file('file');
+        $fileName = uniqid('modul-ajar-') . '.docx';
+        $segment = $this->resolveRoleAwareStorageSegment();
+
+        Storage::disk('public_direct')->putFileAs(
+            'rencana_pembelajaran/docx/' . $segment,
+            $file,
+            $fileName
+        );
+
+        $record = RencanaPembelajaran::create([
+            'guru_id' => $this->resolveCurrentGuruId(),
+            'judul' => $request->input('judul', 'Modul Ajar'),
+            'original_docx_path' => 'uploads/rencana_pembelajaran/docx/' . $segment . '/' . $fileName,
+            'status' => 'draft',
+        ]);
+
+        return redirect()->route('rencana_pembelajaran.editor_edit', $record->id)->with('success', 'File DOCX berhasil diupload.');
+    }
+
+    public function editorEdit($id)
+    {
+        $record = RencanaPembelajaran::findOrFail($id);
+        $user = Auth::user();
+
+        if ($user && $user->guru_id && $record->guru_id != $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403);
+        }
+
+        return view('editor-modul.edit', compact('record'));
+    }
+
+    public function editorFile($id)
+    {
+        $record = RencanaPembelajaran::findOrFail($id);
+        $user = Auth::user();
+
+        if ($user && $user->guru_id && $record->guru_id != $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403);
+        }
+
+        if (empty($record->original_docx_path)) {
+            abort(404);
+        }
+
+        $filePath = public_path($record->original_docx_path);
+        if (!file_exists($filePath)) {
+            abort(404);
+        }
+
+        return response()->file($filePath, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
+    }
+
+    public function editorCallback($id, Request $request)
+    {
+        $record = RencanaPembelajaran::findOrFail($id);
+        $user = Auth::user();
+        $status = (int) $request->input('status', 0);
+
+        if ($user && $user->guru_id && $record->guru_id != $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            abort(403);
+        }
+
+        try {
+            if (in_array($status, [3, 5], true)) {
+                $fileUrl = $request->input('url');
+
+                if ($fileUrl) {
+                    $response = Http::timeout(30)->get($fileUrl);
+
+                    if ($response->successful()) {
+                        $fileName = 'modul-ajar-' . $id . '.docx';
+                        $segment = $this->resolveRoleAwareStorageSegment();
+                        $path = 'rencana_pembelajaran/docx/' . $segment . '/' . $fileName;
+
+                        Storage::disk('public_direct')->put($path, $response->body());
+
+                        $record->update([
+                            'original_docx_path' => 'uploads/' . $path,
+                            'updated_at' => now(),
+                        ]);
+
+                        Log::info('OnlyOffice callback file saved', [
+                            'modul_id' => $id,
+                            'user_id' => $user?->id,
+                            'status' => $status,
+                            'timestamp' => now(),
+                        ]);
+                    } else {
+                        Log::error('OnlyOffice callback download failed', [
+                            'modul_id' => $id,
+                            'user_id' => $user?->id,
+                            'status' => $status,
+                            'error' => 'HTTP ' . $response->status(),
+                            'timestamp' => now(),
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json(['error' => 0]);
+        } catch (\Throwable $e) {
+            Log::error('OnlyOffice callback exception', [
+                'modul_id' => $id,
+                'user_id' => $user?->id,
+                'status' => $status,
+                'error' => $e->getMessage(),
+                'timestamp' => now(),
+            ]);
+            return response()->json(['error' => 1, 'message' => 'Server error'], 500);
+        }
     }
 
     public function create()

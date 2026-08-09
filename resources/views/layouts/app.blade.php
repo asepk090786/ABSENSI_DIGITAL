@@ -1070,10 +1070,10 @@
                                 <li class="nav-item"><a href="{{ route('mata_pelajaran.guru') }}" class="nav-link {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Mata Pelajaran</a></li>
                             @endif
                             @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_modul_ajar', $guruEnabledMenus)))
-                                <li class="nav-item"><a href="{{ url('/modul-ajar') }}" class="nav-link {{ request()->is('modul-ajar') && !request()->is('modul-ajar/*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Modul Ajar</a></li>
+                                <li class="nav-item"><a href="{{ url('/modul-ajar') }}" class="nav-link {{ request()->is('modul-ajar*') && !request()->is('modul-ajar/editor*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Modul Ajar</a></li>
                             @endif
                             @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_editor_modul', $guruEnabledMenus)))
-                                <li class="nav-item"><a href="{{ url('/modul-ajar/editor') }}" class="nav-link {{ request()->is('modul-ajar/editor') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Editor</a></li>
+                                <li class="nav-item"><a href="{{ route('rencana_pembelajaran.editor') }}" class="nav-link {{ request()->routeIs('rencana_pembelajaran.editor') || request()->is('modul-ajar/editor*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Editor Modul</a></li>
                             @endif
                         </ul>
                     </div>
