@@ -298,8 +298,8 @@ Route::middleware(['auth'])->group(function(){
     Route::get('modul-ajar/editor', [RencanaPembelajaranController::class, 'editor'])->name('rencana_pembelajaran.editor');
     Route::post('modul-ajar/editor/upload', [RencanaPembelajaranController::class, 'uploadEditorDocx'])->name('rencana_pembelajaran.editor_upload');
     Route::get('modul-ajar/editor/{id}', [RencanaPembelajaranController::class, 'editorEdit'])->name('rencana_pembelajaran.editor_edit');
-    Route::get('modul-ajar/{rencanaPembelajaran}/document', [RencanaPembelajaranController::class, 'document'])->name('rencana_pembelajaran.document')->middleware('signed');
-    Route::post('modul-ajar/{rencanaPembelajaran}/callback', [RencanaPembelajaranController::class, 'onlyOfficeCallback'])->name('rencana_pembelajaran.onlyoffice_callback')->middleware('signed');
+    Route::get('modul-ajar/{rencanaPembelajaran}/document', [RencanaPembelajaranController::class, 'document'])->name('rencana_pembelajaran.document')->middleware('signed')->withoutMiddleware('auth');
+    Route::post('modul-ajar/{rencanaPembelajaran}/callback', [RencanaPembelajaranController::class, 'onlyOfficeCallback'])->name('rencana_pembelajaran.onlyoffice_callback')->middleware('signed')->withoutMiddleware('auth');
     Route::get('modul-ajar/create', [RencanaPembelajaranController::class, 'create'])->name('rencana_pembelajaran.create');
     Route::post('modul-ajar', [RencanaPembelajaranController::class, 'store'])->name('rencana_pembelajaran.store');
     Route::get('modul-ajar/{id}/edit', [RencanaPembelajaranController::class, 'edit'])->name('rencana_pembelajaran.edit');
@@ -436,4 +436,3 @@ Route::get('/storage/{path}', [App\Http\Controllers\FileServeController::class, 
 Route::get('/theme-demo', function(){
     return view('material_home');
 });
-
