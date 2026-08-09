@@ -46,6 +46,11 @@
                                     <td>
                                         <button type="button" class="btn btn-sm btn-outline-secondary btn-view-module" data-module='@json($module)'>View</button>
                                         <a href="{{ route('rencana_pembelajaran.edit', $module['id'] ?? $index) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form action="{{ route('rencana_pembelajaran.destroy', $module['id'] ?? $index) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus modul ajar ini?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty

@@ -14,7 +14,38 @@
     </header>
 
     <!-- Quill CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+    <link href="{{ asset('css/quill.snow.css') }}" rel="stylesheet">
+    <script src="{{ asset('js/quill.min.js') }}"></script>
+    <style>
+        .ql-toolbar.ql-snow {
+            display: flex !important;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .35rem;
+            padding: .55rem .65rem;
+            border: 1px solid #cbd5e1;
+            border-bottom: 0;
+            border-radius: 10px 10px 0 0;
+            background: #f8fafc;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+        }
+        .ql-toolbar.ql-snow .ql-formats {
+            margin-right: .45rem;
+        }
+        .ql-toolbar.ql-snow button,
+        .ql-toolbar.ql-snow select {
+            border-radius: 7px;
+        }
+        .ql-container.ql-snow {
+            border: 1px solid #cbd5e1;
+            border-top: 0;
+            border-radius: 0 0 10px 10px;
+            background: #fff;
+        }
+        .ql-editor {
+            min-height: 120px;
+        }
+    </style>
 
     <main id="workspace" class="workspace" style="display:grid; grid-template-columns:minmax(320px,410px) minmax(500px,1fr); min-height:0;">
         <aside class="editor-side" style="overflow:auto; padding:22px 18px 36px; background:#f7f9fc; border-right:1px solid #cad7e6;">
@@ -430,9 +461,17 @@
         document.querySelectorAll('[data-editor-type]').forEach(el => {
             const id = el.id; // e.g. input-achievement
             const field = id.replace(/^input-/, '');
-            const quill = new Quill('#' + id, {
-                modules: { toolbar: toolbarOptions },
-                theme: 'snow'
+
+            const quill = new Quill(el, {
+                modules: {
+                    toolbar: toolbarOptions,
+                    clipboard: {
+                        matchVisual: false
+                    }
+                },
+                formats: ['bold','italic','underline','strike','header','list','bullet','blockquote','code-block','link','image'],
+                theme: 'snow',
+                placeholder: 'Tempel teks di sini atau tulis deskripsi...'
             });
 
             const toolbar = quill.getModule('toolbar');
@@ -469,6 +508,7 @@
                 if (hidden) hidden.value = quill.root.innerHTML.trim();
                 updatePreview(field);
             });
+
             quillEditors[field] = quill;
             const hidden = document.getElementById('field-' + field);
             if (hidden && hidden.value) quill.clipboard.dangerouslyPasteHTML(hidden.value);
@@ -614,15 +654,12 @@
         populateForm(initialData);
 
         // initialize Quill editors on fields
-        // load Quill JS
-        const quillScript = document.createElement('script');
-        quillScript.src = 'https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js';
-        quillScript.onload = function() {
+        if (typeof Quill !== 'undefined') {
             initQuillEditors();
-            // after editors ready, update previews
             textFields.forEach(field => updatePreview(field));
-        };
-        document.body.appendChild(quillScript);
+        } else {
+            console.error('Quill tidak ditemukan. Pastikan quill.min.js dimuat.');
+        }
 
         // initialize select syncs
         initSelectSync();
