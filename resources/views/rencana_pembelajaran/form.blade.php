@@ -13,36 +13,14 @@
         <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-sm btn-light text-primary" style="margin-left:auto;">Kembali ke Daftar</a>
     </header>
 
-    <!-- Quill CSS -->
-    <link href="{{ asset('css/quill.snow.css') }}" rel="stylesheet">
-    <script src="{{ asset('js/quill.min.js') }}"></script>
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
     <style>
-        .ql-toolbar.ql-snow {
-            display: flex !important;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: .35rem;
-            padding: .55rem .65rem;
-            border: 1px solid #cbd5e1;
-            border-bottom: 0;
+        .note-toolbar {
             border-radius: 10px 10px 0 0;
-            background: #f8fafc;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
         }
-        .ql-toolbar.ql-snow .ql-formats {
-            margin-right: .45rem;
-        }
-        .ql-toolbar.ql-snow button,
-        .ql-toolbar.ql-snow select {
-            border-radius: 7px;
-        }
-        .ql-container.ql-snow {
-            border: 1px solid #cbd5e1;
-            border-top: 0;
-            border-radius: 0 0 10px 10px;
-            background: #fff;
-        }
-        .ql-editor {
+        .note-editor .note-editable {
             min-height: 120px;
         }
     </style>
@@ -53,7 +31,7 @@
                 <div style="margin:16px 0; padding:14px; border:1px solid #d8e3f0; border-radius:12px; background:#fff; box-shadow:0 5px 16px rgba(32,73,119,.05);">
                     <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:12px;">
                         <span>Kelengkapan formulir</span>
-                        <span id="progress-value" style="font-size:11px; font-weight:700; color:#2865aa">5 / 5</span>
+                        <span id="progress-value" style="font-size:11px; font-weight:700; color:#2865aa">13 / 13</span>
                     </div>
                     <div style="height:7px; margin-top:10px; overflow:hidden; border-radius:999px; background:#e5edf6;">
                         <div id="progress-fill" style="width:100%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#3e86dc,#70a7e6); transition:width .2s ease;"></div>
@@ -90,13 +68,14 @@
                     </div>
                     @endif
 
+
                     <section class="form-section" style="margin-bottom:10px; overflow:hidden; border:1px solid #d8e2ee; border-radius:11px; background:#fff;">
                         <button class="section-toggle" type="button" aria-expanded="true" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px; border:0; background:#fff; color:#24496f; text-align:left;">
                             <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-file-text"></i></span><span style="font-size:13px; font-weight:600;">Informasi Umum</span></span>
                             <i class="ti ti-chevron-down"></i>
                         </button>
                         <div class="section-content" style="padding:0 14px 15px;">
-                            <div class="field" style="margin-top:13px;"><label for="input-title" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Judul Modul Ajar</label><input type="text" id="input-title" name="title" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" name="title" id="field-title" value=""></div>
+                            <div class="field" style="margin-top:13px;"><label for="input-title" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Judul Modul Ajar</label><input type="text" id="input-title" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" name="title" id="field-title" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-subject" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Mata Pelajaran</label>
                                 @if(!empty($mataPelajaranList) && $mataPelajaranList->isNotEmpty())
                                     <select id="input-subject" class="form-select" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; font-size:12px;" aria-label="Mata Pelajaran">
@@ -148,51 +127,21 @@
                                 </select>
                                 <input type="hidden" name="status" id="field-status" value="draft">
                             </div>
-                            <div class="field" style="margin-top:13px;"><label for="input-duration" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Alokasi Waktu</label><input type="text" id="input-duration" name="duration" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" name="duration" id="field-duration" value=""></div>
+                            <div class="field" style="margin-top:13px;"><label for="input-duration" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Alokasi Waktu</label><input type="text" id="input-duration" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" name="duration" id="field-duration" value=""></div>
                         </div>
                     </section>
 
                     <section class="form-section" style="margin-bottom:10px; overflow:hidden; border:1px solid #d8e2ee; border-radius:11px; background:#fff;">
                         <button class="section-toggle" type="button" aria-expanded="true" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px; border:0; background:#fff; color:#24496f; text-align:left;">
-                            <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-target"></i></span><span style="font-size:13px; font-weight:600;">Capaian & Tujuan</span></span>
+                            <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-target"></i></span><span style="font-size:13px; font-weight:600;">Modul Ajar Inti</span></span>
                             <i class="ti ti-chevron-down"></i>
                         </button>
                         <div class="section-content" style="padding:0 14px 15px;">
                             <div class="field" style="margin-top:13px;"><label for="input-achievement" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Capaian Pembelajaran</label><div id="input-achievement" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="achievement" id="field-achievement" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-objectives" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Tujuan Pembelajaran</label><div id="input-objectives" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="objectives" id="field-objectives" value=""></div>
-                        </div>
-                    </section>
-
-                    <section class="form-section" style="margin-bottom:10px; overflow:hidden; border:1px solid #d8e2ee; border-radius:11px; background:#fff;">
-                        <button class="section-toggle" type="button" aria-expanded="true" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px; border:0; background:#fff; color:#24496f; text-align:left;">
-                            <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-book-open"></i></span><span style="font-size:13px; font-weight:600;">Metode & Sumber</span></span>
-                            <i class="ti ti-chevron-down"></i>
-                        </button>
-                        <div class="section-content" style="padding:0 14px 15px;">
-                            <div class="field" style="margin-top:13px;"><label for="input-methods" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Metode Pembelajaran</label><div id="input-methods" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="methods" id="field-methods" value=""></div>
-                            <div class="field" style="margin-top:13px;"><label for="input-media" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Media Pembelajaran</label><div id="input-media" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="media" id="field-media" value=""></div>
-                            <div class="field" style="margin-top:13px;"><label for="input-resources" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Sumber Belajar</label><div id="input-resources" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="resources" id="field-resources" value=""></div>
-                        </div>
-                    </section>
-
-                    <section class="form-section" style="margin-bottom:10px; overflow:hidden; border:1px solid #d8e2ee; border-radius:11px; background:#fff;">
-                        <button class="section-toggle" type="button" aria-expanded="true" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px; border:0; background:#fff; color:#24496f; text-align:left;">
-                            <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-lightbulb"></i></span><span style="font-size:13px; font-weight:600;">Praktik & Lingkungan</span></span>
-                            <i class="ti ti-chevron-down"></i>
-                        </button>
-                        <div class="section-content" style="padding:0 14px 15px;">
                             <div class="field" style="margin-top:13px;"><label for="input-practice" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Praktik Pedagogis</label><div id="input-practice" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="practice" id="field-practice" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-environment" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Lingkungan Pembelajaran</label><div id="input-environment" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="environment" id="field-environment" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-digital" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Pemanfaatan Digital</label><div id="input-digital" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="digital" id="field-digital" value=""></div>
-                        </div>
-                    </section>
-
-                    <section class="form-section" style="margin-bottom:10px; overflow:hidden; border:1px solid #d8e2ee; border-radius:11px; background:#fff;">
-                        <button class="section-toggle" type="button" aria-expanded="true" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px; border:0; background:#fff; color:#24496f; text-align:left;">
-                            <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-clipboard-check"></i></span><span style="font-size:13px; font-weight:600;">Evaluasi & Refleksi</span></span>
-                            <i class="ti ti-chevron-down"></i>
-                        </button>
-                        <div class="section-content" style="padding:0 14px 15px;">
                             <div class="field" style="margin-top:13px;"><label for="input-experience" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Pengalaman Pembelajaran</label><div id="input-experience" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="experience" id="field-experience" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-reflection" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Refleksi Pembelajaran</label><div id="input-reflection" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="reflection" id="field-reflection" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-assessment" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Asesmen</label><div id="input-assessment" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="assessment" id="field-assessment" value=""></div>
@@ -210,10 +159,11 @@
             <div style="flex:1; overflow:auto; padding:28px 28px 52px; background-color:#dfe7f0; background-image:radial-gradient(#becbd9 .7px,transparent .7px); background-size:15px 15px;">
                 <article id="document-page" style="width:min(100%,820px); min-height:1100px; margin:0 auto; padding:58px 65px 80px; background:#fff; box-shadow:0 4px 12px rgba(26,55,89,.18),0 24px 44px rgba(26,55,89,.13);">
                     <p class="text-muted text-center mb-2" style="font-size:10px; letter-spacing:1px; text-transform:uppercase;">MODUL AJAR</p>
-                    <h1 id="preview-title" style="margin:0 0 30px; color:#16283c; font-size:26px; font-weight:700; line-height:1.28; text-align:center;"></h1>
+                    <h1 style="margin:0 0 30px; color:#16283c; font-size:26px; font-weight:700; line-height:1.28; text-align:center;">MODUL AJAR</h1>
                     <h2 style="margin:27px 0 10px; padding-bottom:6px; border-bottom:1.5px solid #4b78a9; font-size:15px;">Informasi Umum</h2>
-                    <table style="width:100%; border-collapse:collapse;">
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:18px;">
                         <tbody>
+                            <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Judul Modul Ajar</th><td id="preview-title" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                             <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Mata Pelajaran</th><td id="preview-subject" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                             <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Kelas / Fase</th><td id="preview-class" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                             <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Status</th><td id="preview-status" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
@@ -223,13 +173,7 @@
                     <h2>Capaian Pembelajaran</h2>
                     <p id="preview-achievement" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                     <h2>Tujuan Pembelajaran</h2>
-                    <ul id="preview-objectives" style="margin:0 0 10px; padding-left:22px;"></ul>
-                    <h2>Metode Pembelajaran</h2>
-                    <ul id="preview-methods" style="margin:0 0 10px; padding-left:22px;"></ul>
-                    <h2>Media Pembelajaran</h2>
-                    <ul id="preview-media" style="margin:0 0 10px; padding-left:22px;"></ul>
-                    <h2>Sumber Belajar</h2>
-                    <ul id="preview-resources" style="margin:0 0 10px; padding-left:22px;"></ul>
+                    <p id="preview-objectives" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                     <h2>Praktik Pedagogis</h2>
                     <p id="preview-practice" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                     <h2>Lingkungan Pembelajaran</h2>
@@ -243,8 +187,6 @@
                     <h2>Asesmen</h2>
                     <p id="preview-assessment" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                 </article>
-            </div>
-        </section>
     </main>
 </div>
 
@@ -253,13 +195,10 @@
         title: 'Modul Ajar Matematika - Konsep Eksponen',
         subject: 'Matematika',
         class: 'X / Fase E',
-        status: 'Draft',
+        status: 'draft',
         duration: '2 JP (2 x 45 menit)',
         achievement: 'Di akhir fase E, peserta didik dapat menggeneralisasi sifat-sifat operasi bilangan berpangkat (eksponen) dan menggunakan fungsi eksponen dalam menyelesaikan masalah kontekstual.',
         objectives: 'Peserta didik mampu mengidentifikasi bentuk umum fungsi eksponen.\nPeserta didik mampu memodelkan masalah nyata menggunakan fungsi eksponen.',
-        methods: 'Ceramah interaktif\nDiskusi kelompok\nTanya jawab',
-        media: 'GeoGebra\nSlide PowerPoint\nVideo pembelajaran',
-        resources: 'Buku teks\nLKPD\nWebsite interaktif',
         practice: 'Model Pembelajaran: Problem-Based Learning (PBL).',
         environment: 'Ruang kelas fleksibel dan dukungan internet.',
         digital: 'GeoGebra dan LMS sekolah.',
@@ -268,15 +207,8 @@
         assessment: 'Asesmen diagnostik, formatif, dan sumatif.'
     };
 
-    const textFields = ['title','subject','class','status','duration','achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment'];
-    const listFields = ['objectives','methods','media','resources'];
-    const groups = [
-        ['title','subject','class','status','duration'],
-        ['achievement','objectives'],
-        ['methods','media','resources'],
-        ['practice','environment','digital'],
-        ['experience','reflection','assessment']
-    ];
+    const textFields = ['title','subject','class','status','duration','achievement','objectives','practice','environment','digital','experience','reflection','assessment'];
+    const listFields = [];
 
     function renderList(element, value) {
         element.replaceChildren();
@@ -376,12 +308,11 @@
             Array.from(input.options).forEach(opt => {
                 opt.selected = parts.includes(opt.value);
             });
-        } else if (quillEditors[field]) {
-            // set HTML content into Quill
+        } else if (summernoteEditors[field]) {
             try {
-                quillEditors[field].clipboard.dangerouslyPasteHTML(safeValue);
+                summernoteEditors[field].summernote('code', safeValue);
             } catch (e) {
-                quillEditors[field].setText((safeValue || '').toString());
+                summernoteEditors[field].text(safeValue);
             }
         } else if (input.isContentEditable) {
             input.innerHTML = safeValue.replace(/\n/g, '<br>');
@@ -463,74 +394,50 @@
         }
     }
 
-    // Quill editor instances map
-    const quillEditors = {};
-    let lastImageQuill = null;
-    let lastImageRange = null;
+    // Summernote editor instances map
+    const summernoteEditors = {};
 
-    function initQuillEditors() {
-        const toolbarOptions = [
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'header': [1, 2, 3, false] }],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['blockquote', 'code-block'],
-            ['link', 'image']
-        ];
-
-        document.querySelectorAll('[data-editor-type]').forEach(el => {
-            const id = el.id; // e.g. input-achievement
+    function initSummernoteEditors() {
+        document.querySelectorAll('[data-editor-type="block"]').forEach(el => {
+            const id = el.id;
             const field = id.replace(/^input-/, '');
+            const $editor = $(el);
 
-            const quill = new Quill(el, {
-                modules: {
-                    toolbar: toolbarOptions,
-                    clipboard: {
-                        matchVisual: false
+            $editor.summernote({
+                placeholder: 'Tempel teks di sini atau tulis deskripsi...',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                    ['font', ['fontname', 'fontsize']],
+                    ['color', ['color']],
+                    ['para', ['ul', 'ol', 'paragraph', 'height']],
+                    ['insert', ['link', 'picture', 'video', 'table', 'hr']],
+                    ['view', ['codeview', 'help']]
+                ],
+                callbacks: {
+                    onImageUpload: function(files) {
+                        if (!files || !files.length) return;
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            $editor.summernote('insertImage', e.target.result, function($image) {
+                                $image.attr('alt', 'image');
+                            });
+                        };
+                        reader.readAsDataURL(files[0]);
+                    },
+                    onChange: function(contents, $editable) {
+                        const hidden = document.getElementById('field-' + field);
+                        if (hidden) hidden.value = contents.trim();
+                        updatePreview(field);
                     }
                 },
-                formats: ['bold','italic','underline','strike','header','list','bullet','blockquote','code-block','link','image'],
-                theme: 'snow',
-                placeholder: 'Tempel teks di sini atau tulis deskripsi...'
+                height: 140
             });
 
-            const toolbar = quill.getModule('toolbar');
-            toolbar.addHandler('image', function() {
-                lastImageQuill = quill;
-                lastImageRange = quill.getSelection(true);
-                const input = document.createElement('input');
-                input.setAttribute('type', 'file');
-                input.setAttribute('accept', 'image/*');
-                input.click();
-                input.onchange = function() {
-                    const file = input.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const targetQuill = lastImageQuill || quill;
-                        const range = lastImageRange || targetQuill.getSelection(true);
-                        const index = range ? range.index : targetQuill.getLength();
-                        try {
-                            targetQuill.insertEmbed(index, 'image', e.target.result, 'user');
-                            targetQuill.setSelection(index + 1, 0);
-                        } catch (err) {
-                            console.error('Gagal sisipkan gambar:', err);
-                        }
-                        lastImageQuill = null;
-                        lastImageRange = null;
-                    };
-                    reader.readAsDataURL(file);
-                };
-            });
-
-            quill.on('text-change', function() {
-                const hidden = document.getElementById('field-' + field);
-                if (hidden) hidden.value = quill.root.innerHTML.trim();
-                updatePreview(field);
-            });
-
-            quillEditors[field] = quill;
+            summernoteEditors[field] = $editor;
             const hidden = document.getElementById('field-' + field);
-            if (hidden && hidden.value) quill.clipboard.dangerouslyPasteHTML(hidden.value);
+            if (hidden && hidden.value) {
+                $editor.summernote('code', hidden.value);
+            }
         });
     }
 
@@ -584,7 +491,11 @@
                 const hidden = document.getElementById('field-status');
                 if (hidden) hidden.value = statusSelect.value;
                 const preview = document.getElementById('preview-status');
-                if (preview) preview.textContent = statusSelect.value;
+                if (preview) {
+                    preview.textContent = statusSelect.value === 'published'
+                        ? 'Publish (Digunakan untuk KBM)'
+                        : 'Draft (Belum digunakan untuk KBM)';
+                }
             });
         }
     }
@@ -640,22 +551,24 @@
     }
 
     function updateProgress() {
-        const complete = groups.filter(group => group.every(field => {
-            return getFieldValue(field).trim();
-        })).length;
+        const complete = textFields.filter(field => getFieldValue(field).trim()).length;
         const progressValue = document.getElementById('progress-value');
         const progressFill = document.getElementById('progress-fill');
-        if (progressValue) progressValue.textContent = complete + ' / ' + groups.length;
-        if (progressFill) progressFill.style.width = (complete / groups.length * 100) + '%';
+        if (progressValue) progressValue.textContent = complete + ' / ' + textFields.length;
+        if (progressFill) progressFill.style.width = (complete / textFields.length * 100) + '%';
     }
 
     function updatePreview(field) {
         const output = document.getElementById('preview-' + field);
         if (!output) return;
         const value = getFieldValue(field);
-        if (listFields.includes(field)) {
+        if (field === 'status') {
+            output.textContent = value === 'published'
+                ? 'Publish (Digunakan untuk KBM)'
+                : 'Draft (Belum digunakan untuk KBM)';
+        } else if (listFields.includes(field)) {
             renderList(output, value);
-        } else if (quillEditors[field]) {
+        } else if (summernoteEditors[field]) {
             // render rich HTML; decode entities if present
             const decoded = decodeHtmlEntities(value || '');
             output.innerHTML = decoded;
@@ -675,12 +588,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         populateForm(initialData);
 
-        // initialize Quill editors on fields
-        if (typeof Quill !== 'undefined') {
-            initQuillEditors();
+        // initialize Summernote editors on fields
+        if (typeof $.fn.summernote !== 'undefined') {
+            initSummernoteEditors();
             textFields.forEach(field => updatePreview(field));
         } else {
-            console.error('Quill tidak ditemukan. Pastikan quill.min.js dimuat.');
+            console.error('Summernote tidak ditemukan. Pastikan summernote-lite.min.js dimuat.');
         }
 
         // initialize select syncs
@@ -721,8 +634,12 @@
                 textFields.forEach(field => {
                     const hidden = document.getElementById('field-' + field);
                     if (!hidden) return;
-                    if (quillEditors[field]) {
-                        hidden.value = quillEditors[field].root.innerHTML.replace(/\u00A0/g, ' ');
+                    if (summernoteEditors[field]) {
+                        try {
+                            hidden.value = summernoteEditors[field].summernote('code').replace(/\u00A0/g, ' ');
+                        } catch (e) {
+                            hidden.value = summernoteEditors[field].text().replace(/\u00A0/g, ' ');
+                        }
                     } else {
                         const editor = document.getElementById('input-' + field);
                         if (editor) {
@@ -810,16 +727,8 @@
                     }
 
                     const fieldMap = {
-                        title: 'title',
-                        subject: 'subject',
-                        class: 'class',
-                        status: 'status',
-                        duration: 'duration',
                         achievement: 'achievement',
                         objectives: 'objectives',
-                        methods: 'methods',
-                        media: 'media',
-                        resources: 'resources',
                         practice: 'practice',
                         environment: 'environment',
                         digital: 'digital',
@@ -839,11 +748,11 @@
                         if (input) {
                             if (input.isContentEditable) {
                                 input.innerHTML = value.replace(/\n/g, '<br>');
-                            } else if (quillEditors[field]) {
+                            } else if (summernoteEditors[field]) {
                                 try {
-                                    quillEditors[field].clipboard.dangerouslyPasteHTML(value);
+                                    summernoteEditors[field].summernote('code', value);
                                 } catch (e) {
-                                    quillEditors[field].setText(value);
+                                    summernoteEditors[field].text(value);
                                 }
                             } else {
                                 input.value = value;
@@ -852,10 +761,9 @@
                         updatePreview(field);
                     });
 
-                    importStatus.textContent = 'Import berhasil. Data telah diisi ke form.';
                     const resultPlaceholders = (result.placeholders && result.placeholders.length) ? result.placeholders : [];
                     if (resultPlaceholders.length > 0) {
-                        importStatus.textContent += ' ' + resultPlaceholders.length + ' placeholder ditemukan.';
+                        importStatus.textContent = 'Import berhasil. ' + resultPlaceholders.length + ' placeholder ditemukan. Gunakan tombol Sisipkan untuk menempatkan gambar atau tabel ke field tujuan.';
                         const list = document.createElement('div');
                         list.style.marginTop = '8px';
                         resultPlaceholders.forEach((item, idx) => {
@@ -877,9 +785,6 @@
                             select.innerHTML = '<option value="">-- Pilih field --</option>' +
                                 '<option value="achievement">Capaian Pembelajaran</option>' +
                                 '<option value="objectives">Tujuan Pembelajaran</option>' +
-                                '<option value="methods">Metode Pembelajaran</option>' +
-                                '<option value="media">Media Pembelajaran</option>' +
-                                '<option value="resources">Sumber Belajar</option>' +
                                 '<option value="practice">Praktik Pedagogis</option>' +
                                 '<option value="environment">Lingkungan Pembelajaran</option>' +
                                 '<option value="digital">Pemanfaatan Digital</option>' +
@@ -894,27 +799,23 @@
                             btn.className = 'btn btn-sm btn-outline-primary';
                             btn.addEventListener('click', () => {
                                 const field = select.value;
-                                if (!field || !quillEditors[field]) {
+                                if (!field || !summernoteEditors[field]) {
                                     alert('Pilih field tujuan terlebih dahulu');
                                     return;
                                 }
-                                const editor = quillEditors[field];
-                                const range = editor.getSelection(true);
-                                if (!range) {
-                                    editor.setSelection(editor.getLength(), 0);
-                                }
-                                const index = range ? range.index : editor.getLength();
+                                const editor = summernoteEditors[field];
                                 if (item.type === 'image') {
                                     try {
-                                        editor.insertEmbed(index, 'image', item.url, 'user');
-                                        editor.setSelection(index + 1, 0);
+                                        editor.summernote('insertImage', item.url, function($image) {
+                                            $image.attr('alt', item.caption || 'image');
+                                        });
                                     } catch (e) {
                                         alert('Gagal sisipkan gambar: ' + e.message);
                                     }
                                 } else if (item.type === 'table') {
                                     const html = '<table style="width:100%;border-collapse:collapse;"><tr><th style="border:1px solid #afbdce;padding:8px;background:#eef5fc;">' + item.caption + '</th><td style="border:1px solid #afbdce;padding:8px;">[isi tabel]</td></tr></table>';
                                     try {
-                                        editor.clipboard.dangerouslyPasteHTML(index, html);
+                                        editor.summernote('pasteHTML', html);
                                     } catch (e) {
                                         alert('Gagal sisipkan tabel: ' + e.message);
                                     }
@@ -927,7 +828,9 @@
                         importStatus.parentNode.insertBefore(list, importStatus.nextSibling);
                     }
                     importStatus.style.color = '#1e8e3e';
-                    importSection.style.display = 'none';
+                    if (resultPlaceholders.length === 0) {
+                        importSection.style.display = 'none';
+                    }
                 } catch (e) {
                     importStatus.textContent = 'Gagal import: ' + e.message;
                     importStatus.style.color = '#c00';
