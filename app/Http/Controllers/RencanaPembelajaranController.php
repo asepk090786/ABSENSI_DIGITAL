@@ -785,6 +785,9 @@ class RencanaPembelajaranController extends Controller
                 foreach ($element->getElements() as $child) {
                     $processElement($child);
                 }
+                if ($element instanceof \PhpOffice\PhpWord\Element\TextRun || $element instanceof \PhpOffice\PhpWord\Element\Paragraph) {
+                    $sectionText .= "\n";
+                }
                 return;
             }
             if (method_exists($element, 'getText')) {
