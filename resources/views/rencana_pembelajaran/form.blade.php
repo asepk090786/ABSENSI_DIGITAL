@@ -200,9 +200,9 @@
         achievement: 'Di akhir fase E, peserta didik dapat menggeneralisasi sifat-sifat operasi bilangan berpangkat (eksponen) dan menggunakan fungsi eksponen dalam menyelesaikan masalah kontekstual.',
         objectives: 'Peserta didik mampu mengidentifikasi bentuk umum fungsi eksponen.\nPeserta didik mampu memodelkan masalah nyata menggunakan fungsi eksponen.',
         practice: 'Model Pembelajaran: Problem-Based Learning (PBL).',
-        environment: 'Ruang kelas fleksibel dan dukungan internet.',
-        digital: 'GeoGebra dan LMS sekolah.',
-        experience: 'Pendahuluan, inti, penutup.',
+        environment: 'Keterangan : Ruang fisik, Ruang Virtual, Budaya Belajar',
+        digital: 'Keterangan : Tuliskan Sumber Belajar baik berupa buku sumber maupun elektronik',
+        experience: 'Pendahuluan, Kegiatan Inti dan Kegiatan Penutup',
         reflection: 'Refleksi guru dan peserta didik.',
         assessment: 'Asesmen diagnostik, formatif, dan sumatif.'
     };
