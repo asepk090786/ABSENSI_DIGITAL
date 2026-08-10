@@ -532,18 +532,20 @@ class DashboardController extends Controller
             $verificationExpiresAtTimestamp = null;
             try {
                 if ($user->siswa && ! empty($user->siswa->kelas_id) && \Illuminate\Support\Facades\Schema::hasTable('attendance_verification_codes')) {
+                    $today = \Carbon\Carbon::now('Asia/Jakarta')->toDateString();
                     $activeVerification = \App\Models\AttendanceVerificationCode::where('kelas_id', $user->siswa->kelas_id)
-                        ->where('tanggal', date('Y-m-d'))
-                        ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', \Carbon\Carbon::now()); })
+                        ->where('tanggal', $today)
+                        ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', \Carbon\Carbon::now('UTC')); })
                         ->orderByDesc('id')
                         ->first();
 
                     if ($activeVerification) {
-                        $verificationExpiresAt = $activeVerification->expires_at
-                            ? \Carbon\Carbon::parse($activeVerification->expires_at)->format('Y-m-d H:i:s')
+                        $rawExpiresAt = $activeVerification->getRawOriginal('expires_at');
+                        $verificationExpiresAt = $rawExpiresAt
+                            ? \Carbon\Carbon::parse($rawExpiresAt, 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s')
                             : null;
-                        $verificationExpiresAtTimestamp = $activeVerification->expires_at
-                            ? $activeVerification->expires_at->timestamp * 1000
+                        $verificationExpiresAtTimestamp = $rawExpiresAt
+                            ? \Carbon\Carbon::parse($rawExpiresAt, 'UTC')->timestamp * 1000
                             : null;
                     }
 
@@ -551,7 +553,7 @@ class DashboardController extends Controller
                         $studentAlreadyVerifiedToday = \App\Models\AbsensiSiswa::where('siswa_id', $user->siswa->id)
                             ->where('status', 'hadir')
                             ->whereHas('absensiKelas', function ($q) use ($activeVerification) {
-                                $q->whereDate('tanggal', date('Y-m-d'));
+                                $q->whereDate('tanggal', \Carbon\Carbon::now('Asia/Jakarta')->toDateString());
                                 if (! empty($activeVerification->jam_belajar_id)) {
                                     $q->where('jam_belajar_id', $activeVerification->jam_belajar_id);
                                 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KurikulumController;
 use App\Http\Controllers\RencanaPembelajaranController;
 use App\Http\Controllers\JadwalKbmController;
+use App\Http\Controllers\SupervisiController;
 use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\JenisKegiatanController;
@@ -63,6 +64,18 @@ Route::middleware(['auth'])->group(function(){
     Route::post('siswa-import', ['App\Http\Controllers\SiswaController', 'import'])->name('siswa.import');
 
     Route::resource('ekstrakurikuler', EkstrakurikulerController::class)->only(['index', 'create', 'store']);
+
+    Route::prefix('akademik')->name('akademik.')->group(function () {
+        Route::get('supervisi', [SupervisiController::class, 'index'])->name('supervisi');
+        Route::get('supervisi/create', [SupervisiController::class, 'create'])->name('supervisi.create');
+        Route::post('supervisi', [SupervisiController::class, 'store'])->name('supervisi.store');
+        Route::get('supervisi/{supervisi}', [SupervisiController::class, 'show'])->name('supervisi.show');
+        Route::get('supervisi/{supervisi}/edit', [SupervisiController::class, 'edit'])->name('supervisi.edit');
+        Route::put('supervisi/{supervisi}', [SupervisiController::class, 'update'])->name('supervisi.update');
+        Route::delete('supervisi/{supervisi}', [SupervisiController::class, 'destroy'])->name('supervisi.destroy');
+        Route::get('supervisi/get-available-dates/{guru}', [SupervisiController::class, 'getAvailableDates'])->name('supervisi.available_dates');
+        Route::get('supervisi/get-jadwal-options/{guru}/{tanggal}', [SupervisiController::class, 'getJadwalOptions'])->name('supervisi.get_jadwal_options');
+    });
 
     // Ekstrakurikuler Routes (full feature)
     Route::prefix('ekskul')->name('ekskul.')->group(function () {
@@ -295,9 +308,6 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('tugas_guru', 'App\Http\Controllers\TugasGuruController');
 
     Route::get('modul-ajar', [RencanaPembelajaranController::class, 'index'])->name('rencana_pembelajaran.index');
-    Route::get('modul-ajar/editor', [RencanaPembelajaranController::class, 'editor'])->name('rencana_pembelajaran.editor');
-    Route::post('modul-ajar/editor/upload', [RencanaPembelajaranController::class, 'uploadEditorDocx'])->name('rencana_pembelajaran.editor_upload');
-    Route::get('modul-ajar/editor/{id}', [RencanaPembelajaranController::class, 'editorEdit'])->name('rencana_pembelajaran.editor_edit');
     Route::get('modul-ajar/create', [RencanaPembelajaranController::class, 'create'])->name('rencana_pembelajaran.create');
     Route::post('modul-ajar', [RencanaPembelajaranController::class, 'store'])->name('rencana_pembelajaran.store');
     Route::get('modul-ajar/{id}/edit', [RencanaPembelajaranController::class, 'edit'])->name('rencana_pembelajaran.edit');
@@ -422,9 +432,6 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.updatePassword');
     });
 });
-
-Route::get('modul-ajar/{rencanaPembelajaran}/document', [RencanaPembelajaranController::class, 'document'])->name('rencana_pembelajaran.document')->middleware('signed');
-Route::post('modul-ajar/{rencanaPembelajaran}/callback', [RencanaPembelajaranController::class, 'onlyOfficeCallback'])->name('rencana_pembelajaran.onlyoffice_callback')->middleware('signed');
 
 // Public Help pages (no auth required)
 Route::get('/help', [App\Http\Controllers\HelpController::class, 'publicIndex'])->name('help.public.index');

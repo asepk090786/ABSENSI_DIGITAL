@@ -180,9 +180,9 @@
                     @endif
                     @if(isset($activeVerification) && $activeVerification)
                         <div class="col-6 col-md-3">
-                            <button id="quickVerifyBtn" class="quick-menu-card btn btn-ghost {{ (!empty($studentAlreadyVerifiedToday) ? 'disabled' : '') }}" type="button" {{ (!empty($studentAlreadyVerifiedToday) ? 'disabled' : '') }}>
+                            <button id="quickVerifyBtn" class="quick-menu-card btn btn-ghost {{ $studentAlreadyVerifiedToday ? 'disabled' : '' }}" type="button" {{ $studentAlreadyVerifiedToday ? 'disabled' : '' }}>
                                 <div class="qm-icon" style="background:#06b6d4;"><i class="ti ti-lock-open"></i></div>
-                                <div class="qm-label">{{ (!empty($studentAlreadyVerifiedToday) ? 'Sudah Verifikasi' : 'Verifikasi Absen Hari ini') }}</div>
+                                <div class="qm-label">{{ $studentAlreadyVerifiedToday ? 'Sudah Verifikasi' : 'Verifikasi Absen Hari ini' }}</div>
                             </button>
                         </div>
                     @endif
@@ -225,7 +225,26 @@
             var verifyAlert = document.getElementById('verifyCodeAlert');
             var bootstrapModal = null;
             var usingJQueryModal = false;
+            var studentAlreadyVerifiedToday = {{ !empty($studentAlreadyVerifiedToday) ? 'true' : 'false' }};
             var verificationExpiresAtTimestamp = parseInt('{{ $verificationExpiresAtTimestamp ?? '' }}', 10);
+            var verificationExpiresAtRaw = '{{ $verificationExpiresAt ?? '' }}';
+
+            if (!isNaN(verificationExpiresAtTimestamp) && verificationExpiresAtTimestamp > 0 && verificationExpiresAtTimestamp < 1000000000000) {
+                // Convert seconds to milliseconds if needed.
+                verificationExpiresAtTimestamp *= 1000;
+            }
+
+            function normalizeVerifyButton() {
+                if (!btn) return;
+                if (!studentAlreadyVerifiedToday) {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                    btn.removeAttribute('aria-disabled');
+                    btn.style.pointerEvents = '';
+                }
+            }
+
+            normalizeVerifyButton();
 
             if (modalEl) {
                 if (window.bootstrap && typeof window.bootstrap.Modal === 'function') {
@@ -243,7 +262,7 @@
                     var now = Date.now();
                     var remaining = Math.max(0, Math.round((verificationExpiresAtTimestamp - now) / 1000));
 
-                    if (remaining <= 0 && btn && !btn.disabled && !btn.classList.contains('disabled')) {
+                    if (remaining <= 0 && btn) {
                         btn.disabled = true;
                         btn.classList.add('disabled');
                         btn.setAttribute('aria-disabled', 'true');
@@ -272,6 +291,13 @@
 
             // Start the countdown timer
             startStudentVerificationTimer();
+            if ((!verificationExpiresAtTimestamp || isNaN(verificationExpiresAtTimestamp)) && verificationExpiresAtRaw) {
+                var parsed = Date.parse(verificationExpiresAtRaw.replace(' ', 'T'));
+                if (!isNaN(parsed)) {
+                    verificationExpiresAtTimestamp = parsed;
+                    startStudentVerificationTimer();
+                }
+            }
 
             btn.addEventListener('click', function(){
                 if (verifyInput) verifyInput.value = '';
@@ -311,7 +337,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({ kode: kode, kelas_id: '{{ auth()->user()->siswa->kelas_id ?? '' }}', tanggal: '{{ date('Y-m-d') }}' })
+                    body: JSON.stringify({ kode: kode, ...({{ auth()->user()->siswa->kelas_id ?? '' }} ? {kelas_id: '{{ auth()->user()->siswa->kelas_id }}'} : {}), tanggal: '{{ date('Y-m-d') }}' })
                 }).then(function(resp){ return resp.json(); }).then(function(json){
                     verifySubmit.disabled = false;
                     if (json && json.success) {

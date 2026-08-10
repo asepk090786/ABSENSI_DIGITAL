@@ -25,6 +25,7 @@ class RencanaPembelajaran extends Model
         'sumber',
         'penilaian',
         'alokasi_waktu',
+        'dimensi_lulusan',
         'praktik_pedagogis',
         'lingkungan_pembelajaran',
         'pemanfaatan_digital',

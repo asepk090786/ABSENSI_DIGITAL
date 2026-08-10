@@ -45,7 +45,7 @@
                         <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-outline-secondary btn-sm">Batal</a>
                         <div style="display:flex; gap:8px;">
                             @if($mode === 'create')
-                            <button type="button" id="btn-import-word" class="btn btn-outline-success btn-sm">
+                            <button type="button" id="btn-import-word" style="display:none;" class="btn btn-outline-success btn-sm">
                                 <i class="ti ti-file-type-docx"></i> Import dari Word
                             </button>
                             @endif
@@ -128,6 +128,23 @@
                                 <input type="hidden" name="status" id="field-status" value="draft">
                             </div>
                             <div class="field" style="margin-top:13px;"><label for="input-duration" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Alokasi Waktu</label><input type="text" id="input-duration" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" name="duration" id="field-duration" value=""></div>
+                            <div class="field" style="margin-top:13px;"><label for="input-dimensi-search" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Dimensi Lulusan</label><p style="margin-top:-3px; margin-bottom:8px; font-size:11px; color:#5b6770;">Tuliskan / Pilih dimensi lulusan yang berhubungan dengan materi ajar</p>
+                                <div id="input-dimensi-combobox" style="width:100%;">
+                                    <div id="dimensi-chips" style="min-height:38px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:6px; border:1px solid #c9d7e7; border-radius:8px; background:#fff;"></div>
+                                    <input id="input-dimensi-search" type="text" placeholder="Cari atau pilih dimensi lulusan..." autocomplete="off" style="width:100%; margin-top:8px; padding:8px 10px; border:1px solid #c9d7e7; border-radius:8px; background:#fff;">
+                                    <ul id="dimensi-dropdown" style="display:none; max-height:220px; overflow:auto; border:1px solid #c9d7e7; border-radius:8px; margin:6px 0 0 0; padding:6px; background:#fff; list-style:none;">
+                                        <li class="dimensi-option" data-label="Keimanan dan Ketakwaan terhadap Tuhan YME" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Keimanan dan Ketakwaan terhadap Tuhan YME</li>
+                                        <li class="dimensi-option" data-label="Kewargaan" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Kewargaan</li>
+                                        <li class="dimensi-option" data-label="Penalaran Kritis" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Penalaran Kritis</li>
+                                        <li class="dimensi-option" data-label="Kreativitas" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Kreativitas</li>
+                                        <li class="dimensi-option" data-label="Kolaborasi" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Kolaborasi</li>
+                                        <li class="dimensi-option" data-label="Kemandirian" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Kemandirian</li>
+                                        <li class="dimensi-option" data-label="Kesehatan" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Kesehatan</li>
+                                        <li class="dimensi-option" data-label="Komunikasi" style="padding:6px 8px; cursor:pointer; border-radius:6px;">Komunikasi</li>
+                                    </ul>
+                                </div>
+                                <input type="hidden" name="dimensi_lulusan" id="field-dimensi_lulusan" value="">
+                            </div>
                         </div>
                     </section>
 
@@ -168,6 +185,7 @@
                             <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Kelas / Fase</th><td id="preview-class" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                             <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Status</th><td id="preview-status" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                             <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Alokasi Waktu</th><td id="preview-duration" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
+                            <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Dimensi Lulusan</th><td id="preview-dimensi_lulusan" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"><span style="color:#778593; font-style:italic; font-size:10px;">Belum dipilih</span></td></tr>
                         </tbody>
                     </table>
                     <h2>Capaian Pembelajaran</h2>
@@ -207,7 +225,7 @@
         assessment: 'Asesmen diagnostik, formatif, dan sumatif.'
     };
 
-    const textFields = ['title','subject','class','status','duration','achievement','objectives','practice','environment','digital','experience','reflection','assessment'];
+    const textFields = ['title','subject','class','status','duration','dimensi_lulusan','achievement','objectives','practice','environment','digital','experience','reflection','assessment'];
     const listFields = [];
 
     function renderList(element, value) {
@@ -286,6 +304,106 @@
         }
     }
 
+    // Initialize combobox for dimensi lulusan (same chip-style UI as Kelas)
+    function initDimensiCombobox() {
+        const search = document.getElementById('input-dimensi-search');
+        const dropdown = document.getElementById('dimensi-dropdown');
+        const options = dropdown ? Array.from(dropdown.querySelectorAll('.dimensi-option')).map(li => ({ label: li.dataset.label || li.textContent.trim() })) : [];
+        const container = document.getElementById('input-dimensi-combobox');
+        if (!search || !dropdown || !container) return;
+
+        function showDropdown() { dropdown.style.display = 'block'; }
+        function hideDropdown() { dropdown.style.display = 'none'; }
+
+        search.addEventListener('focus', () => { renderDimensiDropdown(''); showDropdown(); });
+        search.addEventListener('input', (e) => { renderDimensiDropdown(e.target.value || ''); showDropdown(); });
+        search.addEventListener('click', (e) => { renderDimensiDropdown(search.value || ''); showDropdown(); e.stopPropagation(); });
+
+        function renderDimensiDropdown(filter) {
+            const q = (filter || '').toLowerCase().trim();
+            dropdown.replaceChildren();
+            const selectedLabels = Array.from(document.getElementById('dimensi-chips').querySelectorAll('.chip')).map(c => c.dataset.label);
+            options.filter(o => !selectedLabels.includes(o.label))
+                .filter(o => !q || o.label.toLowerCase().includes(q))
+                .forEach(o => {
+                    const li = document.createElement('li');
+                    li.textContent = o.label;
+                    li.dataset.label = o.label;
+                    li.style.padding = '6px 8px';
+                    li.style.cursor = 'pointer';
+                    li.addEventListener('click', () => { addDimensiChip(o.label); renderDimensiDropdown(search.value); });
+                    dropdown.appendChild(li);
+                });
+            if (!dropdown.hasChildNodes()) {
+                const li = document.createElement('li');
+                li.textContent = 'Tidak ada hasil';
+                li.style.padding = '6px 8px';
+                li.style.color = '#666';
+                dropdown.appendChild(li);
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!container.contains(e.target)) hideDropdown();
+        });
+
+        const hidden = document.getElementById('field-dimensi_lulusan');
+        if (hidden && hidden.value) {
+            renderDimensiChipsFromValue(hidden.value);
+        }
+    }
+
+    function renderDimensiChipsFromValue(value) {
+        const container = document.getElementById('dimensi-chips');
+        const hidden = document.getElementById('field-dimensi_lulusan');
+        if (!container) return;
+        container.replaceChildren();
+        const sep = ('' + (value || '')).includes('\n') ? '\n' : ',';
+        const parts = ('' + (value || '')).split(sep).map(s => s.trim()).filter(Boolean);
+        parts.forEach(v => addDimensiChip(v, false));
+        if (hidden) hidden.value = parts.join('\n');
+    }
+
+    function addDimensiChip(label, focusSearch = true) {
+        const container = document.getElementById('dimensi-chips');
+        const hidden = document.getElementById('field-dimensi_lulusan');
+        if (!container) return;
+        const existing = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.label);
+        if (existing.includes(label)) return;
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.dataset.label = label;
+        chip.style.padding = '6px 8px';
+        chip.style.background = '#eef5fc';
+        chip.style.borderRadius = '18px';
+        chip.style.display = 'inline-flex';
+        chip.style.alignItems = 'center';
+        chip.style.gap = '8px';
+        chip.textContent = label;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = '×';
+        btn.style.border = '0';
+        btn.style.background = 'transparent';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', () => {
+            chip.remove();
+            const labels = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.label);
+            if (hidden) hidden.value = labels.join('\n');
+            updatePreview('dimensi_lulusan');
+        });
+        chip.appendChild(btn);
+        container.appendChild(chip);
+        const labels = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.label);
+        if (hidden) hidden.value = labels.join('\n');
+        updatePreview('dimensi_lulusan');
+        const searchEl = document.getElementById('input-dimensi-search');
+        if (focusSearch) {
+            searchEl?.focus();
+            if (searchEl) { searchEl.value = ''; }
+        }
+    }
+
     function getFieldValue(field) {
         const input = document.getElementById('input-' + field);
         const hidden = document.getElementById('field-' + field);
@@ -303,8 +421,8 @@
         if (hidden) hidden.value = safeValue;
         if (!input) return;
         if (input.tagName === 'SELECT' && input.multiple) {
-            // set multiple select options based on comma separated value
-            const parts = ('' + safeValue).split(',').map(s => s.trim()).filter(Boolean);
+            const sep = (safeValue.includes('\n')) ? '\n' : ',';
+            const parts = ('' + safeValue).split(sep).map(s => s.trim()).filter(Boolean);
             Array.from(input.options).forEach(opt => {
                 opt.selected = parts.includes(opt.value);
             });
@@ -566,6 +684,11 @@
             output.textContent = value === 'published'
                 ? 'Publish (Digunakan untuk KBM)'
                 : 'Draft (Belum digunakan untuk KBM)';
+        } else if (field === 'dimensi_lulusan') {
+            const sep = value.includes('\n') ? '\n' : ',';
+            const parts = value.split(sep).map(s => s.trim()).filter(Boolean);
+            const itemSep = '<hr style="margin:4px 0; border:0; border-top:1px dashed #c9d7e7;">';
+            output.innerHTML = parts.length > 0 ? parts.join(itemSep) : '<span style="color:#778593; font-style:italic; font-size:10px;">Belum dipilih</span>';
         } else if (listFields.includes(field)) {
             renderList(output, value);
         } else if (summernoteEditors[field]) {
@@ -600,6 +723,8 @@
         initSelectSync();
         // initialize class combobox if present
         initClassCombobox();
+        // initialize dimensi lulusan combobox if present
+        initDimensiCombobox();
         // initialize text input syncs
         initInputSync();
 

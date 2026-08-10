@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Cache;
 use App\Models\TugasGuru;
 use App\Models\MataPelajaran;
 use App\Models\Kelas;
@@ -21,7 +21,6 @@ use App\Models\RencanaPembelajaran;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Style\Font;
-use Illuminate\Http\Response;
 // show/download removed to restore original WYSIWYG flow
 
 class RencanaPembelajaranController extends Controller
@@ -31,6 +30,7 @@ class RencanaPembelajaranController extends Controller
      */
     private array $richFields = [
         'achievement','objectives','methods','media','resources','practice','environment','digital','experience','reflection','assessment',
+            'dimensi_lulusan',
     ];
 
     /**
@@ -69,21 +69,6 @@ class RencanaPembelajaranController extends Controller
         return null;
     }
 
-    private function getOnlyOfficeServerUrl(): string
-    {
-        return rtrim(config('onlyoffice.url') ?: env('ONLYOFFICE_URL') ?: '', '/');
-    }
-
-    private function getOnlyOfficeServerSecret(): ?string
-    {
-        return config('onlyoffice.jwt_secret') ?: env('ONLYOFFICE_JWT_SECRET');
-    }
-
-    private function createOnlyOfficeJwt(array $payload, string $secret): string
-    {
-        return JWT::encode($payload, $secret, 'HS256');
-    }
-
     private function buildModulePayloadFromModel(RencanaPembelajaran $model): array
     {
         $meta = [];
@@ -109,6 +94,7 @@ class RencanaPembelajaranController extends Controller
             'kelas_id' => $model->kelas_id,
             'duration' => $duration,
             'status' => $status,
+            'dimensi_lulusan' => $model->dimensi_lulusan ?? $meta['dimensi_lulusan'] ?? null,
             'achievement' => $model->capaian_pembelajaran ?? $meta['achievement'] ?? null,
             'objectives' => $model->tujuan ?? $meta['objectives'] ?? null,
             'methods' => $model->metode ?? $meta['methods'] ?? null,
@@ -120,7 +106,7 @@ class RencanaPembelajaranController extends Controller
             'digital' => $model->pemanfaatan_digital ?? $meta['digital'] ?? null,
             'experience' => $model->pengalaman_pembelajaran ?? $meta['experience'] ?? null,
             'reflection' => $model->refleksi_pembelajaran ?? $meta['reflection'] ?? null,
-            'docx_path' => $model->original_docx_path ? 'uploads/rencana_pembelajaran/docx/' . basename($model->original_docx_path) : null,
+            'docx_path' => $model->original_docx_path ?: null,
             'created_at' => $model->created_at?->toDateTimeString(),
             'source' => 'database',
             'guru_id' => $model->guru_id,
@@ -204,162 +190,6 @@ class RencanaPembelajaranController extends Controller
             'editorKelasList' => $editorKelasList,
             'editorFaseOptions' => $editorFaseOptions,
         ]);
-    }
-
-    public function uploadEditorDocx(Request $request)
-    {
-        $request->validate([
-            'judul' => 'nullable|string|max:255',
-            'file' => 'required|file|mimes:docx|max:10240',
-        ]);
-
-        $file = $request->file('file');
-        $fileName = uniqid('modul-ajar-') . '.docx';
-        $segment = $this->resolveRoleAwareStorageSegment();
-
-        Storage::disk('public_direct')->putFileAs(
-            'rencana_pembelajaran/docx/' . $segment,
-            $file,
-            $fileName
-        );
-
-        $record = RencanaPembelajaran::create([
-            'guru_id' => $this->resolveCurrentGuruId(),
-            'judul' => $request->input('judul', 'Modul Ajar'),
-            'original_docx_path' => 'uploads/rencana_pembelajaran/docx/' . $segment . '/' . $fileName,
-            'status' => 'draft',
-        ]);
-
-        return redirect()->route('rencana_pembelajaran.editor_edit', $record->id)->with('success', 'File DOCX berhasil diupload.');
-    }
-
-    public function editor()
-    {
-        return view('rencana_pembelajaran.editor');
-    }
-
-    public function editorEdit($id)
-    {
-        $record = RencanaPembelajaran::findOrFail($id);
-        $user = Auth::user();
-
-        if ($user && $user->guru_id && $record->guru_id != $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
-            abort(403);
-        }
-
-        if (empty($record->original_docx_path)) {
-            return redirect()->route('rencana_pembelajaran.index')->with('error', 'Dokumen Word asli tidak tersedia untuk pengeditan OnlyOffice.');
-        }
-
-        $onlyOfficeServerUrl = $this->getOnlyOfficeServerUrl();
-        $originalRoot = URL::to('/');
-        $appRoot = config('app.url') ?: $originalRoot;
-        URL::forceRootUrl(rtrim($appRoot, '/'));
-
-        $fileUrl = URL::temporarySignedRoute(
-            'rencana_pembelajaran.document',
-            now()->addMinutes(60),
-            ['rencanaPembelajaran' => $record->id]
-        );
-        $callbackUrl = URL::temporarySignedRoute(
-            'rencana_pembelajaran.onlyoffice_callback',
-            now()->addMinutes(60),
-            ['rencanaPembelajaran' => $record->id]
-        );
-
-        $documentKey = md5($record->id . '_' . ($record->updated_at?->timestamp ?? time()));
-        $fileType = strtolower(pathinfo($record->original_docx_path, PATHINFO_EXTENSION) ?: 'docx');
-
-        $onlyOfficeJwtToken = null;
-        $secret = $this->getOnlyOfficeServerSecret();
-        if ($secret) {
-            $onlyOfficeJwtToken = $this->createOnlyOfficeJwt([
-                'user' => [
-                    'id' => auth()->id() ?? 'guest',
-                    'name' => optional(auth()->user())->name ?? 'Guru',
-                ],
-                'document' => [
-                    'key' => $documentKey,
-                    'url' => $fileUrl,
-                ],
-                'editorConfig' => [
-                    'callbackUrl' => $callbackUrl,
-                    'mode' => 'edit',
-                ],
-            ], $secret);
-        }
-
-        URL::forceRootUrl($originalRoot);
-
-        return view('rencana_pembelajaran.onlyoffice', [
-            'item' => $record,
-            'onlyOfficeServerUrl' => $onlyOfficeServerUrl,
-            'fileUrl' => $fileUrl,
-            'callbackUrl' => $callbackUrl,
-            'documentKey' => $documentKey,
-            'fileType' => $fileType,
-            'onlyOfficeJwtToken' => $onlyOfficeJwtToken,
-        ]);
-    }
-
-    public function document(Request $request, RencanaPembelajaran $rencanaPembelajaran)
-    {
-        if (empty($rencanaPembelajaran->original_docx_path) || !file_exists(public_path($rencanaPembelajaran->original_docx_path))) {
-            abort(404);
-        }
-
-        $path = public_path($rencanaPembelajaran->original_docx_path);
-
-        return response()->file($path, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition' => 'inline; filename="' . basename($path) . '"',
-        ]);
-    }
-
-    public function onlyOfficeCallback(Request $request, RencanaPembelajaran $rencanaPembelajaran)
-    {
-        $payload = $request->all();
-        if (trim($request->getContent()) !== '') {
-            $json = json_decode($request->getContent(), true);
-            if (is_array($json)) {
-                $payload = array_merge($payload, $json);
-            }
-        }
-
-        $status = (int) ($payload['status'] ?? 0);
-        $fileUrl = $payload['url'] ?? null;
-
-        if (!in_array($status, [2, 6], true) || empty($fileUrl)) {
-            return response()->json(['error' => 0]);
-        }
-
-        try {
-            $response = Http::timeout(120)->get($fileUrl);
-
-            if ($response->successful() && !empty($rencanaPembelajaran->original_docx_path)) {
-                $publicFile = public_path($rencanaPembelajaran->original_docx_path);
-                if (!file_exists(dirname($publicFile))) {
-                    mkdir(dirname($publicFile), 0755, true);
-                }
-                file_put_contents($publicFile, $response->body());
-
-                $rencanaPembelajaran->updated_at = now();
-                $rencanaPembelajaran->save();
-
-                Log::info('OnlyOffice callback file saved', [
-                    'modul_id' => $rencanaPembelajaran->id,
-                    'timestamp' => now(),
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::error('OnlyOffice callback exception', [
-                'modul_id' => $rencanaPembelajaran->id,
-                'error' => $e->getMessage(),
-                'timestamp' => now(),
-            ]);
-        }
-
-        return response()->json(['error' => 0]);
     }
 
     public function create()
@@ -488,6 +318,7 @@ class RencanaPembelajaranController extends Controller
             'experience',
             'reflection',
             'assessment',
+            'dimensi_lulusan',
         ];
 
         $data = [];
@@ -571,6 +402,7 @@ class RencanaPembelajaranController extends Controller
                 'sumber' => $payload['resources'] ?? null,
                 'penilaian' => $payload['assessment'] ?? null,
                 'alokasi_waktu' => $payload['duration'] ?? null,
+                'dimensi_lulusan' => $payload['dimensi_lulusan'] ?? null,
                 'praktik_pedagogis' => $payload['practice'] ?? null,
                 'lingkungan_pembelajaran' => $payload['environment'] ?? null,
                 'pemanfaatan_digital' => $payload['digital'] ?? null,
@@ -594,6 +426,7 @@ class RencanaPembelajaranController extends Controller
                 'sumber' => $payload['resources'] ?? null,
                 'penilaian' => $payload['assessment'] ?? null,
                 'alokasi_waktu' => $payload['duration'] ?? null,
+                'dimensi_lulusan' => $payload['dimensi_lulusan'] ?? null,
                 'praktik_pedagogis' => $payload['practice'] ?? null,
                 'lingkungan_pembelajaran' => $payload['environment'] ?? null,
                 'pemanfaatan_digital' => $payload['digital'] ?? null,
@@ -646,35 +479,6 @@ class RencanaPembelajaranController extends Controller
         return 'uploads/rencana_pembelajaran/docx/' . $this->resolveRoleAwareStorageSegment() . '/' . $fileName;
     }
 
-    public function destroy($id)
-    {
-        $user = Auth::user();
-        $record = RencanaPembelajaran::find($id);
-
-        if ($record) {
-            if ($user && $user->guru_id && $record->guru_id != $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
-                abort(403);
-            }
-
-            if ($record->original_docx_path && file_exists(public_path($record->original_docx_path))) {
-                @unlink(public_path($record->original_docx_path));
-            }
-
-            \App\Models\AgendaGuru::where('rencana_pembelajaran_id', $record->id)->delete();
-            $record->delete();
-        }
-
-        $modules = Session::get('modul_ajar_items', []);
-        foreach ($modules as $key => $module) {
-            if (isset($module['id']) && (string) $module['id'] === (string) $id) {
-                unset($modules[$key]);
-            }
-        }
-        Session::put('modul_ajar_items', $modules);
-
-        return redirect()->route('rencana_pembelajaran.index')->with('success', 'Modul ajar berhasil dihapus.');
-    }
-
     public function downloadTemplate()
     {
         $path = storage_path('app/templates/template_modul_ajar.docx');
@@ -714,6 +518,7 @@ class RencanaPembelajaranController extends Controller
             'pengalaman pembelajaran' => 'experience',
             'refleksi pembelajaran' => 'reflection',
             'asesmen' => 'assessment',
+            'dimensi_lulusan',
         ];
 
         $data = [];
@@ -1016,5 +821,34 @@ class RencanaPembelajaranController extends Controller
             $options[$f] = $label;
         }
         return $options;
+    }
+
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        $record = RencanaPembelajaran::find($id);
+
+        if ($record) {
+            if ($user && $user->guru_id && $record->guru_id != $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+                abort(403);
+            }
+
+            if ($record->original_docx_path && file_exists(public_path($record->original_docx_path))) {
+                @unlink(public_path($record->original_docx_path));
+            }
+
+            \App\Models\AgendaGuru::where('rencana_pembelajaran_id', $record->id)->delete();
+            $record->delete();
+        }
+
+        $modules = Session::get('modul_ajar_items', []);
+        foreach ($modules as $key => $module) {
+            if (isset($module['id']) && (string) $module['id'] === (string) $id) {
+                unset($modules[$key]);
+            }
+        }
+        Session::put('modul_ajar_items', $modules);
+
+        return redirect()->route('rencana_pembelajaran.index')->with('success', 'Modul ajar berhasil dihapus.');
     }
 }

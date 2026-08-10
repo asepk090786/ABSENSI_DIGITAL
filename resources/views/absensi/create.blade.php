@@ -298,6 +298,10 @@
                                                 <input type="time" id="verificationValidFrom" name="verification_valid_from" class="form-control form-control-sm" value="{{ old('verification_valid_from', $verificationValidFrom ?? '') }}" placeholder="Dari">
                                                 <span class="text-muted">s.d.</span>
                                                 <input type="time" id="verificationValidTo" name="verification_valid_to" class="form-control form-control-sm" value="{{ old('verification_valid_to', $verificationValidTo ?? '') }}" placeholder="Sampai">
+                                                <div id="verificationCodeInline" class="d-flex align-items-center gap-2 ms-3" style="{{ ($verificationActive ?? false) && ($verificationCode ?? '') ? 'display:flex;' : 'display:none;' }}">
+                                                    <span class="badge bg-primary">Kode</span>
+                                                    <span id="verificationCodeInlineLabel" class="fw-bold bg-secondary text-white px-2 py-1 rounded">{{ $verificationCode ?? '-' }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1080,6 +1084,8 @@
         var verificationToggle = document.getElementById('verifikasiToggle');
         var verificationCodeBox = document.getElementById('verificationCodeBox');
         var verificationCodeLabel = document.getElementById('verificationCodeLabel');
+        var verificationCodeInline = document.getElementById('verificationCodeInline');
+        var verificationCodeInlineLabel = document.getElementById('verificationCodeInlineLabel');
         var verificationCountdown = document.getElementById('verificationCountdown');
         var verificationHidden = document.getElementById('kode_verifikasi');
         var verificationSaveAlert = document.getElementById('verificationSaveAlert');
@@ -1225,7 +1231,9 @@
             verificationIsRefreshing = false;
             if (verificationHidden) verificationHidden.value = code;
             if (verificationCodeLabel) verificationCodeLabel.textContent = code;
+            if (verificationCodeInlineLabel) verificationCodeInlineLabel.textContent = code;
             if (verificationCodeBox) verificationCodeBox.style.display = 'block';
+            if (verificationCodeInline) verificationCodeInline.style.display = 'flex';
             if (typeof expiresAt !== 'undefined' && document.getElementById('kode_verifikasi_expires_at')) {
                 var expiresAtDate = new Date(parseInt(expiresAt, 10));
                 if (!isNaN(expiresAtDate.getTime())) {
@@ -1323,8 +1331,14 @@
                     if (verificationCodeLabel) {
                         verificationCodeLabel.textContent = verificationHidden.value;
                     }
+                    if (verificationCodeInlineLabel) {
+                        verificationCodeInlineLabel.textContent = verificationHidden.value;
+                    }
                     if (verificationCodeBox) {
                         verificationCodeBox.style.display = 'block';
+                    }
+                    if (verificationCodeInline) {
+                        verificationCodeInline.style.display = 'flex';
                     }
                     var expiresAtTimestampInput = document.getElementById('kode_verifikasi_expires_at_timestamp');
                     if (expiresAtTimestampInput && expiresAtTimestampInput.value) {
@@ -1343,6 +1357,9 @@
                 }
                 if (verificationCodeBox) {
                     verificationCodeBox.style.display = 'none';
+                }
+                if (verificationCodeInline) {
+                    verificationCodeInline.style.display = 'none';
                 }
                 if (verificationHidden) {
                     verificationHidden.value = '';
@@ -1393,12 +1410,21 @@
                 if (result.ok && json.success) {
                     showVerificationSaveAlert(json.message || 'Konfigurasi verifikasi berhasil disimpan.', 'success');
                     if (active) {
+                        if (verificationToggle) {
+                            verificationToggle.checked = true;
+                        }
                         if (json.kode) {
                             if (document.getElementById('verificationValidFrom')) {
                                 document.getElementById('verificationValidFrom').value = json.valid_from || validFrom || document.getElementById('verificationValidFrom').value;
                             }
                             if (document.getElementById('verificationValidTo')) {
                                 document.getElementById('verificationValidTo').value = json.valid_to || validTo || document.getElementById('verificationValidTo').value;
+                            }
+                            if (verificationCodeLabel) {
+                                verificationCodeLabel.textContent = json.kode;
+                            }
+                            if (verificationHidden) {
+                                verificationHidden.value = json.kode;
                             }
                             setVerificationCodeLocal(json.kode, json.timeout_seconds || timeout, json.expires_at_timestamp);
                         } else {
@@ -1411,6 +1437,9 @@
                         }
                         if (verificationCodeBox) {
                             verificationCodeBox.style.display = 'none';
+                        }
+                        if (verificationCodeInline) {
+                            verificationCodeInline.style.display = 'none';
                         }
                         if (verificationHidden) {
                             verificationHidden.value = '';

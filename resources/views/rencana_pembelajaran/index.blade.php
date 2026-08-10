@@ -80,26 +80,22 @@
         <div id="preview-content" style="padding:24px; background:#fff;">
           <article id="modal-preview-document" style="width:min(100%,820px); min-height:1100px; margin:0 auto; padding:58px 65px 80px; background:#fff; box-shadow:0 4px 12px rgba(26,55,89,.18),0 24px 44px rgba(26,55,89,.13);">
             <p class="text-muted text-center mb-2" style="font-size:10px; letter-spacing:1px; text-transform:uppercase;">MODUL AJAR</p>
-            <h1 id="modal-preview-title" style="margin:0 0 30px; color:#16283c; font-size:26px; font-weight:700; line-height:1.28; text-align:center;"></h1>
+            <h1 style="margin:0 0 30px; color:#16283c; font-size:26px; font-weight:700; line-height:1.28; text-align:center;">MODUL AJAR</h1>
             <h2 style="margin:27px 0 10px; padding-bottom:6px; border-bottom:1.5px solid #4b78a9; font-size:15px;">Informasi Umum</h2>
-            <table style="width:100%; border-collapse:collapse;">
+            <table style="width:100%; border-collapse:collapse; margin-bottom:18px;">
               <tbody>
+                <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Judul Modul Ajar</th><td id="modal-preview-title" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                 <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Mata Pelajaran</th><td id="modal-preview-subject" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                 <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Kelas / Fase</th><td id="modal-preview-class" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                 <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Status</th><td id="modal-preview-status" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
                 <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Alokasi Waktu</th><td id="modal-preview-duration" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"></td></tr>
+                <tr><th style="width:165px; padding:8px 10px; border:1px solid #afbdce; text-align:left; vertical-align:top; background:#eef5fc; font-weight:700;">Dimensi Lulusan</th><td id="modal-preview-dimensi_lulusan" style="padding:8px 10px; border:1px solid #afbdce; vertical-align:top;"><span style="color:#778593; font-style:italic; font-size:10px;">Belum dipilih</span></td></tr>
               </tbody>
             </table>
             <h2>Capaian Pembelajaran</h2>
             <p id="modal-preview-achievement" style="margin:0 0 10px; white-space:pre-wrap;"></p>
             <h2>Tujuan Pembelajaran</h2>
-            <ul id="modal-preview-objectives" style="margin:0 0 10px; padding-left:22px;"></ul>
-            <h2>Metode Pembelajaran</h2>
-            <ul id="modal-preview-methods" style="margin:0 0 10px; padding-left:22px;"></ul>
-            <h2>Media Pembelajaran</h2>
-            <ul id="modal-preview-media" style="margin:0 0 10px; padding-left:22px;"></ul>
-            <h2>Sumber Belajar</h2>
-            <ul id="modal-preview-resources" style="margin:0 0 10px; padding-left:22px;"></ul>
+            <p id="modal-preview-objectives" style="margin:0 0 10px; white-space:pre-wrap;"></p>
             <h2>Praktik Pedagogis</h2>
             <p id="modal-preview-practice" style="margin:0 0 10px; white-space:pre-wrap;"></p>
             <h2>Lingkungan Pembelajaran</h2>
@@ -147,20 +143,6 @@
     const TEACHER_NIP = {!! json_encode($guruNip ?? '') !!};
     const KEPALA_NAME = {!! json_encode($kepalaName ?? '') !!};
     const KEPALA_NIP = {!! json_encode($kepalaNip ?? '') !!};
-    function renderList(element, value) {
-        element.replaceChildren();
-        if (!value) return;
-        value.split('\n').map(item => item.trim()).filter(Boolean).forEach(item => {
-            const li = document.createElement('li');
-            const clean = item.replace(/^[•\-\d.]+\s*/, '');
-            if (clean.includes('<') || clean.includes('&lt;')) {
-                li.innerHTML = decodeHtmlEntities(clean);
-            } else {
-                li.textContent = clean;
-            }
-            element.appendChild(li);
-        });
-    }
 
     function decodeHtmlEntities(str) {
         if (!str || (typeof str !== 'string')) return '';
@@ -175,27 +157,32 @@
             const el = document.getElementById(id);
             if (el) el.textContent = value || '';
         };
-        const setList = (id, value) => {
-            const el = document.getElementById(id);
-            if (el) renderList(el, value);
-        };
         const setHtml = (id, value) => {
             const el = document.getElementById(id);
             if (!el) return;
             const decoded = decodeHtmlEntities(value || '');
             el.innerHTML = decoded;
         };
+        const setDimensi = (id, value) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const raw = value || '';
+            const sep = raw.includes('\n') ? '\n' : ',';
+            const parts = raw.split(sep).map(s => s.trim()).filter(Boolean);
+            const itemSep = '<hr style="margin:4px 0; border:0; border-top:1px dashed #c9d7e7;">';
+            el.innerHTML = parts.length > 0 ? parts.join(itemSep) : '<span style="color:#778593; font-style:italic; font-size:10px;">Belum dipilih</span>';
+        };
 
         setText('modal-preview-title', module.title);
         setText('modal-preview-subject', module.subject);
         setText('modal-preview-class', module.class);
-        setText('modal-preview-status', module.status);
+        setText('modal-preview-status', module.status === 'published'
+            ? 'Publish (Digunakan untuk KBM)'
+            : 'Draft (Belum digunakan untuk KBM)');
         setText('modal-preview-duration', module.duration);
+        setDimensi('modal-preview-dimensi_lulusan', module.dimensi_lulusan);
         setHtml('modal-preview-achievement', module.achievement);
-        setList('modal-preview-objectives', module.objectives);
-        setList('modal-preview-methods', module.methods);
-        setList('modal-preview-media', module.media);
-        setList('modal-preview-resources', module.resources);
+        setHtml('modal-preview-objectives', module.objectives);
         setHtml('modal-preview-practice', module.practice);
         setHtml('modal-preview-environment', module.environment);
         setHtml('modal-preview-digital', module.digital);
