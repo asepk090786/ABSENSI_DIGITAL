@@ -102,13 +102,14 @@
                                     <select id="input-subject" class="form-select" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; font-size:12px;" aria-label="Mata Pelajaran">
                                         <option value="">-- Pilih Mata Pelajaran --</option>
                                         @foreach($mataPelajaranList as $mp)
-                                            <option value="{{ $mp->nama_mapel ?? ($mp['nama_mapel'] ?? $mp->name ?? '') }}">{{ $mp->nama_mapel ?? ($mp['nama_mapel'] ?? $mp->name ?? '') }}</option>
+                                            <option value="{{ $mp->id }}">{{ $mp->nama_mapel ?? ($mp['nama_mapel'] ?? $mp->name ?? '') }}</option>
                                         @endforeach
                                     </select>
                                 @else
                                     <div id="input-subject" contenteditable="true" data-editor-type="inline" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5;"></div>
                                 @endif
                                 <input type="hidden" name="subject" id="field-subject" value="">
+                                <input type="hidden" name="mata_pelajaran_id" id="field-mata_pelajaran_id" value="">
                             </div>
                             <div class="field" style="margin-top:13px;"><label for="input-class" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Kelas</label>
                                 @if(!empty($kelasList) && $kelasList->isNotEmpty())
@@ -117,7 +118,7 @@
                                         <input id="input-class-search" type="text" placeholder="Cari atau pilih kelas..." autocomplete="off" style="width:100%; margin-top:8px; padding:8px 10px; border:1px solid #c9d7e7; border-radius:8px; background:#fff;">
                                         <ul id="class-dropdown" style="display:none; max-height:220px; overflow:auto; border:1px solid #c9d7e7; border-radius:8px; margin:6px 0 0 0; padding:6px; background:#fff; list-style:none;">
                                             @foreach($kelasList as $k)
-                                                <li class="class-option" data-value="{{ $k->nama_kelas ?? ($k['nama_kelas'] ?? $k->nama ?? '') }}" style="padding:6px 8px; cursor:pointer; border-radius:6px;">{{ $k->nama_kelas ?? ($k['nama_kelas'] ?? $k->nama ?? '') }}</li>
+                                                <li class="class-option" data-id="{{ $k->id }}" data-label="{{ $k->nama_kelas ?? ($k['nama_kelas'] ?? $k->nama ?? '') }}" style="padding:6px 8px; cursor:pointer; border-radius:6px;">{{ $k->nama_kelas ?? ($k['nama_kelas'] ?? $k->nama ?? '') }}</li>
                                             @endforeach
                                         </ul>
                                     </div>
@@ -125,6 +126,7 @@
                                     <div id="input-class" contenteditable="true" data-editor-type="inline" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5;"></div>
                                 @endif
                                 <input type="hidden" name="class" id="field-class" value="">
+                                <input type="hidden" name="kelas_id" id="field-kelas_id" value="">
                             </div>
                             <div class="field" style="margin-top:13px;"><label for="input-fase" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Fase</label>
                                 @if(!empty($faseOptions))
@@ -142,7 +144,7 @@
                             <div class="field" style="margin-top:13px;"><label for="input-status" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Status</label>
                                 <select id="input-status" class="form-select" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; font-size:12px;" aria-label="Status">
                                     <option value="draft">Draft (Belum digunakan untuk KBM)</option>
-                                    <option value="publish">Publish (Digunakan untuk KBM)</option>
+                                    <option value="published">Publish (Digunakan untuk KBM)</option>
                                 </select>
                                 <input type="hidden" name="status" id="field-status" value="draft">
                             </div>
@@ -304,7 +306,7 @@
     function initClassCombobox() {
         const search = document.getElementById('input-class-search');
         const dropdown = document.getElementById('class-dropdown');
-        const options = dropdown ? Array.from(dropdown.querySelectorAll('.class-option')).map(li => ({value: li.dataset.value, label: li.textContent.trim(), el: li})) : [];
+        const options = dropdown ? Array.from(dropdown.querySelectorAll('.class-option')).map(li => ({id: li.dataset.id || null, label: li.dataset.label || li.textContent.trim(), el: li})) : [];
         const container = document.getElementById('input-class-combobox');
         if (!search || !dropdown || !container) return;
 
@@ -319,15 +321,17 @@
         function renderDropdown(filter) {
             const q = (filter || '').toLowerCase().trim();
             dropdown.replaceChildren();
-            options.filter(o => !Array.from(document.getElementById('class-chips').querySelectorAll('.chip')).map(c=>c.dataset.value).includes(o.value))
+            const selectedLabels = Array.from(document.getElementById('class-chips').querySelectorAll('.chip')).map(c=>c.dataset.label);
+            options.filter(o => !selectedLabels.includes(o.label))
                 .filter(o => !q || o.label.toLowerCase().includes(q))
                 .forEach(o => {
                     const li = document.createElement('li');
                     li.textContent = o.label;
-                    li.dataset.value = o.value;
+                    if (o.id !== null) li.dataset.id = o.id;
+                    li.dataset.label = o.label;
                     li.style.padding = '6px 8px';
                     li.style.cursor = 'pointer';
-                    li.addEventListener('click', () => { addClassChip(o.value); renderDropdown(search.value); });
+                    li.addEventListener('click', () => { addClassChip({id: o.id, label: o.label}); renderDropdown(search.value); });
                     dropdown.appendChild(li);
                 });
             if (!dropdown.hasChildNodes()) {
@@ -390,30 +394,37 @@
     function renderClassChipsFromValue(csv) {
         const container = document.getElementById('class-chips');
         const hidden = document.getElementById('field-class');
+        const hiddenId = document.getElementById('field-kelas_id');
         if (!container) return;
         container.replaceChildren();
         const parts = ('' + (csv || '')).split(',').map(s => s.trim()).filter(Boolean);
-        parts.forEach(v => addClassChip(v, false));
+        parts.forEach(v => addClassChip({ id: null, label: v }, false));
         if (hidden) hidden.value = parts.join(', ');
+        if (hiddenId) hiddenId.value = '';
     }
 
     function addClassChip(value, focusSearch = true) {
         const container = document.getElementById('class-chips');
         const hidden = document.getElementById('field-class');
+        const hiddenId = document.getElementById('field-kelas_id');
         if (!container) return;
+        const item = (typeof value === 'object' && value !== null) ? value : { id: null, label: String(value) };
+        const label = item.label || String(item.id || '');
+        const id = item.id || null;
         // avoid duplicates
-        const existing = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.value);
-        if (existing.includes(value)) return;
+        const existing = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.label);
+        if (existing.includes(label)) return;
         const chip = document.createElement('span');
         chip.className = 'chip';
-        chip.dataset.value = value;
+        if (id !== null) chip.dataset.id = id;
+        chip.dataset.label = label;
         chip.style.padding = '6px 8px';
         chip.style.background = '#eef5fc';
         chip.style.borderRadius = '18px';
         chip.style.display = 'inline-flex';
         chip.style.alignItems = 'center';
         chip.style.gap = '8px';
-        chip.textContent = value;
+        chip.textContent = label;
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.textContent = '×';
@@ -422,15 +433,23 @@
         btn.style.cursor = 'pointer';
         btn.addEventListener('click', () => {
             chip.remove();
-            const vals = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.value);
-            if (hidden) hidden.value = vals.join(', ');
+            const labels = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.label);
+            if (hidden) hidden.value = labels.join(', ');
+            if (hiddenId) {
+                const ids = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.id).filter(Boolean);
+                hiddenId.value = ids.length ? ids[0] : '';
+            }
             const preview = document.getElementById('preview-class');
             if (preview) preview.textContent = hidden.value + (document.getElementById('field-fase')?.value ? ' / Fase ' + document.getElementById('field-fase').value : '');
         });
         chip.appendChild(btn);
         container.appendChild(chip);
-        const vals = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.value);
-        if (hidden) hidden.value = vals.join(', ');
+        const labels = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.label);
+        if (hidden) hidden.value = labels.join(', ');
+        if (hiddenId) {
+            const ids = Array.from(container.querySelectorAll('.chip')).map(c => c.dataset.id).filter(Boolean);
+            hiddenId.value = ids.length ? ids[0] : '';
+        }
         const preview = document.getElementById('preview-class');
         if (preview) preview.textContent = hidden.value + (document.getElementById('field-fase')?.value ? ' / Fase ' + document.getElementById('field-fase').value : '');
         const searchEl = document.getElementById('input-class-search');
@@ -525,9 +544,12 @@
         if (subjectSelect && subjectSelect.tagName === 'SELECT') {
             subjectSelect.addEventListener('change', () => {
                 const hidden = document.getElementById('field-subject');
-                if (hidden) hidden.value = subjectSelect.value;
+                const hiddenId = document.getElementById('field-mata_pelajaran_id');
+                const selectedOption = subjectSelect.selectedOptions[0];
+                if (hidden) hidden.value = selectedOption ? selectedOption.textContent : '';
+                if (hiddenId) hiddenId.value = selectedOption ? selectedOption.value : '';
                 const preview = document.getElementById('preview-subject');
-                if (preview) preview.textContent = subjectSelect.value;
+                if (preview) preview.textContent = selectedOption ? selectedOption.textContent : '';
             });
         }
 
@@ -712,6 +734,27 @@
                         }
                     }
                 });
+
+                const subjectSelect = document.getElementById('input-subject');
+                const subjectHidden = document.getElementById('field-subject');
+                const subjectIdHidden = document.getElementById('field-mata_pelajaran_id');
+                if (subjectSelect && subjectSelect.tagName === 'SELECT' && subjectSelect.selectedOptions.length > 0) {
+                    const selected = subjectSelect.selectedOptions[0];
+                    if (subjectHidden) subjectHidden.value = selected.textContent.trim();
+                    if (subjectIdHidden) subjectIdHidden.value = selected.value;
+                }
+
+                const classHidden = document.getElementById('field-class');
+                const classIdHidden = document.getElementById('field-kelas_id');
+                const chips = document.getElementById('class-chips');
+                if (chips) {
+                    const labels = Array.from(chips.querySelectorAll('.chip')).map(c => c.dataset.label || '');
+                    if (classHidden) classHidden.value = labels.join(', ');
+                    if (classIdHidden) {
+                        const ids = Array.from(chips.querySelectorAll('.chip')).map(c => c.dataset.id).filter(Boolean);
+                        classIdHidden.value = ids.length ? ids[0] : '';
+                    }
+                }
             });
         }
 

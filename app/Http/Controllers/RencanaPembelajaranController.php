@@ -104,7 +104,9 @@ class RencanaPembelajaranController extends Controller
             'id' => $model->id,
             'title' => $title,
             'subject' => $subject,
+            'mata_pelajaran_id' => $model->mata_pelajaran_id,
             'class' => $class,
+            'kelas_id' => $model->kelas_id,
             'duration' => $duration,
             'status' => $status,
             'achievement' => $model->capaian_pembelajaran ?? $meta['achievement'] ?? null,
@@ -496,6 +498,27 @@ class RencanaPembelajaranController extends Controller
             }
         }
 
+        $mataPelajaranId = $request->input('mata_pelajaran_id');
+        $kelasId = $request->input('kelas_id');
+
+        if (empty($mataPelajaranId) && !empty($data['subject'])) {
+            $subjectModel = MataPelajaran::where('nama_mapel', $data['subject'])->first();
+            if ($subjectModel) {
+                $mataPelajaranId = $subjectModel->id;
+            }
+        }
+
+        if (empty($kelasId) && !empty($data['class'])) {
+            $kelasModel = Kelas::where('nama_kelas', $data['class'])->first();
+            if ($kelasModel) {
+                $kelasId = $kelasModel->id;
+            }
+        }
+
+        if (empty($mataPelajaranId) || empty($kelasId)) {
+            return redirect()->back()->withInput()->with('error', 'Mata pelajaran dan kelas harus dipilih dari daftar.');
+        }
+
         foreach ($this->richFields as $f) {
             if (isset($data[$f]) && is_string($data[$f])) {
                 $data[$f] = $this->cleanHtml($data[$f]);
@@ -538,6 +561,8 @@ class RencanaPembelajaranController extends Controller
         if ($record) {
             $record->update([
                 'guru_id' => $guruId ?? $record->guru_id,
+                'mata_pelajaran_id' => $mataPelajaranId ?? $record->mata_pelajaran_id,
+                'kelas_id' => $kelasId ?? $record->kelas_id,
                 'judul' => $payload['title'] ?? $record->judul,
                 'capaian_pembelajaran' => $payload['achievement'] ?? null,
                 'tujuan' => $payload['objectives'] ?? null,
@@ -559,6 +584,8 @@ class RencanaPembelajaranController extends Controller
         } else {
             $record = RencanaPembelajaran::create([
                 'guru_id' => $guruId,
+                'mata_pelajaran_id' => $mataPelajaranId,
+                'kelas_id' => $kelasId,
                 'judul' => $payload['title'] ?? 'Modul Ajar',
                 'capaian_pembelajaran' => $payload['achievement'] ?? null,
                 'tujuan' => $payload['objectives'] ?? null,
