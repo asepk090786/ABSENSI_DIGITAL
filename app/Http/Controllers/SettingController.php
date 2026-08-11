@@ -94,6 +94,101 @@ class SettingController extends Controller
         return redirect()->route('setting.absensi')->with('success', 'Pengaturan absensi disimpan.');
     }
 
+    public function agenda()
+    {
+        $settings = new SettingsManager();
+
+        return view('setting.pengaturan', [
+            'agendaSettings' => [
+                'allow_edit_past_for_guru' => (bool) $settings->get('agenda.allow_edit_past_for_guru', false),
+                'allow_edit_past_for_siswa_officer' => (bool) $settings->get('agenda.allow_edit_past_for_siswa_officer', false),
+            ],
+            'menuVisibility' => $settings->get('menu_visibility', [
+                'guru' => [],
+                'siswa' => [],
+            ]),
+            'standardGuruMenus' => [
+                'akademik_jadwal_kbm',
+                'akademik_jadwal_piket',
+                'akademik_pengaturan_jam',
+                'akademik_pengembangan_diri',
+                'akademik_beban_kerja_guru',
+                'akademik_sk_tugas',
+                'akademik_komponen_penilaian',
+                'akademik_mata_pelajaran',
+                'akademik_modul_ajar',
+                'akademik_editor_modul',
+                'akademik_tool',
+                'pembelajaran_absensi',
+                'pembelajaran_agenda_kelas',
+                'pembelajaran_agenda_guru',
+                'pembelajaran_nilai',
+                'pembelajaran_rekap_nilai',
+                'pembelajaran_materi',
+                'pembelajaran_pembina_ekskul',
+                'piket_kbm_absensi_guru',
+                'piket_kbm_absensi_siswa',
+                'piket_kbm_pelanggaran',
+                'wali_kelas_dashboard',
+                'wali_kelas_data_siswa',
+                'wali_kelas_absensi_kelas',
+                'wali_kelas_laporan_guru',
+                'wali_kelas_nilai_siswa',
+                'wali_kelas_rekap_nilai',
+                'guru_bk',
+            ],
+            'standardSiswaMenus' => [
+                'pembelajaran_materi',
+            ],
+        ]);
+    }
+
+    public function updateAgenda(Request $request)
+    {
+        $validated = $request->validate([
+            'allow_edit_past_for_guru' => 'nullable|boolean',
+            'allow_edit_past_for_siswa_officer' => 'nullable|boolean',
+        ]);
+
+        $settings = new SettingsManager();
+        $settings->set('agenda.allow_edit_past_for_guru', (bool) ($validated['allow_edit_past_for_guru'] ?? false));
+        $settings->set('agenda.allow_edit_past_for_siswa_officer', (bool) ($validated['allow_edit_past_for_siswa_officer'] ?? false));
+
+        return redirect()->route('setting.agenda')->with('success', 'Pengaturan agenda disimpan.');
+    }
+
+    public function editor()
+    {
+        $settings = new SettingsManager();
+
+        return view('setting.pengaturan', [
+            'editorSettings' => [
+                'collabora_enabled' => (bool) $settings->get('collabora.enabled', true),
+                'collabora_require_wopi_token' => (bool) $settings->get('collabora.require_wopi_token', true),
+                'collabora_url' => (string) $settings->get('collabora.url', config('services.collabora.url')),
+                'collabora_wopi_host' => (string) $settings->get('collabora.wopi_host', config('services.collabora.wopi_host')),
+            ],
+        ]);
+    }
+
+    public function updateEditor(Request $request)
+    {
+        $validated = $request->validate([
+            'collabora_enabled' => 'nullable|boolean',
+            'collabora_require_wopi_token' => 'nullable|boolean',
+            'collabora_url' => 'required|string|url',
+            'collabora_wopi_host' => 'required|string|url',
+        ]);
+
+        $settings = new SettingsManager();
+        $settings->set('collabora.enabled', (bool) ($validated['collabora_enabled'] ?? false));
+        $settings->set('collabora.require_wopi_token', (bool) ($validated['collabora_require_wopi_token'] ?? false));
+        $settings->set('collabora.url', trim($validated['collabora_url']));
+        $settings->set('collabora.wopi_host', trim($validated['collabora_wopi_host']));
+
+        return redirect()->route('setting.editor')->with('success', 'Pengaturan editor modul disimpan.');
+    }
+
     public function menu()
     {
         $settings = new SettingsManager();
@@ -926,6 +1021,32 @@ class SettingController extends Controller
         }
 
         return back()->withErrors('Gagal mengimpor backup foto profil');
+    }
+
+    public function backupDatabaseImport(Request $request)
+    {
+        $request->validate([
+            'database_backup' => ['required', 'file', 'mimes:sql,zip', 'max:512000'],
+        ]);
+
+        $path = $request->file('database_backup')->store('backups/database/imports');
+        $fullPath = storage_path('app/' . $path);
+        $svc = new BackupService();
+        $ok = $svc->import($fullPath);
+
+        if ($ok) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Import database selesai']);
+            }
+
+            return back()->with('success', 'Import database selesai');
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => 'Gagal mengimpor database'], 500);
+        }
+
+        return back()->withErrors('Gagal mengimpor database');
     }
 
     public function backupUpdateSettings(Request $request)

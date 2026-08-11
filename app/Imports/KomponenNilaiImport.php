@@ -25,7 +25,7 @@ class KomponenNilaiImport implements ToCollection, WithHeadingRow
             if (!empty($cpName)) {
                 $cp = CapaianPembelajaran::where('nama_capaian_pembelajaran', $cpName)->first();
                 if ($cp) {
-                    if (auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty(auth()->user()->guru_id)) {
+                    if (auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina']) && ! empty(auth()->user()->guru_id)) {
                         $allowed = $cp->user_id === null || $cp->user_id === auth()->id();
                         if (! $allowed) {
                             $this->pushError($rowNumber, 'CP tidak ditemukan atau bukan milik Anda: ' . $cpName);
@@ -69,7 +69,7 @@ class KomponenNilaiImport implements ToCollection, WithHeadingRow
                 $existing = KomponenNilai::where('nama_komponen', $payload['nama_komponen'])->first();
                 
                 if ($existing) {
-                    if (auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty(auth()->user()->guru_id)) {
+                    if (auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina']) && ! empty(auth()->user()->guru_id)) {
                         $existingCp = $existing->capaianPembelajaran;
                         $allowed = $existingCp === null || $existingCp->user_id === null || $existingCp->user_id === auth()->id();
                         if (!$existingCp || ! $allowed) {

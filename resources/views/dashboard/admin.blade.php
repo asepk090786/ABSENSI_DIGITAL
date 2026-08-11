@@ -123,7 +123,7 @@
                     </div>
                     <div class="col-6">
                         <div class="attendance-item attendance-item-warning">
-                            <div class="attendance-item-icon" style="background-color: #ffc107; color: white;">
+                            <div class="attendance-item-icon" style="background-color: #ffc107; color: #1e293b;">
                                 <i class="ti ti-clock"></i>
                             </div>
                             <div class="attendance-item-content">

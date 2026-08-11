@@ -623,7 +623,7 @@
             font-size: 0.68rem;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: #94a3b8;
+            color: #64748b;
             margin-bottom: 0.1rem;
             font-weight: 600;
         }
@@ -633,6 +633,22 @@
             letter-spacing: -0.02em;
             color: #1e293b;
             margin: 0;
+        }
+
+        /* ========== DASHBOARD TEXT ========== */
+        .card-category {
+            color: #64748b !important;
+            font-size: 0.78rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .card-title {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #1e293b;
+            margin: 0;
+            letter-spacing: -0.01em;
         }
 
         /* ========== FORM CONTROLS ========== */
@@ -720,6 +736,80 @@
             background: #f8fafc;
         }
 
+        /* ========== ATTENDANCE SUMMARY ========== */
+        .attendance-summary-card {
+            border-radius: 0.75rem;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+            background: var(--card-bg);
+        }
+        .attendance-card-header {
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 1rem;
+        }
+        .attendance-header-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .attendance-items {
+            display: flex;
+            flex-wrap: wrap;
+            margin: -0.5rem;
+        }
+        .attendance-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background: #f8fafc;
+            margin: 0.5rem;
+            flex: 1 1 calc(50% - 1rem);
+            min-width: 140px;
+        }
+        .attendance-item-icon {
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .attendance-item-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+        .attendance-item-label {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .attendance-item-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.1;
+        }
+        .attendance-summary-footer {
+            border-top: 1px solid #f1f5f9;
+            padding-top: 0.75rem;
+            color: #475569;
+        }
+        .attendance-item-success .attendance-item-icon { background-color: #10b981; color: #fff; }
+        .attendance-item-warning .attendance-item-icon { background-color: #ffc107; color: #1e293b; }
+        .attendance-item-info .attendance-item-icon { background-color: #0dcaf0; color: #fff; }
+        .attendance-item-secondary .attendance-item-icon { background-color: #6c757d; color: #fff; }
+        .attendance-item-danger .attendance-item-icon { background-color: #dc3545; color: #fff; }
+
         /* ========== BADGES ========== */
         .badge,
         .badge[class*="bg-"],
@@ -733,14 +823,16 @@
             font-size: 0.7rem;
             padding: 0.3em 0.6em;
             border-radius: 0.35rem;
-            color: #fff !important;
         }
         .badge-primary {
             background: var(--primary-light);
-            color: #fff !important;
+            color: #1e40af !important;
         }
         .badge-success {
             background: var(--accent-light);
+            color: #065f46 !important;
+        }
+        .badge {
             color: #fff !important;
         }
 
@@ -1012,7 +1104,7 @@
                             <i class="ti ti-panel-top"></i> Edit Header
                         </a>
                         <a href="{{ route('setting.absensi') }}" class="sidebar-admin-link {{ request()->routeIs('setting.absensi*') ? 'is-active' : '' }}">
-                            <i class="ti ti-clipboard-check"></i> Pengaturan Absen
+                            <i class="ti ti-clipboard-check"></i> Pengaturan
                         </a>
                         <a href="{{ route('setting.backup') }}" class="sidebar-admin-link {{ request()->routeIs('setting.backup') ? 'is-active' : '' }}">
                             <i class="ti ti-database"></i> Backup Database

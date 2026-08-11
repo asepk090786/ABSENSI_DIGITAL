@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CapaianPembelajaran;
+use App\Models\RencanaPembelajaran;
 
 class KomponenNilai extends Model
 {
@@ -24,5 +26,10 @@ class KomponenNilai extends Model
     public function capaianPembelajaran()
     {
         return $this->belongsTo(CapaianPembelajaran::class);
+    }
+
+    public function rencanaPembelajaran()
+    {
+        return $this->belongsToMany(RencanaPembelajaran::class, 'rencana_pembelajaran_komponen_nilai', 'komponen_nilai_id', 'rencana_pembelajaran_id');
     }
 }

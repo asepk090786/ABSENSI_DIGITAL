@@ -367,22 +367,30 @@
                                             <th>No</th>
                                             <th>CP</th>
                                             <th>Nama Komponen</th>
+                                            <th>Nama Guru</th>
+                                            <th>Mata Pelajaran</th>
                                             <th>Bobot (%)</th>
                                             <th class="text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($items as $index => $item)
+                                        @php
+                                            $guruNames = $item->rencanaPembelajaran->pluck('guru.nama')->filter()->unique()->values()->all();
+                                            $mapelNames = $item->rencanaPembelajaran->pluck('mataPelajaran.nama_mapel')->filter()->unique()->values()->all();
+                                        @endphp
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td>
                                                 @if($item->capaianPembelajaran)
-                                                    <span class="badge badge-primary">{{ $item->capaianPembelajaran->nama_capaian_pembelajaran }}</span>
+                                                    <span class="badge bg-primary text-white">{{ $item->capaianPembelajaran->nama_capaian_pembelajaran }}</span>
                                                 @else
-                                                    <span class="badge badge-secondary">Tidak ada</span>
+                                                    <span class="badge bg-secondary text-white">Tidak ada</span>
                                                 @endif
                                             </td>
                                             <td>{{ $item->nama_komponen }}</td>
+                                            <td>{{ count($guruNames) ? implode(', ', $guruNames) : '-' }}</td>
+                                            <td>{{ count($mapelNames) ? implode(', ', $mapelNames) : '-' }}</td>
                                             <td>{{ $item->bobot ?? '-' }}</td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">

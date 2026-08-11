@@ -1085,7 +1085,12 @@ class AgendaKelasController extends Controller
 
         if ($user->hasRole('Guru') || $user->hasRole('Guru Mapel') || $user->hasRole('Guru Kelas')) {
             $settings = new SettingsManager();
-            return (bool) $settings->get('attendance.allow_edit_past_for_guru', false);
+            return (bool) $settings->get('agenda.allow_edit_past_for_guru', false);
+        }
+
+        if ($user->hasRole('Siswa') && $user->hasClassPosition()) {
+            $settings = new SettingsManager();
+            return (bool) $settings->get('agenda.allow_edit_past_for_siswa_officer', false);
         }
 
         return false;

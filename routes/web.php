@@ -409,8 +409,12 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
         Route::get('/setting/absensi', [SettingController::class, 'absensi'])->name('setting.absensi');
         Route::put('/setting/absensi', [SettingController::class, 'updateAbsensi'])->name('setting.absensi.update');
+        Route::get('/setting/agenda', [SettingController::class, 'agenda'])->name('setting.agenda');
+        Route::put('/setting/agenda', [SettingController::class, 'updateAgenda'])->name('setting.agenda.update');
         Route::get('/setting/menu', [SettingController::class, 'menu'])->name('setting.menu');
         Route::post('/setting/menu', [SettingController::class, 'updateMenu'])->name('setting.menu.update');
+        Route::get('/setting/editor', [SettingController::class, 'editor'])->name('setting.editor');
+        Route::put('/setting/editor', [SettingController::class, 'updateEditor'])->name('setting.editor.update');
         Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
         // Database backup settings and actions
         Route::get('/setting/backup', [SettingController::class, 'backupIndex'])->name('setting.backup');
@@ -422,6 +426,7 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/setting/backup/profile/download/{name}', [SettingController::class, 'backupProfileDownload'])->name('setting.backup.profile.download');
         Route::delete('/setting/backup/profile/{name}', [SettingController::class, 'backupProfileDelete'])->name('setting.backup.profile.delete');
         Route::post('/setting/backup/profile/import', [SettingController::class, 'backupProfileImport'])->name('setting.backup.profile.import');
+        Route::post('/setting/backup/database/import', [SettingController::class, 'backupDatabaseImport'])->name('setting.backup.database.import');
         // About: server specs & library/plugin status
         Route::get('/setting/about', [SettingController::class, 'about'])->name('setting.about');
         Route::post('/setting/about/check-update', [SettingController::class, 'checkForUpdates'])->name('setting.about.check_update');

@@ -16,7 +16,7 @@ class KomponenNilaiController extends Controller
     private function isTeacherUser(): bool
     {
         $user = auth()->user();
-        return $user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id);
+        return $user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina']) && ! empty($user->guru_id);
     }
 
     private function scopedCapaianQuery()
@@ -24,7 +24,7 @@ class KomponenNilaiController extends Controller
         $query = CapaianPembelajaran::query();
         $user = auth()->user();
 
-        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id)) {
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina']) && ! empty($user->guru_id)) {
             $query->where('user_id', $user->id);
         }
 
@@ -36,7 +36,7 @@ class KomponenNilaiController extends Controller
         $query = KomponenNilai::query();
         $user = auth()->user();
 
-        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! empty($user->guru_id)) {
+        if ($user && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina']) && ! empty($user->guru_id)) {
             $query->where(function ($q) use ($user) {
                 $q->whereNull('capaian_pembelajaran_id')
                   ->orWhereHas('capaianPembelajaran', function ($q2) use ($user) {
@@ -50,7 +50,10 @@ class KomponenNilaiController extends Controller
 
     public function index()
     {
-        $items = $this->scopedKomponenQuery()->orderBy('nama_komponen')->get();
+        $items = $this->scopedKomponenQuery()
+            ->with(['capaianPembelajaran', 'rencanaPembelajaran.guru', 'rencanaPembelajaran.mataPelajaran'])
+            ->orderBy('nama_komponen')
+            ->get();
         $capaianList = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
         return view('komponen_nilai.index', compact('items', 'capaianList'));
     }

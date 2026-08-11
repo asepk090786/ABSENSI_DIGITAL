@@ -206,4 +206,126 @@ class BackupService
         if (file_exists($path)) return unlink($path);
         return false;
     }
+
+    public function import(string $filePath): bool
+    {
+        if (! file_exists($filePath)) {
+            return false;
+        }
+
+        $connection = config('database.default');
+        $dbConfig = config("database.connections.{$connection}");
+        $host = escapeshellarg($dbConfig['host'] ?? '127.0.0.1');
+        $port = isset($dbConfig['port']) ? ' -P' . escapeshellarg((string) $dbConfig['port']) : '';
+        $user = escapeshellarg($dbConfig['username'] ?? 'root');
+        $pass = isset($dbConfig['password']) ? '-p' . escapeshellarg($dbConfig['password']) : '';
+        $db = escapeshellarg($dbConfig['database'] ?? '');
+        $mysql = $this->resolveMysqlClientPath();
+
+        if (! $mysql) {
+            return false;
+        }
+
+        $sqlPath = $filePath;
+        if (strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'zip') {
+            $extractDir = sys_get_temp_dir() . '/backup_import_' . uniqid();
+            if (! mkdir($extractDir, 0755, true) && ! is_dir($extractDir)) {
+                return false;
+            }
+
+            $zip = new ZipArchive();
+            if ($zip->open($filePath) !== true) {
+                return false;
+            }
+
+            $zip->extractTo($extractDir);
+            $zip->close();
+
+            $sqlFiles = glob($extractDir . '/*.sql');
+            if (! $sqlFiles) {
+                return false;
+            }
+
+            usort($sqlFiles, function ($a, $b) {
+                return filemtime($b) <=> filemtime($a);
+            });
+
+            $sqlPath = $sqlFiles[0];
+        }
+
+        $command = sprintf(
+            '%s -h %s%s -u %s %s %s < %s',
+            escapeshellcmd($mysql),
+            trim($host, "'"),
+            $port,
+            trim($user, "'"),
+            $pass ? ' -p' . trim($pass, "'") : '',
+            trim($db, "'"),
+            escapeshellarg($sqlPath)
+        );
+
+        exec($command . ' 2>&1', $output, $returnVar);
+
+        if (strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'zip' && is_dir($extractDir)) {
+            $this->deleteDirectory($extractDir);
+        }
+
+        return $returnVar === 0;
+    }
+
+    protected function resolveMysqlClientPath(): ?string
+    {
+        $configured = env('DB_CLIENT_PATH');
+        $candidates = [];
+
+        if (! empty($configured)) {
+            $candidates[] = $configured;
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $candidates[] = 'C:\\Program Files\\MySQL\\MySQL Server\\bin\\mysql.exe';
+            $candidates[] = 'mysql.exe';
+        } else {
+            $candidates[] = '/usr/bin/mysql';
+            $candidates[] = '/usr/local/bin/mysql';
+            $candidates[] = 'mysql';
+        }
+
+        foreach ($candidates as $candidate) {
+            if (empty($candidate)) {
+                continue;
+            }
+
+            if (PHP_OS_FAMILY === 'Windows') {
+                if (file_exists($candidate) && is_executable($candidate)) {
+                    return $candidate;
+                }
+            } else {
+                if (is_executable($candidate)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function deleteDirectory(string $dir): void
+    {
+        if (! is_dir($dir)) {
+            return;
+        }
+
+        $items = array_diff(scandir($dir), ['.', '..']);
+        foreach ($items as $item) {
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                $this->deleteDirectory($path);
+            } else {
+                @unlink($path);
+            }
+        }
+
+        @rmdir($dir);
+    }
 }
