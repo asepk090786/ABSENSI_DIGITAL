@@ -15,11 +15,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\SettingsManager;
 
 class CollaboraController extends Controller
 {
     private function getCollaboraServerUrl(): string
     {
+        $settings = new SettingsManager();
+
+        // Prefer the value stored in SettingsManager (UI) so runtime updates via
+        // settings.json take effect without changing env/config.
+        $fromSettings = $settings->get('collabora.url');
+        if (!empty($fromSettings)) {
+            return (string) $fromSettings;
+        }
+
         return (string) (
             env('COLLABORA_URL')
             ?: config('services.collabora.url')
@@ -50,11 +60,18 @@ class CollaboraController extends Controller
 
     private function getWopiSrc(string $tempKey): string
     {
-        $host = (string) (
-            env('COLLABORA_WOPI_HOST')
-            ?: config('services.collabora.wopi_host')
-            ?: url('/')
-        );
+        $settings = new SettingsManager();
+
+        $fromSettings = $settings->get('collabora.wopi_host');
+        if (!empty($fromSettings)) {
+            $host = (string) $fromSettings;
+        } else {
+            $host = (string) (
+                env('COLLABORA_WOPI_HOST')
+                ?: config('services.collabora.wopi_host')
+                ?: url('/')
+            );
+        }
 
         return rtrim($host, '/') . '/collabora/wopi/files/' . $tempKey;
     }
