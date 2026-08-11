@@ -911,7 +911,7 @@
             @endphp
 
             @php
-                $isAdminSidebar = $user && $user->hasRole('Admin');
+                $isAdminSidebar = $user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']);
                 $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','pengembangan.*','sk_tugas.*','akademik.*','editor_modul.*']);
                 $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*']);
                 $isAdminSettingActive = request()->routeIs(['profile.edit','profile.panduan','tahun_ajaran.index','setting.*','help.admin.*']);
@@ -957,6 +957,11 @@
                         <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs(['mata_pelajaran.index','mata_pelajaran.*']) ? 'is-active' : '' }}">
                             <i class="ti ti-book"></i> Mata Pelajaran
                         </a>
+                        @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']))
+                        <a href="{{ route('akademik.supervisi') }}" class="sidebar-admin-link {{ request()->routeIs('akademik.supervisi') || request()->routeIs('akademik.supervisi.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-checklist"></i> Supervisi
+                        </a>
+                        @endif
                     </div>
                 </li>
 

@@ -868,10 +868,15 @@ class SettingController extends Controller
         return back()->withErrors('Gagal menghapus backup');
     }
 
-    public function backupProfileExport()
+    public function backupProfileExport(Request $request)
     {
         $svc = new ProfilePhotoBackupService();
         $name = $svc->export();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Backup foto profil dibuat: ' . $name]);
+        }
+
         return back()->with('success', 'Backup foto profil dibuat: ' . $name);
     }
 
@@ -900,7 +905,7 @@ class SettingController extends Controller
     public function backupProfileImport(Request $request)
     {
         $request->validate([
-            'profile_photo_backup' => ['required', 'file', 'mimes:zip', 'max:20480'],
+            'profile_photo_backup' => ['required', 'file', 'mimes:zip', 'max:512000'],
         ]);
 
         $path = $request->file('profile_photo_backup')->store('backups/profile_photos/imports');
@@ -909,7 +914,15 @@ class SettingController extends Controller
         $ok = $svc->import($fullPath);
 
         if ($ok) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Import foto profil selesai']);
+            }
+
             return back()->with('success', 'Import foto profil selesai');
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => 'Gagal mengimpor backup foto profil'], 500);
         }
 
         return back()->withErrors('Gagal mengimpor backup foto profil');

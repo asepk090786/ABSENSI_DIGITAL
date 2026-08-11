@@ -154,21 +154,15 @@ class ProfilePhotoBackupService
             return false;
         }
 
-        $tempDir = $this->ensureDirectory() . '/import_' . time();
-        if (! is_dir($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-
-        $zip->extractTo($tempDir);
-        $zip->close();
-
-        $manifestPath = $tempDir . '/manifest.json';
-        if (! file_exists($manifestPath)) {
-            $this->deleteDirectory($tempDir);
+        $manifestStream = $zip->getStream('manifest.json');
+        if (! $manifestStream) {
+            $zip->close();
             return false;
         }
 
-        $manifest = json_decode(file_get_contents($manifestPath), true) ?: [];
+        $manifestContents = stream_get_contents($manifestStream);
+        fclose($manifestStream);
+        $manifest = json_decode($manifestContents, true) ?: [];
 
         foreach ($manifest as $entry) {
             $userId = $entry['user_id'] ?? null;
@@ -190,8 +184,13 @@ class ProfilePhotoBackupService
                 continue;
             }
 
-            $sourceFile = $tempDir . '/' . ($entry['file'] ?? '');
-            if (! file_exists($sourceFile)) {
+            $sourceName = $entry['file'] ?? '';
+            if ($sourceName === '') {
+                continue;
+            }
+
+            $sourceStream = $zip->getStream($sourceName);
+            if (! $sourceStream) {
                 continue;
             }
 
@@ -199,13 +198,19 @@ class ProfilePhotoBackupService
                 Storage::disk('public')->delete($user->foto);
             }
 
-            $storedPath = 'user_photos/' . basename($sourceFile);
-            Storage::disk('public')->put($storedPath, file_get_contents($sourceFile));
+            $storedPath = 'user_photos/' . basename($sourceName);
+            $success = Storage::disk('public')->writeStream($storedPath, $sourceStream);
+            fclose($sourceStream);
+
+            if (! $success) {
+                continue;
+            }
+
             $user->foto = $storedPath;
             $user->save();
         }
 
-        $this->deleteDirectory($tempDir);
+        $zip->close();
 
         return true;
     }

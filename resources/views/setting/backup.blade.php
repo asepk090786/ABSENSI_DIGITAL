@@ -40,6 +40,19 @@
         </div>
     </div>
 
+    <div id="backupProgressPanel" class="alert alert-info d-none" role="status" aria-live="polite">
+        <div class="d-flex align-items-center gap-2">
+            <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+            <div>
+                <strong>Memproses backup...</strong>
+                <div id="backupProgressText">Harap tunggu sebentar.</div>
+            </div>
+        </div>
+        <div class="progress mt-2" style="height: 8px;">
+            <div id="backupProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 20%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+    </div>
+
     <div class="card mb-3">
         <div class="card-body">
             <h5>Manual Backup</h5>
@@ -86,18 +99,18 @@
     <div class="card mb-3">
         <div class="card-body">
             <h5>Backup Foto Profil</h5>
-            <form method="POST" action="{{ route('setting.backup.profile.export') }}" class="mb-3">
+            <form method="POST" action="{{ route('setting.backup.profile.export') }}" class="mb-3 backup-submit-form" data-progress-label="Sedang mengekspor foto profil..." data-ajax="true" onsubmit="return submitBackupForm(this)">
                 @csrf
-                <button class="btn btn-outline-success">Export Foto Profil ke ZIP</button>
+                <button type="submit" class="btn btn-outline-success">Export Foto Profil ke ZIP</button>
             </form>
 
-            <form method="POST" action="{{ route('setting.backup.profile.import') }}" enctype="multipart/form-data" class="mb-3">
+            <form method="POST" action="{{ route('setting.backup.profile.import') }}" enctype="multipart/form-data" class="mb-3 backup-submit-form" data-progress-label="Sedang mengunggah dan mengimpor foto profil..." data-ajax="true" onsubmit="return submitBackupForm(this)">
                 @csrf
                 <div class="mb-2">
                     <label class="form-label">Import Foto Profil dari ZIP</label>
                     <input type="file" name="profile_photo_backup" class="form-control" accept=".zip" required>
                 </div>
-                <button class="btn btn-outline-primary">Import Foto Profil</button>
+                <button type="submit" class="btn btn-outline-primary">Import Foto Profil</button>
             </form>
 
             <table class="table">
@@ -125,4 +138,82 @@
         </div>
     </div>
 </div>
-@endsection
+
+@push('js')
+<script>
+    function submitBackupForm(form) {
+        if (form.dataset.ajax !== 'true') {
+            return true;
+        }
+
+        const panel = document.getElementById('backupProgressPanel');
+        const bar = document.getElementById('backupProgressBar');
+        const text = document.getElementById('backupProgressText');
+        const label = form.dataset.progressLabel || 'Memproses data...';
+        const button = form.querySelector('button[type="submit"]');
+
+        panel.classList.remove('d-none');
+        panel.classList.remove('alert-success', 'alert-danger');
+        panel.classList.add('alert-info');
+        text.textContent = label;
+        bar.style.width = '10%';
+        bar.setAttribute('aria-valuenow', '10');
+
+        if (button) {
+            button.disabled = true;
+            button.dataset.originalText = button.textContent;
+            button.textContent = 'Memproses...';
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('X-CSRF-TOKEN', form.querySelector('input[name="_token"]')?.value || '');
+
+        xhr.upload.addEventListener('progress', function (e) {
+            if (!e.lengthComputable) {
+                text.textContent = label + ' (mengunggah...)';
+                return;
+            }
+            const percent = Math.round((e.loaded / e.total) * 100);
+            bar.style.width = percent + '%';
+            bar.setAttribute('aria-valuenow', percent);
+            text.textContent = label + ' (' + percent + '%)';
+        });
+
+        xhr.addEventListener('load', function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                panel.classList.remove('alert-info');
+                panel.classList.add('alert-success');
+                text.textContent = 'Selesai. Memuat ulang halaman...';
+                bar.style.width = '100%';
+                bar.setAttribute('aria-valuenow', '100');
+                setTimeout(function () {
+                    window.location.reload();
+                }, 800);
+            } else {
+                panel.classList.remove('alert-info');
+                panel.classList.add('alert-danger');
+                text.textContent = 'Proses gagal. Silakan coba lagi.';
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = button.dataset.originalText || button.textContent;
+                }
+            }
+        });
+
+        xhr.addEventListener('error', function () {
+            panel.classList.remove('alert-info');
+            panel.classList.add('alert-danger');
+            text.textContent = 'Gagal menghubungi server. Silakan coba lagi.';
+            if (button) {
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
+        });
+
+        xhr.send(new FormData(form));
+        return false;
+    }
+</script>
+@endpush

@@ -156,7 +156,7 @@
                             <hr class="my-4">
 
                             
-                            <input type="hidden" name="header_html" value="">
+                            <input type="hidden" name="header_html" id="header_html" value="">
 
                             
                             <div class="d-flex gap-2">
@@ -253,9 +253,14 @@
 
 @push('js')
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
 <script>
 $(document).ready(function() {
+    if (typeof $ === 'undefined') {
+        console.error('jQuery is required for Summernote');
+        return;
+    }
     // Custom line spacing button untuk Summernote
     const lineSpacingValues = ['0.5', '0.8', '1.0', '1.2', '1.5', '1.8', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0'];
     
@@ -349,6 +354,11 @@ $(document).ready(function() {
     
     // Initial preview update
     updatePreview();
+
+    // Sync preview HTML before submit
+    $('form').on('submit', function() {
+        $('#header_html').val($('#preview-header-text').html());
+    });
     
     // Preview logo kiri ketika file dipilih
     document.getElementById('logo_header_kiri').addEventListener('change', function(e) {

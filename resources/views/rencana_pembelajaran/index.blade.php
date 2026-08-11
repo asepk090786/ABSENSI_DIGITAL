@@ -50,7 +50,7 @@
                                             }
                                         @endphp
                                         @if($filename)
-                                            <span class="badge text-bg-light border">{{ $filename }}</span>
+                                            <span class="badge text-bg-primary">{{ $filename }}</span>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif

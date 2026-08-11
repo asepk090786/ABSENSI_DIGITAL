@@ -581,9 +581,8 @@
                         if (!files || !files.length) return;
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            $editor.summernote('insertImage', e.target.result, function($image) {
-                                $image.attr('alt', 'image');
-                            });
+                            const imgHtml = '<img src="' + e.target.result + '" style="max-width:100%;height:auto;" />';
+                            $editor.summernote('pasteHTML', imgHtml);
                         };
                         reader.readAsDataURL(files[0]);
                     },
@@ -1088,9 +1087,8 @@
                                 const editor = summernoteEditors[field];
                                 if (item.type === 'image') {
                                     try {
-                                        editor.summernote('insertImage', item.url, function($image) {
-                                            $image.attr('alt', item.caption || 'image');
-                                        });
+                                        const imgHtml = '<img src="' + item.url + '" style="max-width:100%;height:auto;" />';
+                                        editor.summernote('pasteHTML', imgHtml);
                                     } catch (e) {
                                         alert('Gagal sisipkan gambar: ' + e.message);
                                     }

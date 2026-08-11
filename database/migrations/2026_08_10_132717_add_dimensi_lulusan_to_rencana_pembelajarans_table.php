@@ -11,9 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('rencana_pembelajarans', function (Blueprint $table) {
-            $table->text('dimensi_lulusan')->nullable()->after('alokasi_waktu');
-        });
+        if (!Schema::hasTable('rencana_pembelajarans')) {
+            return;
+        }
+
+        if (!Schema::hasColumn('rencana_pembelajarans', 'dimensi_lulusan')) {
+            Schema::table('rencana_pembelajarans', function (Blueprint $table) {
+                $table->text('dimensi_lulusan')->nullable()->after('alokasi_waktu');
+            });
+        }
     }
 
     /**
