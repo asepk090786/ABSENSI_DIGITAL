@@ -1176,7 +1176,7 @@
                             @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_editor_modul', $guruEnabledMenus)))
                                 <li class="nav-item"><a href="{{ route('akademik.editor_modul.index') }}" class="nav-link {{ request()->routeIs('akademik.editor_modul.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Edit Modul Ajar</a></li>
                             @endif
-                            @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']))
+                            @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && (empty($guruEnabledMenus) || in_array('akademik_tool', $guruEnabledMenus)))
                                 <li class="nav-item"><a href="{{ route('akademik.tool') }}" class="nav-link {{ request()->routeIs('akademik.tool') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Tool</a></li>
                             @endif
                             @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']))
