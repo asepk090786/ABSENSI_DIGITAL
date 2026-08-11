@@ -105,9 +105,15 @@
                         </td>
                         <td>{{ $module->updated_at?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td>
-                            <a href="{{ route('akademik.editor_modul.edit', $module->id) }}" class="btn btn-sm btn-primary">
-                                <i class="ti ti-edit me-1"></i>Edit dengan Only Office
-                            </a>
+                            @if($module->isCreatedViaModulAjar())
+                                <a href="{{ route('rencana_pembelajaran.edit', $module->id) }}" class="btn btn-sm btn-warning">
+                                    <i class="ti ti-edit me-1"></i>Edit di Modul Ajar
+                                </a>
+                            @else
+                                <a href="{{ route('akademik.editor_modul.edit', $module->id) }}" class="btn btn-sm btn-primary">
+                                    <i class="ti ti-edit me-1"></i>Edit dengan Only Office
+                                </a>
+                            @endif
                         </td>
                     </tr>
                     @empty

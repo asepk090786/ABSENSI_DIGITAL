@@ -77,4 +77,9 @@ class RencanaPembelajaran extends Model
     {
         return $this->hasMany(ModulAjarDocumentVersion::class, 'modul_ajar_id')->orderByDesc('version');
     }
+
+    public function isCreatedViaModulAjar(): bool
+    {
+        return !empty($this->html_content);
+    }
 }

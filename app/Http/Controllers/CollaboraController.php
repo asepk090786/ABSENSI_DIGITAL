@@ -582,6 +582,11 @@ class CollaboraController extends Controller
     {
         $module = RencanaPembelajaran::findOrFail($id);
 
+        if ($module->isCreatedViaModulAjar()) {
+            return redirect()->route('rencana_pembelajaran.edit', $module->id)
+                ->with('info', 'Modul ini dibuat melalui halaman Modul Ajar. Silakan edit menggunakan editor Modul Ajar.');
+        }
+
         $tempKey = 'editor_edit_' . $module->id;
         $tempDir = public_path('uploads/editor-modul/temp');
         if (!is_dir($tempDir)) {
