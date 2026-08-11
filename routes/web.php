@@ -75,6 +75,12 @@ Route::middleware(['auth'])->group(function(){
         Route::delete('supervisi/{supervisi}', [SupervisiController::class, 'destroy'])->name('supervisi.destroy');
         Route::get('supervisi/get-available-dates/{guru}', [SupervisiController::class, 'getAvailableDates'])->name('supervisi.available_dates');
         Route::get('supervisi/get-jadwal-options/{guru}/{tanggal}', [SupervisiController::class, 'getJadwalOptions'])->name('supervisi.get_jadwal_options');
+
+        Route::get('tool', [App\Http\Controllers\CollaboraController::class, 'index'])->name('tool');
+        Route::get('editor-modul', [App\Http\Controllers\CollaboraController::class, 'modulIndex'])->name('editor_modul.index');
+        Route::post('editor-modul/upload', [App\Http\Controllers\RencanaPembelajaranController::class, 'storeFromUpload'])->name('editor_modul.store');
+        Route::get('editor-modul/{id}', [App\Http\Controllers\CollaboraController::class, 'modulEdit'])->name('editor_modul.edit');
+        Route::post('editor-modul/{id}/upload', [App\Http\Controllers\RencanaPembelajaranController::class, 'uploadDocument'])->name('editor_modul.upload');
     });
 
     // Ekstrakurikuler Routes (full feature)
@@ -311,11 +317,18 @@ Route::middleware(['auth'])->group(function(){
     Route::get('modul-ajar/create', [RencanaPembelajaranController::class, 'create'])->name('rencana_pembelajaran.create');
     Route::post('modul-ajar', [RencanaPembelajaranController::class, 'store'])->name('rencana_pembelajaran.store');
     Route::get('modul-ajar/{id}/edit', [RencanaPembelajaranController::class, 'edit'])->name('rencana_pembelajaran.edit');
+    Route::put('modul-ajar/{id}', [RencanaPembelajaranController::class, 'update'])->name('rencana_pembelajaran.update');
+    Route::post('modul-ajar/{id}/upload', [RencanaPembelajaranController::class, 'uploadDocument'])->name('rencana_pembelajaran.upload');
+    Route::get('modul-ajar/{id}/preview', [RencanaPembelajaranController::class, 'preview'])->name('rencana_pembelajaran.preview');
+    Route::get('modul-ajar/{id}/versions', [RencanaPembelajaranController::class, 'versions'])->name('rencana_pembelajaran.versions');
+    Route::post('modul-ajar/{id}/versions/{version}/restore', [RencanaPembelajaranController::class, 'restoreVersion'])->name('rencana_pembelajaran.versions.restore');
     Route::get('modul-ajar/template', [RencanaPembelajaranController::class, 'downloadTemplate'])->name('rencana_pembelajaran.template');
     Route::post('modul-ajar/import', [RencanaPembelajaranController::class, 'import'])->name('rencana_pembelajaran.import');
     Route::delete('modul-ajar/{id}', [RencanaPembelajaranController::class, 'destroy'])->name('rencana_pembelajaran.destroy');
+    Route::get('modul-ajar/preview-docx', [RencanaPembelajaranController::class, 'previewDocx'])->name('rencana_pembelajaran.preview_docx');
+    Route::post('modul-ajar/{id}/save-preview-docx', [RencanaPembelajaranController::class, 'savePreviewAsDocx'])->name('rencana_pembelajaran.save_preview_docx');
+    Route::post('modul-ajar/{id}/sync-from-collabora', [RencanaPembelajaranController::class, 'syncFromCollabora'])->name('rencana_pembelajaran.sync_from_collabora');
 
-    
     // Materi Pembelajaran routes
     Route::resource('materi_pembelajaran', 'App\Http\Controllers\MateriPembelajaranController');
 
@@ -431,6 +444,17 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.updatePassword');
     });
+});
+
+// Collabora Online WOPI routes (no auth required for Collabora server calls)
+Route::prefix('collabora')->name('collabora.')->group(function () {
+    Route::get('wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'checkFileInfo'])->name('check_file_info');
+    Route::get('wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'getFile'])->name('get_file');
+    Route::post('wopi/files/{tempKey}', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('put_file_base');
+    Route::post('wopi/files/{tempKey}/contents', [App\Http\Controllers\CollaboraController::class, 'putFile'])->name('put_file');
+    Route::post('wopi/files/{tempKey}/lock', [App\Http\Controllers\CollaboraController::class, 'lock'])->name('lock');
+    Route::post('wopi/files/{tempKey}/unlock', [App\Http\Controllers\CollaboraController::class, 'unlock'])->name('unlock');
+    Route::post('wopi/files/{tempKey}/refreshLock', [App\Http\Controllers\CollaboraController::class, 'refreshLock'])->name('refresh_lock');
 });
 
 // Public Help pages (no auth required)

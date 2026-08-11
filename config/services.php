@@ -31,4 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'collabora' => [
+        'url' => env('COLLABORA_URL', 'https://collabora.sman1-pontang.sch.id'),
+        'wopi_host' => env('COLLABORA_WOPI_HOST', env('APP_URL')),
+    ],
+
 ];

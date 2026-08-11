@@ -41,7 +41,20 @@
                                     <td>{{ $module['title'] ?? '-' }}</td>
                                     <td>{{ $module['class'] ?? '-' }}</td>
                                     <td>{{ $module['duration'] ?? '-' }}</td>
-                                    <td>{{ $module['title'] ?? '-' }}</td>
+                                    <td>
+                                        @php
+                                            $docxPath = $module['docx_path'] ?? null;
+                                            $filename = null;
+                                            if (!empty($docxPath)) {
+                                                $filename = basename($docxPath);
+                                            }
+                                        @endphp
+                                        @if($filename)
+                                            <span class="badge text-bg-light border">{{ $filename }}</span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                     <td>{{ ucfirst($module['status'] ?? '-') }}</td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-outline-secondary btn-view-module" data-module='@json($module)'>View</button>

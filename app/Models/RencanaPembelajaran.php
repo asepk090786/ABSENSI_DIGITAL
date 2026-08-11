@@ -67,4 +67,14 @@ class RencanaPembelajaran extends Model
     {
         return $this->belongsToMany(KomponenNilai::class, 'rencana_pembelajaran_komponen_nilai', 'rencana_pembelajaran_id', 'komponen_nilai_id');
     }
+
+    public function document()
+    {
+        return $this->hasOne(ModulAjarDocument::class, 'modul_ajar_id');
+    }
+
+    public function documentVersions()
+    {
+        return $this->hasMany(ModulAjarDocumentVersion::class, 'modul_ajar_id')->orderByDesc('version');
+    }
 }

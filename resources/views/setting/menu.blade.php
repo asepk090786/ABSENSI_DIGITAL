@@ -66,7 +66,13 @@
                         <div class="col-md-6">
                             <div class="form-check form-switch">
                                 <input type="checkbox" class="form-check-input" name="guru_menus[]" value="akademik_editor_modul" id="menu_akademik_editor_modul" {{ in_array('akademik_editor_modul', $menuVisibility['guru'] ?? []) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="menu_akademik_editor_modul">Editor Modul</label>
+                                <label class="form-check-label" for="menu_akademik_editor_modul">Edit Modul Ajar</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="guru_menus[]" value="akademik_tool" id="menu_akademik_tool" {{ in_array('akademik_tool', $menuVisibility['guru'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_akademik_tool">Tool</label>
                             </div>
                         </div>
                     </div>

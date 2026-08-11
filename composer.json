@@ -17,6 +17,7 @@
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "^3.1",
         "mews/purifier": "^3.4",
+        "novay/laravel-word-template": "^2.0",
         "phpoffice/phpword": "^1.4"
     },
     "require-dev": {

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use App\Models\TugasGuru;
@@ -18,6 +19,8 @@ use App\Models\CapaianPembelajaran;
 use App\Models\Sekolah;
 use App\Models\KepalaSekolah;
 use App\Models\RencanaPembelajaran;
+use App\Models\ModulAjarDocument;
+use App\Models\ModulAjarDocumentVersion;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Style\Font;
@@ -80,8 +83,8 @@ class RencanaPembelajaranController extends Controller
         }
 
         $title = $model->judul ?? $meta['title'] ?? null;
-        $subject = $meta['subject'] ?? null;
-        $class = $meta['class'] ?? null;
+        $subject = $meta['subject'] ?? optional($model->mataPelajaran)->nama_mapel;
+        $class = $meta['class'] ?? optional($model->kelas)->nama_kelas;
         $duration = $model->alokasi_waktu ?? $meta['duration'] ?? null;
         $status = $model->status ?? $meta['status'] ?? 'draft';
 
@@ -133,6 +136,147 @@ class RencanaPembelajaranController extends Controller
         }
 
         return $modules;
+    }
+
+    private function findOwnedModuleOrFail(int $id): RencanaPembelajaran
+    {
+        $module = RencanaPembelajaran::with(['document', 'documentVersions'])
+            ->findOrFail($id);
+
+        $user = Auth::user();
+        $guruId = $this->resolveCurrentGuruId();
+
+        if ($user && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            if (!$guruId || (int) $module->guru_id !== (int) $guruId) {
+                abort(403, 'Anda tidak memiliki akses ke modul ajar ini.');
+            }
+        }
+
+        return $module;
+    }
+
+    private function isDocxValid(string $path): bool
+    {
+        $zip = new \ZipArchive();
+        $opened = $zip->open($path);
+        if ($opened !== true) {
+            return false;
+        }
+
+        $hasDocumentXml = $zip->locateName('word/document.xml') !== false;
+        $zip->close();
+
+        return $hasDocumentXml;
+    }
+
+    private function saveModuleDocumentVersion(
+        RencanaPembelajaran $module,
+        string $sourcePath,
+        string $originalFilename,
+        string $mimeType,
+        int $userId
+    ): ModulAjarDocument {
+        if (!file_exists($sourcePath) || !is_readable($sourcePath)) {
+            throw new \RuntimeException('File sumber dokumen tidak ditemukan atau tidak dapat dibaca.');
+        }
+
+        $fileSize = filesize($sourcePath);
+        if ($fileSize === false || $fileSize <= 0) {
+            throw new \RuntimeException('Ukuran file dokumen tidak valid.');
+        }
+
+        return DB::transaction(function () use ($module, $sourcePath, $originalFilename, $mimeType, $userId, $fileSize) {
+            $document = ModulAjarDocument::where('modul_ajar_id', $module->id)
+                ->lockForUpdate()
+                ->first();
+
+            $nextVersion = ($document?->version ?? 0) + 1;
+            $safeBase = Str::slug(pathinfo($originalFilename, PATHINFO_FILENAME));
+            if ($safeBase === '') {
+                $safeBase = 'modul-ajar';
+            }
+
+            $filename = $safeBase . '_v' . $nextVersion . '.docx';
+            $relativePath = 'modul-ajar/' . $module->id . '/' . $filename;
+
+            $binary = file_get_contents($sourcePath);
+            if ($binary === false) {
+                throw new \RuntimeException('Gagal membaca binary dokumen.');
+            }
+
+            $saved = Storage::disk('public')->put($relativePath, $binary);
+            if (!$saved) {
+                throw new \RuntimeException('Gagal menyimpan dokumen ke storage.');
+            }
+
+            $payload = [
+                'original_filename' => $originalFilename,
+                'filename' => $filename,
+                'filepath' => $relativePath,
+                'mime_type' => $mimeType,
+                'file_size' => $fileSize,
+                'version' => $nextVersion,
+                'uploaded_by' => $userId,
+            ];
+
+            if ($document) {
+                $document->update($payload);
+                $document->refresh();
+            } else {
+                $document = ModulAjarDocument::create(array_merge($payload, [
+                    'modul_ajar_id' => $module->id,
+                ]));
+            }
+
+            ModulAjarDocumentVersion::create([
+                'modul_ajar_id' => $module->id,
+                'filename' => $filename,
+                'filepath' => $relativePath,
+                'version' => $nextVersion,
+                'file_size' => $fileSize,
+                'created_by' => $userId,
+                'created_at' => now(),
+            ]);
+
+            $module->update([
+                'original_docx_path' => 'storage/' . $relativePath,
+            ]);
+
+            return $document;
+        });
+    }
+
+    private function bootstrapDocumentFromLegacyPath(RencanaPembelajaran $module): void
+    {
+        if ($module->document) {
+            return;
+        }
+
+        if (empty($module->original_docx_path)) {
+            return;
+        }
+
+        $legacyPath = public_path($module->original_docx_path);
+        if (!file_exists($legacyPath) || !is_readable($legacyPath)) {
+            return;
+        }
+
+        try {
+            $this->saveModuleDocumentVersion(
+                $module,
+                $legacyPath,
+                basename($legacyPath),
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                (int) (Auth::id() ?? 0)
+            );
+            $module->load(['document', 'documentVersions']);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal bootstrap dokumen legacy modul ajar', [
+                'module_id' => $module->id,
+                'legacy_path' => $legacyPath,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function index()
@@ -231,20 +375,17 @@ class RencanaPembelajaranController extends Controller
             'kelasList' => $kelasList,
             'faseOptions' => $faseOptions,
             'selectedFase' => null,
+            'tempKey' => null,
+            'docInfo' => null,
+            'docVersions' => collect(),
         ]);
     }
 
     public function edit($id)
     {
-        $modules = Session::get('modul_ajar_items', []);
-        $module = $modules[$id] ?? null;
-
-        if (! $module) {
-            $record = RencanaPembelajaran::find($id);
-            if ($record) {
-                $module = $this->buildModulePayloadFromModel($record);
-            }
-        }
+        $record = $this->findOwnedModuleOrFail((int) $id);
+        $this->bootstrapDocumentFromLegacyPath($record);
+        $module = $this->buildModulePayloadFromModel($record);
 
         $user = Auth::user();
         $mataPelajaranList = collect();
@@ -285,6 +426,36 @@ class RencanaPembelajaranController extends Controller
             }
         }
 
+        $document = $record->document;
+        $docInfo = null;
+        if ($document) {
+            $docInfo = [
+                'original_filename' => $document->original_filename,
+                'filename' => $document->filename,
+                'filepath' => $document->filepath,
+                'mime_type' => $document->mime_type,
+                'file_size' => (int) $document->file_size,
+                'version' => (int) $document->version,
+                'updated_at' => optional($document->updated_at)->toDateTimeString(),
+            ];
+        }
+
+        $docVersions = $record->documentVersions
+            ->sortByDesc('version')
+            ->take(20)
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'version' => (int) $item->version,
+                    'filename' => $item->filename,
+                    'filepath' => $item->filepath,
+                    'file_size' => (int) $item->file_size,
+                    'created_by' => $item->created_by,
+                    'created_at' => optional($item->created_at)->toDateTimeString(),
+                ];
+            })
+            ->values();
+
         return view('rencana_pembelajaran.form', [
             'mode' => 'edit',
             'moduleId' => $id,
@@ -293,6 +464,8 @@ class RencanaPembelajaranController extends Controller
             'kelasList' => $kelasList,
             'faseOptions' => $faseOptions,
             'selectedFase' => $module['fase'] ?? null,
+            'docInfo' => $docInfo,
+            'docVersions' => $docVersions,
         ]);
     }
 
@@ -454,7 +627,427 @@ class RencanaPembelajaranController extends Controller
 
         Session::put('modul_ajar_items', $modules);
 
+        try {
+            $this->generateAndSaveDocxFromHtmlContent($record, $payload);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal generate DOCX setelah store modul ajar', [
+                'module_id' => $record->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return redirect()->route('rencana_pembelajaran.index')->with('success', 'Modul ajar berhasil disimpan ke akun guru dan database.');
+    }
+
+    private function generateAndSaveDocxFromHtmlContent(RencanaPembelajaran $record, array $payload): void
+    {
+        $htmlContent = $payload['html_content'] ?? $record->html_content ?? null;
+        if (!is_string($htmlContent) || trim($htmlContent) === '') {
+            return;
+        }
+
+        $decoded = json_decode($htmlContent, true);
+        if (is_array($decoded)) {
+            $bodyHtml = $decoded['content'] ?? '';
+            if (empty(trim($bodyHtml))) {
+                $bodyHtml = $this->buildHtmlPreviewBodyFromPayload($decoded);
+            }
+        } else {
+            $bodyHtml = $htmlContent;
+        }
+
+        if (empty(trim($bodyHtml))) {
+            return;
+        }
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'modul_ajar_');
+        if ($tmpPath === false) {
+            throw new \RuntimeException('Gagal membuat dokumen sementara.');
+        }
+
+        $tmpDocxPath = $tmpPath . '.docx';
+        try {
+            $this->renderHtmlPayloadToDocxFile($bodyHtml, $tmpDocxPath);
+            $fileName = Str::slug($record->judul ?: 'modul-ajar') . '_' . $record->id . '_' . now()->format('Ymd_His') . '.docx';
+            $requestMeta = [
+                'original_filename' => $fileName,
+                'mime_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ];
+            $this->saveModuleDocumentVersion(
+                $record,
+                $tmpDocxPath,
+                $fileName,
+                $requestMeta['mime_type'],
+                (int) (Auth::id() ?? 0)
+            );
+        } finally {
+            if (file_exists($tmpDocxPath)) {
+                @unlink($tmpDocxPath);
+            }
+            if (file_exists($tmpPath)) {
+                @unlink($tmpPath);
+            }
+        }
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $record = $this->findOwnedModuleOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id',
+            'subject' => 'nullable|string|max:255',
+            'class' => 'nullable|string|max:255',
+            'fase' => 'nullable|string|max:25',
+            'status' => 'required|in:draft,published',
+            'duration' => 'nullable|string|max:255',
+            'dimensi_lulusan' => 'nullable|string',
+            'achievement' => 'nullable|string',
+            'objectives' => 'nullable|string',
+            'methods' => 'nullable|string',
+            'media' => 'nullable|string',
+            'resources' => 'nullable|string',
+            'practice' => 'nullable|string',
+            'environment' => 'nullable|string',
+            'digital' => 'nullable|string',
+            'experience' => 'nullable|string',
+            'reflection' => 'nullable|string',
+            'assessment' => 'nullable|string',
+        ]);
+
+        foreach ($this->richFields as $field) {
+            if (isset($validated[$field]) && is_string($validated[$field])) {
+                $validated[$field] = $this->cleanHtml($validated[$field]);
+            }
+        }
+
+        $payload = [
+            'title' => $validated['title'],
+            'subject' => $validated['subject'] ?? null,
+            'class' => $validated['class'] ?? null,
+            'fase' => $validated['fase'] ?? null,
+            'status' => $validated['status'],
+            'duration' => $validated['duration'] ?? null,
+            'achievement' => $validated['achievement'] ?? null,
+            'objectives' => $validated['objectives'] ?? null,
+            'methods' => $validated['methods'] ?? null,
+            'media' => $validated['media'] ?? null,
+            'resources' => $validated['resources'] ?? null,
+            'practice' => $validated['practice'] ?? null,
+            'environment' => $validated['environment'] ?? null,
+            'digital' => $validated['digital'] ?? null,
+            'experience' => $validated['experience'] ?? null,
+            'reflection' => $validated['reflection'] ?? null,
+            'assessment' => $validated['assessment'] ?? null,
+            'dimensi_lulusan' => $validated['dimensi_lulusan'] ?? null,
+        ];
+
+        $record->update([
+            'mata_pelajaran_id' => (int) $validated['mata_pelajaran_id'],
+            'kelas_id' => (int) $validated['kelas_id'],
+            'judul' => $validated['title'],
+            'capaian_pembelajaran' => $payload['achievement'],
+            'tujuan' => $payload['objectives'],
+            'metode' => $payload['methods'],
+            'media' => $payload['media'],
+            'sumber' => $payload['resources'],
+            'penilaian' => $payload['assessment'],
+            'alokasi_waktu' => $payload['duration'],
+            'dimensi_lulusan' => $payload['dimensi_lulusan'],
+            'praktik_pedagogis' => $payload['practice'],
+            'lingkungan_pembelajaran' => $payload['environment'],
+            'pemanfaatan_digital' => $payload['digital'],
+            'pengalaman_pembelajaran' => $payload['experience'],
+            'refleksi_pembelajaran' => $payload['reflection'],
+            'status' => $payload['status'],
+            'html_content' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $record->refresh();
+        $record->html_content = json_encode($payload, JSON_UNESCAPED_UNICODE);
+
+        try {
+            $this->generateAndSaveDocxFromHtmlContent($record, $payload);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal render DOCX pada simpan modul ajar edit', [
+                'module_id' => $record->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return redirect()
+            ->route('rencana_pembelajaran.edit', $record->id)
+            ->with('success', 'Data modul ajar berhasil diperbarui.');
+    }
+
+    public function uploadDocument(Request $request, int $id)
+    {
+        $module = $this->findOwnedModuleOrFail($id);
+
+        $request->validate([
+            'document' => 'required|file|max:10240|mimes:doc,docx',
+        ]);
+
+        $file = $request->file('document');
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $mimeType = (string) $file->getClientMimeType();
+
+        if (!in_array($extension, ['doc', 'docx'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Format file tidak didukung.',
+            ], 422);
+        }
+
+        if ($extension === 'docx' && !$this->isDocxValid($file->getRealPath())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File DOCX terdeteksi rusak/corrupt.',
+            ], 422);
+        }
+
+        $tmpPath = $file->getRealPath();
+        if (!$tmpPath) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membaca file upload.',
+            ], 500);
+        }
+
+        try {
+            $document = $this->saveModuleDocumentVersion(
+                $module,
+                $tmpPath,
+                (string) $file->getClientOriginalName(),
+                $mimeType,
+                (int) Auth::id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dokumen berhasil diupload',
+                'document' => [
+                    'original_filename' => $document->original_filename,
+                    'filename' => $document->filename,
+                    'filepath' => $document->filepath,
+                    'mime_type' => $document->mime_type,
+                    'file_size' => (int) $document->file_size,
+                    'version' => (int) $document->version,
+                    'updated_at' => optional($document->updated_at)->toDateTimeString(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Upload dokumen modul ajar gagal', [
+                'module_id' => $module->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload dokumen gagal.',
+            ], 500);
+        }
+    }
+
+    public function storeFromUpload(Request $request)
+    {
+        $guruId = $this->resolveCurrentGuruId();
+        if (!$guruId) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses membuat modul ajar.');
+        }
+
+        $request->validate([
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'kelas_id' => 'required|exists:kelas,id',
+            'title' => 'nullable|string|max:255',
+            'document' => 'required|file|max:10240|mimes:doc,docx',
+        ]);
+
+        $file = $request->file('document');
+        $extension = strtolower((string) $file->getClientOriginalExtension());
+        $mimeType = (string) $file->getClientMimeType();
+
+        if ($extension === 'docx' && !$this->isDocxValid($file->getRealPath())) {
+            return redirect()->back()->withErrors(['document' => 'File DOCX terdeteksi rusak atau corrupt.']);
+        }
+
+        $module = RencanaPembelajaran::create([
+            'guru_id' => $guruId,
+            'mata_pelajaran_id' => (int) $request->input('mata_pelajaran_id'),
+            'kelas_id' => (int) $request->input('kelas_id'),
+            'judul' => $request->input('title') ?: 'Modul Ajar Baru',
+            'status' => 'draft',
+            'html_content' => null,
+            'original_docx_path' => null,
+        ]);
+
+        try {
+            $this->saveModuleDocumentVersion(
+                $module,
+                $file->getRealPath(),
+                (string) $file->getClientOriginalName(),
+                $mimeType,
+                (int) Auth::id()
+            );
+        } catch (\Throwable $e) {
+            Log::error('Gagal membuat modul ajar dari upload', [
+                'error' => $e->getMessage(),
+                'guru_id' => $guruId,
+            ]);
+            $module->delete();
+            return redirect()->back()->with('error', 'Gagal membuat modul ajar dari upload.');
+        }
+
+        return redirect()->route('akademik.editor_modul.edit', $module->id)
+            ->with('success', 'Modul ajar baru berhasil dibuat dari file upload.');
+    }
+
+    public function preview(Request $request, int $id)
+    {
+        $module = $this->findOwnedModuleOrFail($id);
+        $this->bootstrapDocumentFromLegacyPath($module);
+        $mode = $request->query('mode', 'preview') === 'edit' ? 'edit' : 'preview';
+        $permission = $mode === 'edit' ? 'edit' : 'preview';
+
+        $document = $module->document;
+        if (!$document || empty($document->filepath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Belum ada dokumen Modul Ajar',
+            ], 404);
+        }
+
+        $sourcePath = Storage::disk('public')->path($document->filepath);
+        if (!file_exists($sourcePath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File dokumen tidak ditemukan di storage.',
+            ], 404);
+        }
+
+        $tempDir = public_path('uploads/rencana_pembelajaran/docx/temp');
+        if (!is_dir($tempDir) && !mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyiapkan direktori temporary.',
+            ], 500);
+        }
+
+        $tempKey = 'modulajar_' . $module->id . '_' . time() . '_' . Str::random(6);
+        $tempPath = $tempDir . '/' . $tempKey . '.docx';
+        if (!copy($sourcePath, $tempPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyiapkan file preview/edit.',
+            ], 500);
+        }
+
+        $collabora = app(\App\Http\Controllers\CollaboraController::class);
+        $token = $collabora->createWopiAccessToken(
+            $tempKey,
+            $module->id,
+            (int) Auth::id(),
+            $permission,
+            120
+        );
+
+        $wopiUrl = $collabora->buildWopiUrl(
+            $tempKey,
+            $mode === 'edit' ? 'edit' : 'view',
+            $token
+        );
+
+        return response()->json([
+            'success' => true,
+            'mode' => $mode,
+            'tempKey' => $tempKey,
+            'wopiUrl' => $wopiUrl,
+        ]);
+    }
+
+    public function versions(int $id)
+    {
+        $module = $this->findOwnedModuleOrFail($id);
+
+        $items = ModulAjarDocumentVersion::where('modul_ajar_id', $module->id)
+            ->orderByDesc('version')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'version' => (int) $item->version,
+                    'filename' => $item->filename,
+                    'filepath' => $item->filepath,
+                    'file_size' => (int) $item->file_size,
+                    'created_by' => $item->created_by,
+                    'created_at' => optional($item->created_at)->toDateTimeString(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'versions' => $items,
+        ]);
+    }
+
+    public function restoreVersion(Request $request, int $id, int $version)
+    {
+        $module = $this->findOwnedModuleOrFail($id);
+
+        $versionRow = ModulAjarDocumentVersion::where('modul_ajar_id', $module->id)
+            ->where('version', $version)
+            ->first();
+
+        if (!$versionRow) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Versi dokumen tidak ditemukan.',
+            ], 404);
+        }
+
+        $sourcePath = Storage::disk('public')->path($versionRow->filepath);
+        if (!file_exists($sourcePath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File versi dokumen tidak ditemukan.',
+            ], 404);
+        }
+
+        try {
+            $document = $this->saveModuleDocumentVersion(
+                $module,
+                $sourcePath,
+                $versionRow->filename,
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                (int) Auth::id()
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Versi berhasil di-restore.',
+                'document' => [
+                    'original_filename' => $document->original_filename,
+                    'version' => (int) $document->version,
+                    'filename' => $document->filename,
+                    'file_size' => (int) $document->file_size,
+                    'updated_at' => optional($document->updated_at)->toDateTimeString(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Restore versi dokumen modul ajar gagal', [
+                'module_id' => $module->id,
+                'target_version' => $version,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Restore versi gagal.',
+            ], 500);
+        }
     }
 
     private function resolveRoleAwareStorageSegment(): string
@@ -488,6 +1081,315 @@ class RencanaPembelajaranController extends Controller
         }
 
         return response()->download($path, 'template_modul_ajar.docx');
+    }
+
+    public function previewDocx(Request $request)
+    {
+        $request->validate([
+            'judul' => 'nullable|string|max:255',
+            'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id',
+            'kelas_id' => 'nullable|exists:kelas,id',
+            'fase' => 'nullable|string|max:10',
+            'alokasi_waktu' => 'nullable|string|max:255',
+            'status' => 'nullable|in:draft,published',
+        ]);
+
+        $user = Auth::user();
+        $guru = optional($user->guru);
+        $sekolah = \App\Models\Sekolah::first();
+        $activeSemester = \App\Models\Semester::where('is_active', 1)->first();
+        $activeTahunAjaran = \App\Models\TahunAjaran::where('is_active', 1)->first();
+
+        $mataPelajaran = \App\Models\MataPelajaran::find($request->mata_pelajaran_id);
+        $kelas = \App\Models\Kelas::find($request->kelas_id);
+
+        $templatePath = storage_path('app/templates/template_modul_ajar.docx');
+        if (!file_exists($templatePath)) {
+            return response()->json(['error' => 'Template tidak ditemukan'], 404);
+        }
+
+        $tempDir = public_path('uploads/rencana_pembelajaran/docx/temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $tempKey = 'preview_' . ($user->id ?? 'guest') . '_' . time();
+        $tempPath = $tempDir . '/' . $tempKey . '.docx';
+
+        $replacements = [
+            'nama_sekolah' => $sekolah->nama_sekolah ?? '',
+            'nama_guru' => $guru->nama ?? $user->name ?? '',
+            'nip' => $guru->nip ?? $user->nip ?? '',
+            'mata_pelajaran' => $mataPelajaran->nama_mapel ?? '',
+            'kelas' => $kelas->nama_kelas ?? '',
+            'fase' => $request->fase ?? '',
+            'semester' => $activeSemester->nama_semester ?? '',
+            'tahun_ajaran' => $activeTahunAjaran->nama_tahun ?? '',
+            'judul' => $request->judul ?? '',
+            'status' => $request->status ?? 'draft',
+            'alokasi_waktu' => $request->alokasi_waktu ?? '',
+        ];
+
+        try {
+            \Novay\Word\Word::template($templatePath)
+                ->setValues($replacements)
+                ->save($tempPath);
+
+            return response()->json([
+                'tempKey' => $tempKey,
+                'url' => url('uploads/rencana_pembelajaran/docx/temp/' . $tempKey . '.docx'),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal generate preview DOCX', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Gagal membuat preview'], 500);
+        }
+    }
+
+    private function extractHtmlBodyContent(string $html): string
+    {
+        if (empty(trim($html))) {
+            return '';
+        }
+
+        $body = $html;
+        if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $matches)) {
+            $body = $matches[1];
+        }
+
+        $body = preg_replace('/<!DOCTYPE[^>]*>/is', '', $body);
+        $body = preg_replace('/<html\b[^>]*>/is', '', $body);
+        $body = preg_replace('/<\/html>/is', '', $body);
+        $body = preg_replace('/<head\b[^>]*>.*?<\/head>/is', '', $body);
+        $body = preg_replace('/<meta\s+[^>]*charset[^>]*>/is', '', $body);
+
+        return trim($body);
+    }
+
+    private function buildHtmlPreviewBodyFromPayload(array $payload): string
+    {
+        $title = $payload['title'] ?? 'Modul Ajar';
+        $subject = $payload['subject'] ?? '-';
+        $class = $payload['class'] ?? '-';
+        $status = $payload['status'] ?? 'draft';
+        $duration = $payload['duration'] ?? '-';
+        $dimensi = $payload['dimensi_lulusan'] ?? '';
+
+        $html = '<h1 style="text-align:center;">' . e($title) . '</h1>';
+        $html .= '<h2>Informasi Umum</h2>';
+        $html .= '<table style="width:100%; border-collapse:collapse;">'
+            . '<tr><th style="width:30%; border:1px solid #afbdce; background:#eef5fc; padding:8px;">Mata Pelajaran</th><td style="border:1px solid #afbdce; padding:8px;">' . e($subject) . '</td></tr>'
+            . '<tr><th style="width:30%; border:1px solid #afbdce; background:#eef5fc; padding:8px;">Kelas / Fase</th><td style="border:1px solid #afbdce; padding:8px;">' . e($class) . '</td></tr>'
+            . '<tr><th style="width:30%; border:1px solid #afbdce; background:#eef5fc; padding:8px;">Status</th><td style="border:1px solid #afbdce; padding:8px;">' . e($status === 'published' ? 'Publish (Digunakan untuk KBM)' : 'Draft (Belum digunakan untuk KBM)') . '</td></tr>'
+            . '<tr><th style="width:30%; border:1px solid #afbdce; background:#eef5fc; padding:8px;">Alokasi Waktu</th><td style="border:1px solid #afbdce; padding:8px;">' . e($duration) . '</td></tr>'
+            . '<tr><th style="width:30%; border:1px solid #afbdce; background:#eef5fc; padding:8px;">Dimensi Lulusan</th><td style="border:1px solid #afbdce; padding:8px;">' . nl2br(e($dimensi)) . '</td></tr>'
+            . '</table>';
+
+        $sections = [
+            'achievement' => 'Capaian Pembelajaran',
+            'objectives' => 'Tujuan Pembelajaran',
+            'practice' => 'Praktik Pedagogis',
+            'environment' => 'Lingkungan Pembelajaran',
+            'digital' => 'Pemanfaatan Digital',
+            'experience' => 'Pengalaman Pembelajaran',
+            'reflection' => 'Refleksi Pembelajaran',
+            'assessment' => 'Asesmen',
+        ];
+
+        foreach ($sections as $key => $label) {
+            $value = $payload[$key] ?? '';
+            $html .= '<h2>' . $label . '</h2>';
+            $html .= '<div>' . ($value ? $value : '<p>-</p>') . '</div>';
+        }
+
+        return $html;
+    }
+
+    private function renderHtmlPayloadToDocxFile(string $htmlContent, string $docxDestination): void
+    {
+        $htmlBody = $this->extractHtmlBodyContent($htmlContent);
+        if (empty(trim($htmlBody))) {
+            throw new \RuntimeException('Konten HTML preview kosong setelah normalisasi body');
+        }
+
+        $phpWord = new \PhpOffice\PhpWord\PhpWord();
+        $section = $phpWord->addSection();
+        \PhpOffice\PhpWord\Shared\Html::addHtml($section, $htmlBody, false, false);
+        $writer = new \PhpOffice\PhpWord\Writer\Word2007($phpWord);
+        $writer->save($docxDestination);
+    }
+
+    private function persistGeneratedPreviewDocx(int $moduleId, string $generatedFileName, string $sourceDocxPath): ?string
+    {
+        $binary = file_get_contents($sourceDocxPath);
+        if ($binary === false) {
+            return null;
+        }
+
+        $relativeDir = 'modul-ajar/' . $moduleId . '/preview';
+        $relativePath = $relativeDir . '/' . $generatedFileName;
+
+        if (!Storage::disk('public')->put($relativePath, $binary)) {
+            Log::warning('Gagal menyimpan preview DOCX hasil render ke storage Laravel', [
+                'module_id' => $moduleId,
+                'relative_path' => $relativePath,
+            ]);
+            return null;
+        }
+
+        return $relativePath;
+    }
+
+    public function savePreviewAsDocx($id)
+    {
+        $record = RencanaPembelajaran::findOrFail($id);
+
+        $htmlContent = '';
+        $payload = [];
+        if ($record->html_content) {
+            $decoded = json_decode($record->html_content, true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+                $htmlContent = $decoded['content'] ?? '';
+            }
+        }
+
+        if (empty($htmlContent) && !empty($payload)) {
+            $htmlContent = $this->buildHtmlPreviewBodyFromPayload($payload);
+        }
+
+        $tempDir = public_path('uploads/editor-modul/temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $tempKey = 'preview_' . $record->id . '_' . time();
+        $tempPath = $tempDir . '/' . $tempKey . '.docx';
+
+        try {
+            if ($htmlContent) {
+                $htmlBody = $this->extractHtmlBodyContent($htmlContent);
+                if (!$htmlBody) {
+                    throw new \RuntimeException('Konten HTML preview kosong setelah normalisasi body');
+                }
+
+                $phpWord = new \PhpOffice\PhpWord\PhpWord();
+                $section = $phpWord->addSection();
+                \PhpOffice\PhpWord\Shared\Html::addHtml($section, $htmlBody, false, false);
+                $writer = new \PhpOffice\PhpWord\Writer\Word2007($phpWord);
+                $writer->save($tempPath);
+
+                $storageRelativePath = $this->persistGeneratedPreviewDocx(
+                    $record->id,
+                    $tempKey . '.docx',
+                    $tempPath
+                );
+
+                if ($storageRelativePath) {
+                    Log::info('Preview HTML berhasil disimpan sebagai DOCX ke storage Laravel', [
+                        'module_id' => $record->id,
+                        'relative_path' => $storageRelativePath,
+                    ]);
+                }
+            } elseif ($record->original_docx_path && file_exists(public_path($record->original_docx_path))) {
+                copy(public_path($record->original_docx_path), $tempPath);
+
+                $storageRelativePath = $this->persistGeneratedPreviewDocx(
+                    $record->id,
+                    $tempKey . '.docx',
+                    $tempPath
+                );
+
+                if ($storageRelativePath) {
+                    Log::info('Preview DOCX fallback berhasil disimpan ke storage Laravel', [
+                        'module_id' => $record->id,
+                        'relative_path' => $storageRelativePath,
+                    ]);
+                }
+            } else {
+                return response()->json(['error' => 'Konten preview belum tersedia'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'tempKey' => $tempKey,
+                'url' => url('uploads/editor-modul/temp/' . $tempKey . '.docx'),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal menyimpan preview sebagai DOCX', [
+                'modul_id' => $record->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Gagal menyimpan preview'], 500);
+        }
+    }
+
+    public function syncFromCollabora($id)
+    {
+        $record = RencanaPembelajaran::findOrFail($id);
+
+        $tempDir = public_path('uploads/editor-modul/temp');
+        if (!is_dir($tempDir)) {
+            return response()->json(['error' => 'Direktori temporary tidak ditemukan'], 404);
+        }
+
+        $editorPath = $tempDir . '/editor_edit_' . $record->id . '.docx';
+        if (!file_exists($editorPath) || filesize($editorPath) <= 0) {
+            return response()->json(['error' => 'File editor belum tersedia'], 404);
+        }
+
+        try {
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($editorPath, 'Word2007');
+            $writer = new \PhpOffice\PhpWord\Writer\HTML($phpWord);
+
+            ob_start();
+            $writer->save('php://output');
+            $html = ob_get_clean();
+
+            $payload = [
+                'content' => $html,
+            ];
+
+            if (!empty($html)) {
+                $dom = new \DOMDocument();
+                @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+                $xpath = new \DOMXPath($dom);
+
+                $titleNode = $xpath->query('//h1')->item(0);
+                if ($titleNode) {
+                    $payload['title'] = $titleNode->textContent;
+                }
+
+                $subjectNode = $xpath->query('//td[contains(., "Mata Pelajaran")]/following-sibling::td')->item(0);
+                if ($subjectNode) {
+                    $payload['subject'] = $subjectNode->textContent;
+                }
+
+                $classNode = $xpath->query('//td[contains(., "Kelas")]/following-sibling::td')->item(0);
+                if ($classNode) {
+                    $payload['class'] = $classNode->textContent;
+                }
+            }
+
+            $record->update([
+                'html_content' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Perubahan berhasil disimpan',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal sync dari Collabora', [
+                'modul_id' => $record->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Gagal menyinkronkan perubahan'], 500);
+        }
     }
 
     public function import(Request $request)

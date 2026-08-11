@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "597a2aad11b89341c02fcca69fb4f7e8",
+    "content-hash": "d1afa1e7feb1caa73f60dd007aa0a214",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -3895,6 +3895,71 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.7.0"
             },
             "time": "2025-12-06T11:56:16+00:00"
+        },
+        {
+            "name": "novay/laravel-word-template",
+            "version": "2.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/novay/laravel-word-template.git",
+                "reference": "1f53cab0d5259d63b322c618399ca2b50936abe4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/novay/laravel-word-template/zipball/1f53cab0d5259d63b322c618399ca2b50936abe4",
+                "reference": "1f53cab0d5259d63b322c618399ca2b50936abe4",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1",
+                "phpoffice/phpword": "^1.4"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.6",
+                "pestphp/pest": "^3.0",
+                "pestphp/pest-plugin-laravel": "^3.0",
+                "phpunit/phpunit": "^10.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Word": "Novay\\Word\\Facades\\Word"
+                    },
+                    "providers": [
+                        "Novay\\Word\\Providers\\WordServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Novay\\Word\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Novianto Rahmadi",
+                    "email": "novay@btekno.id"
+                }
+            ],
+            "description": "Package Laravel untuk melakukan penggantian kata pada file menggunakan template dokumen (.doc atau .docx) yang sudah disediakan.",
+            "keywords": [
+                "doc",
+                "docx",
+                "export",
+                "laravel",
+                "rtf",
+                "word"
+            ],
+            "support": {
+                "issues": "https://github.com/novay/laravel-word-template/issues",
+                "source": "https://github.com/novay/laravel-word-template/tree/2.0.2"
+            },
+            "time": "2025-09-14T08:50:57+00:00"
         },
         {
             "name": "nunomaduro/termwind",

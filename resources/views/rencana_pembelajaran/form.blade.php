@@ -8,14 +8,14 @@
         <div style="width: 42px; height: 42px; display:grid; place-items:center; border-radius: 10px; background:#fff; color:#235c9f; font-weight:700; font-size: 20px;">M</div>
         <div>
             <div style="font-weight:700; font-size:15px;">{{ $mode === 'edit' ? 'Edit Modul Ajar' : 'Tambah Modul Ajar' }}</div>
-            <div style="font-size:12px; opacity:.9;">Form isi dan pratinjau modul ajar</div>
+            <div style="font-size:12px; opacity:.9;">{{ $mode === 'edit' ? 'Kelola informasi, upload, preview dan edit dokumen modul ajar' : 'Form isi dan pratinjau modul ajar' }}</div>
         </div>
         <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-sm btn-light text-primary" style="margin-left:auto;">Kembali ke Daftar</a>
     </header>
 
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <link href="{{ asset('vendor/summernote/summernote-lite.min.css') }}" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+    <script src="{{ asset('vendor/summernote/summernote-lite.min.js') }}"></script>
     <style>
         .note-toolbar {
             border-radius: 10px 10px 0 0;
@@ -38,8 +38,11 @@
                     </div>
                 </div>
 
-                <form id="rpp-form" action="{{ route('rencana_pembelajaran.store') }}" method="POST">
+                <form id="rpp-form" action="{{ $mode === 'edit' ? route('rencana_pembelajaran.update', $moduleId) : route('rencana_pembelajaran.store') }}" method="POST">
                     @csrf
+                    @if($mode === 'edit')
+                        @method('PUT')
+                    @endif
                     <input type="hidden" name="module_id" value="{{ $moduleId ?? '' }}">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
                         <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-outline-secondary btn-sm">Batal</a>
@@ -156,6 +159,7 @@
                         <div class="section-content" style="padding:0 14px 15px;">
                             <div class="field" style="margin-top:13px;"><label for="input-achievement" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Capaian Pembelajaran</label><div id="input-achievement" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="achievement" id="field-achievement" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-objectives" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Tujuan Pembelajaran</label><div id="input-objectives" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="objectives" id="field-objectives" value=""></div>
+                            <div class="field" style="margin-top:13px;"><label for="input-methods" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Metode Pembelajaran</label><div id="input-methods" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="methods" id="field-methods" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-practice" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Praktik Pedagogis</label><div id="input-practice" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="practice" id="field-practice" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-environment" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Lingkungan Pembelajaran</label><div id="input-environment" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="environment" id="field-environment" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-digital" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Pemanfaatan Digital</label><div id="input-digital" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="digital" id="field-digital" value=""></div>
@@ -171,9 +175,38 @@
         <section class="preview-side" style="min-width:0; display:flex; flex-direction:column; background:#dfe7f0;">
             <div style="min-height:47px; padding:0 22px; display:flex; align-items:center; justify-content:space-between; gap:14px; background:rgba(255,255,255,.88); border-bottom:1px solid #cad7e6; font-size:11px;">
                 <span style="display:inline-flex; align-items:center; gap:7px; font-weight:700;"><i class="ti ti-file-check"></i> Pratinjau Modul Ajar</span>
+                @if($mode === 'edit')
+                <div style="display:none; gap:8px; align-items:center;">
+                    <input id="document-upload-input" type="file" accept=".doc,.docx" style="display:none;" />
+                    <button type="button" id="btn-upload-document" class="btn btn-sm btn-outline-primary" style="display:none;">Upload Dokumen</button>
+                    <button type="button" id="btn-preview-collabora" class="btn btn-sm btn-light" disabled style="display:none;">Preview</button>
+                    <button type="button" id="btn-edit-collabora" class="btn btn-sm btn-primary" disabled style="display:none;">Edit dengan Collabora</button>
+                    <button type="button" id="btn-refresh-versions" class="btn btn-sm btn-outline-secondary" disabled style="display:none;">Riwayat Versi</button>
+                </div>
+                @else
                 <span>Preview</span>
+                @endif
             </div>
-            <div style="flex:1; overflow:auto; padding:28px 28px 52px; background-color:#dfe7f0; background-image:radial-gradient(#becbd9 .7px,transparent .7px); background-size:15px 15px;">
+
+            @if($mode === 'edit')
+            <div id="doc-meta" style="padding:12px 22px; font-size:12px; border-bottom:1px solid #cad7e6; background:#f5f9ff; color:#234;">
+                <div id="doc-status-line">Belum ada dokumen Modul Ajar</div>
+                <div id="doc-detail-line" style="margin-top:4px; color:#4e647c;"></div>
+            </div>
+            @endif
+
+            <div id="doc-viewer-wrap" style="display:none; flex:1; min-height:0; background:#dfe7f0;">
+                <div id="doc-loading" style="padding:20px; text-align:center; font-size:13px; color:#2c5074;">Memuat dokumen...</div>
+                <iframe id="collabora-frame" style="display:none; width:100%; height:calc(100vh - 170px); border:0;"></iframe>
+                <div id="doc-error" style="display:none; padding:20px; text-align:center; font-size:13px; color:#8c1f1f;">
+                    Dokumen tidak dapat dibuka.
+                    <div style="margin-top:10px;">
+                        <button type="button" id="btn-retry-doc" class="btn btn-sm btn-outline-danger">Coba Lagi</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="html-preview-wrap" style="flex:1; overflow:auto; padding:28px 28px 52px; background-color:#dfe7f0; background-image:radial-gradient(#becbd9 .7px,transparent .7px); background-size:15px 15px;">
                 <article id="document-page" style="width:min(100%,820px); min-height:1100px; margin:0 auto; padding:58px 65px 80px; background:#fff; box-shadow:0 4px 12px rgba(26,55,89,.18),0 24px 44px rgba(26,55,89,.13);">
                     <p class="text-muted text-center mb-2" style="font-size:10px; letter-spacing:1px; text-transform:uppercase;">MODUL AJAR</p>
                     <h1 style="margin:0 0 30px; color:#16283c; font-size:26px; font-weight:700; line-height:1.28; text-align:center;">MODUL AJAR</h1>
@@ -192,6 +225,8 @@
                     <p id="preview-achievement" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                     <h2>Tujuan Pembelajaran</h2>
                     <p id="preview-objectives" style="margin:0 0 10px; white-space:pre-wrap;"></p>
+                    <h2>Metode Pembelajaran</h2>
+                    <p id="preview-methods" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                     <h2>Praktik Pedagogis</h2>
                     <p id="preview-practice" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                     <h2>Lingkungan Pembelajaran</h2>
@@ -205,27 +240,37 @@
                     <h2>Asesmen</h2>
                     <p id="preview-assessment" style="margin:0 0 10px; white-space:pre-wrap;"></p>
                 </article>
+            </div>
+        </section>
     </main>
 </div>
 
 <script>
-    const initialData = {
-        title: 'Modul Ajar Matematika - Konsep Eksponen',
-        subject: 'Matematika',
-        class: 'X / Fase E',
-        status: 'draft',
-        duration: '2 JP (2 x 45 menit)',
-        achievement: '[Tuliskan Capaian pembelajaran untuk masing-masing mapel berdasarkan Kep BSKAP 046/2025 (bagi mapel umum) dan Kep BKPDM 020/2026 (bagi mapel PAI dan Budi Pekerti)]',
-        objectives: '[Sebutkan Tujuan pembelajaran yang mengacu pada capaian pembelajaran]',
-        practice: '[Jelaskan metode dan Model pembelajaran yang akan digunakan...]',
-        environment: 'Keterangan : Ruang fisik, Ruang Virtual, Budaya Belajar',
-        digital: 'Keterangan : Tuliskan Sumber Belajar baik berupa buku sumber maupun elektronik',
-        experience: 'Pendahuluan, Kegiatan Inti dan Kegiatan Penutup',
-        reflection: 'Refleksi guru dan peserta didik.',
-        assessment: 'Asesmen diagnostik, formatif, dan sumatif.'
-    };
+    @php
+        $initialDataPayload = $module ?? [
+            'title' => 'Modul Ajar Matematika - Konsep Eksponen',
+            'subject' => 'Matematika',
+            'class' => 'X',
+            'status' => 'draft',
+            'duration' => '2 JP (2 x 45 menit)',
+            'achievement' => 'Tuliskan Capaian pembelajaran untuk masing-masing mapel berdasarkan Kep BSKAP 046/2025 (bagi mapel umum) dan Kep BPKM 020/2026 (bagi mapel PA dan Budi Pekerti)',
+            'objectives' => 'Sebutkan Tujuan pembelajaran yang mengacu pada capaian pembelajaran',
+            'methods' => 'Jelaskan metode dan Model pembelajaran yang akan digunakan.',
+            'practice' => 'Jelaskan praktik pedagogis yang akan digunakan.',
+            'environment' => 'Keterangan: Ruang fisik, Ruang Virtual, Budaya Belajar',
+            'digital' => 'Keterangan: Tuliskan Sumber Belajar baik berupa buku sumber maupun elektronik',
+            'experience' => 'Pendahuluan, Kegiatan Inti dan Kegiatan Penutup',
+            'reflection' => 'Refleksi guru dan peserta didik.',
+            'assessment' => 'Asesmen diagnostik, formatif, dan sumatif.',
+            'dimensi_lulusan' => 'Belum dipilih',
+        ];
+    @endphp
+    const initialData = {!! json_encode($initialDataPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
+    const mode = @json($mode);
+    const moduleId = @json($moduleId);
+    const docInfo = @json($docInfo ?? null);
 
-    const textFields = ['title','subject','class','status','duration','dimensi_lulusan','achievement','objectives','practice','environment','digital','experience','reflection','assessment'];
+    const textFields = ['title','subject','class','status','duration','dimensi_lulusan','achievement','objectives','methods','practice','environment','digital','experience','reflection','assessment'];
     const listFields = [];
 
     function renderList(element, value) {
@@ -708,8 +753,119 @@
         });
     }
 
+    function formatBytes(bytes) {
+        if (!bytes || bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        let num = Number(bytes);
+        while (num >= 1024 && i < units.length - 1) {
+            num /= 1024;
+            i += 1;
+        }
+        return num.toFixed(num >= 10 || i === 0 ? 0 : 1) + ' ' + units[i];
+    }
+
+    function formatDateTime(value) {
+        if (!value) return '-';
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) return value;
+        return dt.toLocaleString('id-ID', {
+            year: 'numeric', month: 'long', day: '2-digit',
+            hour: '2-digit', minute: '2-digit'
+        });
+    }
+
+    function setDocMeta(documentData) {
+        const statusLine = document.getElementById('doc-status-line');
+        const detailLine = document.getElementById('doc-detail-line');
+        const btnPreview = document.getElementById('btn-preview-collabora');
+        const btnEdit = document.getElementById('btn-edit-collabora');
+        const btnVersions = document.getElementById('btn-refresh-versions');
+
+        if (!statusLine || !detailLine) return;
+
+        if (!documentData) {
+            statusLine.textContent = 'Belum ada dokumen Modul Ajar';
+            detailLine.textContent = 'Status: Belum ada dokumen';
+            if (btnPreview) btnPreview.disabled = true;
+            if (btnEdit) btnEdit.disabled = true;
+            if (btnVersions) btnVersions.disabled = true;
+            return;
+        }
+
+        statusLine.textContent = 'Dokumen: ' + (documentData.original_filename || documentData.filename || '-');
+        detailLine.textContent = 'Versi: ' + (documentData.version || '-')
+            + ' | Ukuran: ' + formatBytes(documentData.file_size || 0)
+            + ' | Terakhir diperbarui: ' + formatDateTime(documentData.updated_at || null)
+            + ' | Status: Versi terbaru';
+
+        if (btnPreview) btnPreview.disabled = false;
+        if (btnEdit) btnEdit.disabled = false;
+        if (btnVersions) btnVersions.disabled = false;
+    }
+
+    async function openCollabora(modeToOpen = 'preview') {
+        const viewerWrap = document.getElementById('doc-viewer-wrap');
+        const htmlPreview = document.getElementById('html-preview-wrap');
+        const loading = document.getElementById('doc-loading');
+        const iframe = document.getElementById('collabora-frame');
+        const error = document.getElementById('doc-error');
+
+        if (!viewerWrap || !htmlPreview || !loading || !iframe || !error || !moduleId) {
+            return;
+        }
+
+        viewerWrap.style.display = 'block';
+        htmlPreview.style.display = 'none';
+        loading.style.display = 'block';
+        error.style.display = 'none';
+        iframe.style.display = 'none';
+        iframe.removeAttribute('src');
+
+        try {
+            const url = '{{ url('modul-ajar') }}/' + moduleId + '/preview?mode=' + (modeToOpen === 'edit' ? 'edit' : 'preview');
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const json = await res.json();
+            if (!res.ok || !json.success || !json.wopiUrl) {
+                throw new Error(json.message || 'Dokumen tidak dapat dibuka.');
+            }
+            iframe.src = json.wopiUrl;
+            iframe.style.display = 'block';
+            loading.style.display = 'none';
+        } catch (err) {
+            loading.style.display = 'none';
+            error.style.display = 'block';
+            console.error(err);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         populateForm(initialData);
+
+        const subjectSelect = document.getElementById('input-subject');
+        if (subjectSelect && subjectSelect.tagName === 'SELECT' && initialData.mata_pelajaran_id) {
+            subjectSelect.value = String(initialData.mata_pelajaran_id);
+            const selected = subjectSelect.selectedOptions[0];
+            const hiddenSubject = document.getElementById('field-subject');
+            const hiddenSubjectId = document.getElementById('field-mata_pelajaran_id');
+            if (hiddenSubject && selected) hiddenSubject.value = selected.textContent.trim();
+            if (hiddenSubjectId) hiddenSubjectId.value = String(initialData.mata_pelajaran_id);
+        }
+
+        if (initialData.kelas_id && initialData.class) {
+            addClassChip({ id: String(initialData.kelas_id), label: String(initialData.class) }, false);
+            const hiddenClassId = document.getElementById('field-kelas_id');
+            if (hiddenClassId) hiddenClassId.value = String(initialData.kelas_id);
+        }
+
+        if (initialData.status) {
+            const statusSelect = document.getElementById('input-status');
+            const statusHidden = document.getElementById('field-status');
+            if (statusSelect && statusSelect.tagName === 'SELECT') statusSelect.value = initialData.status;
+            if (statusHidden) statusHidden.value = initialData.status;
+        }
+
+        setDocMeta(docInfo);
 
         // initialize Summernote editors on fields
         if (typeof $.fn.summernote !== 'undefined') {
@@ -854,6 +1010,7 @@
                     const fieldMap = {
                         achievement: 'achievement',
                         objectives: 'objectives',
+                        methods: 'methods',
                         practice: 'practice',
                         environment: 'environment',
                         digital: 'digital',
@@ -963,6 +1120,130 @@
                     btnProcess.disabled = false;
                 }
             });
+        }
+
+        if (mode === 'edit' && moduleId) {
+            const uploadInput = document.getElementById('document-upload-input');
+            const btnUpload = document.getElementById('btn-upload-document');
+            const btnPreview = document.getElementById('btn-preview-collabora');
+            const btnEdit = document.getElementById('btn-edit-collabora');
+            const btnRetry = document.getElementById('btn-retry-doc');
+            const btnVersions = document.getElementById('btn-refresh-versions');
+
+            if (btnUpload && uploadInput) {
+                btnUpload.addEventListener('click', () => uploadInput.click());
+                uploadInput.addEventListener('change', async () => {
+                    const file = uploadInput.files && uploadInput.files[0] ? uploadInput.files[0] : null;
+                    if (!file) return;
+
+                    const fd = new FormData();
+                    fd.append('document', file);
+                    fd.append('_token', '{{ csrf_token() }}');
+
+                    btnUpload.disabled = true;
+                    const oldLabel = btnUpload.textContent;
+                    btnUpload.textContent = 'Mengupload...';
+
+                    try {
+                        const res = await fetch('{{ url('modul-ajar') }}/' + moduleId + '/upload', {
+                            method: 'POST',
+                            body: fd,
+                            headers: { 'Accept': 'application/json' },
+                        });
+                        const json = await res.json();
+                        if (!res.ok || !json.success) {
+                            throw new Error(json.message || 'Upload gagal');
+                        }
+                        setDocMeta(json.document || null);
+                        window.alert('Dokumen berhasil diupload');
+                        await openCollabora('preview');
+                    } catch (err) {
+                        console.error(err);
+                        window.alert(err.message || 'Upload dokumen gagal.');
+                    } finally {
+                        btnUpload.disabled = false;
+                        btnUpload.textContent = oldLabel;
+                        uploadInput.value = '';
+                    }
+                });
+            }
+
+            if (btnPreview) {
+                btnPreview.addEventListener('click', () => openCollabora('preview'));
+            }
+            if (btnEdit) {
+                btnEdit.addEventListener('click', async () => {
+                    try {
+                        const res = await fetch('{{ url('modul-ajar') }}/' + moduleId + '/save-preview-docx', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                            }
+                        });
+                        const json = await res.json();
+                        if (!res.ok || !json.tempKey) {
+                            throw new Error(json.error || 'Gagal menyimpan preview');
+                        }
+                        window.location.href = '{{ url('akademik/editor-modul') }}/' + moduleId;
+                    } catch (err) {
+                        console.error(err);
+                        window.alert(err.message || 'Gagal membuka editor.');
+                    }
+                });
+            }
+            if (btnRetry) {
+                btnRetry.addEventListener('click', () => openCollabora('preview'));
+            }
+
+            if (btnVersions) {
+                btnVersions.addEventListener('click', async () => {
+                    try {
+                        const res = await fetch('{{ url('modul-ajar') }}/' + moduleId + '/versions', {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        const json = await res.json();
+                        if (!res.ok || !json.success) {
+                            throw new Error('Gagal mengambil riwayat versi.');
+                        }
+                        const versions = Array.isArray(json.versions) ? json.versions : [];
+                        if (!versions.length) {
+                            window.alert('Belum ada riwayat versi.');
+                            return;
+                        }
+
+                        const lines = versions.map(v => 'Versi ' + v.version + ' | ' + formatDateTime(v.created_at) + ' | ' + (v.filename || '-'));
+                        const chosen = window.prompt('Riwayat Versi:\n' + lines.join('\n') + '\n\nMasukkan nomor versi untuk restore (kosongkan untuk batal):');
+                        if (!chosen) return;
+                        const versionNo = Number(chosen);
+                        if (!Number.isInteger(versionNo)) {
+                            window.alert('Nomor versi tidak valid.');
+                            return;
+                        }
+                        const ok = window.confirm('Restore versi ' + versionNo + '? Versi saat ini akan tetap tersimpan sebagai riwayat.');
+                        if (!ok) return;
+
+                        const restoreRes = await fetch('{{ url('modul-ajar') }}/' + moduleId + '/versions/' + versionNo + '/restore', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                            }
+                        });
+                        const restoreJson = await restoreRes.json();
+                        if (!restoreRes.ok || !restoreJson.success) {
+                            throw new Error(restoreJson.message || 'Restore gagal');
+                        }
+
+                        setDocMeta(restoreJson.document || docInfo);
+                        window.alert('Versi berhasil di-restore.');
+                        await openCollabora('preview');
+                    } catch (err) {
+                        console.error(err);
+                        window.alert(err.message || 'Gagal memproses riwayat versi.');
+                    }
+                });
+            }
         }
     });
 </script>

@@ -912,7 +912,7 @@
 
             @php
                 $isAdminSidebar = $user && $user->hasRole('Admin');
-                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','pengembangan.*','sk_tugas.*']);
+                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','pengembangan.*','sk_tugas.*','akademik.*','editor_modul.*']);
                 $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*']);
                 $isAdminSettingActive = request()->routeIs(['profile.edit','profile.panduan','tahun_ajaran.index','setting.*','help.admin.*']);
             @endphp
@@ -939,6 +939,10 @@
                                 <a href="{{ route('guru_piket.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_piket.*') ? 'is-active' : '' }}">Jadwal Piket</a>
                                 <a href="{{ url('/pengaturan-jam') }}" class="sidebar-admin-sublink {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'is-active' : '' }}">Pengaturan Jam</a>
                                 <a href="{{ route('pengembangan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pengembangan.*') ? 'is-active' : '' }}">Pengembangan Diri</a>
+                                <a href="{{ route('rencana_pembelajaran.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('rencana_pembelajaran.*') ? 'is-active' : '' }}">Modul Ajar</a>
+                                @if(request()->routeIs('rencana_pembelajaran.edit'))
+                                    <a href="{{ request()->fullUrl() }}" class="sidebar-admin-sublink is-active">Edit Modul Ajar</a>
+                                @endif
                             </div>
                         </div>
                         <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-link {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">
@@ -1036,11 +1040,11 @@
                 <!-- Akademik -->
                 @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && (empty($guruEnabledMenus) || !empty(array_intersect(['akademik_jadwal_kbm','akademik_jadwal_piket','akademik_pengaturan_jam','akademik_pengembangan_diri','akademik_beban_kerja_guru','akademik_sk_tugas','akademik_komponen_penilaian','akademik_mata_pelajaran','akademik_modul_ajar','akademik_editor_modul'], $guruEnabledMenus))))
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','editor_modul.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-school"></i> Akademik
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','akademik.supervisi','akademik.supervisi.*']) ? 'show' : '' }}" id="subAkademik">
+                    <div class="collapse {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','editor_modul.*','akademik.supervisi','akademik.supervisi.*','akademik.tool']) ? 'show' : '' }}" id="subAkademik">
                         <ul class="sidebar-subnav">
                             @if(empty($guruEnabledMenus) || in_array('akademik_jadwal_kbm', $guruEnabledMenus))
                             <li class="nav-item"><a href="{{ route('jadwal-kbm.index') }}" class="nav-link {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Jadwal KBM</a></li>
@@ -1069,8 +1073,14 @@
                             @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_mata_pelajaran', $guruEnabledMenus)))
                                 <li class="nav-item"><a href="{{ route('mata_pelajaran.guru') }}" class="nav-link {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Mata Pelajaran</a></li>
                             @endif
-                            @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_modul_ajar', $guruEnabledMenus)))
+                            @if(($isGuru && (empty($guruEnabledMenus) || in_array('akademik_modul_ajar', $guruEnabledMenus))) || request()->routeIs('rencana_pembelajaran.edit'))
                                 <li class="nav-item"><a href="{{ url('/modul-ajar') }}" class="nav-link {{ request()->is('modul-ajar*') && !request()->is('modul-ajar/editor*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Modul Ajar</a></li>
+                            @endif
+                            @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_editor_modul', $guruEnabledMenus)))
+                                <li class="nav-item"><a href="{{ route('akademik.editor_modul.index') }}" class="nav-link {{ request()->routeIs('akademik.editor_modul.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Edit Modul Ajar</a></li>
+                            @endif
+                            @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']))
+                                <li class="nav-item"><a href="{{ route('akademik.tool') }}" class="nav-link {{ request()->routeIs('akademik.tool') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Tool</a></li>
                             @endif
                             @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']))
                                 <li class="nav-item"><a href="{{ route('akademik.supervisi') }}" class="nav-link {{ request()->routeIs('akademik.supervisi') || request()->routeIs('akademik.supervisi.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Supervisi</a></li>
