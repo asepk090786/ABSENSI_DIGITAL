@@ -48,8 +48,8 @@
                 <div id="backupProgressText">Harap tunggu sebentar.</div>
             </div>
         </div>
-        <div class="progress mt-2" style="height: 8px;">
-            <div id="backupProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 20%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+        <div class="progress mt-2 backup-progress-container">
+            <div id="backupProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 20%; min-width: 0;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
     </div>
 
@@ -114,12 +114,13 @@
                 <button type="submit" class="btn btn-outline-success">Export Foto Profil ke ZIP</button>
             </form>
 
-            <form method="POST" action="{{ route('setting.backup.profile.import') }}" enctype="multipart/form-data" class="mb-3 backup-submit-form" data-progress-label="Sedang mengunggah dan mengimpor foto profil..." data-ajax="true" onsubmit="return submitBackupForm(this)">
+            <form method="POST" action="{{ route('setting.backup.profile.import') }}" enctype="multipart/form-data" class="mb-3 backup-submit-form" data-progress-label="Sedang mengunggah dan mengimpor foto profil..." data-ajax="true" data-max-size-mb="1024" onsubmit="return submitBackupForm(this)">
                 @csrf
                 <div class="mb-2">
                     <label class="form-label">Import Foto Profil dari ZIP</label>
                     <input type="file" name="profile_photo_backup" class="form-control" accept=".zip" required>
                 </div>
+                <div class="form-text text-muted">Maksimal ukuran file: 1 GB. Jika file lebih besar, server akan menolak upload dengan status 413.</div>
                 <button type="submit" class="btn btn-outline-primary">Import Foto Profil</button>
             </form>
 
@@ -224,8 +225,9 @@
             bar.style.width = percent + '%';
             bar.setAttribute('aria-valuenow', percent);
             fakeProgressInterval = setInterval(function () {
-                if (percent >= 90) {
+                if (percent >= 95) {
                     clearInterval(fakeProgressInterval);
+                    text.textContent = 'Menunggu respons server...';
                     return;
                 }
                 percent += 1;
@@ -276,7 +278,21 @@
             } else {
                 panel.querySelector('.alert').classList.remove('alert-info');
                 panel.querySelector('.alert').classList.add('alert-danger');
-                text.textContent = (response && response.message) || 'Proses gagal. Silakan coba lagi.';
+                var errorMessage = 'Proses gagal. Silakan coba lagi.';
+                if (response && response.message) {
+                    errorMessage = response.message;
+                } else if (response && response.errors) {
+                    var errors = [];
+                    for (var key in response.errors) {
+                        if (Object.hasOwn(response.errors, key)) {
+                            errors = errors.concat(response.errors[key]);
+                        }
+                    }
+                    if (errors.length) {
+                        errorMessage = errors.join(' ');
+                    }
+                }
+                text.textContent = errorMessage;
                 if (button) {
                     button.disabled = false;
                     button.textContent = button.dataset.originalText || button.textContent;
@@ -287,7 +303,20 @@
         xhr.addEventListener('error', function () {
             panel.querySelector('.alert').classList.remove('alert-info');
             panel.querySelector('.alert').classList.add('alert-danger');
-            text.textContent = 'Gagal menghubungi server. Silakan coba lagi.';
+            text.textContent = 'Koneksi terputus atau server timeout. Periksa ukuran file backup dan coba lagi.';
+            if (button) {
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
+        });
+
+        xhr.addEventListener('timeout', function () {
+            if (fakeProgressInterval) {
+                clearInterval(fakeProgressInterval);
+            }
+            panel.querySelector('.alert').classList.remove('alert-info');
+            panel.querySelector('.alert').classList.add('alert-danger');
+            text.textContent = 'Proses import terlalu lama. Coba file backup yang lebih kecil atau tingkatkan batas timeout server.';
             if (button) {
                 button.disabled = false;
                 button.textContent = button.dataset.originalText || button.textContent;
@@ -298,9 +327,40 @@
         return false;
     }
 
+    function validateBackupUpload(form) {
+        const fileInput = form.querySelector('input[type="file"]');
+        if (!fileInput || !fileInput.files || !fileInput.files.length) {
+            return true;
+        }
+
+        const maxSizeMb = Number(form.dataset.maxSizeMb || '1024');
+        const file = fileInput.files[0];
+        const maxBytes = maxSizeMb * 1024 * 1024;
+
+        if (file.size > maxBytes) {
+            const panel = document.getElementById('backupProgressPanel');
+            if (panel) {
+                panel.classList.remove('d-none');
+                panel.classList.remove('alert-info');
+                panel.classList.add('alert-danger');
+                document.getElementById('backupProgressText').textContent = 'File terlalu besar. Maksimal ' + maxSizeMb + ' MB. Coba kompres atau pecah file backup.';
+                document.getElementById('backupProgressBar').style.width = '0%';
+            }
+            alert('File terlalu besar. Maksimal ' + maxSizeMb + ' MB.');
+            fileInput.value = '';
+            return false;
+        }
+
+        return true;
+    }
+
     function submitBackupForm(form) {
         if (form.dataset.ajax !== 'true') {
             return true;
+        }
+
+        if (!validateBackupUpload(form)) {
+            return false;
         }
 
         const panel = document.getElementById('backupProgressPanel');
@@ -308,22 +368,27 @@
         const text = document.getElementById('backupProgressText');
         const label = form.dataset.progressLabel || 'Memproses data...';
         const button = form.querySelector('button[type="submit"]');
+        const xhr = new XMLHttpRequest();
 
         panel.classList.remove('d-none');
         panel.classList.remove('alert-success', 'alert-danger');
         panel.classList.add('alert-info');
+        panel.style.display = 'block';
+        if (bar) {
+            bar.style.display = 'block';
+            bar.style.minWidth = '0';
+            bar.style.width = '10%';
+        }
         text.textContent = label;
-        bar.style.width = '10%';
-        bar.setAttribute('aria-valuenow', '10');
-
         if (button) {
             button.disabled = true;
             button.dataset.originalText = button.textContent;
             button.textContent = 'Memproses...';
         }
+        if (bar) bar.setAttribute('aria-valuenow', '10');
 
-        const xhr = new XMLHttpRequest();
         xhr.open('POST', form.action, true);
+        xhr.timeout = 300000;
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.setRequestHeader('X-CSRF-TOKEN', form.querySelector('input[name="_token"]')?.value || '');
 
@@ -335,8 +400,9 @@
             bar.style.width = percent + '%';
             bar.setAttribute('aria-valuenow', percent);
             fakeProgressInterval = setInterval(function () {
-                if (percent >= 90) {
+                if (percent >= 95) {
                     clearInterval(fakeProgressInterval);
+                    text.textContent = label + ' (menunggu respons server...)';
                     return;
                 }
                 percent += 1;
@@ -362,18 +428,60 @@
             if (fakeProgressInterval) {
                 clearInterval(fakeProgressInterval);
             }
+            text.textContent = label + ' (mengekstrak file ZIP...)';
             startFakeProgress(parseInt(bar.getAttribute('aria-valuenow') || '60', 10));
-            text.textContent = label + ' (memproses...)';
+        });
+
+        xhr.addEventListener('timeout', function () {
+            if (fakeProgressInterval) {
+                clearInterval(fakeProgressInterval);
+            }
+            panel.classList.remove('alert-info');
+            panel.classList.add('alert-danger');
+            text.textContent = 'Proses import terlalu lama. Coba file backup yang lebih kecil atau tingkatkan timeout server.';
+            if (button) {
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
+        });
+
+        xhr.addEventListener('error', function () {
+            if (fakeProgressInterval) {
+                clearInterval(fakeProgressInterval);
+            }
+            panel.classList.remove('alert-info');
+            panel.classList.add('alert-danger');
+            text.textContent = 'Koneksi terputus atau server timeout. Periksa ukuran file backup dan coba lagi.';
+            if (button) {
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
         });
 
         xhr.addEventListener('load', function () {
             if (fakeProgressInterval) {
                 clearInterval(fakeProgressInterval);
             }
-            if (xhr.status >= 200 && xhr.status < 300) {
+            let response = {};
+            try {
+                response = JSON.parse(xhr.responseText);
+            } catch (e) {
+                response = {};
+            }
+            if (xhr.status === 413) {
+                panel.classList.remove('alert-info');
+                panel.classList.add('alert-danger');
+                text.textContent = 'Ukuran file terlalu besar untuk diunggah oleh server. Tingkatkan batas upload di konfigurasi server (upload_max_filesize / client_max_body_size).';
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = button.dataset.originalText || button.textContent;
+                }
+                return;
+            }
+            if (xhr.status >= 200 && xhr.status < 300 && response.success) {
                 panel.classList.remove('alert-info');
                 panel.classList.add('alert-success');
-                text.textContent = 'Selesai. Memuat ulang halaman...';
+                text.textContent = response.message || 'Selesai. Memuat ulang halaman...';
                 bar.style.width = '100%';
                 bar.setAttribute('aria-valuenow', '100');
                 setTimeout(function () {
@@ -382,21 +490,25 @@
             } else {
                 panel.classList.remove('alert-info');
                 panel.classList.add('alert-danger');
-                text.textContent = 'Proses gagal. Silakan coba lagi.';
+                var errorMessage = 'Proses gagal. Silakan coba lagi.';
+                if (response && response.message) {
+                    errorMessage = response.message;
+                } else if (response && response.errors) {
+                    var errors = [];
+                    for (var key in response.errors) {
+                        if (Object.hasOwn(response.errors, key)) {
+                            errors = errors.concat(response.errors[key]);
+                        }
+                    }
+                    if (errors.length) {
+                        errorMessage = errors.join(' ');
+                    }
+                }
+                text.textContent = errorMessage;
                 if (button) {
                     button.disabled = false;
                     button.textContent = button.dataset.originalText || button.textContent;
                 }
-            }
-        });
-
-        xhr.addEventListener('error', function () {
-            panel.classList.remove('alert-info');
-            panel.classList.add('alert-danger');
-            text.textContent = 'Gagal menghubungi server. Silakan coba lagi.';
-            if (button) {
-                button.disabled = false;
-                button.textContent = button.dataset.originalText || button.textContent;
             }
         });
 

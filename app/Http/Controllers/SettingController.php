@@ -999,14 +999,56 @@ class SettingController extends Controller
 
     public function backupProfileImport(Request $request)
     {
-        $request->validate([
-            'profile_photo_backup' => ['required', 'file', 'mimes:zip', 'max:512000'],
+        set_time_limit(0);
+        ini_set('max_execution_time', '0');
+        ini_set('max_input_time', '0');
+        ini_set('memory_limit', '1024M');
+
+        \Log::info('backupProfileImport start', [
+            'user_id' => auth()->id(),
+            'ajax' => $request->ajax(),
+            'wantsJson' => $request->wantsJson(),
+            'has_file' => $request->hasFile('profile_photo_backup'),
+            'content_length' => $request->header('content-length'),
         ]);
 
-        $path = $request->file('profile_photo_backup')->store('backups/profile_photos/imports');
+        $request->validate([
+            'profile_photo_backup' => ['required', 'file', 'mimes:zip', 'max:1048576'],
+        ]);
+
+        $path = $request->file('profile_photo_backup')->store('temp/profile_photo_imports');
         $fullPath = storage_path('app/' . $path);
+        \Log::info('backupProfileImport uploaded file', [
+            'path' => $fullPath,
+            'size' => $request->file('profile_photo_backup')->getSize(),
+            'original_name' => $request->file('profile_photo_backup')->getClientOriginalName(),
+        ]);
         $svc = new ProfilePhotoBackupService();
-        $ok = $svc->import($fullPath);
+
+        $ok = false;
+        try {
+            $ok = $svc->import($fullPath);
+        } catch (\Throwable $e) {
+            \Log::error('Backup foto profil import failed', [
+                'path' => $fullPath,
+                'exception' => $e,
+                'user_id' => auth()->id(),
+            ]);
+
+            if (file_exists($fullPath)) {
+                @unlink($fullPath);
+            }
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat mengimpor backup foto profil. Silakan periksa log.'], 500);
+            }
+
+            return back()->withErrors('Terjadi kesalahan saat mengimpor backup foto profil. Silakan periksa log.');
+        }
+
+        if (file_exists($fullPath)) {
+            @unlink($fullPath);
+        }
 
         if ($ok) {
             if ($request->ajax() || $request->wantsJson()) {
@@ -1016,23 +1058,51 @@ class SettingController extends Controller
             return back()->with('success', 'Import foto profil selesai');
         }
 
+        \Log::warning('Backup foto profil import completed without importing any files', [
+            'path' => $fullPath,
+            'user_id' => auth()->id(),
+        ]);
+
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => false, 'message' => 'Gagal mengimpor backup foto profil'], 500);
+            return response()->json(['success' => false, 'message' => 'Backup foto profil diterima tetapi tidak ada foto yang berhasil diimpor. Periksa format ZIP atau manifest.'], 422);
         }
 
-        return back()->withErrors('Gagal mengimpor backup foto profil');
+        return back()->withErrors('Backup foto profil diterima tetapi tidak ada foto yang berhasil diimpor. Periksa format ZIP atau manifest.');
     }
 
     public function backupDatabaseImport(Request $request)
     {
+        set_time_limit(0);
+        ini_set('max_execution_time', '0');
+        ini_set('max_input_time', '0');
+        ini_set('memory_limit', '1024M');
+
         $request->validate([
-            'database_backup' => ['required', 'file', 'mimes:sql,zip', 'max:512000'],
+            'database_backup' => ['required', 'file', 'mimes:sql,zip', 'max:1048576'],
         ]);
 
         $path = $request->file('database_backup')->store('backups/database/imports');
         $fullPath = storage_path('app/' . $path);
         $svc = new BackupService();
-        $ok = $svc->import($fullPath);
+
+        try {
+            $ok = $svc->import($fullPath);
+        } catch (\Throwable $e) {
+            \Log::error('Backup database import failed', [
+                'path' => $fullPath,
+                'user_id' => auth()->id(),
+                'exception' => $e,
+            ]);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Import database gagal: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->withErrors('Import database gagal: ' . $e->getMessage());
+        }
 
         if ($ok) {
             if ($request->ajax() || $request->wantsJson()) {
@@ -1043,10 +1113,10 @@ class SettingController extends Controller
         }
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => false, 'message' => 'Gagal mengimpor database'], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal mengimpor database. Pastikan file backup valid dan proses import tidak melebihi batas server.'], 500);
         }
 
-        return back()->withErrors('Gagal mengimpor database');
+        return back()->withErrors('Gagal mengimpor database. Pastikan file backup valid dan proses import tidak melebihi batas server.');
     }
 
     public function backupUpdateSettings(Request $request)
