@@ -73,7 +73,45 @@ class CollaboraController extends Controller
             );
         }
 
-        return rtrim($host, '/') . '/collabora/wopi/files/' . $tempKey;
+        $requestHost = $this->resolveRequestHost($host);
+        
+        return rtrim($requestHost, '/') . '/collabora/wopi/files/' . $tempKey;
+    }
+
+    private function resolveRequestHost(string $configuredHost): string
+    {
+        $request = request();
+        if (!$request instanceof \Illuminate\Http\Request) {
+            return $configuredHost;
+        }
+
+        $currentHost = $request->getHost();
+        if (empty($currentHost)) {
+            return $configuredHost;
+        }
+
+        $scheme = $request->getScheme();
+        $currentUrl = $scheme . '://' . $currentHost;
+
+        $settings = new SettingsManager();
+        $allowedHosts = $settings->get('collabora.allowed_wopi_hosts', []);
+
+        if (!is_array($allowedHosts) || empty($allowedHosts)) {
+            $allowedHosts = [
+                rtrim((string) env('APP_URL'), '/'),
+                rtrim((string) config('services.collabora.wopi_host'), '/'),
+            ];
+            $allowedHosts = array_values(array_filter(array_unique($allowedHosts)));
+        }
+
+        $normalizedCurrent = strtolower(rtrim($currentUrl, '/'));
+        foreach ($allowedHosts as $allowedHost) {
+            if (strtolower(rtrim((string) $allowedHost, '/')) === $normalizedCurrent) {
+                return rtrim($currentUrl, '/');
+            }
+        }
+
+        return rtrim($configuredHost, '/');
     }
 
     private function getLockCacheKey(string $tempKey): string

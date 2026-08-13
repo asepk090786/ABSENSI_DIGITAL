@@ -277,6 +277,15 @@ body {
         height: 1.5rem !important;
         font-size: 0.875rem !important;
     }
+
+    .backup-progress-container {
+        min-height: 1.5rem;
+    }
+
+    .backup-progress-container .progress-bar {
+        min-width: 0;
+        transition: width 0.25s ease, min-width 0.25s ease;
+    }
     
     /* Tabs */
     .nav-tabs .nav-link {

@@ -13,7 +13,7 @@
                         <p class="text-muted mt-1">{{ $materiPembelajaran->rencanaPembelajaran->judul }}</p>
                     </div>
                     <div class="col-auto">
-                        <span class="badge bg-{{ $materiPembelajaran->status === 'published' ? 'success' : 'warning' }}">
+                        <span class="badge {{ $materiPembelajaran->status === 'published' ? 'bg-success text-white' : 'bg-warning text-dark' }}">
                             {{ ucfirst($materiPembelajaran->status) }}
                         </span>
                     </div>

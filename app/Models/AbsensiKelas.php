@@ -22,12 +22,16 @@ class AbsensiKelas extends Model
         'verifikasi_aktif',
         'kode_verifikasi',
         'kode_verifikasi_expires_at',
+        'verifikasi_manual_aktif',
+        'verifikasi_manual_expires_at',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'verifikasi_aktif' => 'boolean',
         'kode_verifikasi_expires_at' => 'datetime',
+        'verifikasi_manual_aktif' => 'boolean',
+        'verifikasi_manual_expires_at' => 'datetime',
     ];
 
     public function kelas()

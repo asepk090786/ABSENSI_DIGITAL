@@ -1096,6 +1096,8 @@ class AbsensiController extends Controller
         $verificationValidFrom = null;
         $verificationValidTo = null;
         $verificationRecord = null;
+        
+        $verificationManualActive = false;
 
         if ($selectedKelasId && $selectedDate) {
             $verificationQuery = AttendanceVerificationCode::where('kelas_id', $selectedKelasId)
@@ -1137,6 +1139,16 @@ class AbsensiController extends Controller
                     $selectedJamBelajarId = $verificationRecord->jam_belajar_id;
                 }
             }
+
+            // Check for manual verification
+            $absensiKelas = AbsensiKelas::where('kelas_id', $selectedKelasId)
+                ->whereDate('tanggal', $selectedDate)
+                ->when($selectedJamBelajarId, fn($q) => $q->where('jam_belajar_id', $selectedJamBelajarId))
+                ->first();
+
+            if ($absensiKelas && $absensiKelas->verifikasi_manual_aktif) {
+                $verificationManualActive = true;
+            }
         }
 
         return view('absensi.create', compact(
@@ -1161,6 +1173,7 @@ class AbsensiController extends Controller
             'verificationExpiresAtTimestamp',
             'verificationValidFrom',
             'verificationValidTo',
+            'verificationManualActive',
             'isAdminOrKepala'
         ));
     }
@@ -1335,6 +1348,182 @@ class AbsensiController extends Controller
         ]);
     }
 
+    public function saveManualVerificationConfig(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'kelas_id' => 'required|exists:kelas,id',
+            'tanggal' => 'required|date',
+            'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
+            'verifikasi_manual_aktif' => 'nullable|boolean',
+        ]);
+
+        // Hapus verifikasi kode jika verifikasi manual diaktifkan
+        $active = (bool) ($validated['verifikasi_manual_aktif'] ?? false);
+
+        // Jika verifikasi manual diaktifkan, nonaktifkan verifikasi kode di AbsensiKelas yang sesuai
+        try {
+            $tahunAjaran = TahunAjaran::where('is_active', 1)->first();
+            $semester = Semester::where('is_active', 1)->first();
+
+            $absensiKelas = AbsensiKelas::where('kelas_id', $validated['kelas_id'])
+                ->whereDate('tanggal', $validated['tanggal'])
+                ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                ->first();
+
+            if ($active) {
+                // Jika verifikasi manual DIAKTIFKAN
+                if ($absensiKelas) {
+                    // Update existing record
+                    $absensiKelas->update([
+                        'verifikasi_aktif' => false,
+                        'kode_verifikasi' => null,
+                        'kode_verifikasi_expires_at' => null,
+                        'verifikasi_manual_aktif' => true,
+                        'verifikasi_manual_expires_at' => null,
+                    ]);
+                } else {
+                    // Create new AbsensiKelas record jika belum ada
+                    if ($tahunAjaran && $semester) {
+                        AbsensiKelas::create([
+                            'kelas_id' => $validated['kelas_id'],
+                            'tanggal' => $validated['tanggal'],
+                            'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                            'tahun_ajaran_id' => $tahunAjaran->id,
+                            'semester_id' => $semester->id,
+                            'guru_id' => auth()->user()->guru_id ?? null,
+                            'verifikasi_aktif' => false,
+                            'kode_verifikasi' => null,
+                            'kode_verifikasi_expires_at' => null,
+                            'verifikasi_manual_aktif' => true,
+                            'verifikasi_manual_expires_at' => null,
+                        ]);
+                    }
+                }
+
+                // Juga hapus verifikasi codes dari AttendanceVerificationCode
+                AttendanceVerificationCode::where('kelas_id', $validated['kelas_id'])
+                    ->where('tanggal', $validated['tanggal'])
+                    ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                    ->delete();
+            } else {
+                // Jika verifikasi manual DINONAKTIFKAN
+                if ($absensiKelas) {
+                    // Update untuk turn off manual verification
+                    $absensiKelas->update([
+                        'verifikasi_manual_aktif' => false,
+                        'verifikasi_manual_expires_at' => null,
+                    ]);
+                }
+                // Tidak perlu delete AttendanceVerificationCode jika turn off manual
+            }
+        } catch (\Throwable $e) {
+            Log::error('absensi.verification.manual.save_failed', [
+                'kelas_id' => $validated['kelas_id'],
+                'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                'tanggal' => $validated['tanggal'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan konfigurasi verifikasi manual.'], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Konfigurasi verifikasi manual berhasil disimpan.',
+        ]);
+    }
+
+    public function loadVerificationState(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'kelas_id' => 'required|exists:kelas,id',
+            'tanggal' => 'required|date_format:Y-m-d',
+            'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
+        ]);
+
+        try {
+            // Check for manual verification state
+            $manualVerification = AbsensiKelas::where('kelas_id', $validated['kelas_id'])
+                ->whereDate('tanggal', $validated['tanggal'])
+                ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                ->first();
+
+            $verificationManualActive = false;
+            if ($manualVerification && $manualVerification->verifikasi_manual_aktif) {
+                $verificationManualActive = true;
+            }
+
+            // Check for kode verifikasi state
+            $verificationCode = AttendanceVerificationCode::where('kelas_id', $validated['kelas_id'])
+                ->where('tanggal', $validated['tanggal'])
+                ->where(function ($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>=', Carbon::now('UTC'));
+                });
+
+            if ($validated['jam_belajar_id']) {
+                $verificationCode->where('jam_belajar_id', $validated['jam_belajar_id']);
+            }
+
+            $verificationRecord = $verificationCode->orderByDesc('id')->first();
+
+            $verificationActive = false;
+            $kode = null;
+            $expiresAt = null;
+            $expiresAtTimestamp = null;
+            $validFrom = null;
+            $validTo = null;
+
+            if ($verificationRecord) {
+                $verificationActive = true;
+                $kode = $verificationRecord->kode;
+                $rawExpiresAt = $verificationRecord->getRawOriginal('expires_at');
+                $expiresAt = $rawExpiresAt
+                    ? Carbon::parse($rawExpiresAt, 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i:sP')
+                    : null;
+                $expiresAtTimestamp = $rawExpiresAt
+                    ? Carbon::parse($rawExpiresAt, 'UTC')->timestamp * 1000
+                    : null;
+                $validFrom = $verificationRecord->valid_from ? Carbon::parse($verificationRecord->valid_from)->format('H:i') : null;
+                $validTo = $verificationRecord->valid_to ? Carbon::parse($verificationRecord->valid_to)->format('H:i') : null;
+            }
+
+            return response()->json([
+                'success' => true,
+                'verificationManualActive' => $verificationManualActive,
+                'verificationActive' => $verificationActive,
+                'verificationCode' => $kode,
+                'verificationExpiresAt' => $expiresAt,
+                'verificationExpiresAtTimestamp' => $expiresAtTimestamp,
+                'verificationValidFrom' => $validFrom,
+                'verificationValidTo' => $validTo,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('absensi.verification.load_state_failed', [
+                'kelas_id' => $validated['kelas_id'],
+                'tanggal' => $validated['tanggal'],
+                'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat status verifikasi',
+                'verificationManualActive' => false,
+                'verificationActive' => false,
+            ]);
+        }
+    }
+
     public function verifyStudent(Request $request)
     {
         $user = auth()->user();
@@ -1343,14 +1532,14 @@ class AbsensiController extends Controller
         }
 
         $validated = $request->validate([
-            'kode' => 'required|string',
+            'kode' => 'nullable|string',
             'kelas_id' => 'nullable|exists:kelas,id',
             'tanggal' => 'nullable|date',
             'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
         ]);
 
         $tanggal = $validated['tanggal'] ?? date('Y-m-d');
-        $kode = trim($validated['kode']);
+        $kode = (isset($validated['kode']) && $validated['kode']) ? trim($validated['kode']) : null;
         $kelasId = $validated['kelas_id'] ?? ($user->siswa->kelas_id ?? null);
         $jamId = $validated['jam_belajar_id'] ?? null;
 
@@ -1360,45 +1549,62 @@ class AbsensiController extends Controller
 
         $now = Carbon::now('UTC');
 
-        // Try find by verification table first (active code generated by teacher)
-        $verif = AttendanceVerificationCode::where('kelas_id', $kelasId)
-            ->where('tanggal', $tanggal)
-            ->where('kode', $kode)
-            ->where(function($q) use ($now) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
-            })
-            ->when($jamId, function ($q) use ($jamId) { return $q->where('jam_belajar_id', $jamId); })
+        // Check if manual verification is active
+        $absensiKelas = AbsensiKelas::where('kelas_id', $kelasId)
+            ->whereDate('tanggal', $tanggal)
+            ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
             ->first();
 
-        if ($verif) {
-            $currentTime = Carbon::now('Asia/Jakarta')->format('H:i');
-            if (! empty($verif->valid_from) && $currentTime < $verif->valid_from) {
-                $verif = null;
-            }
-            if (! empty($verif->valid_to) && $currentTime > $verif->valid_to) {
-                $verif = null;
-            }
-        }
-
-        // If not found, try match against AbsensiKelas.kode_verifikasi (in case code was stored in absensi record)
+        $verif = null;
         $absensi = null;
-        if ($verif) {
-            // find an AbsensiKelas record that matches the scope (if exists)
-            $absensi = AbsensiKelas::where('kelas_id', $kelasId)
-                ->whereDate('tanggal', $tanggal)
-                ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
-                ->where(function($q) use ($kode) {
-                    $q->where('kode_verifikasi', $kode)->orWhereNull('kode_verifikasi');
+
+        // If manual verification is active, allow verification without code
+        if ($absensiKelas && $absensiKelas->verifikasi_manual_aktif) {
+            $absensi = $absensiKelas;
+            // Proceed with manual verification
+        } else if ($kode) {
+            // Try find by verification table first (active code generated by teacher)
+            $verif = AttendanceVerificationCode::where('kelas_id', $kelasId)
+                ->where('tanggal', $tanggal)
+                ->where('kode', $kode)
+                ->where(function($q) use ($now) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>=', $now);
                 })
-                ->orderByDesc('id')
+                ->when($jamId, function ($q) use ($jamId) { return $q->where('jam_belajar_id', $jamId); })
                 ->first();
+
+            if ($verif) {
+                $currentTime = Carbon::now('Asia/Jakarta')->format('H:i');
+                if (! empty($verif->valid_from) && $currentTime < $verif->valid_from) {
+                    $verif = null;
+                }
+                if (! empty($verif->valid_to) && $currentTime > $verif->valid_to) {
+                    $verif = null;
+                }
+            }
+
+            // If not found, try match against AbsensiKelas.kode_verifikasi (in case code was stored in absensi record)
+            if ($verif) {
+                // find an AbsensiKelas record that matches the scope (if exists)
+                $absensi = AbsensiKelas::where('kelas_id', $kelasId)
+                    ->whereDate('tanggal', $tanggal)
+                    ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
+                    ->where(function($q) use ($kode) {
+                        $q->where('kode_verifikasi', $kode)->orWhereNull('kode_verifikasi');
+                    })
+                    ->orderByDesc('id')
+                    ->first();
+            } else {
+                $absensi = AbsensiKelas::where('kelas_id', $kelasId)
+                    ->whereDate('tanggal', $tanggal)
+                    ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
+                    ->where('kode_verifikasi', $kode)
+                    ->orderByDesc('id')
+                    ->first();
+            }
         } else {
-            $absensi = AbsensiKelas::where('kelas_id', $kelasId)
-                ->whereDate('tanggal', $tanggal)
-                ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
-                ->where('kode_verifikasi', $kode)
-                ->orderByDesc('id')
-                ->first();
+            // No code provided and no manual verification active
+            return response()->json(['success' => false, 'message' => 'Kode verifikasi diperlukan.'], 400);
         }
 
         if (! $verif && ! $absensi) {

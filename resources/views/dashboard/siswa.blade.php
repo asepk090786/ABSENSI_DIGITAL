@@ -178,7 +178,7 @@
                             </a>
                         </div>
                     @endif
-                    @if(isset($activeVerification) && $activeVerification)
+                    @if((isset($activeVerification) && $activeVerification) || (isset($activeManualVerification) && $activeManualVerification))
                         <div class="col-6 col-md-3">
                             <button id="quickVerifyBtn" class="quick-menu-card btn btn-ghost {{ $studentAlreadyVerifiedToday ? 'disabled' : '' }}" type="button" {{ $studentAlreadyVerifiedToday ? 'disabled' : '' }}>
                                 <div class="qm-icon" style="background:#06b6d4;"><i class="ti ti-lock-open"></i></div>
@@ -191,22 +191,33 @@
         </div>
     </div>
 </div>
-@if(isset($activeVerification) && $activeVerification)
+@if((isset($activeVerification) && $activeVerification) || (isset($activeManualVerification) && $activeManualVerification))
     @push('js')
-    <!-- Modal for verification code input -->
+    <!-- Modal for verification code input / manual verification -->
     <div class="modal fade" id="verifyCodeModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Verifikasi Absen</h5>
+                        <h5 class="modal-title">{{ isset($verificationMode) && $verificationMode === 'manual' ? 'Verifikasi Absen' : 'Verifikasi Absen' }}</h5>
                         <button type="button" class="btn-close close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close">&times;</button>
                     </div>
           <div class="modal-body">
-            <div class="mb-2">
-              <label for="verifyCodeInput" class="form-label small">Masukkan kode verifikasi</label>
-              <input id="verifyCodeInput" class="form-control" maxlength="20" autocomplete="off" />
-            </div>
-            <div id="verifyCodeAlert" class="alert d-none" role="alert"></div>
+            @if(isset($verificationMode) && $verificationMode === 'manual')
+              <!-- Manual Verification Mode -->
+              <div class="alert alert-info" role="alert">
+                <i class="ti ti-info-circle me-2"></i>
+                <strong>Verifikasi Manual</strong>
+                <p class="mt-2 mb-0">Klik tombol "Verifikasi" di bawah untuk memverifikasi kehadiran Anda hari ini.</p>
+              </div>
+              <div id="verifyCodeAlert" class="alert d-none" role="alert"></div>
+            @else
+              <!-- Code Verification Mode -->
+              <div class="mb-2">
+                <label for="verifyCodeInput" class="form-label small">Masukkan kode verifikasi</label>
+                <input id="verifyCodeInput" class="form-control" maxlength="20" autocomplete="off" />
+              </div>
+              <div id="verifyCodeAlert" class="alert d-none" role="alert"></div>
+            @endif
           </div>
           <div class="modal-footer">
             <button type="button" id="verifyCodeSubmit" class="btn btn-primary">Verifikasi</button>
@@ -228,6 +239,7 @@
             var studentAlreadyVerifiedToday = {{ !empty($studentAlreadyVerifiedToday) ? 'true' : 'false' }};
             var verificationExpiresAtTimestamp = parseInt('{{ $verificationExpiresAtTimestamp ?? '' }}', 10);
             var verificationExpiresAtRaw = '{{ $verificationExpiresAt ?? '' }}';
+            var verificationMode = '{{ $verificationMode ?? '' }}';
 
             if (!isNaN(verificationExpiresAtTimestamp) && verificationExpiresAtTimestamp > 0 && verificationExpiresAtTimestamp < 1000000000000) {
                 // Convert seconds to milliseconds if needed.
@@ -300,20 +312,28 @@
             }
 
             btn.addEventListener('click', function(){
-                if (verifyInput) verifyInput.value = '';
+                if (verifyInput && verificationMode !== 'manual') {
+                    verifyInput.value = '';
+                }
                 if (verifyAlert) verifyAlert.classList.add('d-none');
                 if (bootstrapModal) {
                     bootstrapModal.show();
                 } else if (usingJQueryModal) {
                     jQuery(modalEl).modal('show');
                 } else {
-                    // fallback: simple prompt
-                    var kodeFallback = prompt('Masukkan kode verifikasi');
-                    if (!kodeFallback) return;
-                    submitVerificationCode(kodeFallback);
+                    // fallback: simple prompt for code mode
+                    if (verificationMode === 'manual') {
+                        submitVerificationCode(null);
+                    } else {
+                        var kodeFallback = prompt('Masukkan kode verifikasi');
+                        if (!kodeFallback) return;
+                        submitVerificationCode(kodeFallback);
+                    }
                     return;
                 }
-                setTimeout(function(){ if (verifyInput) verifyInput.focus(); }, 250);
+                if (verifyInput && verificationMode !== 'manual') {
+                    setTimeout(function(){ if (verifyInput) verifyInput.focus(); }, 250);
+                }
             });
 
             function showAlert(message, type){
@@ -329,15 +349,26 @@
             }
 
             function submitVerificationCode(kode) {
-                if (!kode) { showAlert('Masukkan kode verifikasi terlebih dahulu.', 'warning'); if (verifyInput) verifyInput.focus(); return; }
+                if (verificationMode !== 'manual' && !kode) { 
+                    showAlert('Masukkan kode verifikasi terlebih dahulu.', 'warning');
+                    if (verifyInput) verifyInput.focus();
+                    return;
+                }
                 verifySubmit.disabled = true;
+                var payload = { 
+                    ...({{ auth()->user()->siswa->kelas_id ?? '' }} ? {kelas_id: '{{ auth()->user()->siswa->kelas_id }}'} : {}), 
+                    tanggal: '{{ date('Y-m-d') }}'
+                };
+                if (kode) {
+                    payload.kode = kode;
+                }
                 fetch('{{ route('absensi.verify.student') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({ kode: kode, ...({{ auth()->user()->siswa->kelas_id ?? '' }} ? {kelas_id: '{{ auth()->user()->siswa->kelas_id }}'} : {}), tanggal: '{{ date('Y-m-d') }}' })
+                    body: JSON.stringify(payload)
                 }).then(function(resp){ return resp.json(); }).then(function(json){
                     verifySubmit.disabled = false;
                     if (json && json.success) {

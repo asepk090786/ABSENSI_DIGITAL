@@ -140,6 +140,8 @@ Route::middleware(['auth'])->group(function(){
     Route::get('absensi/get-siswa', ['App\Http\Controllers\AbsensiController', 'getSiswa'])->name('absensi.get-siswa');
     Route::post('absensi/verification/refresh', ['App\Http\Controllers\AbsensiController', 'refreshVerification'])->name('absensi.verification.refresh');
     Route::post('absensi/verification/save', ['App\Http\Controllers\AbsensiController', 'saveVerificationConfig'])->name('absensi.verification.save');
+    Route::post('absensi/verification/manual/save', ['App\Http\Controllers\AbsensiController', 'saveManualVerificationConfig'])->name('absensi.verification.manual.save');
+    Route::post('absensi/verification/load-state', ['App\Http\Controllers\AbsensiController', 'loadVerificationState'])->name('absensi.verification.load-state');
     Route::get('absensi/generate', ['App\Http\Controllers\AbsensiController', 'generateForm'])->name('absensi.generate.form');
     Route::post('absensi/generate', ['App\Http\Controllers\AbsensiController', 'generateStore'])->name('absensi.generate.store');
     Route::delete('absensi/delete-by-date', ['App\Http\Controllers\AbsensiController', 'destroyByDate'])->name('absensi.destroy-by-date');

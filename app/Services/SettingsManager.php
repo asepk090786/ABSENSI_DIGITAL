@@ -28,11 +28,52 @@ class SettingsManager
         return sys_get_temp_dir() . '/absensi_settings.json';
     }
 
+    protected function candidatePaths(): array
+    {
+        $candidates = [
+            $this->path,
+            function_exists('storage_path') ? storage_path('app/settings.json') : null,
+            function_exists('public_path') ? public_path('uploads/settings.json') : null,
+            sys_get_temp_dir() . '/absensi_settings.json',
+        ];
+
+        return array_values(array_unique(array_filter(array_map('strval', $candidates), fn ($candidate) => $candidate !== '')));
+    }
+
     public function all()
     {
-        if (! file_exists($this->path)) return [];
-        $json = file_get_contents($this->path);
-        return json_decode($json, true) ?: [];
+        $latestData = [];
+        $latestPath = null;
+        $latestTimestamp = null;
+
+        foreach ($this->candidatePaths() as $candidate) {
+            if (! file_exists($candidate)) {
+                continue;
+            }
+
+            $mtime = filemtime($candidate);
+            $json = @file_get_contents($candidate);
+            if ($json === false) {
+                continue;
+            }
+
+            $data = json_decode($json, true);
+            if (! is_array($data)) {
+                continue;
+            }
+
+            if ($latestTimestamp === null || $mtime >= $latestTimestamp) {
+                $latestData = $data;
+                $latestPath = $candidate;
+                $latestTimestamp = $mtime;
+            }
+        }
+
+        if ($latestPath) {
+            $this->path = $latestPath;
+        }
+
+        return $latestData;
     }
 
     public function get($key, $default = null)
@@ -46,20 +87,37 @@ class SettingsManager
         $all = $this->all();
         data_set($all, $key, $value);
 
-        $this->path = $this->resolveWritablePath($this->path);
-        $dir = dirname($this->path);
-        if (! is_dir($dir)) {
-            @mkdir($dir, 0755, true);
-        }
-
         $json = json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         if ($json === false) {
             $json = '{}';
         }
 
-        $written = @file_put_contents($this->path, $json);
-        if ($written === false) {
-            throw new \RuntimeException('Unable to write settings file: ' . $this->path);
+        $written = false;
+        $targetPath = null;
+
+        foreach ($this->candidatePaths() as $candidate) {
+            $dir = dirname($candidate);
+            if (! is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+
+            if (! is_dir($dir) || ! is_writable($dir)) {
+                continue;
+            }
+
+            $result = @file_put_contents($candidate, $json);
+            if ($result !== false) {
+                $targetPath = $candidate;
+                $written = true;
+            }
+        }
+
+        if ($targetPath) {
+            $this->path = $targetPath;
+        }
+
+        if (! $written) {
+            throw new \RuntimeException('Unable to write settings file. No writable settings path available.');
         }
     }
 
@@ -67,12 +125,12 @@ class SettingsManager
     {
         $candidates = [
             $preferredPath,
-            storage_path('app/settings.json'),
-            public_path('uploads/settings.json'),
+            function_exists('storage_path') ? storage_path('app/settings.json') : null,
+            function_exists('public_path') ? public_path('uploads/settings.json') : null,
             sys_get_temp_dir() . '/absensi_settings.json',
         ];
 
-        foreach ($candidates as $candidate) {
+        foreach (array_filter(array_map('strval', $candidates), fn ($candidate) => $candidate !== '') as $candidate) {
             $dir = dirname($candidate);
             if (! is_dir($dir)) {
                 @mkdir($dir, 0755, true);

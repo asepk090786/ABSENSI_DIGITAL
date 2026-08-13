@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\KomponenNilai;
 use App\Models\CapaianPembelajaran;
+use App\Models\Guru;
 use App\Exports\KomponenNilaiExport;
 use App\Exports\KomponenNilaiTemplateExport;
 use App\Imports\KomponenNilaiImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 
 class KomponenNilaiController extends Controller
@@ -48,14 +50,70 @@ class KomponenNilaiController extends Controller
         return $query;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $items = $this->scopedKomponenQuery()
-            ->with(['capaianPembelajaran', 'rencanaPembelajaran.guru', 'rencanaPembelajaran.mataPelajaran'])
-            ->orderBy('nama_komponen')
-            ->get();
+        $guruId = $request->query('guru_id');
+        $guruList = Guru::orderBy('nama')->get(['id', 'nama', 'nip']);
+
+        $query = $this->scopedKomponenQuery()
+            ->with(['capaianPembelajaran', 'rencanaPembelajaran.guru', 'rencanaPembelajaran.mataPelajaran', 'rencanaPembelajaran.kelas']);
+
+        if ($guruId) {
+            $query->whereHas('rencanaPembelajaran', function ($q) use ($guruId) {
+                $q->where('guru_id', $guruId);
+            });
+        }
+
+        $items = $query->orderBy('nama_komponen')->get();
+
+        $groupedRows = [];
+        foreach ($items as $item) {
+            $rencanas = $item->rencanaPembelajaran;
+            if ($rencanas->isEmpty()) {
+                $groupedRows[] = [
+                    'komponen' => $item,
+                    'guru' => null,
+                    'mapel' => [],
+                    'cp' => null,
+                    'kelas' => [],
+                    'rencana' => null,
+                ];
+                continue;
+            }
+
+            $byGuruCpHtml = [];
+            foreach ($rencanas as $rencana) {
+                $guru = $rencana->guru;
+                $cp = $item->capaianPembelajaran;
+                $key = ($guru ? $guru->id : 'null') . '|' . ($cp ? $cp->id : 'null');
+
+                if (! isset($byGuruCpHtml[$key])) {
+                    $byGuruCpHtml[$key] = [
+                        'komponen' => $item,
+                        'guru' => $guru,
+                        'cp' => $cp,
+                        'mapel' => [],
+                        'kelas' => [],
+                    ];
+                }
+
+                if ($rencana->mataPelajaran && ! in_array($rencana->mataPelajaran, $byGuruCpHtml[$key]['mapel'], true)) {
+                    $byGuruCpHtml[$key]['mapel'][] = $rencana->mataPelajaran;
+                }
+
+                if ($rencana->kelas && ! in_array($rencana->kelas, $byGuruCpHtml[$key]['kelas'], true)) {
+                    $byGuruCpHtml[$key]['kelas'][] = $rencana->kelas;
+                }
+            }
+
+            foreach ($byGuruCpHtml as $row) {
+                $groupedRows[] = $row;
+            }
+        }
+
         $capaianList = $this->scopedCapaianQuery()->orderBy('nama_capaian_pembelajaran')->get();
-        return view('komponen_nilai.index', compact('items', 'capaianList'));
+
+        return view('komponen_nilai.index', compact('items', 'capaianList', 'groupedRows', 'guruList', 'guruId'));
     }
 
     public function store(Request $request)

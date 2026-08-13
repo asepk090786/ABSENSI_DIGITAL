@@ -64,7 +64,7 @@ class ProfileController extends Controller
                 $base64 = $matches[2];
                 $decoded = base64_decode(str_replace(' ', '+', $base64));
 
-                if ($decoded !== false) {
+                if ($decoded !== false && strlen($decoded) <= 2 * 1024 * 1024) {
                     if ($user->foto && Storage::disk('public')->exists($user->foto)) {
                         Storage::disk('public')->delete($user->foto);
                     }

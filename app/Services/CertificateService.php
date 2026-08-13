@@ -423,23 +423,20 @@ class CertificateService
         $canvasWidth = max(1, $canvasWidth);
         $canvasHeight = max(1, $canvasHeight);
 
-        $scale = min($canvasWidth / $imageWidth, $canvasHeight / $imageHeight);
-        $scale = max($scale, 0.0001);
-
         $normalized = $position;
 
         if (array_key_exists('x_ratio', $position) || array_key_exists('x_percent', $position)) {
             $xValue = $position['x_ratio'] ?? $position['x_percent'] ?? null;
-            $normalized['x'] = (int) round(($this->resolveRatioValue($xValue, $canvasWidth) / $scale));
+            $normalized['x'] = $this->resolveRatioValue($xValue, $imageWidth);
         } elseif (array_key_exists('x', $position) || array_key_exists('left', $position)) {
-            $normalized['x'] = (int) round((($position['x'] ?? $position['left'] ?? 0) / $scale));
+            $normalized['x'] = (int) round($position['x'] ?? $position['left'] ?? 0);
         }
 
         if (array_key_exists('y_ratio', $position) || array_key_exists('y_percent', $position)) {
             $yValue = $position['y_ratio'] ?? $position['y_percent'] ?? null;
-            $normalized['y'] = (int) round(($this->resolveRatioValue($yValue, $canvasHeight) / $scale));
+            $normalized['y'] = $this->resolveRatioValue($yValue, $imageHeight);
         } elseif (array_key_exists('y', $position) || array_key_exists('top', $position)) {
-            $normalized['y'] = (int) round((($position['y'] ?? $position['top'] ?? 0) / $scale));
+            $normalized['y'] = (int) round($position['y'] ?? $position['top'] ?? 0);
         }
 
         if (!empty($position['font_size'])) {
