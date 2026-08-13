@@ -434,7 +434,7 @@ class PengembanganController extends Controller
                         'bukti_dukung_daftar_hadir' => $buktiDukung['daftar_hadir'] ?? null,
                         'bukti_dukung_dokumentasi' => $buktiDukung['dokumentasi'] ?: null,
                         'bukti_dukung_materi' => $buktiDukung['materi'] ?: null,
-                    'is_visible' => true,
+                        'is_visible' => true,
                     ]);
                 }
             }

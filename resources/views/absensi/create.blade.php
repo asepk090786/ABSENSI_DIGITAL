@@ -26,6 +26,29 @@
         overflow-y: auto;
     }
 
+    /* Toast animation */
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+
     /* List thumbnail: portrait 2:3 for clearer visibility */
     .student-photo {
         width: 60px; /* 2 */
@@ -232,6 +255,11 @@
                     </div>
                     @endif
 
+                    <!-- Notification Toast Area -->
+                    <div id="verificationNotificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
+                        <!-- Toast notifications will be added here -->
+                    </div>
+
                     <form action="{{ route('absensi.store') }}" method="POST" id="formAbsensi">
                         @csrf
 
@@ -280,44 +308,71 @@
                                     <input class="form-check-input" type="checkbox" id="loadClassAttendanceToggle" name="load_class_attendance" value="1" {{ old('load_class_attendance') ? 'checked' : '' }}>
                                     <label class="form-check-label" for="loadClassAttendanceToggle">Ambil data absensi kelas</label>
                                 </div>
-                                <div class="form-text text-muted">
+                                <div class="form-text text-muted small">
                                     Jika aktif, tabel kehadiran akan terisi otomatis dari absensi kelas yang sudah diisi oleh siswa pada tanggal ini.
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-check form-switch mt-3 pt-2">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="form-check form-switch m-0">
-                                            <input class="form-check-input" type="checkbox" id="verifikasiToggle" name="verifikasi_aktif" value="1" {{ old('verifikasi_aktif', ($verificationActive ?? false)) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="verifikasiToggle">Aktifkan Kode Verifikasi</label>
+                                    <input class="form-check-input" type="checkbox" id="verifikasiManualToggle" name="verifikasi_manual_aktif" value="1" {{ old('verifikasi_manual_aktif', ($verificationManualActive ?? false)) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="verifikasiManualToggle">Aktifkan Verifikasi Manual</label>
+                                </div>
+                                <div class="form-text text-muted small">
+                                    Jika aktif, siswa dapat melakukan verifikasi absensi sendiri tanpa perlu kode.
+                                </div>
+                                <div id="verificationManualSaveAlert" class="alert alert-sm d-none mt-2 mb-0 py-2 px-3" role="alert" style="font-size: 0.85rem;"></div>
+                                <div id="verificationManualStatusMessage" class="form-text text-success small mt-2" style="display:none;"></div>
+                            </div>
+                            <div class="col-12">
+                                <hr class="my-3">
+                            </div>
+                            <div class="col-12">
+                                <div class="card card-sm border-light bg-light">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-start justify-content-between gap-3">
+                                            <div class="flex-grow-1">
+                                                <div class="form-check form-switch m-0">
+                                                    <input class="form-check-input" type="checkbox" id="verifikasiToggle" name="verifikasi_aktif" value="1" {{ old('verifikasi_aktif', ($verificationActive ?? false)) ? 'checked' : '' }}>
+                                                    <label class="form-check-label fw-5" for="verifikasiToggle">Aktifkan Kode Verifikasi</label>
+                                                </div>
+                                                <div class="form-text text-muted small mt-1">
+                                                    Sistem akan menampilkan kode verifikasi yang harus digunakan siswa saat absen. Kode akan otomatis diperbarui setelah waktu habis.
+                                                </div>
+                                            </div>
+                                            <button type="button" id="saveVerificationConfigBtn" class="btn btn-sm btn-primary ms-2 flex-shrink-0">Simpan</button>
                                         </div>
-                                        <button type="button" id="saveVerificationConfigBtn" class="btn btn-sm btn-primary">Simpan</button>
-                                        <div>
-                                            <label class="form-label mb-0 small">Masa berlaku</label>
-                                            <div class="d-flex gap-2 align-items-center">
-                                                <input type="time" id="verificationValidFrom" name="verification_valid_from" class="form-control form-control-sm" value="{{ old('verification_valid_from', $verificationValidFrom ?? '') }}" placeholder="Dari">
-                                                <span class="text-muted">s.d.</span>
-                                                <input type="time" id="verificationValidTo" name="verification_valid_to" class="form-control form-control-sm" value="{{ old('verification_valid_to', $verificationValidTo ?? '') }}" placeholder="Sampai">
-                                                <div id="verificationCodeInline" class="d-flex align-items-center gap-2 ms-3" style="{{ ($verificationActive ?? false) && ($verificationCode ?? '') ? 'display:flex;' : 'display:none;' }}">
-                                                    <span class="badge bg-primary">Kode</span>
-                                                    <span id="verificationCodeInlineLabel" class="fw-bold bg-secondary text-white px-2 py-1 rounded">{{ $verificationCode ?? '-' }}</span>
+                                        
+                                        <div id="verificationCodeConfigSection" style="display:none;">
+                                            <div class="row mt-3 g-2">
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-5 mb-2">Masa berlaku kode verifikasi</label>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <input type="time" id="verificationValidFrom" name="verification_valid_from" class="form-control form-control-sm" value="{{ old('verification_valid_from', $verificationValidFrom ?? '') }}" placeholder="Dari" style="width: 120px;">
+                                                </div>
+                                                <div class="col-auto">
+                                                    <span class="text-muted small">s.d.</span>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <input type="time" id="verificationValidTo" name="verification_valid_to" class="form-control form-control-sm" value="{{ old('verification_valid_to', $verificationValidTo ?? '') }}" placeholder="Sampai" style="width: 120px;">
+                                                </div>
+                                                <div class="col-auto ms-auto">
+                                                    <div id="verificationCodeInline" class="d-flex align-items-center gap-2" style="{{ ($verificationActive ?? false) && ($verificationCode ?? '') ? 'display:flex !important;' : 'display:none;' }}">
+                                                        <span class="badge bg-primary">Kode</span>
+                                                        <span id="verificationCodeInlineLabel" class="fw-bold bg-secondary text-white px-2 py-1 rounded" style="font-size: 0.9rem;">{{ $verificationCode ?? '-' }}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        
+                                        <div id="verificationSaveAlert" class="alert alert-sm d-none mt-3 mb-0 py-2 px-3" role="alert" style="font-size: 0.85rem;"></div>
+                                        <div id="verificationCodeBox" class="alert alert-success d-none mt-3 p-3" style="display:none;">
+                                            <div class="mb-2"><strong>Kode Verifikasi Aktif:</strong> <span id="verificationCodeLabel" class="fw-bold" style="font-size:1.5rem; letter-spacing:0.1em; font-family: monospace;">-</span></div>
+                                            <div class="small text-muted mb-0" id="verificationCountdown">Kode akan kadaluarsa dalam --:--.</div>
+                                        </div>
+                                        <div id="verificationStatusMessage" class="form-text text-success small mt-2" style="display:none;"></div>
                                     </div>
                                 </div>
-                                <div class="form-text text-muted">
-                                    Jika aktif, sistem akan menampilkan kode verifikasi yang harus digunakan siswa saat absen.
-                                </div>
-                                <div class="form-text text-muted mt-1">
-                                    Kode akan otomatis direfresh setelah waktu habis.
-                                </div>
-                                <div id="verificationSaveAlert" class="alert d-none mt-2" role="alert"></div>
-                                <div id="verificationCodeBox" class="alert alert-success mt-3 p-2" style="display:none;">
-                                    <div><strong>Kode Verifikasi:</strong> <span id="verificationCodeLabel" class="fs-3 fw-bold" style="font-size:1.75rem; letter-spacing:0.12em;">-</span></div>
-                                    <div class="small text-muted mt-2" id="verificationCountdown">Kode akan kadaluarsa dalam --:--.</div>
-                                </div>
-                                <div id="verificationStatusMessage" class="form-text text-success mt-2" style="display:none;"></div>
                                 <input type="hidden" name="kode_verifikasi" id="kode_verifikasi" value="{{ old('kode_verifikasi', $verificationCode ?? '') }}">
                                 <input type="hidden" name="kode_verifikasi_expires_at" id="kode_verifikasi_expires_at" value="{{ old('kode_verifikasi_expires_at', $verificationExpiresAt ?? '') }}">
                                 <input type="hidden" id="kode_verifikasi_expires_at_timestamp" value="{{ $verificationExpiresAtTimestamp ?? '' }}">
@@ -412,16 +467,48 @@
                             <strong>Semester:</strong> {{ $semester->nama_semester ?? '-' }}
                         </div>
 
-                        
-                        @if($isGuruPiket ?? false)
-                        <div class="d-flex gap-2 mb-3">
-                            <div class="btn-group" role="group" aria-label="Absensi Type">
-                                <button type="button" id="tabSiswaBtn" class="btn btn-sm btn-primary active">Siswa</button>
-                                <button type="button" id="tabGuruBtn" class="btn btn-sm btn-outline-secondary">Guru</button>
+                        <!-- Verification Statistics Widget -->
+                        <div id="verificationStatsContainer" style="display: none;" class="mb-4">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div style="font-size: 24px; color: #0ea5e9; margin-bottom: 8px;"><i class="ti ti-users"></i></div>
+                                            <div style="font-size: 28px; font-weight: bold; color: #0ea5e9;" id="statTotalSiswa">0</div>
+                                            <div style="font-size: 13px; color: #6b7280;">Total Siswa</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div style="font-size: 24px; color: #10b981; margin-bottom: 8px;"><i class="ti ti-circle-check"></i></div>
+                                            <div style="font-size: 28px; font-weight: bold; color: #10b981;" id="statVerified">0</div>
+                                            <div style="font-size: 13px; color: #6b7280;">Sudah Verifikasi</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div style="font-size: 24px; color: #f59e0b; margin-bottom: 8px;"><i class="ti ti-hourglass-empty"></i></div>
+                                            <div style="font-size: 28px; font-weight: bold; color: #f59e0b;" id="statNotYet">0</div>
+                                            <div style="font-size: 13px; color: #6b7280;">Belum Verifikasi</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div style="font-size: 24px; color: #8b5cf6; margin-bottom: 8px;"><i class="ti ti-percentage"></i></div>
+                                            <div style="font-size: 28px; font-weight: bold; color: #8b5cf6;" id="statPercentage">0%</div>
+                                            <div style="font-size: 13px; color: #6b7280;">Persentase</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        @endif
-
+                        
                         <div id="siswaContainer" style="display: none;">
                             <div class="card mt-4">
                                 <div class="card-header bg-success-subtle d-flex flex-wrap align-items-center gap-3">
@@ -646,6 +733,82 @@
             verificationFromInput.value = hours + ':' + minutes;
         }
 
+        // Function to load verification state from database when kelas/tanggal changes
+        function loadVerificationState() {
+            var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
+            var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
+            var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
+
+            if (!kelasId || !tanggalVal) {
+                return;
+            }
+
+            fetch('{{ route('absensi.verification.load-state') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    kelas_id: kelasId,
+                    tanggal: tanggalVal,
+                    jam_belajar_id: jamId || null
+                })
+            }).then(function(resp){
+                return resp.json().then(function(json) {
+                    return { ok: resp.ok, status: resp.status, body: json };
+                }).catch(function() {
+                    return { ok: resp.ok, status: resp.status, body: null };
+                });
+            }).then(function(result){
+                if (!result.ok || !result.body || !result.body.success) {
+                    console.warn('Failed to load verification state:', result.body);
+                    return;
+                }
+
+                var json = result.body;
+                var verificationManualToggle = document.getElementById('verifikasiManualToggle');
+                var verificationToggle = document.getElementById('verifikasiToggle');
+                var verificationHidden = document.getElementById('kode_verifikasi');
+                var verificationExpiresAtInput = document.getElementById('kode_verifikasi_expires_at');
+                var verificationExpiresAtTimestamp = document.getElementById('kode_verifikasi_expires_at_timestamp');
+                var verificationValidFromInput = document.getElementById('verificationValidFrom');
+                var verificationValidToInput = document.getElementById('verificationValidTo');
+
+                // Update manual verification toggle
+                if (verificationManualToggle) {
+                    verificationManualToggle.checked = !!json.verificationManualActive;
+                }
+
+                // Update kode verifikasi toggle and values
+                if (verificationToggle) {
+                    verificationToggle.checked = !!json.verificationActive;
+                }
+
+                if (json.verificationActive && json.verificationCode) {
+                    if (verificationHidden) verificationHidden.value = json.verificationCode;
+                    if (verificationExpiresAtInput) verificationExpiresAtInput.value = json.verificationExpiresAt || '';
+                    if (verificationExpiresAtTimestamp) verificationExpiresAtTimestamp.value = json.verificationExpiresAtTimestamp || '';
+                    if (verificationValidFromInput) verificationValidFromInput.value = json.verificationValidFrom || '';
+                    if (verificationValidToInput) verificationValidToInput.value = json.verificationValidTo || '';
+                } else {
+                    if (verificationHidden) verificationHidden.value = '';
+                    if (verificationExpiresAtInput) verificationExpiresAtInput.value = '';
+                    if (verificationExpiresAtTimestamp) verificationExpiresAtTimestamp.value = '';
+                }
+
+                // Update UI to match toggle states
+                if (typeof updateVerificationUi === 'function') {
+                    updateVerificationUi();
+                }
+                if (typeof updateVerificationMutualExclusivity === 'function') {
+                    updateVerificationMutualExclusivity();
+                }
+            }).catch(function(err){
+                console.error('Error loading verification state:', err);
+            });
+        }
+
         // Trigger load siswa jika ada kelas yang sudah dipilih saat page load
         if (kelasSelect && kelasSelect.value) {
             console.log('Preselected kelas detected, refreshing guru/jam and loading siswa for kelas:', kelasSelect.value);
@@ -653,6 +816,10 @@
                 renderGuruOptionsByKelasTanggal();
                 renderJamOptionsByGuru();
                 loadSiswaByKelas(kelasSelect.value);
+                // Load verification state from database
+                if (typeof loadVerificationState === 'function') {
+                    loadVerificationState();
+                }
             }, 100);
         }
 
@@ -1065,23 +1232,8 @@
         if (viewListBtn) viewListBtn.addEventListener('click', function(){ applyViewMode('list', true); });
         if (viewGridBtn) viewGridBtn.addEventListener('click', function(){ applyViewMode('grid', true); });
 
-        if (kelasSelect) {
-            kelasSelect.addEventListener('change', function() {
-                console.log('Kelas changed to:', this.value);
-                renderGuruOptionsByKelasTanggal();
-                renderJamOptionsByGuru();
-                updateVerificationUi();
-                if (this.value) {
-                    loadSiswaByKelas(this.value);
-                } else {
-                    siswaContainer.style.display = 'none';
-                    siswaTableBody.innerHTML = '<tr><td colspan="' + (isGuruPiket ? '10' : '11') + '" class="text-center text-muted"><i class="ti ti-info-circle me-1"></i>Pilih kelas untuk menampilkan daftar siswa</td></tr>';
-                    btnSubmit.disabled = true;
-                }
-            });
-        }
-
         var verificationToggle = document.getElementById('verifikasiToggle');
+        var verificationManualToggle = document.getElementById('verifikasiManualToggle');
         var verificationCodeBox = document.getElementById('verificationCodeBox');
         var verificationCodeLabel = document.getElementById('verificationCodeLabel');
         var verificationCodeInline = document.getElementById('verificationCodeInline');
@@ -1090,6 +1242,8 @@
         var verificationHidden = document.getElementById('kode_verifikasi');
         var verificationSaveAlert = document.getElementById('verificationSaveAlert');
         var verificationStatusMessage = document.getElementById('verificationStatusMessage');
+        var verificationManualSaveAlert = document.getElementById('verificationManualSaveAlert');
+        var verificationManualStatusMessage = document.getElementById('verificationManualStatusMessage');
         var saveVerificationConfigBtn = document.getElementById('saveVerificationConfigBtn');
         var verificationTimeoutSeconds = {{ $verificationTimeoutSeconds ?? 300 }};
         var verificationRemainingSeconds = verificationTimeoutSeconds;
@@ -1159,8 +1313,26 @@
             verificationRemainingSeconds = Math.max(0, parseInt(verificationRemainingSeconds ?? verificationTimeoutSeconds, 10));
             updateVerificationCountdownMessage();
             verificationTimerInterval = setInterval(function() {
+                if (verificationIsRefreshing) {
+                    return;
+                }
+
                 verificationRemainingSeconds -= 1;
                 if (verificationRemainingSeconds <= 0) {
+                    if (verificationToggle && verificationToggle.checked) {
+                        if (verificationCodeBox) {
+                            verificationCodeBox.style.display = 'none';
+                        }
+                        if (verificationHidden) {
+                            verificationHidden.value = '';
+                        }
+                        if (verificationCountdown) {
+                            verificationCountdown.textContent = 'Memperbarui kode verifikasi...';
+                        }
+                        refreshVerificationCode();
+                        return;
+                    }
+
                     if (verificationTimerInterval) {
                         clearInterval(verificationTimerInterval);
                         verificationTimerInterval = null;
@@ -1181,6 +1353,10 @@
         }
 
         function refreshVerificationCode() {
+            if (verificationIsRefreshing) {
+                return;
+            }
+
             // call server endpoint to generate and persist code
             var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
             var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
@@ -1194,6 +1370,7 @@
                 var fallback = '';
                 var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
                 for (var i = 0; i < 6; i++) fallback += chars.charAt(Math.floor(Math.random() * chars.length));
+                verificationIsRefreshing = false;
                 setVerificationCodeLocal(fallback, verificationTimeoutSeconds);
                 return;
             }
@@ -1220,9 +1397,11 @@
                 if (data && data.success) {
                     setVerificationCodeLocal(data.kode, data.timeout_seconds, data.expires_at_timestamp);
                 } else {
+                    verificationIsRefreshing = false;
                     console.warn('Failed to refresh verification code', data);
                 }
             }).catch(function(err){
+                verificationIsRefreshing = false;
                 console.error('Error refreshing verification code', err);
             });
         }
@@ -1247,9 +1426,10 @@
             if (typeof expiresAt !== 'undefined' && expiresAt) {
                 var now = Date.now();
                 var expiresAtTimestamp = parseInt(expiresAt, 10);
-                if (!isNaN(expiresAtTimestamp)) {
-                    verificationRemainingSeconds = Math.max(0, Math.round((expiresAtTimestamp - now) / 1000));
+                if (!isNaN(expiresAtTimestamp) && expiresAtTimestamp > now) {
+                    verificationRemainingSeconds = Math.max(1, Math.round((expiresAtTimestamp - now) / 1000));
                 } else {
+                    // Jika timestamp invalid atau sudah terlewat, gunakan timeout default
                     verificationRemainingSeconds = verificationTimeoutSeconds;
                 }
             } else {
@@ -1324,7 +1504,11 @@
                 return;
             }
 
+            var verificationCodeConfigSection = document.getElementById('verificationCodeConfigSection');
             if (verificationToggle.checked) {
+                if (verificationCodeConfigSection) {
+                    verificationCodeConfigSection.style.display = 'block';
+                }
                 if (!verificationHidden || !verificationHidden.value) {
                     refreshVerificationCode();
                 } else {
@@ -1351,6 +1535,9 @@
                     startVerificationTimer();
                 }
             } else {
+                if (verificationCodeConfigSection) {
+                    verificationCodeConfigSection.style.display = 'none';
+                }
                 if (verificationTimerInterval) {
                     clearInterval(verificationTimerInterval);
                     verificationTimerInterval = null;
@@ -1462,8 +1649,129 @@
             });
         }
 
+        function updateVerificationMutualExclusivity() {
+            // Membuat kedua toggle saling eksklusif
+            if (verificationToggle && verificationToggle.checked) {
+                if (verificationManualToggle) {
+                    verificationManualToggle.checked = false;
+                    verificationManualToggle.disabled = true;
+                }
+                if (verificationManualStatusMessage) {
+                    verificationManualStatusMessage.style.display = 'none';
+                }
+            } else if (verificationManualToggle && verificationManualToggle.checked) {
+                if (verificationToggle) {
+                    verificationToggle.disabled = true;
+                }
+                if (saveVerificationConfigBtn) {
+                    saveVerificationConfigBtn.disabled = true;
+                    saveVerificationConfigBtn.style.opacity = '0.5';
+                    saveVerificationConfigBtn.title = 'Nonaktifkan Verifikasi Manual terlebih dahulu';
+                }
+                // Tampilkan indikator bahwa verifikasi manual aktif
+                if (verificationManualStatusMessage) {
+                    verificationManualStatusMessage.style.display = 'block';
+                    verificationManualStatusMessage.textContent = 'Mode Verifikasi Manual aktif';
+                }
+            } else {
+                if (verificationToggle) {
+                    verificationToggle.disabled = false;
+                }
+                if (saveVerificationConfigBtn) {
+                    saveVerificationConfigBtn.disabled = false;
+                    saveVerificationConfigBtn.style.opacity = '1';
+                    saveVerificationConfigBtn.title = '';
+                }
+                if (verificationManualToggle) {
+                    verificationManualToggle.disabled = false;
+                }
+                if (verificationManualStatusMessage) {
+                    verificationManualStatusMessage.style.display = 'none';
+                }
+            }
+        }
+
+        var verificationManualAutoSaveTimeout = null;
+
+        function showVerificationManualAlert(message, type, autoDismiss) {
+            if (!verificationManualSaveAlert) return;
+            verificationManualSaveAlert.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
+            verificationManualSaveAlert.classList.add('alert-' + (type || 'info'));
+            verificationManualSaveAlert.textContent = message;
+            verificationManualSaveAlert.style.fontSize = '0.85rem';
+            
+            if (autoDismiss) {
+                if (verificationManualAutoSaveTimeout) clearTimeout(verificationManualAutoSaveTimeout);
+                verificationManualAutoSaveTimeout = setTimeout(function() {
+                    verificationManualSaveAlert.classList.add('d-none');
+                    verificationManualAutoSaveTimeout = null;
+                }, 2500);
+            }
+        }
+
+        function saveManualVerificationConfig() {
+            var kelasId = document.getElementById('kelas_id') ? document.getElementById('kelas_id').value : null;
+            var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
+            var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
+            var active = verificationManualToggle ? verificationManualToggle.checked : false;
+
+            if (!kelasId || !tanggalVal) {
+                showVerificationManualAlert('Silakan pilih kelas dan tanggal terlebih dahulu.', 'warning', true);
+                return;
+            }
+
+            showVerificationManualAlert(active ? 'Menyimpan...' : 'Menonaktifkan...', 'info', false);
+
+            fetch('{{ route('absensi.verification.manual.save') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    kelas_id: kelasId,
+                    tanggal: tanggalVal,
+                    jam_belajar_id: jamId || null,
+                    verifikasi_manual_aktif: active ? 1 : 0
+                })
+            }).then(function(resp){
+                return resp.json().then(function(json) {
+                    return { ok: resp.ok, status: resp.status, body: json };
+                }).catch(function() {
+                    return { ok: resp.ok, status: resp.status, body: null };
+                });
+            }).then(function(result){
+                var json = result.body || {};
+                if (result.ok && json.success) {
+                    showVerificationManualAlert('✓ Tersimpan', 'success', true);
+                    if (active && verificationToggle) {
+                        verificationToggle.checked = false;
+                    }
+                    updateVerificationMutualExclusivity();
+                } else {
+                    var message = json.message || 'Gagal menyimpan konfigurasi.';
+                    if (json.errors) {
+                        message = Object.values(json.errors).flat().join(' ');
+                    }
+                    showVerificationManualAlert('✕ ' + message, 'danger', false);
+                }
+            }).catch(function(err){
+                console.error(err);
+                showVerificationManualAlert('✕ Terjadi kesalahan', 'danger', false);
+            });
+        }
+
         if (verificationToggle) {
-            verificationToggle.addEventListener('change', updateVerificationUi);
+            verificationToggle.addEventListener('change', function() {
+                updateVerificationUi();
+                updateVerificationMutualExclusivity();
+            });
+        }
+        if (verificationManualToggle) {
+            verificationManualToggle.addEventListener('change', function() {
+                updateVerificationMutualExclusivity();
+                saveManualVerificationConfig();
+            });
         }
         if (saveVerificationConfigBtn) {
             saveVerificationConfigBtn.addEventListener('click', saveVerificationConfig);
@@ -1489,6 +1797,7 @@
             }
         });
         updateVerificationUi();
+        updateVerificationMutualExclusivity();
 
         // Teacher-side polling: refresh existing absensi statuses periodically
         var teacherPollingInterval = null;
@@ -1584,6 +1893,19 @@
                         return;
                     }
 
+                    // Check if this is a NEW verification (status changed or previously empty)
+                    var previousStatus = window._previousStatuses[sid] || null;
+                    if (!previousStatus && norm && norm !== 'alpa') {
+                        // New verification detected!
+                        var siswaName = 'Siswa';
+                        if (window._siswaCache) {
+                            var siswa = window._siswaCache.find(function(s) { return String(s.id) === String(sid); });
+                            if (siswa) siswaName = siswa.nama || siswaName;
+                        }
+                        showNotificationToast(siswaName, norm);
+                    }
+                    window._previousStatuses[sid] = norm;
+
                     radios.forEach(function(radio) {
                         if (!radio.checked) {
                             radio.checked = true;
@@ -1597,10 +1919,111 @@
                 });
 
                 refreshAllStatusButtonStates();
+                updateVerificationStatistics();
             } catch (e) { console.warn('applyPolledStatuses error', e); }
         }
 
+        // Toast notification function
+        function showNotificationToast(siswaName, status) {
+            var container = document.getElementById('verificationNotificationContainer');
+            if (!container) return;
+
+            var statusColor = {
+                'hadir': '#10b981',
+                'terlambat': '#f59e0b',
+                'sakit': '#f59e0b',
+                'izin': '#0ea5e9',
+                'alpa': '#ef4444'
+            }[status] || '#6b7280';
+
+            var statusLabel = {
+                'hadir': 'Hadir',
+                'terlambat': 'Terlambat',
+                'sakit': 'Sakit',
+                'izin': 'Izin',
+                'alpa': 'Alpa'
+            }[status] || status;
+
+            var toastHtml = `
+                <div class="alert alert-success border-0 shadow-sm mb-2" style="display: none; animation: slideInRight 0.3s ease-in-out;" role="alert">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="ti ti-circle-check" style="font-size: 20px; color: ${statusColor};"></i>
+                        <div>
+                            <strong>${siswaName}</strong> verifikasi sebagai <strong>${statusLabel}</strong>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            var toastDiv = document.createElement('div');
+            toastDiv.innerHTML = toastHtml;
+            var toastAlert = toastDiv.querySelector('.alert');
+            container.appendChild(toastAlert);
+
+            // Show toast
+            setTimeout(function() {
+                toastAlert.style.display = 'block';
+            }, 50);
+
+            // Auto-hide after 4 seconds
+            setTimeout(function() {
+                toastAlert.style.animation = 'slideOutRight 0.3s ease-in-out';
+                setTimeout(function() {
+                    toastAlert.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        // Update verification statistics
+        function updateVerificationStatistics() {
+            if (!window._siswaCache) return;
+
+            var totalSiswa = window._siswaCache.length;
+            var verified = 0;
+            var notYet = 0;
+
+            window._siswaCache.forEach(function(siswa) {
+                var sid = String(siswa.id);
+                var radios = Array.from(document.querySelectorAll('input.status-radio[name="absensi_siswa['+sid+']"]')).filter(function(r) {
+                    return r.checked;
+                });
+
+                if (radios.length > 0) {
+                    var status = radios[0].value;
+                    if (status && status !== 'alpa') {
+                        verified++;
+                    }
+                } else {
+                    notYet++;
+                }
+            });
+
+            var percentage = totalSiswa > 0 ? Math.round((verified / totalSiswa) * 100) : 0;
+
+            document.getElementById('statTotalSiswa').textContent = totalSiswa;
+            document.getElementById('statVerified').textContent = verified;
+            document.getElementById('statNotYet').textContent = notYet;
+            document.getElementById('statPercentage').textContent = percentage + '%';
+
+            // Check if any verification method is active
+            var verificationToggle = document.getElementById('verifikasiToggle');
+            var manualVerificationToggle = document.getElementById('verifikasiManualToggle');
+            var hasActiveVerification = (verificationToggle && verificationToggle.checked) || 
+                                       (manualVerificationToggle && manualVerificationToggle.checked);
+
+            var statsContainer = document.getElementById('verificationStatsContainer');
+            if (statsContainer && totalSiswa > 0 && hasActiveVerification) {
+                statsContainer.style.display = 'block';
+            } else if (statsContainer) {
+                statsContainer.style.display = 'none';
+            }
+        }
+
+        // Track previous statuses to detect new verifications
+        window._previousStatuses = {};
+
         function startTeacherPolling() {
+
             if (teacherPollingInterval) return;
             teacherPollingInterval = setInterval(function(){
                 try {
@@ -1615,12 +2038,25 @@
 
         function stopTeacherPolling() { if (teacherPollingInterval) { clearInterval(teacherPollingInterval); teacherPollingInterval = null; } }
 
-        // Start/stop polling based on verification toggle state
-        if (verificationToggle) {
-            verificationToggle.addEventListener('change', function(){ if (verificationToggle.checked) startTeacherPolling(); else stopTeacherPolling(); });
+        // Start polling when kelas and tanggal are selected (NOT dependent on verification toggle)
+        var kelasSelect = document.getElementById('kelas_id');
+        var tanggalInput = document.getElementById('tanggal');
+        
+        function checkAndStartPolling() {
+            var hasKelas = kelasSelect && kelasSelect.value;
+            var hasTanggal = tanggalInput && tanggalInput.value;
+            if (hasKelas && hasTanggal) {
+                startTeacherPolling();
+            } else {
+                stopTeacherPolling();
+            }
         }
-        // If verification is currently active on load, start polling
-        if (verificationToggle && verificationToggle.checked) startTeacherPolling();
+
+        if (kelasSelect) kelasSelect.addEventListener('change', checkAndStartPolling);
+        if (tanggalInput) tanggalInput.addEventListener('change', checkAndStartPolling);
+        
+        // Check on page load
+        checkAndStartPolling();
 
         // Real-time push via Laravel Echo (Pusher / Echo server). If Echo is available, subscribe to class channel.
         try {
@@ -1830,6 +2266,7 @@
                 radio.checked = true;
             }
             window._attendanceStatuses[sid] = norm;
+            window._previousStatuses[sid] = norm;  // Track for notification
 
             syncStatusButtonStates(groupName);
             var row = radio.closest('tr');
@@ -1840,6 +2277,9 @@
         if (appliedAny) {
             refreshAllStatusButtonStates();
         }
+        
+        // Update statistics
+        updateVerificationStatistics();
     }
 
     function applyIzinKegiatanLocks() {

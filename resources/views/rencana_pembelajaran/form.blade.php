@@ -14,7 +14,9 @@
     </header>
 
     <link href="{{ asset('vendor/summernote/summernote-lite.min.css') }}" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        window.jQuery || document.write('<script src="{{ asset('vendor/summernote/jquery-3.6.0.min.js') }}"><\/script>');
+    </script>
     <script src="{{ asset('vendor/summernote/summernote-lite.min.js') }}"></script>
     <style>
         .note-toolbar {

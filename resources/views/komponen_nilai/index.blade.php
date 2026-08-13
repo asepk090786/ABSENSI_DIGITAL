@@ -359,39 +359,61 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        @if($items->count() > 0)
+                        <form method="GET" action="{{ route('komponen_nilai.index') }}" class="row g-2 align-items-end mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Filter Guru</label>
+                                <select name="guru_id" class="form-select" onchange="this.form.submit()">
+                                    <option value="">-- Semua Guru --</option>
+                                    @foreach($guruList as $guru)
+                                        <option value="{{ $guru->id }}" {{ (string) ($guruId ?? '') === (string) $guru->id ? 'selected' : '' }}>
+                                            {{ $guru->nama }} {{ $guru->nip ? '(' . $guru->nip . ')' : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @if($guruId)
+                            <div class="col-md-2">
+                                <a href="{{ route('komponen_nilai.index') }}" class="btn btn-outline-secondary">Reset Filter</a>
+                            </div>
+                            @endif
+                        </form>
+
+                        @if(count($groupedRows) > 0)
                             <div class="table-responsive">
                                 <table class="table table-vcenter table-hover">
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>CP</th>
-                                            <th>Nama Komponen</th>
                                             <th>Nama Guru</th>
                                             <th>Mata Pelajaran</th>
-                                            <th>Bobot (%)</th>
+                                            <th>CP</th>
+                                            <th>Kelas</th>
+                                            <th>Nama Komponen</th>
                                             <th class="text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($items as $index => $item)
+                                        @foreach($groupedRows as $index => $row)
                                         @php
-                                            $guruNames = $item->rencanaPembelajaran->pluck('guru.nama')->filter()->unique()->values()->all();
-                                            $mapelNames = $item->rencanaPembelajaran->pluck('mataPelajaran.nama_mapel')->filter()->unique()->values()->all();
+                                            $item = $row['komponen'];
+                                            $guru = $row['guru'];
+                                            $mapelList = collect($row['mapel'] ?? []);
+                                            $cp = $row['cp'];
+                                            $kelasList = collect($row['kelas'] ?? []);
                                         @endphp
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
+                                            <td>{{ $guru ? $guru->nama : '-' }}</td>
+                                            <td>{{ $mapelList->pluck('nama_mapel')->filter()->unique()->values()->implode(', ') ?: '-' }}</td>
                                             <td>
-                                                @if($item->capaianPembelajaran)
-                                                    <span class="badge bg-primary text-white">{{ $item->capaianPembelajaran->nama_capaian_pembelajaran }}</span>
+                                                @if($cp)
+                                                    <span class="badge bg-primary text-white">{{ $cp->nama_capaian_pembelajaran }}</span>
                                                 @else
                                                     <span class="badge bg-secondary text-white">Tidak ada</span>
                                                 @endif
                                             </td>
+                                            <td>{{ $kelasList->pluck('nama_kelas')->filter()->unique()->values()->implode(', ') ?: '-' }}</td>
                                             <td>{{ $item->nama_komponen }}</td>
-                                            <td>{{ count($guruNames) ? implode(', ', $guruNames) : '-' }}</td>
-                                            <td>{{ count($mapelNames) ? implode(', ', $mapelNames) : '-' }}</td>
-                                            <td>{{ $item->bobot ?? '-' }}</td>
                                             <td class="text-center">
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('komponen_nilai.edit', $item->id) }}" class="btn btn-sm btn-warning" title="Edit">

@@ -65,7 +65,7 @@
                                         </a>
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ $item->status === 'published' ? 'success' : 'warning' }}">
+                                        <span class="badge {{ $item->status === 'published' ? 'bg-success text-white' : 'bg-warning text-dark' }}">
                                             {{ ucfirst($item->status) }}
                                         </span>
                                     </td>

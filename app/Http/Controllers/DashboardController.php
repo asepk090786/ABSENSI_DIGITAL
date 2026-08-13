@@ -527,35 +527,55 @@ class DashboardController extends Controller
 
             // check if there is active verification code for student's kelas today
             $activeVerification = null;
+            $activeManualVerification = null;
             $studentAlreadyVerifiedToday = false;
             $verificationExpiresAt = null;
             $verificationExpiresAtTimestamp = null;
+            $verificationMode = null; // 'code', 'manual', or null
             try {
                 if ($user->siswa && ! empty($user->siswa->kelas_id) && \Illuminate\Support\Facades\Schema::hasTable('attendance_verification_codes')) {
                     $today = \Carbon\Carbon::now('Asia/Jakarta')->toDateString();
-                    $activeVerification = \App\Models\AttendanceVerificationCode::where('kelas_id', $user->siswa->kelas_id)
-                        ->where('tanggal', $today)
-                        ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', \Carbon\Carbon::now('UTC')); })
-                        ->orderByDesc('id')
-                        ->first();
+                    
+                    // Check for manual verification first
+                    if (\Illuminate\Support\Facades\Schema::hasTable('absensi_kelas')) {
+                        $activeManualVerification = \App\Models\AbsensiKelas::where('kelas_id', $user->siswa->kelas_id)
+                            ->where('tanggal', $today)
+                            ->where('verifikasi_manual_aktif', true)
+                            ->first();
 
-                    if ($activeVerification) {
-                        $rawExpiresAt = $activeVerification->getRawOriginal('expires_at');
-                        $verificationExpiresAt = $rawExpiresAt
-                            ? \Carbon\Carbon::parse($rawExpiresAt, 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s')
-                            : null;
-                        $verificationExpiresAtTimestamp = $rawExpiresAt
-                            ? \Carbon\Carbon::parse($rawExpiresAt, 'UTC')->timestamp * 1000
-                            : null;
+                        if ($activeManualVerification) {
+                            $verificationMode = 'manual';
+                        }
+                    }
+                    
+                    // If no manual verification, check for code verification
+                    if (!$activeManualVerification) {
+                        $activeVerification = \App\Models\AttendanceVerificationCode::where('kelas_id', $user->siswa->kelas_id)
+                            ->where('tanggal', $today)
+                            ->where(function($q){ $q->whereNull('expires_at')->orWhere('expires_at', '>=', \Carbon\Carbon::now('UTC')); })
+                            ->orderByDesc('id')
+                            ->first();
+
+                        if ($activeVerification) {
+                            $verificationMode = 'code';
+                            $rawExpiresAt = $activeVerification->getRawOriginal('expires_at');
+                            $verificationExpiresAt = $rawExpiresAt
+                                ? \Carbon\Carbon::parse($rawExpiresAt, 'UTC')->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s')
+                                : null;
+                            $verificationExpiresAtTimestamp = $rawExpiresAt
+                                ? \Carbon\Carbon::parse($rawExpiresAt, 'UTC')->timestamp * 1000
+                                : null;
+                        }
                     }
 
-                    if ($activeVerification && \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') && \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas')) {
+                    if (($activeVerification || $activeManualVerification) && \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') && \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas')) {
                         $studentAlreadyVerifiedToday = \App\Models\AbsensiSiswa::where('siswa_id', $user->siswa->id)
                             ->where('status', 'hadir')
-                            ->whereHas('absensiKelas', function ($q) use ($activeVerification) {
+                            ->whereHas('absensiKelas', function ($q) use ($activeVerification, $activeManualVerification) {
                                 $q->whereDate('tanggal', \Carbon\Carbon::now('Asia/Jakarta')->toDateString());
-                                if (! empty($activeVerification->jam_belajar_id)) {
-                                    $q->where('jam_belajar_id', $activeVerification->jam_belajar_id);
+                                $verif = $activeManualVerification ?: $activeVerification;
+                                if ($verif && ! empty($verif->jam_belajar_id)) {
+                                    $q->where('jam_belajar_id', $verif->jam_belajar_id);
                                 }
                             })
                             ->exists();
@@ -563,7 +583,9 @@ class DashboardController extends Controller
                 }
             } catch (\Throwable $e) {
                 $activeVerification = null;
+                $activeManualVerification = null;
                 $studentAlreadyVerifiedToday = false;
+                $verificationMode = null;
             }
 
             return view('dashboard.siswa', compact(
@@ -577,6 +599,8 @@ class DashboardController extends Controller
                 'isSiswaOfficer',
                 'attendanceSummary'
             ))->with('activeVerification', $activeVerification)
+            ->with('activeManualVerification', $activeManualVerification)
+            ->with('verificationMode', $verificationMode)
             ->with('studentAlreadyVerifiedToday', $studentAlreadyVerifiedToday)
             ->with('verificationExpiresAt', $verificationExpiresAt ?? null)
             ->with('verificationExpiresAtTimestamp', $verificationExpiresAtTimestamp ?? null);
