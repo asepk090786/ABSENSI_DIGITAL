@@ -36,6 +36,7 @@ class SettingController extends Controller
             'absensiSettings' => [
                 'allow_edit_past_for_guru' => (bool) $settings->get('attendance.allow_edit_past_for_guru', false),
                 'allow_edit_past_for_siswa_officer' => (bool) $settings->get('attendance.allow_edit_past_for_siswa_officer', false),
+                'verification_enabled' => (bool) $settings->get('attendance.verification_enabled', true),
                 'verification_timeout_seconds' => (int) $settings->get('attendance.verification_timeout_seconds', 300),
             ],
             'menuVisibility' => $settings->get('menu_visibility', [
@@ -83,12 +84,14 @@ class SettingController extends Controller
         $validated = $request->validate([
             'allow_edit_past_for_guru' => 'nullable|boolean',
             'allow_edit_past_for_siswa_officer' => 'nullable|boolean',
+            'verification_enabled' => 'nullable|boolean',
             'verification_timeout_seconds' => 'nullable|integer|min:10|max:3600',
         ]);
 
         $settings = new SettingsManager();
         $settings->set('attendance.allow_edit_past_for_guru', (bool) ($validated['allow_edit_past_for_guru'] ?? false));
         $settings->set('attendance.allow_edit_past_for_siswa_officer', (bool) ($validated['allow_edit_past_for_siswa_officer'] ?? false));
+        $settings->set('attendance.verification_enabled', (bool) ($validated['verification_enabled'] ?? true));
         $settings->set('attendance.verification_timeout_seconds', (int) ($validated['verification_timeout_seconds'] ?? 300));
 
         return redirect()->route('setting.absensi')->with('success', 'Pengaturan absensi disimpan.');

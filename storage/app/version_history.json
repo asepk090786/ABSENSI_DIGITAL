@@ -16,5 +16,11 @@
         "date": "2026-08-08",
         "notes": "Add tabbed Pengaturan page and sidebar menu visibility toggles for Guru/Siswa",
         "source": "manual"
+    },
+    {
+        "version": "Ver.1.0.30",
+        "date": "2026-08-14",
+        "notes": "v1.0.30 - Attendance verification system enhancements and automated backup scheduler",
+        "source": "manual"
     }
 ]

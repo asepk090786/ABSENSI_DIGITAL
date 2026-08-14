@@ -6,6 +6,21 @@
 </div>
 
 <div class="row">
+    <div class="col-md-12">
+        <div class="card h-100 border">
+            <div class="card-body">
+                <div class="form-check form-switch">
+                    <input type="hidden" name="verification_enabled" value="0">
+                    <input class="form-check-input" type="checkbox" id="verification_enabled" name="verification_enabled" value="1" {{ old('verification_enabled', data_get($settings, 'verification_enabled', true)) ? 'checked' : '' }}>
+                    <label class="form-check-label" for="verification_enabled">Aktifkan verifikasi absensi manual dan kode verifikasi</label>
+                </div>
+                <div class="form-text mt-2">Jika aktif, guru dapat mengaktifkan fitur verifikasi absensi baik manual maupun kode verifikasi. Jika nonaktif, verifikasi absensi dinonaktifkan untuk role selain admin/kepala sekolah.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
     <div class="col-md-6">
         <div class="card h-100 border">
             <div class="card-body">

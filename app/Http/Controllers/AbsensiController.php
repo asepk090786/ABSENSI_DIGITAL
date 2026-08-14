@@ -1185,6 +1185,11 @@ class AbsensiController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+        $verificationEnabled = (bool) (new \App\Services\SettingsManager())->get('attendance.verification_enabled', true);
+        if (! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! $verificationEnabled) {
+            return response()->json(['success' => false, 'message' => 'Verifikasi absensi dinonaktifkan untuk role non-admin.'], 403);
+        }
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
@@ -1257,6 +1262,11 @@ class AbsensiController extends Controller
         $user = auth()->user();
         if (! $user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $verificationEnabled = (bool) (new \App\Services\SettingsManager())->get('attendance.verification_enabled', true);
+        if (! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! $verificationEnabled) {
+            return response()->json(['success' => false, 'message' => 'Verifikasi absensi dinonaktifkan untuk role non-admin.'], 403);
         }
 
         $validated = $request->validate([
@@ -1355,6 +1365,11 @@ class AbsensiController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
+        $verificationEnabled = (bool) (new \App\Services\SettingsManager())->get('attendance.verification_enabled', true);
+        if (! $user->hasAnyRole(['Admin', 'Kepala Sekolah']) && ! $verificationEnabled) {
+            return response()->json(['success' => false, 'message' => 'Verifikasi absensi dinonaktifkan untuk role non-admin.'], 403);
+        }
+
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'tanggal' => 'required|date',
@@ -1401,6 +1416,13 @@ class AbsensiController extends Controller
                             'kode_verifikasi_expires_at' => null,
                             'verifikasi_manual_aktif' => true,
                             'verifikasi_manual_expires_at' => null,
+                        ]);
+                    } else {
+                        Log::warning('Gagal membuat AbsensiKelas: tahun_ajaran atau semester aktif tidak ditemukan', [
+                            'kelas_id' => $validated['kelas_id'],
+                            'tanggal' => $validated['tanggal'],
+                            'tahun_ajaran_aktif' => (bool) $tahunAjaran,
+                            'semester_aktif' => (bool) $semester,
                         ]);
                     }
                 }
@@ -1529,6 +1551,11 @@ class AbsensiController extends Controller
         $user = auth()->user();
         if (! $user || ! $user->hasRole('Siswa') || empty($user->siswa_id)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+        }
+
+        $verificationEnabled = (bool) (new \App\Services\SettingsManager())->get('attendance.verification_enabled', true);
+        if (! $user->hasRole('Admin') && ! $user->hasRole('Kepala Sekolah') && ! $verificationEnabled) {
+            return response()->json(['success' => false, 'message' => 'Verifikasi absensi dinonaktifkan untuk role non-admin.'], 403);
         }
 
         $validated = $request->validate([

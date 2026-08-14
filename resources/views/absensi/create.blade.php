@@ -303,6 +303,8 @@
                             </div>
 
                             @if(auth()->user()->guru_id && !($isAdminOrKepala ?? false))
+                            @php $attendanceVerificationEnabled = (bool) (new \App\Services\SettingsManager())->get('attendance.verification_enabled', true); @endphp
+                            @if($attendanceVerificationEnabled)
                             <div class="col-md-6">
                                 <div class="form-check form-switch mt-3 pt-2">
                                     <input class="form-check-input" type="checkbox" id="loadClassAttendanceToggle" name="load_class_attendance" value="1" {{ old('load_class_attendance') ? 'checked' : '' }}>
@@ -377,6 +379,13 @@
                                 <input type="hidden" name="kode_verifikasi_expires_at" id="kode_verifikasi_expires_at" value="{{ old('kode_verifikasi_expires_at', $verificationExpiresAt ?? '') }}">
                                 <input type="hidden" id="kode_verifikasi_expires_at_timestamp" value="{{ $verificationExpiresAtTimestamp ?? '' }}">
                             </div>
+                            @else
+                            <div class="col-12">
+                                <div class="alert alert-warning small mb-0 mt-3">
+                                    Verifikasi absensi dinonaktifkan untuk role non-admin. Admin atau Kepala Sekolah dapat mengaktifkannya kembali dari <strong>Pengaturan Absensi</strong>.
+                                </div>
+                            </div>
+                            @endif
                             @endif
 
                             @if($isGuruPiket ?? false)
@@ -1979,7 +1988,7 @@
         }
 
         // Update verification statistics
-        function updateVerificationStatistics() {
+        window.updateVerificationStatistics = function() {
             if (!window._siswaCache) return;
 
             var totalSiswa = window._siswaCache.length;
@@ -2021,7 +2030,7 @@
             } else if (statsContainer) {
                 statsContainer.style.display = 'none';
             }
-        }
+        };
 
         // Track previous statuses to detect new verifications
         window._previousStatuses = {};

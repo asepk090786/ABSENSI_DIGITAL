@@ -241,23 +241,32 @@ class ProfilePhotoBackupService
 
     public function downloadPath(string $name): ?string
     {
-        $path = $this->ensureDirectory() . '/' . $name;
-        if (file_exists($path)) {
-            return $path;
-        }
+        $baseDir = $this->ensureDirectory();
+        $path = $baseDir . '/' . $name;
 
-        $dir = $this->ensureDirectory() . '/' . $name;
-        if (is_dir($dir)) {
-            $parts = glob($dir . '/SIMADIS_PART_*.zip') ?: [];
+        if (is_dir($path)) {
+            $parts = glob($path . '/SIMADIS_PART_*.zip') ?: [];
             if (! empty($parts)) {
-                sort($parts);
+                sort($parts, SORT_NATURAL);
                 return $parts[0];
             }
 
-            $manifest = $dir . '/manifest.json';
+            $zipFiles = glob($path . '/*.zip') ?: [];
+            if (! empty($zipFiles)) {
+                sort($zipFiles, SORT_NATURAL);
+                return $zipFiles[0];
+            }
+
+            $manifest = $path . '/manifest.json';
             if (file_exists($manifest)) {
                 return $manifest;
             }
+
+            return null;
+        }
+
+        if (file_exists($path)) {
+            return $path;
         }
 
         return null;

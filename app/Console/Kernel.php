@@ -19,9 +19,15 @@ class Kernel extends ConsoleKernel
             if ($settings->get('backup.enabled', false)) {
                 $time = $settings->get('backup.time', '02:00');
                 $format = $settings->get('backup.format', 'zip');
-                // schedule daily at configured time
+
+                // Keep existing daily backup behavior intact.
                 $schedule->command('db:backup --format=' . ($format === 'zip' ? 'zip' : 'sql'))
                     ->dailyAt($time)
+                    ->withoutOverlapping();
+
+                // Additional backup interval during working hours: every 15 minutes from 07:00 to 15:00.
+                $schedule->command('db:backup --format=' . ($format === 'zip' ? 'zip' : 'sql'))
+                    ->cron('*/15 7-15 * * *')
                     ->withoutOverlapping();
             }
         } catch (\Throwable $e) {

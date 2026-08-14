@@ -1198,6 +1198,18 @@
                         <a href="{{ route('setting.header') }}" class="sidebar-admin-link {{ request()->routeIs('setting.header*') ? 'is-active' : '' }}">
                             <i class="ti ti-panel-top"></i> Edit Header
                         </a>
+                        <a href="{{ route('setting.absensi') }}" class="sidebar-admin-link {{ request()->routeIs('setting.absensi*') ? 'is-active' : '' }}">
+                            <i class="ti ti-clock-check"></i> Pengaturan Absensi
+                        </a>
+                        <a href="{{ route('setting.agenda') }}" class="sidebar-admin-link {{ request()->routeIs('setting.agenda*') ? 'is-active' : '' }}">
+                            <i class="ti ti-calendar-event"></i> Pengaturan Agenda
+                        </a>
+                        <a href="{{ route('setting.menu') }}" class="sidebar-admin-link {{ request()->routeIs('setting.menu*') ? 'is-active' : '' }}">
+                            <i class="ti ti-menu-2"></i> Pengaturan Menu
+                        </a>
+                        <a href="{{ route('setting.editor') }}" class="sidebar-admin-link {{ request()->routeIs('setting.editor*') ? 'is-active' : '' }}">
+                            <i class="ti ti-file-code"></i> Editor Modul
+                        </a>
                     </div>
                 </li>
 
