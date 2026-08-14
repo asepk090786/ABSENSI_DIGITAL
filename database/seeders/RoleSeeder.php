@@ -22,6 +22,7 @@ class RoleSeeder extends Seeder
             'Pembina',
             'Siswa',
             'Petugas Keamanan',
+            'Tenaga Pendidikan',
         ];
 
         foreach ($roles as $r) {

@@ -1029,59 +1029,105 @@
 
             @php
                 $isAdminSidebar = $user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']);
-                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','pengembangan.*','sk_tugas.*','akademik.*','editor_modul.*']);
-                $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*']);
-                $isAdminSettingActive = request()->routeIs(['profile.edit','profile.panduan','tahun_ajaran.index','setting.*','help.admin.*']);
+                
+                // AKADEMIK Group - Jadwal & Akademik submenu
+                $isAdminJadwalAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','guru_piket.*','rencana_pembelajaran.*','editor_modul.*']);
+                
+                // AKADEMIK Group - Beban Kerja & Tugas submenu
+                $isAdminBebanKerjaActive = request()->routeIs(['tugas_guru.*','tugas_tambahan.*','sk_tugas.*']);
+                
+                // AKADEMIK Group - Penilaian submenu
+                $isAdminPenilaianActive = request()->routeIs(['komponen_nilai.*','akademik.supervisi']);
+                
+                // AKADEMIK Group - Main active state
+                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','komponen_nilai.*','rencana_pembelajaran.*','sk_tugas.*','akademik.*','editor_modul.*','tugas_guru.*','tugas_tambahan.*','guru_piket.*']);
+                
+                // MASTER DATA active state (updated for new structure)
+                $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','tenaga_pendidikan.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*','role_permission.*']);
+                
+                // ADMINISTRASI PTK active state (new)
+                $isAdminPtkActive = request()->routeIs(['administrasi_ptk.*','dokumen_kepegawaian.*','template_dokumen.*','pengembangan.*','pengajuan.*','verifikasi.*']);
+                
+                // PENGATURAN SISTEM active state
+                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*']);
+                
+                // BACKUP DATABASE active state
+                $isAdminBackupActive = request()->routeIs(['setting.backup']);
+                
+                // PANDUAN & INFORMASI active state
+                $isAdminInfoActive = request()->routeIs(['profile.panduan','setting.about','help.admin.*']);
             @endphp
 
             @if($isAdminSidebar)
             <ul class="sidebar-nav sidebar-admin-nav">
+                <!-- Dashboard -->
                 <li class="nav-item">
                     <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                         <i class="ti ti-layout-dashboard"></i> Dashboard
                     </a>
                 </li>
 
+                <!-- AKADEMIK Group -->
                 <li class="nav-item">
                     <div class="sidebar-admin-group">
                         <div class="sidebar-admin-group-label">Akademik</div>
-                        <button type="button" class="sidebar-admin-trigger {{ $isAdminAkademikActive ? 'is-active' : '' }}" data-target="#subAkademikAdmin" aria-expanded="{{ $isAdminAkademikActive ? 'true' : 'false' }}" aria-controls="subAkademikAdmin">
-                            <i class="ti ti-school"></i>
+                        
+                        <!-- Jadwal & Akademik Submenu -->
+                        <button type="button" class="sidebar-admin-trigger {{ $isAdminJadwalAkademikActive ? 'is-active' : '' }}" data-target="#subJadwalAkademikAdmin" aria-expanded="{{ $isAdminJadwalAkademikActive ? 'true' : 'false' }}" aria-controls="subJadwalAkademikAdmin">
+                            <i class="ti ti-calendar"></i>
                             <span>Jadwal &amp; Akademik</span>
                             <i class="ti ti-chevron-down nav-arrow"></i>
                         </button>
-                        <div class="sidebar-admin-submenu {{ $isAdminAkademikActive ? 'is-open' : '' }}" id="subAkademikAdmin">
+                        <div class="sidebar-admin-submenu {{ $isAdminJadwalAkademikActive ? 'is-open' : '' }}" id="subJadwalAkademikAdmin">
                             <div class="sidebar-admin-submenu-inner">
                                 <a href="{{ route('jadwal-kbm.index') }}" class="sidebar-admin-sublink {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'is-active' : '' }}">Jadwal KBM</a>
                                 <a href="{{ route('guru_piket.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_piket.*') ? 'is-active' : '' }}">Jadwal Piket</a>
                                 <a href="{{ url('/pengaturan-jam') }}" class="sidebar-admin-sublink {{ request()->is('pengaturan-jam*') || request()->routeIs('jadwal_kbm.*') ? 'is-active' : '' }}">Pengaturan Jam</a>
-                                <a href="{{ route('pengembangan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pengembangan.*') ? 'is-active' : '' }}">Pengembangan Diri</a>
                                 <a href="{{ route('rencana_pembelajaran.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('rencana_pembelajaran.*') ? 'is-active' : '' }}">Modul Ajar</a>
                                 @if(request()->routeIs('rencana_pembelajaran.edit'))
                                     <a href="{{ request()->fullUrl() }}" class="sidebar-admin-sublink is-active">Edit Modul Ajar</a>
                                 @endif
                             </div>
                         </div>
-                        <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-link {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">
-                            <i class="ti ti-briefcase"></i> Beban Kerja Guru
-                        </a>
-                        <a href="{{ route('sk_tugas.index') }}" class="sidebar-admin-link {{ request()->routeIs('sk_tugas.*') ? 'is-active' : '' }}">
-                            <i class="ti ti-file-badge"></i> SK Tugas
-                        </a>
-                        <a href="{{ route('komponen_nilai.index') }}" class="sidebar-admin-link {{ request()->routeIs('komponen_nilai.*') ? 'is-active' : '' }}">
-                            <i class="ti ti-notes"></i> Komponen Penilaian
-                        </a>
-                        <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs(['mata_pelajaran.index','mata_pelajaran.*']) ? 'is-active' : '' }}">
+                        
+                        <!-- Beban Kerja & Tugas Submenu -->
+                        <button type="button" class="sidebar-admin-trigger {{ $isAdminBebanKerjaActive ? 'is-active' : '' }}" data-target="#subBebanKerjaAdmin" aria-expanded="{{ $isAdminBebanKerjaActive ? 'true' : 'false' }}" aria-controls="subBebanKerjaAdmin">
+                            <i class="ti ti-briefcase"></i>
+                            <span>Beban Kerja &amp; Tugas</span>
+                            <i class="ti ti-chevron-down nav-arrow"></i>
+                        </button>
+                        <div class="sidebar-admin-submenu {{ $isAdminBebanKerjaActive ? 'is-open' : '' }}" id="subBebanKerjaAdmin">
+                            <div class="sidebar-admin-submenu-inner">
+                                <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">Beban Kerja Guru</a>
+                                <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">Tugas Guru</a>
+                                <a href="{{ route('tugas_tambahan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('tugas_tambahan.*') ? 'is-active' : '' }}">Tugas Tambahan</a>
+                                <a href="{{ route('sk_tugas.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('sk_tugas.*') ? 'is-active' : '' }}">SK Tugas</a>
+                            </div>
+                        </div>
+                        
+                        <!-- Penilaian Submenu -->
+                        <button type="button" class="sidebar-admin-trigger {{ $isAdminPenilaianActive ? 'is-active' : '' }}" data-target="#subPenilaianAdmin" aria-expanded="{{ $isAdminPenilaianActive ? 'true' : 'false' }}" aria-controls="subPenilaianAdmin">
+                            <i class="ti ti-checklist"></i>
+                            <span>Penilaian</span>
+                            <i class="ti ti-chevron-down nav-arrow"></i>
+                        </button>
+                        <div class="sidebar-admin-submenu {{ $isAdminPenilaianActive ? 'is-open' : '' }}" id="subPenilaianAdmin">
+                            <div class="sidebar-admin-submenu-inner">
+                                <a href="{{ route('komponen_nilai.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('komponen_nilai.*') ? 'is-active' : '' }}">Komponen Penilaian</a>
+                                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']))
+                                <a href="{{ route('akademik.supervisi') }}" class="sidebar-admin-sublink {{ request()->routeIs('akademik.supervisi') || request()->routeIs('akademik.supervisi.*') ? 'is-active' : '' }}">Supervisi</a>
+                                @endif
+                            </div>
+                        </div>
+                        
+                        <!-- Mata Pelajaran Link -->
+                        <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">
                             <i class="ti ti-book"></i> Mata Pelajaran
                         </a>
-                        @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']))
-                        <a href="{{ route('akademik.supervisi') }}" class="sidebar-admin-link {{ request()->routeIs('akademik.supervisi') || request()->routeIs('akademik.supervisi.*') ? 'is-active' : '' }}">
-                            <i class="ti ti-checklist"></i> Supervisi
-                        </a>
-                        @endif
                     </div>
                 </li>
 
+                <!-- MASTER DATA Group -->
                 <li class="nav-item">
                     <div class="sidebar-admin-group">
                         <div class="sidebar-admin-group-label">Master Data</div>
@@ -1095,27 +1141,51 @@
                                 <a href="{{ route('sekolah.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('sekolah.*') ? 'is-active' : '' }}">Data Sekolah</a>
                                 <a href="{{ route('kepala_sekolah.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kepala_sekolah.*') ? 'is-active' : '' }}">Kepala Sekolah</a>
                                 <a href="{{ route('wakil_kepala_sekolah.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('wakil_kepala_sekolah.*') ? 'is-active' : '' }}">Wakil Kepala</a>
-                                <a href="{{ route('guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru.*') ? 'is-active' : '' }}">Guru</a>
+                                <a href="{{ route('guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru.*') ? 'is-active' : '' }}">Tenaga Pendidik</a>
                                 <a href="{{ route('guru_bk.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_bk.*') ? 'is-active' : '' }}">Guru BK</a>
                                 <a href="{{ route('guru_piket.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('guru_piket.*') ? 'is-active' : '' }}">Guru Piket</a>
                                 <a href="{{ route('pembina.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pembina.*') ? 'is-active' : '' }}">Pembina</a>
-                                <a href="{{ route('users.admin') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'is-active' : '' }}">Admin</a>
-                                <a href="{{ route('users.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.index') && !request()->has('role') ? 'is-active' : '' }}">Akun Pengguna</a>
+                                <a href="{{ route('tenaga_pendidikan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('tenaga_pendidikan.*') ? 'is-active' : '' }}">Tenaga Pendidikan</a>
+                                <a href="{{ route('siswa.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('siswa.*') ? 'is-active' : '' }}">Siswa</a>
                                 <a href="{{ route('kelas.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kelas.*') ? 'is-active' : '' }}">Kelas</a>
                                 <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">Mata Pelajaran</a>
-                                <a href="{{ route('tugas_guru.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">Tugas Guru</a>
-                                <a href="{{ route('siswa.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('siswa.*') ? 'is-active' : '' }}">Siswa</a>
                                 <a href="{{ route('ekskul.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('ekskul.*') ? 'is-active' : '' }}">Ekstrakurikuler</a>
                                 <a href="{{ route('jenis_pelanggaran.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('jenis_pelanggaran.*') ? 'is-active' : '' }}">Jenis Pelanggaran</a>
+                                <a href="{{ route('users.admin') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'is-active' : '' }}">Admin</a>
+                                <a href="{{ route('users.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.index') && !request()->has('role') ? 'is-active' : '' }}">Akun Pengguna</a>
+                                <a href="{{ route('role_permission.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('role_permission.*') ? 'is-active' : '' }}">Role &amp; Permission</a>
                                 <a href="{{ route('asc_timetable.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('asc_timetable.*') ? 'is-active' : '' }}">ASC Time Table</a>
                             </div>
                         </div>
                     </div>
                 </li>
 
+                <!-- ADMINISTRASI PTK Group (NEW) -->
                 <li class="nav-item">
                     <div class="sidebar-admin-group">
-                        <div class="sidebar-admin-group-label">Pengaturan</div>
+                        <div class="sidebar-admin-group-label">Administrasi PTK</div>
+                        <button type="button" class="sidebar-admin-trigger {{ $isAdminPtkActive ? 'is-active' : '' }}" data-target="#subAdministrasiPtkAdmin" aria-expanded="{{ $isAdminPtkActive ? 'true' : 'false' }}" aria-controls="subAdministrasiPtkAdmin">
+                            <i class="ti ti-folder"></i>
+                            <span>Administrasi PTK</span>
+                            <i class="ti ti-chevron-down nav-arrow"></i>
+                        </button>
+                        <div class="sidebar-admin-submenu {{ $isAdminPtkActive ? 'is-open' : '' }}" id="subAdministrasiPtkAdmin">
+                            <div class="sidebar-admin-submenu-inner">
+                                <a href="{{ route('administrasi_ptk.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('administrasi_ptk.*') ? 'is-active' : '' }}">Administrasi</a>
+                                <a href="{{ route('dokumen_kepegawaian.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('dokumen_kepegawaian.*') ? 'is-active' : '' }}">Dokumen Kepegawaian</a>
+                                <a href="{{ route('template_dokumen.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('template_dokumen.*') ? 'is-active' : '' }}">Template Dokumen</a>
+                                <a href="{{ route('pengembangan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pengembangan.*') ? 'is-active' : '' }}">Pengembangan Diri</a>
+                                <a href="{{ route('pengajuan.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('pengajuan.*') ? 'is-active' : '' }}">Pengajuan</a>
+                                <a href="{{ route('verifikasi.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('verifikasi.*') ? 'is-active' : '' }}">Verifikasi</a>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <!-- PENGATURAN SISTEM Group -->
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Pengaturan Sistem</div>
                         <a href="{{ route('profile.edit') }}" class="sidebar-admin-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">
                             <i class="ti ti-user"></i> Profile
                         </a>
@@ -1128,12 +1198,20 @@
                         <a href="{{ route('setting.header') }}" class="sidebar-admin-link {{ request()->routeIs('setting.header*') ? 'is-active' : '' }}">
                             <i class="ti ti-panel-top"></i> Edit Header
                         </a>
-                        <a href="{{ route('setting.absensi') }}" class="sidebar-admin-link {{ request()->routeIs('setting.absensi*') ? 'is-active' : '' }}">
-                            <i class="ti ti-clipboard-check"></i> Pengaturan
-                        </a>
-                        <a href="{{ route('setting.backup') }}" class="sidebar-admin-link {{ request()->routeIs('setting.backup') ? 'is-active' : '' }}">
-                            <i class="ti ti-database"></i> Backup Database
-                        </a>
+                    </div>
+                </li>
+
+                <!-- BACKUP DATABASE -->
+                <li class="nav-item">
+                    <a href="{{ route('setting.backup') }}" class="nav-link {{ request()->routeIs('setting.backup') ? 'active' : '' }}">
+                        <i class="ti ti-database"></i> Backup Database
+                    </a>
+                </li>
+
+                <!-- PANDUAN & INFORMASI Group -->
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Panduan &amp; Informasi</div>
                         <a href="{{ route('profile.panduan') }}" class="sidebar-admin-link {{ request()->routeIs('profile.panduan') ? 'is-active' : '' }}">
                             <i class="ti ti-book"></i> Panduan
                         </a>

@@ -17,6 +17,14 @@ use App\Http\Controllers\UpdateController;
 use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\JenisKegiatanController;
 use App\Http\Controllers\EkstrakurikulerController;
+use App\Http\Controllers\TenagaPendidikanController;
+use App\Http\Controllers\TugasTambahanController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\AdministrasiPtkController;
+use App\Http\Controllers\DokumenKepegawaanController;
+use App\Http\Controllers\TemplateDokumenController;
+use App\Http\Controllers\PengajuanController;
+use App\Http\Controllers\VerifikasiController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -291,6 +299,25 @@ Route::middleware(['auth'])->group(function(){
     Route::get('guru_piket/download', ['App\Http\Controllers\GuruPiketController', 'download'])->name('guru_piket.download');
     Route::resource('guru_piket', 'App\Http\Controllers\GuruPiketController');
     Route::resource('pembina', 'App\Http\Controllers\PembinaController');
+    Route::resource('tenaga_pendidikan', TenagaPendidikanController::class);
+    Route::get('tenaga_pendidikan/{tenaga_pendidikan}/generate-account', [TenagaPendidikanController::class, 'generateAccount'])->name('tenaga_pendidikan.generate-account');
+    Route::get('tenaga-pendidikan-export', [TenagaPendidikanController::class, 'export'])->name('tenaga_pendidikan.export');
+    Route::get('tenaga-pendidikan-template', [TenagaPendidikanController::class, 'templateDownload'])->name('tenaga_pendidikan.template');
+    Route::post('tenaga-pendidikan-import', [TenagaPendidikanController::class, 'import'])->name('tenaga_pendidikan.import');
+    
+    // Fitur baru - Tugas Tambahan
+    Route::resource('tugas_tambahan', TugasTambahanController::class);
+    
+    // Fitur baru - Role & Permission
+    Route::resource('role_permission', RolePermissionController::class);
+    
+    // Fitur baru - Administrasi PTK
+    Route::resource('administrasi_ptk', AdministrasiPtkController::class);
+    Route::resource('dokumen_kepegawaian', DokumenKepegawaanController::class);
+    Route::resource('template_dokumen', TemplateDokumenController::class);
+    Route::resource('pengajuan', PengajuanController::class);
+    Route::resource('verifikasi', VerifikasiController::class);
+    
     Route::get('mata-pelajaran/guru', ['App\Http\Controllers\MataPelajaranController', 'guruIndex'])->name('mata_pelajaran.guru');
     Route::resource('mata_pelajaran', 'App\Http\Controllers\MataPelajaranController');
     Route::get('mata-pelajaran-export', ['App\Http\Controllers\MataPelajaranController', 'export'])->name('mata_pelajaran.export');

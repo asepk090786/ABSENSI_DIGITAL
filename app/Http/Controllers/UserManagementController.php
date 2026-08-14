@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\Guru;
 use App\Models\KepalaSekolah;
 use App\Models\Siswa;
+use App\Models\TenagaPendidikan;
 use App\Exports\UsersExport;
 use App\Imports\UsersImport;
 use Illuminate\Http\Request;
@@ -22,7 +23,8 @@ class UserManagementController extends Controller
         $guru = Guru::with('user')->orderBy('nama')->get();
         $kepala = KepalaSekolah::with('guru')->orderBy('nama')->get();
         $siswa = Siswa::orderBy('nama')->get();
-        return view('user_management.edit', compact('user', 'roles', 'guru', 'kepala', 'siswa'));
+        $tenagaPendidikan = TenagaPendidikan::orderBy('nama')->get();
+        return view('user_management.edit', compact('user', 'roles', 'guru', 'kepala', 'siswa', 'tenagaPendidikan'));
     }
 
     public function update(Request $request, User $user)
@@ -35,6 +37,7 @@ class UserManagementController extends Controller
             'role_id' => ['required', 'exists:roles,id'],
             'is_active' => ['required', 'boolean'],
             'guru_id' => ['nullable', 'exists:guru,id'],
+            'tenaga_pendidikan_id' => ['nullable', 'exists:tenaga_pendidikan,id'],
         ]);
 
         if ($validator->fails()) {
@@ -46,6 +49,7 @@ class UserManagementController extends Controller
         $user->email = $data['email'] ?? null;
         $user->role_id = $data['role_id'];
         $user->guru_id = $data['guru_id'] ?? null;
+        $user->tenaga_pendidikan_id = $data['tenaga_pendidikan_id'] ?? null;
         $user->is_active = $data['is_active'];
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);
@@ -90,6 +94,7 @@ class UserManagementController extends Controller
         $guru = Guru::with('user')->orderBy('nama')->get();
         $kepala = KepalaSekolah::with('guru')->orderBy('nama')->get();
         $siswa = Siswa::orderBy('nama')->get();
+        $tenagaPendidikan = TenagaPendidikan::orderBy('nama')->get();
 
         $defaultRoleId = null;
         $roleParam = $request->query('role');
@@ -100,7 +105,7 @@ class UserManagementController extends Controller
             }
         }
 
-        return view('user_management.create', compact('roles', 'guru', 'kepala', 'siswa', 'defaultRoleId'));
+        return view('user_management.create', compact('roles', 'guru', 'kepala', 'siswa', 'tenagaPendidikan', 'defaultRoleId'));
     }
 
     public function store(Request $request)
@@ -118,6 +123,7 @@ class UserManagementController extends Controller
             'guru_id' => ['nullable', 'exists:guru,id'],
             'kepala_sekolah_id' => ['nullable', 'exists:kepala_sekolah,id'],
             'siswa_id' => ['nullable', 'exists:siswa,id'],
+            'tenaga_pendidikan_id' => ['nullable', 'exists:tenaga_pendidikan,id'],
         ];
 
         if ($existingGuruUser) {
@@ -152,6 +158,10 @@ class UserManagementController extends Controller
             if ((str_contains($roleName, 'Guru') || $roleName === 'Pengawas Pembina') && empty($data['guru_id'])) {
                 $validator->errors()->add('guru_id', 'Pilih guru untuk peran guru.');
             }
+
+            if ($roleName === 'Tenaga Pendidikan' && empty($data['tenaga_pendidikan_id'])) {
+                $validator->errors()->add('tenaga_pendidikan_id', 'Pilih tenaga pendidikan untuk peran ini.');
+            }
         });
 
         if ($validator->fails()) {
@@ -168,6 +178,7 @@ class UserManagementController extends Controller
             $existingGuruUser->guru_id = $data['guru_id'] ?? null;
             $existingGuruUser->kepala_sekolah_id = $data['kepala_sekolah_id'] ?? null;
             $existingGuruUser->siswa_id = $data['siswa_id'] ?? null;
+            $existingGuruUser->tenaga_pendidikan_id = $data['tenaga_pendidikan_id'] ?? null;
 
             if (! empty($data['password'])) {
                 $existingGuruUser->password = Hash::make($data['password']);
@@ -189,6 +200,7 @@ class UserManagementController extends Controller
             'guru_id' => $data['guru_id'] ?? null,
             'kepala_sekolah_id' => $data['kepala_sekolah_id'] ?? null,
             'siswa_id' => $data['siswa_id'] ?? null,
+            'tenaga_pendidikan_id' => $data['tenaga_pendidikan_id'] ?? null,
         ]);
 
         return redirect()->route('users.index')->with('success', 'Akun berhasil dibuat.');

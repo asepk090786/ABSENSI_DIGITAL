@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\Guru;
 use App\Models\KepalaSekolah;
 use App\Models\Siswa;
+use App\Models\TenagaPendidikan;
 
 class User extends Authenticatable
 {
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'guru_id',
         'kepala_sekolah_id',
         'siswa_id',
+        'tenaga_pendidikan_id',
     ];
 
     protected $casts = [
@@ -61,6 +63,11 @@ class User extends Authenticatable
     public function siswa()
     {
         return $this->belongsTo(Siswa::class);
+    }
+
+    public function tenagaPendidikan()
+    {
+        return $this->belongsTo(TenagaPendidikan::class);
     }
 
     public function getClassPosition(): ?string
