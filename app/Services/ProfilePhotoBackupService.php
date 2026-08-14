@@ -248,6 +248,10 @@ class ProfilePhotoBackupService
             $parts = glob($path . '/SIMADIS_PART_*.zip') ?: [];
             if (! empty($parts)) {
                 sort($parts, SORT_NATURAL);
+                // If multiple parts, return the directory path for handling
+                if (count($parts) > 1) {
+                    return $path;
+                }
                 return $parts[0];
             }
 
@@ -267,6 +271,25 @@ class ProfilePhotoBackupService
 
         if (file_exists($path)) {
             return $path;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get all parts for a multi-part backup, or null if single file
+     */
+    public function getBackupParts(string $name): ?array
+    {
+        $baseDir = $this->ensureDirectory();
+        $path = $baseDir . '/' . $name;
+
+        if (is_dir($path)) {
+            $parts = glob($path . '/SIMADIS_PART_*.zip') ?: [];
+            if (! empty($parts)) {
+                sort($parts, SORT_NATURAL);
+                return count($parts) > 1 ? $parts : null;
+            }
         }
 
         return null;
