@@ -1774,7 +1774,11 @@
             });
         }
         if (saveVerificationConfigBtn) {
-            saveVerificationConfigBtn.addEventListener('click', saveVerificationConfig);
+            saveVerificationConfigBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                saveVerificationConfig();
+            });
         }
         if (formAbsensi) {
             formAbsensi.addEventListener('change', function(event) {
