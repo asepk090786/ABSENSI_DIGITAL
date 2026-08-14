@@ -13,6 +13,41 @@ echo "Time: $(date)" >> "$LOG_FILE"
 
 cd "$APP_DIR" || exit 1
 
+log_step() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+backup_db_with_progress() {
+    log_step "[0/7] Backup database: preparing backup..."
+    log_step "[0/7] Backup database: running backup process..."
+
+    if ! BACKUP_OUTPUT=$(php artisan db:backup --format=sql 2>&1); then
+        log_step "[0/7] Backup database: FAILED"
+        printf '%s\n' "$BACKUP_OUTPUT" | tee -a "$LOG_FILE"
+        echo "Database backup failed. Deployment stopped to protect data."
+        exit 1
+    fi
+
+    log_step "[0/7] Backup database: backup command finished. Validating result..."
+    printf '%s\n' "$BACKUP_OUTPUT" | tee -a "$LOG_FILE"
+
+    BACKUP_NAME=$(printf '%s\n' "$BACKUP_OUTPUT" | tail -n 1 | sed -E 's/^.*Backup created: //')
+    if [ -n "$BACKUP_NAME" ] && [ "$BACKUP_NAME" != "$BACKUP_OUTPUT" ]; then
+        log_step "[0/7] Backup database: success - $BACKUP_NAME"
+    else
+        log_step "[0/7] Backup database: success, but backup name could not be parsed. Please check the log."
+    fi
+}
+
+# 0. Backup database before pulling code or running migrations
+# Hal ini penting agar data aman jika deploy/update dari GitHub gagal.
+backup_db_with_progress
+
+# Optional: keep only recent backups (7 days)
+log_step "[0/7] Cleaning old backups older than 7 days..."
+find "$APP_DIR/storage/app/backups" -mindepth 1 -maxdepth 1 -type d -name 'SIMADIS_BACKUP_*' -mtime +7 -exec rm -rf {} + 2>/dev/null || true
+log_step "[0/7] Old backup cleanup completed."
+
 # 1. Pull latest changes from production/main branch
 echo "[1/7] Pulling latest changes from GitHub..." | tee -a "$LOG_FILE"
 git pull origin production 2>&1 | tee -a "$LOG_FILE" || git pull origin main 2>&1 | tee -a "$LOG_FILE"

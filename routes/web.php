@@ -30,6 +30,9 @@ Route::get('/', function(){
     return redirect()->route('home');
 });
 
+// GitHub webhook deploy is disabled. Keep manual deploy script usage instead.
+// Route::post('github/webhook', [App\Http\Controllers\GitHubDeployController::class, 'handle'])->name('github.webhook');
+
 // Public certificate verification (allow QR scans without login)
 Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
 
