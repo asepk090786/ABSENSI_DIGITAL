@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tugas_tambahan', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenaga_pendidikan_id')->constrained('tenaga_pendidikan')->onDelete('cascade');
-            $table->string('tugas', 255);
-            $table->text('keterangan')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('tugas_tambahan')) {
+            Schema::create('tugas_tambahan', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('tenaga_pendidikan_id')->constrained('tenaga_pendidikan')->onDelete('cascade');
+                $table->string('tugas', 255);
+                $table->text('keterangan')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
