@@ -89,7 +89,7 @@
                     <tr><th>Format Versi</th><td>Ver.Major.Minor.Patch, misalnya Ver.1.0.26 untuk tahun 2026 dan patch ke-26. Jika ada release baru di tahun berikutnya, format akan menjadi Ver.2.0.1.</td></tr>
                     <tr><th>Commit Lokal</th><td>{{ $appInfo['current_commit'] }}</td></tr>
                     <tr><th>Commit Remote</th><td>{{ $appInfo['remote_commit'] }}</td></tr>
-                    <tr><th>Status</th><td>@if($appInfo['update_available'])<span class="badge bg-warning text-white">Update tersedia</span>@else<span class="badge bg-success text-white">Terupdate</span>@endif</td></tr>
+                    <tr><th>Status</th><td>@if($appInfo['update_available'])<span class="badge bg-warning text-dark">Update tersedia</span>@else<span class="badge bg-success text-white">Terupdate</span>@endif</td></tr>
                     <tr><th>Pesan</th><td>{{ $appInfo['update_message'] }}</td></tr>
                 </tbody>
             </table>

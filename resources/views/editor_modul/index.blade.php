@@ -96,9 +96,7 @@
                         </td>
                         <td>
                             @if($docFile)
-                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
-                                    {{ $docFile }}
-                                </span>
+                                <span class="badge bg-info text-white">{{ $docFile }}</span>
                             @else
                                 <span class="text-muted">Belum ada DOCX</span>
                             @endif

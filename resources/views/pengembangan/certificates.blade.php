@@ -49,7 +49,7 @@
                                                 <td>{{ optional($c->pengembangan)->tema_kegiatan ?? '-' }}</td>
                                                 <td>
                                                     @if(!$c->is_visible)
-                                                        <span class="badge bg-warning text-white">On proses</span>
+                                                        <span class="badge bg-warning text-dark">On proses</span>
                                                     @elseif(empty($c->file_path))
                                                         <span class="badge bg-secondary text-white">Belum tersedia</span>
                                                     @else

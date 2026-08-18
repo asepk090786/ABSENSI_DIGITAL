@@ -104,9 +104,9 @@
                                             <small>
                                                 <i class="ti ti-layer me-1"></i>
                                                 Tingkat: {{ $kelas->tingkat_kelas ?? '-' }}
-                                                @if($kelas->jurusan)
-                                                    <span class="ms-2 badge bg-primary-subtle text-primary">{{ $kelas->jurusan }}</span>
-                                                @endif
+                                                 @if($kelas->jurusan)
+                                                     <span class="ms-2 badge bg-primary text-white">{{ $kelas->jurusan }}</span>
+                                                 @endif
                                             </small>
                                         </p>
                                         <div >

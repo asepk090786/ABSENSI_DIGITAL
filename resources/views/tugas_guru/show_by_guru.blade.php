@@ -68,7 +68,7 @@
                                                     @if($tugas->kelas)
                                                         <span class="badge bg-primary text-white">{{ $tugas->kelas->nama_kelas }}</span>
                                                     @else
-                                                        <span class="badge bg-warning text-white">Semua Kelas Tingkat {{ $tingkat }}</span>
+                                                        <span class="badge bg-warning text-dark">Semua Kelas Tingkat {{ $tingkat }}</span>
                                                     @endif
                                                 </td>
                                                 <td class="text-center">

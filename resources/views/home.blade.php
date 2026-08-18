@@ -17,7 +17,7 @@
         </p>
     </div>
     <div class="ms-auto text-end d-none d-md-block">
-        <span class="badge bg-white bg-opacity-25 text-white px-3 py-2">
+        <span class="badge bg-white bg-opacity-25 text-dark px-3 py-2">
             <i class="ti ti-calendar me-1"></i>{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}
         </span>
     </div>
@@ -81,9 +81,9 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-6">
-                        <a href="{{ route('absensi.index') }}" class="quick-menu-card">
+                        <a href="{{ route('absensi.rekap-bulanan') }}" class="quick-menu-card">
                             <div class="qm-icon bg-primary"><i class="ti ti-clipboard-check"></i></div>
-                            <div class="qm-label">Input Absensi</div>
+                            <div class="qm-label">Rekap Absensi</div>
                         </a>
                     </div>
                     <div class="col-6">
@@ -100,8 +100,8 @@
                     </div>
                     <div class="col-6">
                         <a href="{{ route('absensi.index') }}" class="quick-menu-card">
-                            <div class="qm-icon" style="background:#f59e0b;"><i class="ti ti-report"></i></div>
-                            <div class="qm-label">Laporan</div>
+                            <div class="qm-icon" style="background:#16a34a;"><i class="ti ti-clipboard-check"></i></div>
+                            <div class="qm-label">Absensi</div>
                         </a>
                     </div>
                 </div>
