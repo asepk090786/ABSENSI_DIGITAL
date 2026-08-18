@@ -11,9 +11,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="{{ asset('vendor/tabler/dist/css/tabler.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vendor/tabler/dist/css/tabler-vendors.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vendor/tabler/dist/css/tabler-icons.min.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler-flags.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler-vendors.min.css" rel="stylesheet">
 
     <style>
         :root {
@@ -303,6 +304,6 @@
     </div>
 </div>
 
-<script src="{{ asset('vendor/tabler/dist/js/tabler.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
 </body>
 </html>

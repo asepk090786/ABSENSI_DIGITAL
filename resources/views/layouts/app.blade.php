@@ -15,9 +15,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Tabler CSS -->
-    <link rel="stylesheet" href="{{ asset('vendor/tabler/dist/css/tabler.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vendor/tabler/dist/css/tabler-vendors.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vendor/tabler/dist/css/tabler-icons.min.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler-flags.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler-vendors.min.css" rel="stylesheet">
 
     <style>
         /* ========== VARIABLES ========== */
@@ -59,6 +60,15 @@
             margin: 0;
             min-height: 100vh;
             overflow-x: hidden;
+            padding-top: max(env(safe-area-inset-top), 0px);
+            padding-bottom: max(env(safe-area-inset-bottom), 0px);
+            padding-left: max(env(safe-area-inset-left), 0px);
+            padding-right: max(env(safe-area-inset-right), 0px);
+        }
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+            background: var(--body-bg);
         }
 
         /* ========== LAYOUT STRUCTURE ========== */
@@ -910,6 +920,7 @@
         /* ========== RESPONSIVE ========== */
         @media (max-width: 991.98px) {
             .sidebar {
+                width: min(82vw, 19rem);
                 transform: translateX(-100%);
                 box-shadow: 10px 0 30px rgba(0,0,0,0.2);
             }
@@ -931,12 +942,66 @@
         }
 
         @media (max-width: 576px) {
+            :root {
+                --tblr-navbar-height: 2.75rem;
+            }
+            .topbar {
+                padding: 0 0.7rem;
+                gap: 0.5rem;
+                height: var(--tblr-navbar-height);
+            }
+            .topbar-brand-text {
+                font-size: 0.82rem;
+            }
+            .topbar-brand-sub {
+                display: none;
+            }
+            .topbar-actions .btn-icon,
+            .topbar-toggle {
+                width: 2rem;
+                height: 2rem;
+                font-size: 1rem;
+            }
             .page-content {
                 padding: 0.75rem 0.5rem;
             }
             .card-body { padding: 0.75rem; }
             .stat-value { font-size: 1.25rem; }
             .page-title { font-size: 1.1rem; }
+            .btn,
+            .form-control,
+            .form-select,
+            .btn-sm,
+            .btn-lg {
+                min-height: 2.5rem;
+            }
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .sidebar {
+                width: min(86vw, 18rem);
+            }
+            .topbar-brand {
+                min-width: 0;
+            }
+            .topbar-user-avatar {
+                width: 1.8rem;
+                height: 1.8rem;
+                font-size: 0.72rem;
+            }
+            .page-content {
+                padding: 0.6rem 0.4rem;
+            }
+            .card {
+                border-radius: 0.65rem;
+            }
+            .card-header {
+                padding: 0.7rem 0.8rem !important;
+            }
         }
 
         /* ========== UTILITIES ========== */
@@ -1189,7 +1254,7 @@
                         <a href="{{ route('profile.edit') }}" class="sidebar-admin-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">
                             <i class="ti ti-user"></i> Profile
                         </a>
-                        <a href="{{ route('tahun_ajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs('tahun_ajaran.index') ? 'is-active' : '' }}">
+                        <a href="{{ route('setting.tahun_ajaran') }}" class="sidebar-admin-link {{ request()->routeIs('setting.tahun_ajaran*') ? 'is-active' : '' }}">
                             <i class="ti ti-calendar-range"></i> Tahun Ajaran
                         </a>
                         <a href="{{ route('setting.semester') }}" class="sidebar-admin-link {{ request()->routeIs('setting.semester*') ? 'is-active' : '' }}">
@@ -1699,7 +1764,7 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('vendor/tabler/dist/js/tabler.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
 @stack('js')
 
 <!-- Toast Container -->

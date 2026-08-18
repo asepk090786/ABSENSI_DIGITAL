@@ -166,6 +166,7 @@ Route::middleware(['auth'])->group(function(){
     // Pikret: allow update status for a student in an absensi record
     Route::post('absensi/{absensi}/siswa/{siswa}/status', ['App\Http\Controllers\AbsensiController', 'updateSiswaStatus'])->name('absensi.siswa.update_status');
     Route::post('absensi/verify-student', ['App\Http\Controllers\AbsensiController', 'verifyStudent'])->name('absensi.verify.student');
+    Route::get('absensi/rekap-bulanan', ['App\Http\Controllers\AbsensiController', 'rekapBulanan'])->name('absensi.rekap-bulanan');
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index', 'store']);
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');

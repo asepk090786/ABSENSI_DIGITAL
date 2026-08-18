@@ -425,6 +425,35 @@ class DashboardController extends Controller
                     ->count('kelas_id');
             }
 
+            $rekapAbsensiBulanan = collect();
+            if (
+                $guruData &&
+                \Illuminate\Support\Facades\Schema::hasTable('absensi_kelas') &&
+                \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') &&
+                \Illuminate\Support\Facades\Schema::hasTable('kelas')
+            ) {
+                $rekapAbsensiBulanan = DB::table('absensi_kelas as ak')
+                    ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
+                    ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
+                    ->where('ak.guru_id', $guruData->id)
+                    ->select(
+                        'k.id as kelas_id',
+                        'k.nama_kelas',
+                        DB::raw('YEAR(ak.tanggal) as tahun'),
+                        DB::raw('MONTH(ak.tanggal) as bulan'),
+                        DB::raw('COUNT(DISTINCT ak.id) as total_pertemuan'),
+                        DB::raw('SUM(CASE WHEN LOWER(ass.status) = "hadir" THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("izin","ijin") THEN 1 ELSE 0 END) as izin'),
+                        DB::raw('SUM(CASE WHEN LOWER(ass.status) = "sakit" THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("alpha","alpa","alfa","absen","tidak_hadir") THEN 1 ELSE 0 END) as alpha')
+                    )
+                    ->groupBy('k.id', 'k.nama_kelas', DB::raw('YEAR(ak.tanggal)'), DB::raw('MONTH(ak.tanggal)'))
+                    ->orderBy(DB::raw('YEAR(ak.tanggal)'), 'desc')
+                    ->orderBy(DB::raw('MONTH(ak.tanggal)'), 'desc')
+                    ->orderBy('k.nama_kelas', 'asc')
+                    ->get();
+            }
+
             $isGuruBk = $user->hasRole('Guru BK');
             $kelasBinaanBk = collect();
             if (
@@ -451,7 +480,7 @@ class DashboardController extends Controller
                 'guru','siswa','kelas','absensi','tahunAjaran','semestrName',
                 'totalJadwal','jadwalHariIni','totalAbsensiGuru','absensiHariIni',
                 'totalAgendaGuru','agendaGuruMingguIni','totalAgendaKelas','agendaKelasMingguIni','totalNilai','kelasYangDiajar',
-                'isGuruBk','kelasBinaanBk'
+                'isGuruBk','kelasBinaanBk','rekapAbsensiBulanan'
             ));
         } elseif ($isSiswa) {
             $classPosition = $user->getClassPosition();

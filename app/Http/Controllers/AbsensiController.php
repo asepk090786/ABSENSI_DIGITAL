@@ -234,6 +234,46 @@ class AbsensiController extends Controller
         return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer', 'canPrintExport', 'bkAttendanceStats'));
     }
 
+    public function rekapBulanan(Request $request)
+    {
+        $user = auth()->user();
+        if (! $user) {
+            abort(403);
+        }
+
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $query = DB::table('absensi_kelas as ak')
+            ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
+            ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
+            ->leftJoin('guru as g', 'g.id', '=', 'ak.guru_id')
+            ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
+            ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
+            ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('ak.guru_id', $user->guru_id))
+            ->select(
+                'k.id as kelas_id',
+                'k.nama_kelas',
+                DB::raw('YEAR(ak.tanggal) as tahun'),
+                DB::raw('MONTH(ak.tanggal) as bulan'),
+                DB::raw('COUNT(DISTINCT ak.id) as total_pertemuan'),
+                DB::raw('SUM(CASE WHEN LOWER(ass.status) = "hadir" THEN 1 ELSE 0 END) as hadir'),
+                DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("izin","ijin") THEN 1 ELSE 0 END) as izin'),
+                DB::raw('SUM(CASE WHEN LOWER(ass.status) = "sakit" THEN 1 ELSE 0 END) as sakit'),
+                DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("terlambat","telat") THEN 1 ELSE 0 END) as terlambat'),
+                DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("alpha","alpa","alfa","absen","tidak_hadir") THEN 1 ELSE 0 END) as alpha')
+            )
+            ->groupBy('k.id', 'k.nama_kelas', DB::raw('YEAR(ak.tanggal)'), DB::raw('MONTH(ak.tanggal)'))
+            ->orderBy(DB::raw('YEAR(ak.tanggal)'), 'desc')
+            ->orderBy(DB::raw('MONTH(ak.tanggal)'), 'desc')
+            ->orderBy('k.nama_kelas', 'asc');
+
+        $rekapBulanan = $query->get();
+
+        return view('absensi.rekap_bulanan', compact('rekapBulanan', 'tahun', 'semester'));
+    }
+
     public function exportBkMonitoring(Request $request)
     {
         $user = auth()->user();

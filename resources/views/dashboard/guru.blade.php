@@ -49,6 +49,55 @@
 </div>
 @endif
 
+<!-- Quick Access -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="ti ti-apps me-2 text-primary"></i>Menu Akses Cepat</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        @if(auth()->user()->guru_id)
+                        <a href="{{ route('jadwal-kbm.show-by-guru', ['guru' => auth()->user()->guru_id]) }}" class="quick-menu-card">
+                        @else
+                        <a href="{{ route('jadwal-kbm.index') }}" class="quick-menu-card">
+                        @endif
+                            <div class="qm-icon bg-primary"><i class="ti ti-calendar-time"></i></div>
+                            <div class="qm-label">Jadwal Mengajar</div>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ route('absensi.rekap-bulanan') }}" class="quick-menu-card">
+                            <div class="qm-icon bg-accent"><i class="ti ti-check"></i></div>
+                            <div class="qm-label">Rekap Absensi</div>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ route('agenda_kelas.index') }}" class="quick-menu-card">
+                            <div class="qm-icon" style="background:#f59e0b;"><i class="ti ti-file-text"></i></div>
+                            <div class="qm-label">Agenda Pembelajaran</div>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ route('absensi.index') }}" class="quick-menu-card">
+                            <div class="qm-icon" style="background:#16a34a;"><i class="ti ti-clipboard-check"></i></div>
+                            <div class="qm-label">Absensi</div>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ route('nilai.index') }}" class="quick-menu-card">
+                            <div class="qm-icon" style="background:#ef4444;"><i class="ti ti-report-analytics"></i></div>
+                            <div class="qm-label">Daftar Nilai</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
@@ -113,80 +162,6 @@
     </div>
 </div>
 
-<!-- Quick Access -->
-<div class="row g-3 mb-4">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title"><i class="ti ti-apps me-2 text-primary"></i>Menu Akses Cepat</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-6">
-                        @if(auth()->user()->guru_id)
-                        <a href="{{ route('jadwal-kbm.show-by-guru', ['guru' => auth()->user()->guru_id]) }}" class="quick-menu-card">
-                        @else
-                        <a href="{{ route('jadwal-kbm.index') }}" class="quick-menu-card">
-                        @endif
-                            <div class="qm-icon bg-primary"><i class="ti ti-calendar-time"></i></div>
-                            <div class="qm-label">Jadwal Mengajar</div>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{{ route('absensi.index') }}" class="quick-menu-card">
-                            <div class="qm-icon bg-accent"><i class="ti ti-check"></i></div>
-                            <div class="qm-label">Absensi</div>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{{ route('agenda_kelas.index') }}" class="quick-menu-card">
-                            <div class="qm-icon" style="background:#f59e0b;"><i class="ti ti-file-text"></i></div>
-                            <div class="qm-label">Agenda Pembelajaran</div>
-                        </a>
-                    </div>
-                    <div class="col-6">
-                        <a href="{{ route('nilai.index') }}" class="quick-menu-card">
-                            <div class="qm-icon" style="background:#ef4444;"><i class="ti ti-report-analytics"></i></div>
-                            <div class="qm-label">Daftar Nilai</div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="card-title"><i class="ti ti-bulb me-2 text-warning"></i>Tips & Panduan</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-start mb-3">
-                    <span class="badge bg-primary me-2 mt-1">1</span>
-                    <div>
-                        <strong style="font-size:0.85rem;">Absensi Tepat Waktu</strong>
-                        <p class="text-muted small mb-0">Lakukan input absensi di setiap pertemuan untuk data yang akurat.</p>
-                    </div>
-                </div>
-                <div class="d-flex align-items-start mb-3">
-                    <span class="badge bg-accent me-2 mt-1">2</span>
-                    <div>
-                        <strong style="font-size:0.85rem;">Isi Agenda Pembelajaran</strong>
-                        <p class="text-muted small mb-0">Catat materi dan kegiatan pembelajaran setiap hari.</p>
-                    </div>
-                </div>
-                <div class="d-flex align-items-start">
-                    <span class="badge bg-warning me-2 mt-1">3</span>
-                    <div>
-                        <strong style="font-size:0.85rem;">Update Nilai Berkala</strong>
-                        <p class="text-muted small mb-0">Input nilai tugas, UTS, dan UAS secara berkala.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Info -->
 <div class="card">
     <div class="card-header">
@@ -224,4 +199,50 @@
         </div>
     </div>
 </div>
+
+@if(isset($rekapAbsensiBulanan) && $rekapAbsensiBulanan->count() > 0)
+<!-- Rekap Absensi Bulanan -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h5 class="card-title"><i class="ti ti-calendar-stats me-2 text-primary"></i>Rekap Absensi Bulanan</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kelas</th>
+                        <th>Bulan</th>
+                        <th class="text-center">Total Pertemuan</th>
+                        <th class="text-center">Hadir</th>
+                        <th class="text-center">Izin</th>
+                        <th class="text-center">Sakit</th>
+                        <th class="text-center">Alpha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                        $bulanLabels = [
+                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                        ];
+                    @endphp
+                    @foreach($rekapAbsensiBulanan as $rekap)
+                    <tr>
+                        <td>{{ $rekap->nama_kelas }}</td>
+                        <td>{{ $bulanLabels[$rekap->bulan] ?? $rekap->bulan }} {{ $rekap->tahun }}</td>
+                        <td class="text-center">{{ $rekap->total_pertemuan }}</td>
+                        <td class="text-center text-success fw-medium">{{ $rekap->hadir }}</td>
+                        <td class="text-center text-info fw-medium">{{ $rekap->izin }}</td>
+                        <td class="text-center text-warning fw-medium">{{ $rekap->sakit }}</td>
+                        <td class="text-center text-danger fw-medium">{{ $rekap->alpha }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@endif
 @endsection

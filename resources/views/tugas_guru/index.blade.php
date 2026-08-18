@@ -136,7 +136,7 @@
                                                                             @elseif($activeCount === 0)
                                                                                 <span class="badge bg-danger text-white">Semua Nonaktif</span>
                                                                             @else
-                                                                                <span class="badge bg-warning text-white">{{ $activeCount }}/{{ $totalCount }} Aktif</span>
+                                                                                 <span class="badge bg-warning text-dark">{{ $activeCount }}/{{ $totalCount }} Aktif</span>
                                                                             @endif
                                                                         </td>
                                                                         <td class="text-center">
