@@ -18,7 +18,15 @@ class Supervisi extends Model
         'jadwal_kbm_id',
         'tanggal',
         'jam_ke',
+        'tujuan',
+        'fokus',
+        'supervisor_id',
+        'status',
         'keterangan',
+        'catatan_objektif',
+        'refleksi_guru',
+        'refleksi_supervisor',
+        'umpan_balik',
     ];
 
     protected $casts = [
@@ -28,6 +36,11 @@ class Supervisi extends Model
     public function guru()
     {
         return $this->belongsTo(Guru::class);
+    }
+
+    public function supervisor()
+    {
+        return $this->belongsTo(Guru::class, 'supervisor_id');
     }
 
     public function mataPelajaran()
@@ -43,5 +56,20 @@ class Supervisi extends Model
     public function jadwalKbm()
     {
         return $this->belongsTo(JadwalKbm::class);
+    }
+
+    public function observationItems()
+    {
+        return $this->hasMany(ObservationItem::class, 'supervisi_id');
+    }
+
+    public function evidences()
+    {
+        return $this->hasMany(ObservationEvidence::class, 'supervisi_id');
+    }
+
+    public function postConference()
+    {
+        return $this->hasOne(PostConference::class, 'supervisi_id');
     }
 }

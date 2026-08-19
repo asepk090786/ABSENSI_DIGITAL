@@ -94,6 +94,57 @@ Route::middleware(['auth'])->group(function(){
         Route::post('editor-modul/{id}/upload', [App\Http\Controllers\RencanaPembelajaranController::class, 'uploadDocument'])->name('editor_modul.upload');
     });
 
+    Route::prefix('supervisi')->name('supervisi.')->group(function () {
+        Route::get('dashboard', [SupervisiController::class, 'dashboard'])->name('dashboard');
+        Route::get('prasupervisi', [SupervisiController::class, 'prasupervisi'])->name('prasupervisi');
+        Route::get('pelaksanaan', [SupervisiController::class, 'pelaksanaan'])->name('pelaksanaan');
+        Route::get('pascasupervisi', [SupervisiController::class, 'pascasupervisi'])->name('pascasupervisi');
+        Route::get('tindak-lanjut', [SupervisiController::class, 'tindakLanjut'])->name('tindak-lanjut');
+        Route::get('monitoring', [SupervisiController::class, 'monitoring'])->name('monitoring');
+        Route::get('laporan', [SupervisiController::class, 'laporan'])->name('laporan');
+        Route::get('laporan/{supervisi}/export-pdf', [SupervisiController::class, 'exportPdf'])->name('laporan.export-pdf');
+        Route::get('laporan/export-excel', [SupervisiController::class, 'exportExcel'])->name('laporan.export-excel');
+
+        // Prasupervisi / Pre-Conference
+        Route::get('prasupervisi/{supervisi}/edit', [SupervisiController::class, 'prasupervisiEdit'])->name('prasupervisi.edit');
+        Route::put('prasupervisi/{supervisi}', [SupervisiController::class, 'prasupervisiUpdate'])->name('prasupervisi.update');
+
+        // Observasi
+        Route::get('observasi/{supervisi}', [SupervisiController::class, 'observasiShow'])->name('observasi.show');
+        Route::post('observasi/{supervisi}', [SupervisiController::class, 'observasiStore'])->name('observasi.store');
+
+        // Post-Conference & Feedback
+        Route::get('post-conference/{supervisi}', [SupervisiController::class, 'postConferenceShow'])->name('post-conference.show');
+        Route::post('post-conference/{supervisi}', [SupervisiController::class, 'postConferenceStore'])->name('post-conference.store');
+
+        // Action Plan
+        Route::get('action-plan/{supervisi}', [SupervisiController::class, 'actionPlanShow'])->name('action-plan.show');
+        Route::post('action-plan/{supervisi}', [SupervisiController::class, 'actionPlanStore'])->name('action-plan.store');
+        Route::get('action-plan/{actionPlan}/edit', [SupervisiController::class, 'actionPlanEdit'])->name('action-plan.edit');
+        Route::put('action-plan/{actionPlan}', [SupervisiController::class, 'actionPlanUpdate'])->name('action-plan.update');
+
+        // Action Plan Monitoring
+        Route::post('monitoring/{actionPlan}', [SupervisiController::class, 'monitoringStore'])->name('monitoring.store');
+
+        Route::prefix('instrumen')->name('instrumen.')->group(function () {
+            Route::get('/', [SupervisiController::class, 'instrumenIndex'])->name('index');
+            Route::get('/create', [SupervisiController::class, 'instrumenCreate'])->name('create');
+            Route::post('/', [SupervisiController::class, 'instrumenStore'])->name('store');
+            Route::get('/{instrumen}/edit', [SupervisiController::class, 'instrumenEdit'])->name('edit');
+            Route::put('/{instrumen}', [SupervisiController::class, 'instrumenUpdate'])->name('update');
+            Route::delete('/{instrumen}', [SupervisiController::class, 'instrumenDelete'])->name('delete');
+        });
+
+        Route::prefix('indikator')->name('indikator.')->group(function () {
+            Route::get('/', [SupervisiController::class, 'indikatorIndex'])->name('index');
+            Route::get('/create', [SupervisiController::class, 'indikatorCreate'])->name('create');
+            Route::post('/', [SupervisiController::class, 'indikatorStore'])->name('store');
+            Route::get('/{indikator}/edit', [SupervisiController::class, 'indikatorEdit'])->name('edit');
+            Route::put('/{indikator}', [SupervisiController::class, 'indikatorUpdate'])->name('update');
+            Route::delete('/{indikator}', [SupervisiController::class, 'indikatorDelete'])->name('delete');
+        });
+    });
+
     // Ekstrakurikuler Routes (full feature)
     Route::prefix('ekskul')->name('ekskul.')->group(function () {
         Route::get('/', [App\Http\Controllers\EkskulController::class, 'index'])->name('index');

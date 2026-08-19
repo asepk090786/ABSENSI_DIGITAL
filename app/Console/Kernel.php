@@ -13,6 +13,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        if (app()->environment('testing')) {
+            return;
+        }
+
         // Schedule database backup if enabled in settings
         try {
             $settings = new SettingsManager();

@@ -853,11 +853,42 @@
             background: #6b7280;
             color: #fff !important;
         }
+
+        /* Pastel / light badges must keep dark readable text. */
+        .badge.bg-primary-subtle,
+        .badge.bg-success-subtle,
+        .badge.bg-warning-subtle,
+        .badge.bg-info-subtle,
+        .badge.bg-danger-subtle,
+        .badge.bg-secondary-subtle,
+        .badge.bg-light,
+        .badge.bg-primary-light,
+        .badge.bg-blue-lt,
+        .badge.bg-pink-lt,
+        .badge.bg-green-lt,
+        .badge.bg-red-lt,
+        .badge.bg-azure-lt,
+        .badge.bg-indigo-lt,
+        .badge.bg-purple-lt,
+        .badge.bg-teal-lt,
+        .badge.bg-cyan-lt,
+        .badge.bg-orange-lt,
+        .badge.bg-yellow-lt,
+        .badge.bg-warning.text-dark,
+        .badge.bg-light.text-primary,
+        .badge.bg-primary-light.text-primary {
+            color: #111827 !important;
+        }
+
         .badge[class*="bg-"] {
             color: #fff !important;
         }
+
         .badge.bg-warning,
-        .badge.bg-warning.text-dark {
+        .badge.bg-warning.text-dark,
+        .badge.bg-warning-subtle,
+        .badge.bg-orange-lt,
+        .badge.bg-yellow-lt {
             color: #1f2937 !important;
         }
 

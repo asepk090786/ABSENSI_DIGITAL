@@ -58,87 +58,138 @@
 var availableDates = [];
 
 function validateTanggal() {
-    var tanggalVal = $('#tanggal').val();
+    var tanggalEl = document.getElementById('tanggal');
+    var tanggalVal = tanggalEl ? tanggalEl.value : '';
     var valid = availableDates.length === 0 || availableDates.indexOf(tanggalVal) !== -1;
 
     if (!valid && tanggalVal) {
-        $('#tanggal').addClass('is-invalid');
-        $('#tanggalHelp').text('Tanggal tidak valid. Pilih tanggal di mana guru memiliki jadwal KBM.');
+        tanggalEl.classList.add('is-invalid');
+        var tanggalHelp = document.getElementById('tanggalHelp');
+        if (tanggalHelp) tanggalHelp.textContent = 'Tanggal tidak valid. Pilih tanggal di mana guru memiliki jadwal KBM.';
     } else {
-        $('#tanggal').removeClass('is-invalid');
-        $('#tanggalHelp').text('Pilih tanggal ketika guru memiliki jadwal KBM. Hanya tanggal yang tersedia dapat dipilih.');
+        if (tanggalEl) tanggalEl.classList.remove('is-invalid');
+        var tanggalHelp = document.getElementById('tanggalHelp');
+        if (tanggalHelp) tanggalHelp.textContent = 'Pilih tanggal ketika guru memiliki jadwal KBM. Hanya tanggal yang tersedia dapat dipilih.';
     }
 
     return valid;
 }
 
 function loadAvailableDates() {
-    var guruId = $('#guru_id').val();
+    var guruIdEl = document.getElementById('guru_id');
+    var guruId = guruIdEl ? guruIdEl.value : '';
+    var tanggalEl = document.getElementById('tanggal');
+    var jadwalSelect = document.getElementById('jadwal_kbm_id');
+
     if (!guruId) {
-        $('#tanggal').val('');
-        $('#tanggal').prop('disabled', true);
-        $('#tanggal').attr('min', '');
-        $('#tanggal').attr('max', '');
-        $('#jadwal_kbm_id').html('<option value="">Pilih tanggal dan guru terlebih dahulu</option>');
+        if (tanggalEl) {
+            tanggalEl.value = '';
+            tanggalEl.disabled = true;
+            tanggalEl.removeAttribute('min');
+            tanggalEl.removeAttribute('max');
+        }
+        if (jadwalSelect) jadwalSelect.innerHTML = '<option value="">Pilih tanggal dan guru terlebih dahulu</option>';
         availableDates = [];
         validateTanggal();
         return;
     }
 
-    $('#tanggal').prop('disabled', false);
-    $.getJSON('{{ url('akademik/supervisi/get-available-dates') }}/' + guruId, function(response) {
-        availableDates = response?.dates || [];
-        if (!availableDates.length) {
-            $('#tanggal').attr('min', '');
-            $('#tanggal').attr('max', '');
-            $('#tanggalHelp').text('Guru ini tidak memiliki jadwal KBM yang tersedia.');
-        } else {
-            $('#tanggal').attr('min', availableDates[0]);
-            $('#tanggal').attr('max', availableDates[availableDates.length - 1]);
-            $('#tanggalHelp').text('Pilih tanggal ketika guru memiliki jadwal KBM. Hanya tanggal yang tersedia dapat dipilih.');
-        }
-        validateTanggal();
-    });
+    if (tanggalEl) tanggalEl.disabled = false;
+    fetch('{{ url('akademik/supervisi/get-available-dates') }}/' + encodeURIComponent(guruId))
+        .then(function(response) {
+            console.log('loadAvailableDates response status:', response.status);
+            return response.json();
+        })
+        .then(function(response) {
+            console.log('loadAvailableDates response:', response);
+            availableDates = (response && response.dates) ? response.dates : [];
+            var tanggalHelp = document.getElementById('tanggalHelp');
+            if (!availableDates.length) {
+                if (tanggalEl) {
+                    tanggalEl.removeAttribute('min');
+                    tanggalEl.removeAttribute('max');
+                }
+                if (tanggalHelp) tanggalHelp.textContent = 'Guru ini tidak memiliki jadwal KBM yang tersedia.';
+            } else {
+                if (tanggalEl) {
+                    tanggalEl.setAttribute('min', availableDates[0]);
+                    tanggalEl.setAttribute('max', availableDates[availableDates.length - 1]);
+                }
+                if (tanggalHelp) tanggalHelp.textContent = 'Pilih tanggal ketika guru memiliki jadwal KBM. Hanya tanggal yang tersedia dapat dipilih.';
+            }
+            validateTanggal();
+        })
+        .catch(function() {
+            availableDates = [];
+            validateTanggal();
+        });
 }
 
 function loadJadwalOptions() {
-    var guruId = $('#guru_id').val();
-    var tanggal = $('#tanggal').val();
+    var guruIdEl = document.getElementById('guru_id');
+    var tanggalEl = document.getElementById('tanggal');
+    var jadwalSelect = document.getElementById('jadwal_kbm_id');
+    var guruId = guruIdEl ? guruIdEl.value : '';
+    var tanggal = tanggalEl ? tanggalEl.value : '';
+
     if (!guruId || !tanggal) {
-        $('#jadwal_kbm_id').html('<option value="">Pilih tanggal dan guru terlebih dahulu</option>');
+        if (jadwalSelect) jadwalSelect.innerHTML = '<option value="">Pilih tanggal dan guru terlebih dahulu</option>';
         return;
     }
 
-    $.getJSON('{{ url('akademik/supervisi/get-jadwal-options') }}/' + guruId + '/' + tanggal, function(response) {
-        if (!response || !response.length) {
-            $('#jadwal_kbm_id').html('<option value="">Tidak ada jadwal KBM untuk tanggal ini</option>');
-            return;
-        }
+    fetch('{{ url('akademik/supervisi/get-jadwal-options') }}/' + encodeURIComponent(guruId) + '/' + encodeURIComponent(tanggal))
+        .then(function(response) {
+            console.log('loadJadwalOptions response status:', response.status);
+            return response.json();
+        })
+        .then(function(response) {
+            console.log('loadJadwalOptions response:', response);
+            if (!jadwalSelect) return;
+            if (!response || !response.length) {
+                jadwalSelect.innerHTML = '<option value="">Tidak ada jadwal KBM untuk tanggal ini</option>';
+                return;
+            }
 
-        var html = '<option value="">Pilih Jadwal KBM</option>';
-        response.forEach(function(item) {
-            html += '<option value="' + item.id + '">[' + item.kelas_nama + '] ' + item.mata_pelajaran + ' - Jam ke ' + item.jam_ke + ' (' + (item.jam_mulai || '-') + ' - ' + (item.jam_selesai || '-') + ')</option>';
+            var html = '<option value="">Pilih Jadwal KBM</option>';
+            response.forEach(function(item) {
+                html += '<option value="' + item.id + '">[' + item.kelas_nama + '] ' + item.mata_pelajaran + ' - Jam ke ' + item.jam_ke + ' (' + (item.jam_mulai || '-') + ' - ' + (item.jam_selesai || '-') + ')</option>';
+            });
+            jadwalSelect.innerHTML = html;
+        })
+        .catch(function() {
+            if (jadwalSelect) jadwalSelect.innerHTML = '<option value="">Gagal memuat jadwal</option>';
         });
-        $('#jadwal_kbm_id').html(html);
-    });
 }
 
-$(function() {
-    $('#guru_id').on('change', function() {
-        $('#tanggal').val('');
-        $('#jadwal_kbm_id').html('<option value="">Pilih tanggal dan guru terlebih dahulu</option>');
-        loadAvailableDates();
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    var guruSelect = document.getElementById('guru_id');
+    var tanggalInput = document.getElementById('tanggal');
+    console.log('DOMContentLoaded: guruSelect', !!guruSelect, 'tanggalInput', !!tanggalInput);
 
-    $('#tanggal').on('change', function() {
-        if (validateTanggal()) {
-            loadJadwalOptions();
-        } else {
-            $('#jadwal_kbm_id').html('<option value="">Pilih tanggal yang valid terlebih dahulu</option>');
-        }
-    });
+    if (guruSelect) {
+        guruSelect.addEventListener('change', function() {
+            console.log('guru changed to:', this.value);
+            if (tanggalInput) tanggalInput.value = '';
+            var jadwalSelect = document.getElementById('jadwal_kbm_id');
+            if (jadwalSelect) jadwalSelect.innerHTML = '<option value="">Pilih tanggal dan guru terlebih dahulu</option>';
+            loadAvailableDates();
+        });
+    }
 
-    if ($('#guru_id').val()) {
+    if (tanggalInput) {
+        tanggalInput.addEventListener('change', function() {
+            console.log('tanggal changed to:', this.value);
+            if (validateTanggal()) {
+                loadJadwalOptions();
+            } else {
+                var jadwalSelect = document.getElementById('jadwal_kbm_id');
+                if (jadwalSelect) jadwalSelect.innerHTML = '<option value="">Pilih tanggal yang valid terlebih dahulu</option>';
+            }
+        });
+    }
+
+    if (guruSelect && guruSelect.value) {
+        console.log('initial load for guru:', guruSelect.value);
         loadAvailableDates();
     }
 });
