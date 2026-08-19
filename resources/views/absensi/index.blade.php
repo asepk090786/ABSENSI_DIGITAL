@@ -612,7 +612,13 @@
                     document.addEventListener('DOMContentLoaded', function(){
                         var periodSelect = document.getElementById('print_period');
                         var container = document.getElementById('print_time_container');
-                        var initialDate = document.getElementById('print_tanggal').value || new Date().toISOString().slice(0,10);
+                        var printTanggalInput = document.getElementById('print_tanggal');
+
+                        if (!periodSelect || !container) {
+                            return;
+                        }
+
+                        var initialDate = (printTanggalInput && printTanggalInput.value) || new Date().toISOString().slice(0,10);
                         var user = {!! json_encode(auth()->user()->hasRole('Siswa') ? ['siswa'=>true,'kelas_id'=>auth()->user()->siswa->kelas_id ?? null] : ['siswa'=>false]) !!};
 
                         function isoDate(d) {
@@ -731,10 +737,10 @@
                         if (!btn) return;
                         btn.addEventListener('click', function(e){
                             e.preventDefault();
-                            var period = document.getElementById('print_period').value;
+                            var period = periodSelect ? periodSelect.value : 'daily';
                             var tanggal = '';
                             if (period === 'daily') {
-                                tanggal = (document.getElementById('print_tanggal') || {value: initialDate}).value;
+                                tanggal = (printTanggalInput || { value: initialDate }).value || initialDate;
                             } else if (period === 'weekly') {
                                 var sel = document.getElementById('print_week');
                                 tanggal = sel ? sel.value : initialDate;
@@ -786,10 +792,10 @@
                         if (exportBtn) {
                             exportBtn.addEventListener('click', function(e){
                                 e.preventDefault();
-                                var period = document.getElementById('print_period').value;
+                                var period = periodSelect ? periodSelect.value : 'daily';
                                 var tanggal = '';
                                 if (period === 'daily') {
-                                    tanggal = (document.getElementById('print_tanggal') || {value: initialDate}).value;
+                                    tanggal = (printTanggalInput || { value: initialDate }).value || initialDate;
                                 } else if (period === 'weekly') {
                                     var sel = document.getElementById('print_week');
                                     tanggal = sel ? sel.value : initialDate;

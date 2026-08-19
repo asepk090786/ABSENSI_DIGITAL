@@ -208,7 +208,7 @@
                                                     {{ $row->hadir ?? 0 }} Hari Hadir
                                                 </span>
                                             </td>
-                                            <td><span class="badge bg-warning text-white">{{ $row->sakit ?? 0 }}</span></td>
+                                            <td><span class="badge bg-warning text-dark">{{ $row->sakit ?? 0 }}</span></td>
                                             <td><span class="badge bg-info text-white">{{ $row->izin ?? 0 }}</span></td>
                                             <td><span class="badge bg-orange text-white">{{ $row->terlambat ?? 0 }}</span></td>
                                             <td><span class="badge bg-danger text-white">{{ $row->tidak_hadir ?? 0 }}</span></td>

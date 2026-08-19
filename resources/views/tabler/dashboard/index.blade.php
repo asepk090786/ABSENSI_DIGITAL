@@ -14,6 +14,7 @@ $quickMenus = [
     ['label' => 'Guru', 'icon' => 'ti-user-check', 'route' => route('guru.index'), 'color' => 'teal'],
     ['label' => 'Nilai', 'icon' => 'ti-file-text', 'route' => route('nilai.index'), 'color' => 'violet'],
     ['label' => 'Jadwal', 'icon' => 'ti-calendar', 'route' => route('jadwal-kbm.index'), 'color' => 'orange'],
+    ['label' => 'Rekap Absensi', 'icon' => 'ti-clipboard-check', 'route' => route('absensi.rekap-bulanan'), 'color' => 'green'],
 ];
 @endphp
 

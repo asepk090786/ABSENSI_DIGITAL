@@ -145,9 +145,9 @@
             <div class="card-body">
                 <div class="row g-2">
                     <div class="col-6 col-md-3">
-                        <a href="{{ route('absensi.index') }}" class="quick-menu-card">
+                        <a href="{{ route('absensi.rekap-bulanan') }}" class="quick-menu-card">
                             <div class="qm-icon bg-accent"><i class="ti ti-check"></i></div>
-                            <div class="qm-label">Absensi</div>
+                            <div class="qm-label">Rekap Absensi</div>
                         </a>
                     </div>
                     @if($isSiswaOfficer)

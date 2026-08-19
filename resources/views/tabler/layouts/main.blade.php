@@ -12,11 +12,11 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://unpkg.com">
 
-    <link href="https://cdn.jsdelivr.net/npm/tabler-icons@1.110.0/dist/tabler-icons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tabler@1.0.0-beta.34/dist/css/tabler.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tabler@1.0.0-beta.34/dist/css/tabler-flags.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tabler@1.0.0-beta.34/dist/css/tabler-vendors.min.css" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/tabler@1.0.0-beta.34/dist/js/tabler.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler-flags.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler-vendors.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
 
     <link rel="icon" type="image/png" href="{{ asset('storage/' . ($sekolah?->logo ?? 'defaults/logo.png')) }}" />
 
