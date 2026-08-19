@@ -901,6 +901,14 @@
         .badge.bg-yellow-lt {
             color: #1f2937 !important;
         }
+        .badge-laki {
+            background: #2563eb;
+            color: #fff !important;
+        }
+        .badge-perempuan {
+            background: #db2777;
+            color: #fff !important;
+        }
 
         /* ========== ALERTS ========== */
         .alert {

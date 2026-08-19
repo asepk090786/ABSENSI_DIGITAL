@@ -223,7 +223,7 @@
                                             <div class="fw-bold">{{ $siswa->nama }}</div>
                                             <div class="text-muted small">NIS: {{ $siswa->nis }} | NISN: {{ $siswa->nisn }}</div>
                                         </div>
-                                        <span class="badge bg-secondary">{{ $siswa->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</span>
+                                        <span class="badge {{ $siswa->jenis_kelamin == 'L' ? 'badge-laki' : 'badge-perempuan' }}">{{ $siswa->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</span>
                                     </div>
                                 </label>
                                 @endforeach
@@ -313,9 +313,9 @@
                                 <td class="nama-siswa">{{ $s->nama }}</td>
                                 <td>
                                     @if($s->jenis_kelamin == 'L')
-                                        <span class="badge bg-blue-lt">Laki-laki</span>
+                                        <span class="badge badge-laki">Laki-laki</span>
                                     @elseif($s->jenis_kelamin == 'P')
-                                        <span class="badge bg-pink-lt">Perempuan</span>
+                                        <span class="badge badge-perempuan">Perempuan</span>
                                     @else
                                         -
                                     @endif

@@ -94,9 +94,9 @@
                     <td>{{ $it->telepon ?? '-' }}</td>
                     <td>
                         @if($it->jenis_kelamin == 'L')
-                            <span class="badge bg-blue-lt text-blue">Laki-laki</span>
+                            <span class="badge badge-laki">Laki-laki</span>
                         @elseif($it->jenis_kelamin == 'P')
-                            <span class="badge bg-pink-lt text-pink">Perempuan</span>
+                            <span class="badge badge-perempuan">Perempuan</span>
                         @else
                             <span class="text-muted">-</span>
                         @endif
