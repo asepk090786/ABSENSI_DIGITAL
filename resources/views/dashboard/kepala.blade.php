@@ -83,7 +83,7 @@
                     <h5 class="card-title mb-1">Statistik Kehadiran Siswa</h5>
                     <p class="text-muted small mb-0">Data kehadiran harian siswa di periode aktif.</p>
                 </div>
-                <span class="badge bg-light text-dark">{{ $labelPeriode ?? 'Hari Ini' }}</span>
+                <span class="badge bg-primary text-white">{{ $labelPeriode ?? 'Hari Ini' }}</span>
             </div>
             <div class="card-body">
                 <div class="row g-3 text-center">
@@ -134,7 +134,7 @@
                     <h5 class="card-title mb-1">Statistik Kehadiran Guru</h5>
                     <p class="text-muted small mb-0">Data kehadiran guru hari ini.</p>
                 </div>
-                <span class="badge bg-light text-dark">{{ $labelPeriode ?? 'Hari Ini' }}</span>
+                <span class="badge bg-primary text-white">{{ $labelPeriode ?? 'Hari Ini' }}</span>
             </div>
             <div class="card-body">
                 <div class="row g-3 text-center">

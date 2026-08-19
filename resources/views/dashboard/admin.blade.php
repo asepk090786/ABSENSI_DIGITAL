@@ -104,7 +104,7 @@
                             </span>
                             <h5 class="mb-0">Statistik Kehadiran Siswa Hari Ini</h5>
                         </div>
-                        <span class="badge rounded-pill bg-light border text-dark py-2 px-3">
+                        <span class="badge rounded-pill bg-primary text-white py-2 px-3">
                             <i class="ti ti-calendar me-1"></i>{{ $labelPeriode }}
                         </span>
                     </div>
@@ -184,7 +184,7 @@
                             </span>
                             <h5 class="mb-0">Statistik Kehadiran Guru Hari Ini</h5>
                         </div>
-                        <span class="badge rounded-pill bg-light border text-dark py-2 px-3">
+                        <span class="badge rounded-pill bg-primary text-white py-2 px-3">
                             <i class="ti ti-calendar me-1"></i>{{ $labelPeriode }}
                         </span>
                     </div>
