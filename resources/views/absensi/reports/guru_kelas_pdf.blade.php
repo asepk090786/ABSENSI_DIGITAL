@@ -18,6 +18,23 @@
     </style>
 </head>
 <body>
+    @if(isset($monthlyRows))
+        <div class="title">
+            <h2>Rekap Absensi {{ $monthlyKelas->nama_kelas ?? '-' }}</h2>
+            <div>{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</div>
+            <div>{{ $monthlyBulanLabel }} | Tahun Ajaran {{ $tahun->nama_tahun ?? '-' }} | {{ $semester->nama_semester ?? '-' }}</div>
+        </div>
+        <table>
+            <thead><tr><th>No</th><th>Nama Siswa</th><th>NIS</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alpa</th><th>Total Hari</th></tr></thead>
+            <tbody>
+                @forelse($monthlyRows as $index => $row)
+                    <tr><td class="text-center">{{ $index + 1 }}</td><td>{{ data_get($row, 'nama_siswa', '-') }}</td><td>{{ data_get($row, 'nis', '-') }}</td><td class="text-center">{{ data_get($row, 'hadir_count', 0) }}</td><td class="text-center">{{ data_get($row, 'terlambat_count', 0) }}</td><td class="text-center">{{ data_get($row, 'sakit_count', 0) }}</td><td class="text-center">{{ data_get($row, 'izin_count', 0) }}</td><td class="text-center">{{ data_get($row, 'alpa_count', data_get($row, 'alfa_count', 0)) }}</td><td class="text-center">{{ data_get($row, 'total_days', 0) }}</td></tr>
+                @empty
+                    <tr><td colspan="9" class="text-center">Belum ada data siswa.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    @else
     <div class="title">
         <h2>Rekap Absensi Kelas Guru</h2>
         <div>{{ $sekolah->nama_sekolah ?? 'Sekolah' }}</div>
@@ -100,5 +117,6 @@
             @endforelse
         </tbody>
     </table>
+    @endif
 </body>
 </html>

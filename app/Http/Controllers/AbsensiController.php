@@ -245,6 +245,9 @@ class AbsensiController extends Controller
         $semester = DB::table('semester')->where('is_active', 1)->first();
 
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $kelasId = $request->integer('kelas_id') ?: null;
+        $bulan = $request->integer('bulan') ?: null;
+        $tahunKalender = $request->integer('tahun') ?: null;
         $query = DB::table('absensi_kelas as ak')
             ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
             ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
@@ -252,6 +255,9 @@ class AbsensiController extends Controller
             ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
             ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
             ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('ak.guru_id', $user->guru_id))
+            ->when($kelasId, fn ($q) => $q->where('k.id', $kelasId))
+            ->when($bulan, fn ($q) => $q->whereMonth('ak.tanggal', $bulan))
+            ->when($tahunKalender, fn ($q) => $q->whereYear('ak.tanggal', $tahunKalender))
             ->select(
                 'k.id as kelas_id',
                 'k.nama_kelas',
@@ -271,7 +277,112 @@ class AbsensiController extends Controller
 
         $rekapBulanan = $query->get();
 
-        return view('absensi.rekap_bulanan', compact('rekapBulanan', 'tahun', 'semester'));
+        $kelasList = DB::table('kelas as k')
+            ->join('absensi_kelas as ak', 'ak.kelas_id', '=', 'k.id')
+            ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
+            ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
+            ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('ak.guru_id', $user->guru_id))
+            ->select('k.id', 'k.nama_kelas')
+            ->distinct()
+            ->orderBy('k.nama_kelas')
+            ->get();
+
+        return view('absensi.rekap_bulanan', compact('rekapBulanan', 'tahun', 'semester', 'kelasList', 'kelasId', 'bulan', 'tahunKalender'));
+    }
+
+    public function rekapBulananDetail(Request $request)
+    {
+        [$user, $tahun, $semester, $kelasId, $bulan, $tahunKalender] = $this->monthlyReportParameters($request);
+        $this->ensureMonthlyReportAccess($user, $tahun, $semester, $kelasId);
+
+        $startDate = Carbon::create($tahunKalender, $bulan, 1)->startOfMonth()->format('Y-m-d');
+        $endDate = Carbon::create($tahunKalender, $bulan, 1)->endOfMonth()->format('Y-m-d');
+        $rows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester);
+        $kelas = DB::table('kelas')->where('id', $kelasId)->first();
+        $bulanLabel = $this->monthlyReportMonthLabel($bulan);
+
+        return view('absensi.reports.guru_kelas_pdf', [
+            'monthlyRows' => $rows,
+            'monthlyKelas' => $kelas,
+            'monthlyBulanLabel' => $bulanLabel,
+            'tahun' => $tahun,
+            'semester' => $semester,
+            'sekolah' => DB::table('sekolah')->first(),
+        ]);
+    }
+
+    public function exportRekapBulanan(Request $request)
+    {
+        [$user, $tahun, $semester, $kelasId, $bulan, $tahunKalender] = $this->monthlyReportParameters($request);
+        $this->ensureMonthlyReportAccess($user, $tahun, $semester, $kelasId);
+
+        $startDate = Carbon::create($tahunKalender, $bulan, 1)->startOfMonth()->format('Y-m-d');
+        $endDate = Carbon::create($tahunKalender, $bulan, 1)->endOfMonth()->format('Y-m-d');
+        $rows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester);
+        $kelasName = DB::table('kelas')->where('id', $kelasId)->value('nama_kelas') ?? 'kelas';
+        $safeKelasName = preg_replace('/[^A-Za-z0-9_-]/', '_', $kelasName);
+        $filename = 'Rekap-Absensi-' . $safeKelasName . '-' . Carbon::create($tahunKalender, $bulan, 1)->format('Ym') . '.xlsx';
+
+        return Excel::download(new AbsensiLaporanSiswaRangeExport($rows), $filename);
+    }
+
+    public function printRekapBulanan(Request $request)
+    {
+        [$user, $tahun, $semester, $kelasId, $bulan, $tahunKalender] = $this->monthlyReportParameters($request);
+        $this->ensureMonthlyReportAccess($user, $tahun, $semester, $kelasId);
+
+        $startDate = Carbon::create($tahunKalender, $bulan, 1)->startOfMonth()->format('Y-m-d');
+        $endDate = Carbon::create($tahunKalender, $bulan, 1)->endOfMonth()->format('Y-m-d');
+        $rows = $this->getRangeStudentReportRows($startDate, $endDate, $kelasId, $tahun, $semester);
+        $kelas = DB::table('kelas')->where('id', $kelasId)->first();
+        $sekolah = DB::table('sekolah')->first();
+        $bulanLabel = $this->monthlyReportMonthLabel($bulan);
+        $pdf = \PDF::loadView('absensi.reports.guru_kelas_pdf', [
+            'monthlyRows' => $rows,
+            'monthlyKelas' => $kelas,
+            'monthlyBulanLabel' => $bulanLabel,
+            'tahun' => $tahun,
+            'semester' => $semester,
+            'sekolah' => $sekolah,
+        ]);
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('Rekap-Absensi-' . ($kelas->nama_kelas ?? 'kelas') . '-' . $bulan . '.pdf');
+    }
+
+    private function monthlyReportParameters(Request $request): array
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        $kelasId = $request->integer('kelas_id');
+        $bulan = $request->integer('bulan');
+        $tahunKalender = $request->integer('tahun');
+        abort_unless($kelasId && $bulan >= 1 && $bulan <= 12 && $tahunKalender >= 2000, 422, 'Kelas, bulan, dan tahun wajib dipilih.');
+
+        return [$user, $tahun, $semester, $kelasId, $bulan, $tahunKalender];
+    }
+
+    private function ensureMonthlyReportAccess($user, $tahun, $semester, int $kelasId): void
+    {
+        $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+        $exists = DB::table('absensi_kelas')
+            ->where('kelas_id', $kelasId)
+            ->when($tahun, fn ($q) => $q->where('tahun_ajaran_id', $tahun->id))
+            ->when($semester, fn ($q) => $q->where('semester_id', $semester->id))
+            ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('guru_id', $user->guru_id))
+            ->exists();
+        abort_unless($exists, 403, 'Akses rekap kelas ditolak.');
+    }
+
+    private function monthlyReportMonthLabel(int $bulan): string
+    {
+        return [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ][$bulan] ?? '-';
     }
 
     public function exportBkMonitoring(Request $request)
@@ -3653,7 +3764,7 @@ class AbsensiController extends Controller
                         'terlambat_count' => (int) $terlambat,
                         'sakit_count' => (int) $sakit,
                         'izin_count' => (int) $izin,
-                        'alfa_count' => (int) $alfa,
+                        'alpa_count' => (int) $alfa,
                         'total_days' => (int) max(1, $distinctDates),
                     ]);
                 }
@@ -3735,7 +3846,7 @@ class AbsensiController extends Controller
                     'terlambat_count' => (int) $terlambat,
                     'sakit_count' => (int) $sakit,
                     'izin_count' => (int) $izin,
-                    'alfa_count' => (int) $alfa,
+                    'alpa_count' => (int) $alfa,
                     'total_days' => (int) max(1, $distinctDates),
                 ]);
             }
@@ -3796,12 +3907,21 @@ class AbsensiController extends Controller
 
     private function rememberStudentReportCache(string $cacheKey, int $ttlSeconds, \Closure $callback)
     {
-        $store = Cache::getStore();
-        if (method_exists($store, 'supportsTags') && $store->supportsTags()) {
-            return Cache::tags(['absensi_laporan_siswa'])->remember($cacheKey, $ttlSeconds, $callback);
-        }
+        try {
+            $store = Cache::getStore();
+            if (method_exists($store, 'supportsTags') && $store->supportsTags()) {
+                return Cache::tags(['absensi_laporan_siswa'])->remember($cacheKey, $ttlSeconds, $callback);
+            }
 
-        return Cache::remember($cacheKey, $ttlSeconds, $callback);
+            return Cache::remember($cacheKey, $ttlSeconds, $callback);
+        } catch (\Throwable $e) {
+            Log::warning('absensi.student_report_cache.unavailable', [
+                'cache_key' => $cacheKey,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $callback();
+        }
     }
 
     private function buildExistingAbsensiCacheKey(int $kelasId, string $tanggal): string
