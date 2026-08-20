@@ -20,6 +20,7 @@ use App\Http\Controllers\EkstrakurikulerController;
 use App\Http\Controllers\TenagaPendidikanController;
 use App\Http\Controllers\TugasTambahanController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\KartuLoginController;
 use App\Http\Controllers\AdministrasiPtkController;
 use App\Http\Controllers\DokumenKepegawaanController;
 use App\Http\Controllers\TemplateDokumenController;
@@ -368,6 +369,9 @@ Route::middleware(['auth'])->group(function(){
     
     // Fitur baru - Role & Permission
     Route::resource('role_permission', RolePermissionController::class);
+
+    // Kartu Login placeholder
+    Route::get('kartu-login', [KartuLoginController::class, 'index'])->name('kartu_login.index');
     
     // Fitur baru - Administrasi PTK
     Route::resource('administrasi_ptk', AdministrasiPtkController::class);

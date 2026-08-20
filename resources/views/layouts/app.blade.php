@@ -1147,7 +1147,7 @@
                 $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','komponen_nilai.*','rencana_pembelajaran.*','sk_tugas.*','akademik.*','editor_modul.*','tugas_guru.*','tugas_tambahan.*','guru_piket.*']);
                 
                 // MASTER DATA active state (updated for new structure)
-                $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','tenaga_pendidikan.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*','role_permission.*']);
+                $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','tenaga_pendidikan.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*','role_permission.*','kartu_login.*']);
                 
                 // ADMINISTRASI PTK active state (new)
                 $isAdminPtkActive = request()->routeIs(['administrasi_ptk.*','dokumen_kepegawaian.*','template_dokumen.*','pengembangan.*','pengajuan.*','verifikasi.*']);
@@ -1258,6 +1258,7 @@
                                 <a href="{{ route('users.admin') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'is-active' : '' }}">Admin</a>
                                 <a href="{{ route('users.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.index') && !request()->has('role') ? 'is-active' : '' }}">Akun Pengguna</a>
                                 <a href="{{ route('role_permission.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('role_permission.*') ? 'is-active' : '' }}">Role &amp; Permission</a>
+                                <a href="{{ route('kartu_login.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kartu_login.*') ? 'is-active' : '' }}">Kartu Login</a>
                                 <a href="{{ route('asc_timetable.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('asc_timetable.*') ? 'is-active' : '' }}">ASC Time Table</a>
                             </div>
                         </div>
