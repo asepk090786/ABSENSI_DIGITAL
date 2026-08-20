@@ -8,6 +8,7 @@ use App\Exports\CapaianPembelajaranTemplateExport;
 use App\Imports\CapaianPembelajaranImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CapaianPembelajaranController extends Controller
@@ -74,6 +75,26 @@ class CapaianPembelajaranController extends Controller
     {
         if ($this->isTeacherUser() && Schema::hasColumn('capaian_pembelajarans', 'user_id') && ! empty($capaianPembelajaran->user_id) && $capaianPembelajaran->user_id !== auth()->id()) {
             abort(403, 'Anda tidak diizinkan menghapus CP milik guru lain.');
+        }
+
+        $komponenIds = DB::table('komponen_nilai')
+            ->where('capaian_pembelajaran_id', $capaianPembelajaran->id)
+            ->pluck('id');
+
+        if ($komponenIds->isNotEmpty()) {
+            $usedInNilai = DB::table('nilai_harian')
+                ->whereIn('komponen_id', $komponenIds)
+                ->exists();
+
+            if ($usedInNilai) {
+                DB::table('komponen_nilai')
+                    ->whereIn('id', $komponenIds)
+                    ->update(['capaian_pembelajaran_id' => null]);
+            } else {
+                DB::table('komponen_nilai')
+                    ->whereIn('id', $komponenIds)
+                    ->delete();
+            }
         }
 
         $capaianPembelajaran->delete();

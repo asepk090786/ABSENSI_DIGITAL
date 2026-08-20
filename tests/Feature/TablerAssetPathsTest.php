@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class TablerAssetPathsTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_login_page_uses_cdn_tabler_assets(): void
     {
         $response = $this->get(route('login'));

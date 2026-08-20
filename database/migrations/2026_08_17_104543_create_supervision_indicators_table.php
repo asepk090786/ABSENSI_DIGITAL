@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('supervision_indicators', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('instrument_id')->constrained('supervision_instruments')->onDelete('cascade');
-            $table->string('kategori'); // Aktivitas Guru, Aktivitas Murid, Lingkungan Belajar
-            $table->text('indikator');
-            $table->text('deskripsi')->nullable();
-            $table->integer('bobot')->default(1);
-            $table->integer('urutan')->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('supervision_indicators')) {
+            Schema::create('supervision_indicators', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('instrument_id')->constrained('supervision_instruments')->onDelete('cascade');
+                $table->string('kategori');
+                $table->text('indikator');
+                $table->text('deskripsi')->nullable();
+                $table->integer('bobot')->default(1);
+                $table->integer('urutan')->default(0);
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

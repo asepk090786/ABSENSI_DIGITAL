@@ -1141,10 +1141,10 @@
                 $isAdminBebanKerjaActive = request()->routeIs(['tugas_guru.*','tugas_tambahan.*','sk_tugas.*']);
                 
                 // AKADEMIK Group - Penilaian submenu
-                $isAdminPenilaianActive = request()->routeIs(['komponen_nilai.*','akademik.supervisi']);
+                $isAdminPenilaianActive = request()->routeIs(['komponen_nilai.*','nilai_akhir.*','akademik.supervisi']);
                 
                 // AKADEMIK Group - Main active state
-                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','komponen_nilai.*','rencana_pembelajaran.*','sk_tugas.*','akademik.*','editor_modul.*','tugas_guru.*','tugas_tambahan.*','guru_piket.*']);
+                $isAdminAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','komponen_nilai.*','rencana_pembelajaran.*','sk_tugas.*','akademik.*','editor_modul.*','tugas_guru.*','tugas_tambahan.*','guru_piket.*','nilai_akhir.*']);
                 
                 // MASTER DATA active state (updated for new structure)
                 $isAdminMasterActive = request()->routeIs(['sekolah.*','kepala_sekolah.*','wakil_kepala_sekolah.*','guru.*','guru_bk.*','guru_piket.*','pembina.*','tenaga_pendidikan.*','users.*','siswa.*','kelas.*','mata_pelajaran.*','tugas_guru.*','asc_timetable.*','ekskul.*','jenis_pelanggaran.*','role_permission.*','kartu_login.*']);
@@ -1218,6 +1218,8 @@
                         <div class="sidebar-admin-submenu {{ $isAdminPenilaianActive ? 'is-open' : '' }}" id="subPenilaianAdmin">
                             <div class="sidebar-admin-submenu-inner">
                                 <a href="{{ route('komponen_nilai.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('komponen_nilai.*') ? 'is-active' : '' }}">Komponen Penilaian</a>
+                                <a href="{{ route('nilai_akhir.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('nilai_akhir.*') ? 'is-active' : '' }}">Penilaian Akhir</a>
+                                <a href="{{ route('nilai_akhir.rekap') }}" class="sidebar-admin-sublink {{ request()->routeIs('nilai_akhir.rekap') ? 'is-active' : '' }}">Rekap Penilaian</a>
                                 @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']))
                                 <a href="{{ route('akademik.supervisi') }}" class="sidebar-admin-sublink {{ request()->routeIs('akademik.supervisi') || request()->routeIs('akademik.supervisi.*') ? 'is-active' : '' }}">Supervisi</a>
                                 @endif
@@ -1408,13 +1410,13 @@
                 @endif
 
                 <!-- Pembelajaran (Guru) -->
-                @if($isGuru && (empty($guruEnabledMenus) || !empty(array_intersect(['pembelajaran_absensi','pembelajaran_agenda_kelas','pembelajaran_agenda_guru','pembelajaran_nilai','pembelajaran_rekap_nilai','pembelajaran_materi','pembelajaran_pembina_ekskul'], $guruEnabledMenus))))
+                @if($isGuru && (empty($guruEnabledMenus) || !empty(array_intersect(['pembelajaran_absensi','pembelajaran_agenda_kelas','pembelajaran_agenda_guru','pembelajaran_nilai','pembelajaran_rekap_nilai','pembelajaran_nilai_akhir','pembelajaran_materi','pembelajaran_pembina_ekskul'], $guruEnabledMenus))))
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*','ekskul.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','nilai_akhir.*','materi_pembelajaran.*','ekskul.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-book"></i> Pembelajaran
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','materi_pembelajaran.*','ekskul.*']) ? 'show' : '' }}" id="subPembelajaran">
+                    <div class="collapse {{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','nilai_akhir.*','materi_pembelajaran.*','ekskul.*']) ? 'show' : '' }}" id="subPembelajaran">
                         <ul class="sidebar-subnav">
                             @if(empty($guruEnabledMenus) || in_array('pembelajaran_absensi', $guruEnabledMenus))
                             <li class="nav-item"><a href="{{ route('absensi.index', ['mode' => 'academic']) }}" class="nav-link {{ request()->routeIs('absensi.*') && $isModeAcademic ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi</a></li>
@@ -1430,6 +1432,9 @@
                             @endif
                             @if(empty($guruEnabledMenus) || in_array('pembelajaran_rekap_nilai', $guruEnabledMenus))
                             <li class="nav-item"><a href="{{ route('rekap_nilai.index') }}" class="nav-link {{ request()->routeIs('rekap_nilai.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Rekap Nilai</a></li>
+                            @endif
+                            @if(empty($guruEnabledMenus) || in_array('pembelajaran_nilai_akhir', $guruEnabledMenus))
+                            <li class="nav-item"><a href="{{ route('nilai_akhir.index') }}" class="nav-link {{ request()->routeIs('nilai_akhir.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Penilaian Akhir</a></li>
                             @endif
                             @if(empty($guruEnabledMenus) || in_array('pembelajaran_materi', $guruEnabledMenus))
                             <li class="nav-item"><a href="{{ route('materi_pembelajaran.index') }}" class="nav-link {{ request()->routeIs('materi_pembelajaran.*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Materi</a></li>

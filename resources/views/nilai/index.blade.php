@@ -302,10 +302,125 @@
                 </div>
             </div>
             <div class="card-body">
-                @if($kelasId || $mapelId)
+                @if($isViewMode ?? false)
+                    @if(($nilaiTableRows ?? collect())->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-vcenter table-hover" id="tableNilai">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Siswa</th>
+                                    @forelse(($nilaiKomponenColumns ?? collect()) as $komponen)
+                                        <th class="text-center">{{ strtoupper($komponen->nama) }}</th>
+                                    @empty
+                                        <th class="text-center">KOMPONEN</th>
+                                    @endforelse
+                                    <th class="text-center">JUMLAH</th>
+                                    <th class="text-center">RATA-RATA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach(($nilaiTableRows ?? collect()) as $index => $row)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $row->nama_siswa }}</td>
+                                    @forelse(($nilaiKomponenColumns ?? collect()) as $komponen)
+                                        @php
+                                            $komponenId = (int) $komponen->id;
+                                            $nilai = $row->nilai_by_komponen[$komponenId] ?? null;
+                                        @endphp
+                                        <td class="text-center">
+                                            @if($nilai !== null && $nilai !== '')
+                                                <span class="badge bg-success">{{ rtrim(rtrim(number_format((float) $nilai, 2, '.', ''), '0'), '.') }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    @empty
+                                        <td class="text-center">-</td>
+                                    @endforelse
+                                    <td class="text-center fw-bold">{{ $row->jumlah !== null ? number_format($row->jumlah, 2) : '-' }}</td>
+                                    <td class="text-center fw-bold">{{ $row->rata_rata !== null ? number_format($row->rata_rata, 2) : '-' }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @else
+                    <div class="empty">
+                        <div class="empty-img"><img src="{{ asset('tabler/static/illustrations/undraw_printing_invoices_5r4r.svg') }}" height="128" alt=""></div>
+                        <p class="empty-title">Belum ada data nilai</p>
+                        <p class="empty-subtitle text-muted">Gunakan tombol "Tambah Nilai" untuk membuat penilaian pertama.</p>
+                    </div>
+                    @endif
+                @elseif(!$showInputForm)
+                    @if($kelasId || $mapelId)
+                        @if(($penilaianList ?? collect())->isNotEmpty())
+                        <div class="table-responsive">
+                            <table class="table table-vcenter table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Penilaian</th>
+                                        <th>Jenis Penilaian</th>
+                                        <th>Tanggal</th>
+                                        <th>Persentase</th>
+                                        <th class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($penilaianList as $index => $penilaian)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            <div class="fw-semibold">{{ $penilaian->nama_penilaian }}</div>
+                                            <div class="text-muted small">{{ $penilaian->rencana_judul ?: 'Tanpa judul rencana' }}</div>
+                                        </td>
+                                        <td>{{ $penilaian->jenis_penilaian }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($penilaian->tanggal)->format('d/m/Y') }}</td>
+                                        <td>{{ $penilaian->persentase !== null ? rtrim(rtrim(number_format((float) $penilaian->persentase, 2, '.', ''), '0'), '.') . '%' : '-' }}</td>
+                                        <td class="text-center">
+                                            <a href="{{ route('nilai.index', ['kelas_id' => $kelasId, 'mapel_id' => $mapelId, 'tanggal_nilai' => $penilaian->tanggal, 'rencana_pembelajaran_id' => $penilaian->rencana_pembelajaran_id, 'view' => 1]) }}" class="btn btn-sm btn-info" title="Lihat">
+                                                <i class="ti ti-eye"></i>
+                                            </a>
+                                            <a href="{{ route('nilai.index', ['kelas_id' => $kelasId, 'mapel_id' => $mapelId, 'tanggal_nilai' => $penilaian->tanggal, 'rencana_pembelajaran_id' => $penilaian->rencana_pembelajaran_id]) }}" class="btn btn-sm btn-primary" title="Input Nilai">
+                                                <i class="ti ti-edit me-1"></i>Input Nilai
+                                            </a>
+                                            <form action="{{ route('nilai.penilaian.destroy') }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus penilaian ini? Semua nilai yang terkait akan ikut terhapus.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="tanggal" value="{{ $penilaian->tanggal }}">
+                                                <input type="hidden" name="rencana_pembelajaran_id" value="{{ $penilaian->rencana_pembelajaran_id }}">
+                                                <input type="hidden" name="komponen_id" value="{{ $penilaian->komponen_id ?? '' }}">
+                                                <input type="hidden" name="kelas_id" value="{{ $kelasId }}">
+                                                <input type="hidden" name="mapel_id" value="{{ $mapelId }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        @else
+                            <div class="empty py-4">
+                                <p class="empty-title">Belum ada penilaian tersimpan</p>
+                                <p class="empty-subtitle text-muted">Gunakan tombol Tambah Nilai untuk membuat penilaian pertama.</p>
+                            </div>
+                        @endif
+                    @else
+                        <div class="text-muted">Pilih kelas untuk melihat daftar penilaian yang sudah disimpan.</div>
+                    @endif
+                @elseif($kelasId || $mapelId)
                     @if(($nilaiTableRows ?? collect())->count() > 0)
                     <form method="POST" action="{{ route('nilai.update-batch') }}">
                         @csrf
+                        <input type="hidden" name="kelas_id" value="{{ $kelasId }}">
+                        <input type="hidden" name="mapel_id" value="{{ $mapelId }}">
+                        <input type="hidden" name="tanggal_nilai" value="{{ request('tanggal_nilai') }}">
+                        <input type="hidden" name="rencana_pembelajaran_id" value="{{ request('rencana_pembelajaran_id') }}">
                         <div class="d-flex justify-content-end mb-2">
                             <button type="submit" class="btn btn-sm btn-primary">
                                 <i class="ti ti-device-floppy me-1"></i>Simpan Nilai
@@ -374,11 +489,7 @@
                     </div>
                     @endif
                 @else
-                    @if($isAdminOrKepala ?? false)
-                        <div class="text-muted">Pilih filter Kelas dan/atau Mata Pelajaran pada panel "Lihat Nilai (Sederhana)", lalu klik Tampilkan.</div>
-                    @else
-                        <div class="text-muted">Silakan klik Menu Cepat Penilaian untuk menampilkan daftar nilai harian.</div>
-                    @endif
+                    <div class="text-muted">Pilih kelas untuk membuka penilaian.</div>
                 @endif
             </div>
         </div>

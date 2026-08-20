@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('observation_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('supervisi_id')->constrained('supervisi')->onDelete('cascade');
-            $table->foreignId('indicator_id')->constrained('supervision_indicators')->onDelete('cascade');
-            $table->integer('skor')->nullable(); // Untuk skala penilaian
-            $table->text('catatan')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('observation_items')) {
+            Schema::create('observation_items', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('supervisi_id')->constrained('supervisi')->onDelete('cascade');
+                $table->foreignId('indicator_id')->constrained('supervision_indicators')->onDelete('cascade');
+                $table->integer('skor')->nullable();
+                $table->text('catatan')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

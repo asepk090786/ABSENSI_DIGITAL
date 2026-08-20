@@ -31,16 +31,18 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('log_keamanan', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('siswa_id')->constrained('siswa');
-            $table->foreignId('izin_siswa_id')->constrained('izin_siswa');
-            $table->time('jam_keluar_aktual')->nullable();
-            $table->time('jam_kembali_aktual')->nullable();
-            $table->foreignId('petugas_keamanan_id')->nullable()->constrained('guru');
-            $table->text('keterangan')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('log_keamanan')) {
+            Schema::create('log_keamanan', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('siswa_id')->constrained('siswa');
+                $table->foreignId('izin_siswa_id')->constrained('izin_siswa');
+                $table->time('jam_keluar_aktual')->nullable();
+                $table->time('jam_kembali_aktual')->nullable();
+                $table->foreignId('petugas_keamanan_id')->nullable()->constrained('guru');
+                $table->text('keterangan')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void

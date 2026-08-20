@@ -14,15 +14,19 @@ class KomponenNilaiExport implements FromCollection, WithHeadings, WithMapping, 
 {
     private int $no = 1;
     private $user;
+    private $query;
 
-    public function __construct($user = null)
+    public function __construct($user = null, $query = null)
     {
         $this->user = $user;
+        $this->query = $query;
     }
 
     public function collection()
     {
-        $query = KomponenNilai::with('capaianPembelajaran')->orderBy('nama_komponen');
+        $query = ($this->query ?: KomponenNilai::query())
+            ->with('capaianPembelajaran')
+            ->orderBy('nama_komponen');
 
 
         return $query->get();
@@ -30,7 +34,7 @@ class KomponenNilaiExport implements FromCollection, WithHeadings, WithMapping, 
 
     public function headings(): array
     {
-        return ['No', 'Capaian Pembelajaran', 'Nama Komponen', 'Bobot (%)', 'Capaian Pembelajaran (Detail)', 'Tujuan Pembelajaran', 'Alur Tujuan Pembelajaran', 'Indikator Kriteria'];
+        return ['No', 'Capaian Pembelajaran', 'Nama Komponen', 'Bobot (%)', 'Domain', 'Capaian Pembelajaran (Detail)', 'Tujuan Pembelajaran', 'Alur Tujuan Pembelajaran', 'Indikator Kriteria'];
     }
 
     public function map($item): array
@@ -40,6 +44,7 @@ class KomponenNilaiExport implements FromCollection, WithHeadings, WithMapping, 
             $item->capaianPembelajaran?->nama_capaian_pembelajaran ?? '-',
             $item->nama_komponen,
             $item->bobot ?? '',
+            $item->domain ?? '-',
             $item->capaian_pembelajaran ?? '',
             $item->tujuan_pembelajaran ?? '',
             $item->alur_tujuan_pembelajaran ?? '',

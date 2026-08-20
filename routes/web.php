@@ -230,6 +230,7 @@ Route::middleware(['auth'])->group(function(){
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');
     Route::post('nilai/import', ['App\Http\Controllers\NilaiController', 'import'])->name('nilai.import');
     Route::get('nilai/template', ['App\Http\Controllers\NilaiController', 'template'])->name('nilai.template');
+    Route::delete('nilai/penilaian', ['App\Http\Controllers\NilaiController', 'destroyPenilaian'])->name('nilai.penilaian.destroy');
     
     // Capaian Pembelajaran Export/Import Routes
     Route::get('capaian_pembelajaran/export', ['App\Http\Controllers\CapaianPembelajaranController', 'export'])->name('capaian_pembelajaran.export');
@@ -248,10 +249,11 @@ Route::middleware(['auth'])->group(function(){
     // Rekap Nilai
     Route::get('rekap-nilai', ['App\Http\Controllers\RekapNilaiController', 'index'])->name('rekap_nilai.index');
     Route::get('rekap-nilai/export', ['App\Http\Controllers\RekapNilaiController', 'export'])->name('rekap_nilai.export');
-    
-    // Rekap Nilai
-    Route::get('rekap-nilai', ['App\Http\Controllers\RekapNilaiController', 'index'])->name('rekap_nilai.index');
-    Route::get('rekap-nilai/export', ['App\Http\Controllers\RekapNilaiController', 'export'])->name('rekap_nilai.export');
+
+    // Penilaian Akhir
+    Route::get('nilai-akhir', ['App\Http\Controllers\NilaiAkhirController', 'index'])->name('nilai_akhir.index');
+    Route::get('nilai-akhir/rekap', ['App\Http\Controllers\NilaiAkhirController', 'rekap'])->name('nilai_akhir.rekap');
+    Route::get('nilai-akhir/detail/{siswa}', ['App\Http\Controllers\NilaiAkhirController', 'detail'])->name('nilai_akhir.detail');
 
         // Struktur Kurikulum
         Route::get('kurikulum', [KurikulumController::class, 'index'])->name('kurikulum.index');

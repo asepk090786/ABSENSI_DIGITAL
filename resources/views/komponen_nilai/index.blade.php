@@ -64,6 +64,11 @@
                     <i class="ti ti-checklist-2 me-2"></i>Komponen Penilaian
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="penilaian-tab" data-bs-toggle="tab" data-bs-target="#penilaian-pane" type="button" role="tab">
+                    <i class="ti ti-chart-bar me-2"></i>Penilaian
+                </button>
+            </li>
         </ul>
 
         
@@ -316,6 +321,36 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Mata Pelajaran (Opsional)</label>
+                                    <select name="mata_pelajaran_id" class="form-select @error('mata_pelajaran_id') is-invalid @enderror">
+                                        <option value="">-- Pilih Mata Pelajaran --</option>
+                                        @foreach($mataPelajaranList as $mataPelajaran)
+                                            <option value="{{ $mataPelajaran->id }}" {{ old('mata_pelajaran_id') == $mataPelajaran->id ? 'selected' : '' }}>
+                                                {{ $mataPelajaran->nama_mapel }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('mata_pelajaran_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Kelas (Opsional)</label>
+                                    <div class="row g-2 kelas-options">
+                                        @foreach($kelasList as $kelas)
+                                            <div class="col-6 col-md-4 col-lg-3">
+                                                <label class="kelas-option border rounded p-2 h-100">
+                                                    <input type="checkbox" name="kelas_ids[]" value="{{ $kelas->id }}" {{ in_array($kelas->id, old('kelas_ids', [])) ? 'checked' : '' }}>
+                                                    <span>{{ $kelas->nama_kelas }}</span>
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @error('kelas_ids')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
                             </div>
 
                             
@@ -327,10 +362,22 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-3">
                                     <label class="form-label">Bobot (%)</label>
                                     <input type="number" name="bobot" class="form-control @error('bobot') is-invalid @enderror" value="{{ old('bobot') }}" min="0" max="100" step="0.01">
                                     @error('bobot')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Domain <span class="text-danger">*</span></label>
+                                    <select name="domain" class="form-select @error('domain') is-invalid @enderror" required>
+                                        <option value="">-- Pilih Domain --</option>
+                                        <option value="kognitif" {{ old('domain') == 'kognitif' ? 'selected' : '' }}>Kognitif</option>
+                                        <option value="afektif" {{ old('domain') == 'afektif' ? 'selected' : '' }}>Afektif</option>
+                                        <option value="psikomotorik" {{ old('domain') == 'psikomotorik' ? 'selected' : '' }}>Psikomotorik</option>
+                                    </select>
+                                    @error('domain')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -340,104 +387,6 @@
                                 <i class="ti ti-plus me-1"></i>Simpan Komponen Penilaian
                             </button>
                         </form>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title fw-semibold m-0">Daftar Komponen</h3>
-                        <div class="btn-group" role="group">
-                            <a href="{{ route('komponen_nilai.export') }}" class="btn btn-sm btn-info btn-modern" title="Download data Komponen">
-                                <i class="ti ti-download me-1"></i>Export
-                            </a>
-                            <a href="{{ route('komponen_nilai.template') }}" class="btn btn-sm btn-secondary btn-modern" title="Download template">
-                                <i class="ti ti-file-download me-1"></i>Template
-                            </a>
-                            <button type="button" class="btn btn-sm btn-success btn-modern" data-bs-toggle="modal" data-bs-target="#importKomponenModal" title="Upload file Komponen">
-                                <i class="ti ti-upload me-1"></i>Import
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <form method="GET" action="{{ route('komponen_nilai.index') }}" class="row g-2 align-items-end mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Filter Guru</label>
-                                <select name="guru_id" class="form-select" onchange="this.form.submit()">
-                                    <option value="">-- Semua Guru --</option>
-                                    @foreach($guruList as $guru)
-                                        <option value="{{ $guru->id }}" {{ (string) ($guruId ?? '') === (string) $guru->id ? 'selected' : '' }}>
-                                            {{ $guru->nama }} {{ $guru->nip ? '(' . $guru->nip . ')' : '' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            @if($guruId)
-                            <div class="col-md-2">
-                                <a href="{{ route('komponen_nilai.index') }}" class="btn btn-outline-secondary">Reset Filter</a>
-                            </div>
-                            @endif
-                        </form>
-
-                        @if(count($groupedRows) > 0)
-                            <div class="table-responsive">
-                                <table class="table table-vcenter table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Nama Guru</th>
-                                            <th>Mata Pelajaran</th>
-                                            <th>CP</th>
-                                            <th>Kelas</th>
-                                            <th>Nama Komponen</th>
-                                            <th class="text-center">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($groupedRows as $index => $row)
-                                        @php
-                                            $item = $row['komponen'];
-                                            $guru = $row['guru'];
-                                            $mapelList = collect($row['mapel'] ?? []);
-                                            $cp = $row['cp'];
-                                            $kelasList = collect($row['kelas'] ?? []);
-                                        @endphp
-                                        <tr>
-                                            <td>{{ $index + 1 }}</td>
-                                            <td>{{ $guru ? $guru->nama : '-' }}</td>
-                                            <td>{{ $mapelList->pluck('nama_mapel')->filter()->unique()->values()->implode(', ') ?: '-' }}</td>
-                                            <td>
-                                                @if($cp)
-                                                    <span class="badge bg-primary text-white">{{ $cp->nama_capaian_pembelajaran }}</span>
-                                                @else
-                                                    <span class="badge bg-secondary text-white">Tidak ada</span>
-                                                @endif
-                                            </td>
-                                            <td>{{ $kelasList->pluck('nama_kelas')->filter()->unique()->values()->implode(', ') ?: '-' }}</td>
-                                            <td>{{ $item->nama_komponen }}</td>
-                                            <td class="text-center">
-                                                <div class="btn-group" role="group">
-                                                    <a href="{{ route('komponen_nilai.edit', $item->id) }}" class="btn btn-sm btn-warning" title="Edit">
-                                                        <i class="ti ti-edit"></i>
-                                                    </a>
-                                                    <form action="{{ route('komponen_nilai.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus komponen ini?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                                            <i class="ti ti-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @else
-                            <div class="alert alert-info">
-                                <i class="ti ti-info-circle me-2"></i>Belum ada komponen penilaian.
-                            </div>
-                        @endif
                     </div>
                 </div>
                 
@@ -476,7 +425,116 @@
                     </div>
                 </div>
             </div>
+
+            <div class="tab-pane fade" id="penilaian-pane" role="tabpanel">
+                <div class="card">
+                    <div class="card-header border-0 pt-3 pb-2">
+                        <h3 class="card-title">Penilaian</h3>
+                    </div>
+                    <div class="card-body">
+                        @if(count($penilaianRows ?? []) > 0)
+                            <div class="table-responsive">
+                                <table class="table table-vcenter table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Nama Guru</th>
+                                            <th>Mata Pelajaran</th>
+                                            <th>CP</th>
+                                            <th>Kelas</th>
+                                            <th>Nama / Jenis Penilaian</th>
+                                            <th class="text-center">Aspek/Domain</th>
+                                            <th class="text-center">Bobot</th>
+                                            <th class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($penilaianRows as $index => $row)
+                                            @php
+                                                $item = $row['komponen'];
+                                                $guru = $row['guru'] ?: $item->guru;
+                                                $mapelList = collect($row['mapel'] ?? []);
+                                                $cp = $row['cp'];
+                                                $kelasList = collect($row['kelas'] ?? []);
+                                            @endphp
+                                            <tr>
+                                                <td>{{ $index + 1 }}</td>
+                                                <td>{{ $guru ? $guru->nama : '-' }}</td>
+                                                <td>{{ $mapelList->pluck('nama_mapel')->filter()->unique()->values()->implode(', ') ?: '-' }}</td>
+                                                <td>
+                                                    @if($cp)
+                                                        <span class="badge bg-primary text-white">{{ $cp->nama_capaian_pembelajaran }}</span>
+                                                    @else
+                                                        <span class="badge bg-secondary text-white">Tidak ada</span>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $kelasList->pluck('nama_kelas')->filter()->unique()->values()->implode(', ') ?: '-' }}</td>
+                                                <td>{{ $item->nama_komponen }}</td>
+                                                <td class="text-center">
+                                                    @if($item->domain)
+                                                        <span class="badge bg-{{ $item->domain == 'kognitif' ? 'primary' : ($item->domain == 'afektif' ? 'success' : 'warning') }}">
+                                                            {{ ucfirst($item->domain) }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">{{ $item->bobot ?: '-' }}</td>
+                                                <td class="text-center">
+                                                    <div class="btn-group" role="group">
+                                                        <a href="{{ route('komponen_nilai.edit', $item->id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                                            <i class="ti ti-edit"></i>
+                                                        </a>
+                                                        <form action="{{ route('komponen_nilai.destroy', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus komponen ini?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                                                <i class="ti ti-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="alert alert-info">
+                                <i class="ti ti-info-circle me-2"></i>Belum ada komponen penilaian yang dibuat oleh akun Anda.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+@push('css')
+<style>
+    .kelas-option {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin: 0;
+        min-height: 42px;
+        cursor: pointer;
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+
+    .kelas-option input[type="checkbox"] {
+        flex: 0 0 auto;
+        width: 1rem;
+        height: 1rem;
+        margin: 0;
+    }
+
+    .kelas-option:hover {
+        border-color: var(--tblr-primary);
+        background-color: rgba(var(--tblr-primary-rgb), .04);
+    }
+</style>
+@endpush
+
 @endsection

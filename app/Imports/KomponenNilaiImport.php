@@ -40,6 +40,9 @@ class KomponenNilaiImport implements ToCollection, WithHeadingRow
             }
 
             $payload = [
+                'guru_id' => auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina'])
+                    ? auth()->user()->guru_id
+                    : null,
                 'capaian_pembelajaran_id' => $capaianId,
                 'no' => $row['no'] ?? null,
                 'nama_komponen' => trim((string) ($row['nama_komponen'] ?? '')),
@@ -66,7 +69,11 @@ class KomponenNilaiImport implements ToCollection, WithHeadingRow
 
             try {
                 // Check if exists by nama_komponen
-                $existing = KomponenNilai::where('nama_komponen', $payload['nama_komponen'])->first();
+                $existingQuery = KomponenNilai::where('nama_komponen', $payload['nama_komponen']);
+                if ($payload['guru_id']) {
+                    $existingQuery->where('guru_id', $payload['guru_id']);
+                }
+                $existing = $existingQuery->first();
                 
                 if ($existing) {
                     if (auth()->check() && ! auth()->user()->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina']) && ! empty(auth()->user()->guru_id)) {

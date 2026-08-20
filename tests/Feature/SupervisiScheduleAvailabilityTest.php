@@ -43,7 +43,7 @@ class SupervisiScheduleAvailabilityTest extends TestCase
 
         $targetDate = Carbon::today();
         $targetDate = $targetDate->next('Friday');
-        while ($targetDate->diffInDays(Carbon::today(), false) <= 210) {
+        while (Carbon::today()->diffInDays($targetDate, false) <= 210) {
             $targetDate = $targetDate->addWeek();
         }
 

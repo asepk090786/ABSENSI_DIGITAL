@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('observation_evidences', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('supervisi_id')->constrained('supervisi')->onDelete('cascade');
-            $table->enum('jenis', ['foto', 'video', 'dokumen'])->default('foto');
-            $table->string('file_path'); // Path file di storage
-            $table->string('nama_file');
-            $table->text('keterangan')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('observation_evidences')) {
+            Schema::create('observation_evidences', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('supervisi_id')->constrained('supervisi')->onDelete('cascade');
+                $table->enum('jenis', ['foto', 'video', 'dokumen'])->default('foto');
+                $table->string('file_path');
+                $table->string('nama_file');
+                $table->text('keterangan')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

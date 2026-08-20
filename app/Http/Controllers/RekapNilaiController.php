@@ -17,7 +17,9 @@ class RekapNilaiController extends Controller
         $query = KomponenNilai::query();
         $user = auth()->user();
 
-
+        if ($user && $user->guru_id && !$user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina'])) {
+            $query->where('guru_id', $user->guru_id);
+        }
         return $query;
     }
 
@@ -279,18 +281,40 @@ class RekapNilaiController extends Controller
                 ->groupBy('nilai_harian.siswa_id', DB::raw('COALESCE(nilai_harian.komponen_id, 0)'), DB::raw("COALESCE(komponen_nilai.nama_komponen, 'Harian')"))
                 ->get();
 
-            $rekapKomponenColumns = $nilaiPerKomponen
-                ->map(function ($row) {
-                    return (object) [
-                        'id' => (int) $row->komponen_id,
-                        'nama' => $row->nama_komponen,
-                    ];
-                })
-                ->unique('id')
-                ->sortBy(function ($item) {
-                    return mb_strtolower((string) $item->nama);
-                })
-                ->values();
+            if ($komponenId) {
+                $rekapKomponenColumns = $nilaiPerKomponen
+                    ->map(function ($row) {
+                        return (object) [
+                            'id' => (int) $row->komponen_id,
+                            'nama' => $row->nama_komponen,
+                        ];
+                    })
+                    ->unique('id')
+                    ->values();
+            } else {
+                $rekapKomponenColumns = $komponenOptions
+                    ->map(function ($komponen) {
+                        return (object) [
+                            'id' => (int) $komponen->id,
+                            'nama' => $komponen->nama_komponen,
+                        ];
+                    })
+                    ->keyBy('id');
+
+                foreach ($nilaiPerKomponen as $row) {
+                    $componentId = (int) $row->komponen_id;
+                    if (!$rekapKomponenColumns->has($componentId)) {
+                        $rekapKomponenColumns->put($componentId, (object) [
+                            'id' => $componentId,
+                            'nama' => $row->nama_komponen,
+                        ]);
+                    }
+                }
+
+                $rekapKomponenColumns = $rekapKomponenColumns
+                    ->sortBy(fn ($item) => mb_strtolower((string) $item->nama))
+                    ->values();
+            }
 
             $nilaiIndex = [];
             foreach ($nilaiPerKomponen as $item) {

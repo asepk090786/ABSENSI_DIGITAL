@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('action_plan_monitorings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('action_plan_id')->constrained('action_plans')->onDelete('cascade');
-            $table->date('tanggal_monitoring');
-            $table->integer('progress_persen')->default(0); // 0-100
-            $table->text('catatan');
-            $table->text('bukti')->nullable(); // File path atau deskripsi bukti
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('action_plan_monitorings')) {
+            Schema::create('action_plan_monitorings', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('action_plan_id')->constrained('action_plans')->onDelete('cascade');
+                $table->date('tanggal_monitoring');
+                $table->integer('progress_persen')->default(0);
+                $table->text('catatan');
+                $table->text('bukti')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

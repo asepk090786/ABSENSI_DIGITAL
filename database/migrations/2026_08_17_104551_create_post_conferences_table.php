@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('post_conferences', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('supervisi_id')->constrained('supervisi')->onDelete('cascade');
-            $table->longText('refleksi_guru')->nullable();
-            $table->longText('refleksi_supervisor')->nullable();
-            $table->dateTime('tanggal_pelaksanaan')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('post_conferences')) {
+            Schema::create('post_conferences', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('supervisi_id')->constrained('supervisi')->onDelete('cascade');
+                $table->longText('refleksi_guru')->nullable();
+                $table->longText('refleksi_supervisor')->nullable();
+                $table->dateTime('tanggal_pelaksanaan')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**

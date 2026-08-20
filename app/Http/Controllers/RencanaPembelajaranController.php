@@ -504,6 +504,7 @@ class RencanaPembelajaranController extends Controller
 
         $mataPelajaranId = $request->input('mata_pelajaran_id');
         $kelasId = $request->input('kelas_id');
+        $guruId = $this->resolveCurrentGuruId();
 
         if (empty($mataPelajaranId) && !empty($data['subject'])) {
             $subjectModel = MataPelajaran::where('nama_mapel', $data['subject'])->first();
@@ -520,6 +521,31 @@ class RencanaPembelajaranController extends Controller
         }
 
         if (empty($mataPelajaranId) || empty($kelasId)) {
+            if (!$guruId) {
+                foreach ($this->richFields as $f) {
+                    if (isset($data[$f]) && is_string($data[$f])) {
+                        $data[$f] = $this->cleanHtml($data[$f]);
+                    }
+                }
+
+                $modules = Session::get('modul_ajar_items', []);
+                $sessionId = 'session-' . Str::uuid()->toString();
+                $modules[$sessionId] = array_merge($data, [
+                    'id' => $sessionId,
+                    'title' => $data['title'] ?? 'Modul Ajar',
+                    'subject' => $data['subject'] ?? null,
+                    'class' => $data['class'] ?? null,
+                    'duration' => $data['duration'] ?? null,
+                    'status' => strtolower($data['status'] ?? 'draft'),
+                    'created_at' => now()->toDateTimeString(),
+                    'source' => 'session',
+                    'guru_id' => null,
+                ]);
+                Session::put('modul_ajar_items', $modules);
+
+                return redirect()->route('rencana_pembelajaran.index')->with('success', 'Modul ajar berhasil disimpan.');
+            }
+
             return redirect()->back()->withInput()->with('error', 'Mata pelajaran dan kelas harus dipilih dari daftar.');
         }
 
@@ -531,8 +557,6 @@ class RencanaPembelajaranController extends Controller
 
         $modules = Session::get('modul_ajar_items', []);
         $moduleId = $request->input('module_id');
-        $guruId = $this->resolveCurrentGuruId();
-
         $record = null;
         if ($moduleId) {
             $record = RencanaPembelajaran::find($moduleId);
@@ -558,7 +582,7 @@ class RencanaPembelajaranController extends Controller
             'subject' => $request->input('subject'),
             'class' => $request->input('class'),
             'fase' => $request->input('fase'),
-            'status' => $request->input('status') ?: ($data['status'] ?? 'draft'),
+            'status' => strtolower($request->input('status') ?: ($data['status'] ?? 'draft')),
             'duration' => $request->input('duration'),
         ]);
 
@@ -1521,7 +1545,7 @@ class RencanaPembelajaranController extends Controller
 
         $zipMediaFiles = [];
         try {
-            $zip = new ZipArchive();
+            $zip = new \ZipArchive();
             if ($zip->open($path) === true) {
                 for ($i = 0; $i < $zip->numFiles; $i++) {
                     $name = $zip->getNameIndex($i);
@@ -1548,7 +1572,7 @@ class RencanaPembelajaranController extends Controller
                     $ext = 'bin';
                 }
                 $newName = uniqid('img_') . '.' . $ext;
-                $zip = new ZipArchive();
+                $zip = new \ZipArchive();
                 if ($zip->open($path) === true) {
                     $content = $zip->getFromIndex($zip->locateName($mediaFile));
                     if ($content !== false) {

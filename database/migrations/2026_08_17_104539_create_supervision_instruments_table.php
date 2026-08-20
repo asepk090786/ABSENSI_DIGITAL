@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('supervision_instruments', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama')->unique();
-            $table->text('deskripsi')->nullable();
-            $table->string('kategori')->nullable();
-            $table->string('tipe')->default('checklist'); // checklist, skala, deskriptif
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('supervision_instruments')) {
+            Schema::create('supervision_instruments', function (Blueprint $table) {
+                $table->id();
+                $table->string('nama')->unique();
+                $table->text('deskripsi')->nullable();
+                $table->string('kategori')->nullable();
+                $table->string('tipe')->default('checklist');
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

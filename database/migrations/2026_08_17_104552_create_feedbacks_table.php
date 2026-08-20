@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('feedbacks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('post_conference_id')->constrained('post_conferences')->onDelete('cascade');
-            $table->longText('kekuatan'); // Hal-hal positif/kekuatan guru
-            $table->longText('area_pengembangan'); // Area pengembangan
-            $table->longText('umpan_balik'); // Feedback lengkap
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('feedbacks')) {
+            Schema::create('feedbacks', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('post_conference_id')->constrained('post_conferences')->onDelete('cascade');
+                $table->longText('kekuatan');
+                $table->longText('area_pengembangan');
+                $table->longText('umpan_balik');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

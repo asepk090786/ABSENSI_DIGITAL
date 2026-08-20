@@ -15,6 +15,7 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
     protected int $kelasId;
     protected int $mapelId;
     protected int $rencanaId;
+    protected ?int $komponenId;
     protected string $tanggal;
     protected int $guruId;
     protected int $tahunAjaranId;
@@ -27,11 +28,13 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
         string $tanggal,
         int $guruId,
         int $tahunAjaranId,
-        int $semesterId
+        int $semesterId,
+        ?int $komponenId = null
     ) {
         $this->kelasId = $kelasId;
         $this->mapelId = $mapelId;
         $this->rencanaId = $rencanaId;
+        $this->komponenId = $komponenId;
         $this->tanggal = $tanggal;
         $this->guruId = $guruId;
         $this->tahunAjaranId = $tahunAjaranId;
@@ -131,6 +134,11 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
                 ->whereDate('tanggal', $this->tanggal)
                 ->where('tahun_ajaran_id', $this->tahunAjaranId)
                 ->where('semester_id', $this->semesterId)
+                ->when($this->komponenId !== null, function ($query) {
+                    $query->where('komponen_id', $this->komponenId);
+                }, function ($query) {
+                    $query->whereNull('komponen_id');
+                })
                 ->first();
 
             if ($existing) {
@@ -149,7 +157,7 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
                     'guru_id' => $this->guruId,
                     'kelas_id' => $this->kelasId,
                     'mapel_id' => $this->mapelId,
-                    'komponen_id' => null,
+                    'komponen_id' => $this->komponenId,
                     'rencana_pembelajaran_id' => $this->rencanaId,
                     'tanggal' => $this->tanggal,
                     'nilai' => $payload['nilai'],

@@ -43,6 +43,39 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+                        <div class="col-md-12 mt-3">
+                            <label class="form-label">Mata Pelajaran (Opsional)</label>
+                            <select name="mata_pelajaran_id" class="form-select @error('mata_pelajaran_id') is-invalid @enderror">
+                                <option value="">-- Pilih Mata Pelajaran --</option>
+                                @foreach($mataPelajaranList as $mataPelajaran)
+                                    <option value="{{ $mataPelajaran->id }}" {{ old('mata_pelajaran_id', $item->mata_pelajaran_id) == $mataPelajaran->id ? 'selected' : '' }}>
+                                        {{ $mataPelajaran->nama_mapel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('mata_pelajaran_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-12 mt-3">
+                            <label class="form-label">Kelas (Opsional)</label>
+                            @php
+                                $selectedKelasIds = old('kelas_ids', $item->kelasMany->isNotEmpty() ? $item->kelasMany->pluck('id')->all() : ($item->kelas_id ? [$item->kelas_id] : []));
+                            @endphp
+                            <div class="row g-2">
+                                @foreach($kelasList as $kelas)
+                                    <div class="col-6 col-md-4 col-lg-3">
+                                        <label class="kelas-option border rounded p-2 h-100">
+                                            <input type="checkbox" name="kelas_ids[]" value="{{ $kelas->id }}" {{ in_array($kelas->id, $selectedKelasIds) ? 'checked' : '' }}>
+                                            <span>{{ $kelas->nama_kelas }}</span>
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @error('kelas_ids')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     
@@ -54,10 +87,22 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <label class="form-label">Bobot (%)</label>
                             <input type="number" name="bobot" class="form-control @error('bobot') is-invalid @enderror" value="{{ old('bobot', $item->bobot) }}" min="0" max="100" step="0.01">
                             @error('bobot')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Domain</label>
+                            <select name="domain" class="form-select @error('domain') is-invalid @enderror">
+                                <option value="">-- Pilih Domain --</option>
+                                <option value="kognitif" {{ old('domain', $item->domain) == 'kognitif' ? 'selected' : '' }}>Kognitif</option>
+                                <option value="afektif" {{ old('domain', $item->domain) == 'afektif' ? 'selected' : '' }}>Afektif</option>
+                                <option value="psikomotorik" {{ old('domain', $item->domain) == 'psikomotorik' ? 'selected' : '' }}>Psikomotorik</option>
+                            </select>
+                            @error('domain')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -162,4 +207,35 @@
         </div>
     </div>
 </div>
+
+@push('css')
+<style>
+    .kelas-option {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin: 0;
+        min-height: 42px;
+        cursor: pointer;
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+
+    .kelas-option input[type="checkbox"] {
+        flex: 0 0 auto;
+        width: 1rem;
+        height: 1rem;
+        margin: 0;
+    }
+
+    .kelas-option span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .kelas-option:hover {
+        border-color: var(--tblr-primary);
+        background-color: rgba(var(--tblr-primary-rgb), .04);
+    }
+</style>
+@endpush
 @endsection

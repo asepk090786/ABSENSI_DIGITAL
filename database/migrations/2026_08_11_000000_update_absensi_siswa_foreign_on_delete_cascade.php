@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        if (Schema::hasTable('absensi_siswa')) {
+        if (Schema::hasTable('absensi_siswa') && Schema::getConnection()->getDriverName() !== 'sqlite') {
             Schema::table('absensi_siswa', function (Blueprint $table) {
                 // Drop existing foreign key (if present) and recreate with cascade on delete
                 try {
@@ -26,7 +26,7 @@ return new class extends Migration {
 
     public function down(): void
     {
-        if (Schema::hasTable('absensi_siswa')) {
+        if (Schema::hasTable('absensi_siswa') && Schema::getConnection()->getDriverName() !== 'sqlite') {
             Schema::table('absensi_siswa', function (Blueprint $table) {
                 try {
                     $table->dropForeign(['siswa_id']);
