@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@tabler/core": "^1.4.0",
+    "@tabler/icons-webfont": "^3.46.0"
+  },
+  "devDependencies": {
+    "laravel-vite-plugin": "^3.2.0",
+    "vite": "^8.2.1"
+  }
+}
