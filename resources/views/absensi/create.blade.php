@@ -1879,6 +1879,14 @@
             try {
                 if (!existing) return;
 
+                var loadAttendanceToggle = document.getElementById('loadClassAttendanceToggle');
+                var verificationToggle = document.getElementById('verifikasiToggle');
+                var manualVerificationToggle = document.getElementById('verifikasiManualToggle');
+                var shouldApplyExisting = (loadAttendanceToggle && loadAttendanceToggle.checked)
+                    || (verificationToggle && verificationToggle.checked)
+                    || (manualVerificationToggle && manualVerificationToggle.checked);
+                if (!shouldApplyExisting) return;
+
                 if (!window._pendingAttendanceUpdates) {
                     window._pendingAttendanceUpdates = {};
                 }

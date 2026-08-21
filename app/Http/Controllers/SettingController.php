@@ -981,43 +981,6 @@ class SettingController extends Controller
     public function backupProfileDownload($name)
     {
         $svc = new ProfilePhotoBackupService();
-        
-        // Check if this is a multi-part backup
-        $parts = $svc->getBackupParts($name);
-        if (!empty($parts)) {
-            // For multi-part backup, create a temporary combined zip
-            $tempZipPath = sys_get_temp_dir() . '/backup_' . uniqid() . '.zip';
-            $combinedZip = new \ZipArchive();
-            
-            if ($combinedZip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-                return back()->withErrors('Gagal membuat file unduhan untuk backup multi-part');
-            }
-
-            // Add all parts into the combined zip
-            foreach ($parts as $partPath) {
-                $partZip = new \ZipArchive();
-                if ($partZip->open($partPath, \ZipArchive::RDONLY) === true) {
-                    for ($i = 0; $i < $partZip->numFiles; $i++) {
-                        $stat = $partZip->statIndex($i);
-                        if ($stat === false) continue;
-                        
-                        $filename = $stat['name'];
-                        $fileContent = $partZip->getFromIndex($i);
-                        if ($fileContent !== false) {
-                            $combinedZip->addFromString($filename, $fileContent);
-                        }
-                    }
-                    $partZip->close();
-                }
-            }
-
-            $combinedZip->close();
-
-            // Download and cleanup
-            return response()->download($tempZipPath, $name . '.zip')->deleteFileAfterSend(true);
-        }
-
-        // Single file/part backup
         $path = $svc->downloadPath($name);
         if (! $path) {
             return back()->withErrors('File backup foto profil tidak ditemukan');
