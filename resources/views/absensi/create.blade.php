@@ -818,6 +818,8 @@
             });
         }
 
+        var loadClassAttendanceToggle = document.getElementById('loadClassAttendanceToggle');
+
         // Trigger load siswa jika ada kelas yang sudah dipilih saat page load
         if (kelasSelect && kelasSelect.value) {
             console.log('Preselected kelas detected, refreshing guru/jam and loading siswa for kelas:', kelasSelect.value);
@@ -1217,10 +1219,13 @@
             }
         });
 
-        var loadClassAttendanceToggle = document.getElementById('loadClassAttendanceToggle');
         if (loadClassAttendanceToggle) {
             loadClassAttendanceToggle.addEventListener('change', function() {
                 if (kelasSelect && kelasSelect.value) {
+                    if (!this.checked) {
+                        window._existingAbsensiCache = {};
+                        window._attendanceStatuses = {};
+                    }
                     loadSiswaByKelas(kelasSelect.value);
                 }
             });
