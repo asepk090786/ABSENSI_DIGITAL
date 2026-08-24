@@ -208,6 +208,20 @@
                 <i class="ti ti-info-circle me-2"></i>
                 <strong>Verifikasi Manual</strong>
                 <p class="mt-2 mb-0">Klik tombol "Verifikasi" di bawah untuk memverifikasi kehadiran Anda hari ini.</p>
+                @if(isset($activeManualVerification) && ($activeManualVerification->verifikasi_manual_valid_from || $activeManualVerification->verifikasi_manual_valid_to))
+                    <div class="small mt-2 pt-2 border-top border-info-subtle">
+                        <i class="ti ti-clock me-1"></i> Waktu aktif:
+                        <strong>
+                        @if($activeManualVerification->verifikasi_manual_valid_from && $activeManualVerification->verifikasi_manual_valid_to)
+                            {{ \Carbon\Carbon::parse($activeManualVerification->verifikasi_manual_valid_from)->format('H:i') }} - {{ \Carbon\Carbon::parse($activeManualVerification->verifikasi_manual_valid_to)->format('H:i') }} WIB
+                        @elseif($activeManualVerification->verifikasi_manual_valid_from)
+                            Mulai {{ \Carbon\Carbon::parse($activeManualVerification->verifikasi_manual_valid_from)->format('H:i') }} WIB
+                        @elseif($activeManualVerification->verifikasi_manual_valid_to)
+                            Sampai {{ \Carbon\Carbon::parse($activeManualVerification->verifikasi_manual_valid_to)->format('H:i') }} WIB
+                        @endif
+                        </strong>
+                    </div>
+                @endif
               </div>
               <div id="verifyCodeAlert" class="alert d-none" role="alert"></div>
             @else

@@ -146,22 +146,33 @@
                     <div class="col-6">
                         <div class="attendance-item attendance-item-secondary">
                             <div class="attendance-item-icon bg-secondary text-white rounded-3">
-                                <i class="ti ti-minus"></i>
+                                <i class="ti ti-stethoscope"></i>
                             </div>
                             <div class="attendance-item-content">
-                                <div class="attendance-item-label">Tidak Hadir</div>
+                                <div class="attendance-item-label">Sakit</div>
                                 <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->sakit }}</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-12">
+                    <div class="col-6">
                         <div class="attendance-item attendance-item-danger">
                             <div class="attendance-item-icon bg-danger text-white rounded-3">
                                 <i class="ti ti-alert-circle"></i>
                             </div>
                             <div class="attendance-item-content">
-                                <div class="attendance-item-label">Alpa</div>
+                                <div class="attendance-item-label">Alpa/Tidak Hadir</div>
                                 <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->alpa }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="attendance-item attendance-item-orange">
+                            <div class="attendance-item-icon bg-orange text-white rounded-3" style="background-color: #fd7e14;">
+                                <i class="ti ti-run"></i>
+                            </div>
+                            <div class="attendance-item-content">
+                                <div class="attendance-item-label">Bolos</div>
+                                <div class="attendance-item-value">{{ $statistikKehadiranSiswaHarian->bolos }}</div>
                             </div>
                         </div>
                     </div>
@@ -264,7 +275,8 @@
                                     <th class="text-center">Terlambat</th>
                                     <th class="text-center">Izin</th>
                                     <th class="text-center">Sakit</th>
-                                    <th class="text-center">Alpa</th>
+                                    <th class="text-center">Alpa/Tidak Hadir</th>
+                                    <th class="text-center">Bolos</th>
                                     <th class="text-center">Total</th>
                                     <th class="text-end">Aksi</th>
                                 </tr>
@@ -278,6 +290,7 @@
                                     <td class="text-center">{{ $item->izin }}</td>
                                     <td class="text-center">{{ $item->sakit }}</td>
                                     <td class="text-center">{{ $item->alpa }}</td>
+                                    <td class="text-center">{{ $item->bolos }}</td>
                                     <td class="text-center fw-bold">{{ $item->total_entri }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('absensi.create', ['kelas_id' => $item->kelas_id, 'tanggal' => $statistikKehadiranSiswaHarian->tanggal]) }}" class="btn btn-outline-primary btn-sm">

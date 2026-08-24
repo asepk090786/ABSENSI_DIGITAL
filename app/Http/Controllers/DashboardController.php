@@ -95,6 +95,7 @@ class DashboardController extends Controller
                 'izin' => 0,
                 'sakit' => 0,
                 'alpa' => 0, // per-siswa-per-day alpa count
+                'bolos' => 0, // per-siswa-per-day bolos count
                 'persentase_hadir' => 0,
             ];
 
@@ -164,6 +165,7 @@ class DashboardController extends Controller
                         'abs_s.siswa_id',
                         DB::raw('DATE(abs_k.tanggal) as tanggal'),
                         DB::raw("MAX(CASE
+                            WHEN LOWER(abs_s.status) = 'bolos' THEN 6
                             WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
                             WHEN LOWER(abs_s.status) = 'sakit' THEN 4
                             WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
@@ -195,7 +197,8 @@ class DashboardController extends Controller
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa')
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 6 THEN 1 ELSE 0 END) as bolos')
                     );
 
                 $rekapSiswaPerKelasQuery = DB::query()
@@ -215,6 +218,7 @@ class DashboardController extends Controller
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 6 THEN 1 ELSE 0 END) as bolos'),
                         DB::raw('MAX(daily_siswa.tanggal) as tanggal_terakhir')
                     )
                     ->groupBy('k.id', 'k.nama_kelas')
@@ -232,6 +236,7 @@ class DashboardController extends Controller
                         'izin' => (int) ($statSiswaRaw->izin ?? 0),
                         'sakit' => (int) ($statSiswaRaw->sakit ?? 0),
                         'alpa' => (int) ($statSiswaRaw->alpa ?? 0),
+                        'bolos' => (int) ($statSiswaRaw->bolos ?? 0),
                         // keep legacy key for compatibility
                         'alpha' => (int) ($statSiswaRaw->alpa ?? 0),
                         'persentase_hadir' => $totalSiswaEnt > 0 ? round(($hadirSiswa / $totalSiswaEnt) * 100, 2) : 0,
@@ -573,7 +578,26 @@ class DashboardController extends Controller
                             ->first();
 
                         if ($activeManualVerification) {
-                            $verificationMode = 'manual';
+                            $currentTime = \Carbon\Carbon::now('Asia/Jakarta')->format('H:i');
+                            $isValid = true;
+                            if (! empty($activeManualVerification->verifikasi_manual_valid_from)) {
+                                $from = \Carbon\Carbon::parse($activeManualVerification->verifikasi_manual_valid_from)->format('H:i');
+                                if ($currentTime < $from) {
+                                    $isValid = false;
+                                }
+                            }
+                            if (! empty($activeManualVerification->verifikasi_manual_valid_to)) {
+                                $to = \Carbon\Carbon::parse($activeManualVerification->verifikasi_manual_valid_to)->format('H:i');
+                                if ($currentTime > $to) {
+                                    $isValid = false;
+                                }
+                            }
+
+                            if ($isValid) {
+                                $verificationMode = 'manual';
+                            } else {
+                                $activeManualVerification = null;
+                            }
                         }
                     }
                     
@@ -662,6 +686,7 @@ class DashboardController extends Controller
                 'izin' => 0,
                 'sakit' => 0,
                 'alpa' => 0,
+                'bolos' => 0,
                 'persentase_hadir' => 0,
             ];
             $rekapKehadiranSiswaPerKelas = collect();
@@ -673,6 +698,7 @@ class DashboardController extends Controller
                         'abs_s.siswa_id',
                         DB::raw('DATE(abs_k.tanggal) as tanggal'),
                         DB::raw("MAX(CASE
+                            WHEN LOWER(abs_s.status) = 'bolos' THEN 6
                             WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
                             WHEN LOWER(abs_s.status) = 'sakit' THEN 4
                             WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
@@ -692,7 +718,8 @@ class DashboardController extends Controller
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa')
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 6 THEN 1 ELSE 0 END) as bolos')
                     )
                     ->first();
 
@@ -705,6 +732,7 @@ class DashboardController extends Controller
                         'izin' => (int) ($statSiswaQuery->izin ?? 0),
                         'sakit' => (int) ($statSiswaQuery->sakit ?? 0),
                         'alpa' => (int) ($statSiswaQuery->alpa ?? 0),
+                        'bolos' => (int) ($statSiswaQuery->bolos ?? 0),
                         'persentase_hadir' => ($statSiswaQuery->total_entri ?? 0) > 0 ? round((($statSiswaQuery->hadir ?? 0) / $statSiswaQuery->total_entri) * 100, 2) : 0,
                     ];
                 }
@@ -721,7 +749,8 @@ class DashboardController extends Controller
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa')
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 6 THEN 1 ELSE 0 END) as bolos')
                     )
                     ->groupBy('k.id', 'k.nama_kelas')
                     ->orderBy('k.nama_kelas')

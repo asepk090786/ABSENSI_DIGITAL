@@ -24,6 +24,8 @@ class AbsensiKelas extends Model
         'kode_verifikasi_expires_at',
         'verifikasi_manual_aktif',
         'verifikasi_manual_expires_at',
+        'verifikasi_manual_valid_from',
+        'verifikasi_manual_valid_to',
     ];
 
     protected $casts = [

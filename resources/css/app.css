@@ -543,6 +543,12 @@ body {
     grid-column: 1 / -1;
 }
 
+.attendance-item-orange {
+    background-color: rgba(253, 126, 20, 0.08);
+    border-color: rgba(253, 126, 20, 0.3);
+}
+
+
 .attendance-item-icon {
     width: 3.5rem;
     height: 3.5rem;
@@ -588,6 +594,11 @@ body {
 .attendance-item-danger .attendance-item-label {
     color: #ef4444;
 }
+
+.attendance-item-orange .attendance-item-label {
+    color: #fd7e14;
+}
+
 
 .attendance-summary-footer {
     border-top: 1px solid rgba(0, 0, 0, 0.07);

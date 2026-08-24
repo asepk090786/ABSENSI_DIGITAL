@@ -315,15 +315,42 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="form-check form-switch mt-3 pt-2">
-                                    <input class="form-check-input" type="checkbox" id="verifikasiManualToggle" name="verifikasi_manual_aktif" value="1" {{ old('verifikasi_manual_aktif', ($verificationManualActive ?? false)) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="verifikasiManualToggle">Aktifkan Verifikasi Manual</label>
+                                <div class="card card-sm border-light bg-light h-100">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-start justify-content-between gap-3">
+                                            <div class="flex-grow-1">
+                                                <div class="form-check form-switch m-0">
+                                                    <input class="form-check-input" type="checkbox" id="verifikasiManualToggle" name="verifikasi_manual_aktif" value="1" {{ old('verifikasi_manual_aktif', ($verificationManualActive ?? false)) ? 'checked' : '' }}>
+                                                    <label class="form-check-label fw-5" for="verifikasiManualToggle">Aktifkan Verifikasi Manual</label>
+                                                </div>
+                                                <div class="form-text text-muted small mt-1">
+                                                    Jika aktif, siswa dapat melakukan verifikasi absensi sendiri tanpa perlu kode.
+                                                </div>
+                                            </div>
+                                            <button type="button" id="saveManualVerificationConfigBtn" class="btn btn-sm btn-primary ms-2 flex-shrink-0">Simpan</button>
+                                        </div>
+
+                                        <div id="verificationManualConfigSection" style="{{ old('verifikasi_manual_aktif', ($verificationManualActive ?? false)) ? 'display:block;' : 'display:none;' }}">
+                                            <div class="row mt-3 g-2 align-items-center">
+                                                <div class="col-12">
+                                                    <label class="form-label small fw-5 mb-1">Rentang waktu aktif verifikasi manual</label>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <input type="time" id="verificationManualValidFrom" name="verifikasi_manual_valid_from" class="form-control form-control-sm" value="{{ old('verifikasi_manual_valid_from', $verificationManualValidFrom ?? '') }}" placeholder="Dari" style="width: 120px;">
+                                                </div>
+                                                <div class="col-auto">
+                                                    <span class="text-muted small">s.d.</span>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <input type="time" id="verificationManualValidTo" name="verifikasi_manual_valid_to" class="form-control form-control-sm" value="{{ old('verifikasi_manual_valid_to', $verificationManualValidTo ?? '') }}" placeholder="Sampai" style="width: 120px;">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="verificationManualSaveAlert" class="alert alert-sm d-none mt-2 mb-0 py-2 px-3" role="alert" style="font-size: 0.85rem;"></div>
+                                        <div id="verificationManualStatusMessage" class="form-text text-success small mt-2" style="display:none;"></div>
+                                    </div>
                                 </div>
-                                <div class="form-text text-muted small">
-                                    Jika aktif, siswa dapat melakukan verifikasi absensi sendiri tanpa perlu kode.
-                                </div>
-                                <div id="verificationManualSaveAlert" class="alert alert-sm d-none mt-2 mb-0 py-2 px-3" role="alert" style="font-size: 0.85rem;"></div>
-                                <div id="verificationManualStatusMessage" class="form-text text-success small mt-2" style="display:none;"></div>
                             </div>
                             <div class="col-12">
                                 <hr class="my-3">
@@ -784,9 +811,19 @@
                 var verificationValidFromInput = document.getElementById('verificationValidFrom');
                 var verificationValidToInput = document.getElementById('verificationValidTo');
 
+                var verificationManualValidFromInput = document.getElementById('verificationManualValidFrom');
+                var verificationManualValidToInput = document.getElementById('verificationManualValidTo');
+
                 // Update manual verification toggle
                 if (verificationManualToggle) {
                     verificationManualToggle.checked = !!json.verificationManualActive;
+                }
+                if (json.verificationManualActive) {
+                    if (verificationManualValidFromInput) verificationManualValidFromInput.value = json.verificationManualValidFrom || '';
+                    if (verificationManualValidToInput) verificationManualValidToInput.value = json.verificationManualValidTo || '';
+                } else {
+                    if (verificationManualValidFromInput) verificationManualValidFromInput.value = '';
+                    if (verificationManualValidToInput) verificationManualValidToInput.value = '';
                 }
 
                 // Update kode verifikasi toggle and values
@@ -1663,12 +1700,42 @@
             });
         }
 
+        var saveManualVerificationConfigBtn = document.getElementById('saveManualVerificationConfigBtn');
+        var verificationManualConfigSection = document.getElementById('verificationManualConfigSection');
+
+        function updateVerificationManualTimeStatus() {
+            if (!verificationManualStatusMessage) return;
+            if (verificationManualToggle && verificationManualToggle.checked) {
+                var mFrom = document.getElementById('verificationManualValidFrom') ? document.getElementById('verificationManualValidFrom').value : '';
+                var mTo = document.getElementById('verificationManualValidTo') ? document.getElementById('verificationManualValidTo').value : '';
+                var timeRangeInfo = '';
+                if (mFrom && mTo) {
+                    timeRangeInfo = ' (' + mFrom + ' s.d. ' + mTo + ')';
+                } else if (mFrom) {
+                    timeRangeInfo = ' (mulai ' + mFrom + ')';
+                } else if (mTo) {
+                    timeRangeInfo = ' (sampai ' + mTo + ')';
+                }
+                verificationManualStatusMessage.style.display = 'block';
+                verificationManualStatusMessage.textContent = 'Mode Verifikasi Manual aktif' + timeRangeInfo;
+            } else {
+                verificationManualStatusMessage.style.display = 'none';
+            }
+        }
+
         function updateVerificationMutualExclusivity() {
             // Membuat kedua toggle saling eksklusif
             if (verificationToggle && verificationToggle.checked) {
                 if (verificationManualToggle) {
                     verificationManualToggle.checked = false;
                     verificationManualToggle.disabled = true;
+                }
+                if (verificationManualConfigSection) {
+                    verificationManualConfigSection.style.display = 'none';
+                }
+                if (saveManualVerificationConfigBtn) {
+                    saveManualVerificationConfigBtn.disabled = true;
+                    saveManualVerificationConfigBtn.style.opacity = '0.5';
                 }
                 if (verificationManualStatusMessage) {
                     verificationManualStatusMessage.style.display = 'none';
@@ -1677,16 +1744,21 @@
                 if (verificationToggle) {
                     verificationToggle.disabled = true;
                 }
+                if (verificationManualConfigSection) {
+                    verificationManualConfigSection.style.display = 'block';
+                }
+                if (saveManualVerificationConfigBtn) {
+                    saveManualVerificationConfigBtn.disabled = false;
+                    saveManualVerificationConfigBtn.style.opacity = '1';
+                    saveManualVerificationConfigBtn.title = '';
+                }
                 if (saveVerificationConfigBtn) {
                     saveVerificationConfigBtn.disabled = true;
                     saveVerificationConfigBtn.style.opacity = '0.5';
                     saveVerificationConfigBtn.title = 'Nonaktifkan Verifikasi Manual terlebih dahulu';
                 }
                 // Tampilkan indikator bahwa verifikasi manual aktif
-                if (verificationManualStatusMessage) {
-                    verificationManualStatusMessage.style.display = 'block';
-                    verificationManualStatusMessage.textContent = 'Mode Verifikasi Manual aktif';
-                }
+                updateVerificationManualTimeStatus();
             } else {
                 if (verificationToggle) {
                     verificationToggle.disabled = false;
@@ -1698,6 +1770,14 @@
                 }
                 if (verificationManualToggle) {
                     verificationManualToggle.disabled = false;
+                }
+                if (verificationManualConfigSection) {
+                    verificationManualConfigSection.style.display = 'none';
+                }
+                if (saveManualVerificationConfigBtn) {
+                    saveManualVerificationConfigBtn.disabled = false;
+                    saveManualVerificationConfigBtn.style.opacity = '1';
+                    saveManualVerificationConfigBtn.title = '';
                 }
                 if (verificationManualStatusMessage) {
                     verificationManualStatusMessage.style.display = 'none';
@@ -1728,13 +1808,21 @@
             var tanggalVal = document.getElementById('tanggal') ? document.getElementById('tanggal').value : null;
             var jamId = document.getElementById('jam_belajar_id') ? document.getElementById('jam_belajar_id').value : null;
             var active = verificationManualToggle ? verificationManualToggle.checked : false;
+            var validFrom = document.getElementById('verificationManualValidFrom') ? document.getElementById('verificationManualValidFrom').value : '';
+            var validTo = document.getElementById('verificationManualValidTo') ? document.getElementById('verificationManualValidTo').value : '';
 
             if (!kelasId || !tanggalVal) {
                 showVerificationManualAlert('Silakan pilih kelas dan tanggal terlebih dahulu.', 'warning', true);
                 return;
             }
 
+            if (active && validFrom && validTo && validTo < validFrom) {
+                showVerificationManualAlert('Waktu akhir harus sama atau setelah waktu mulai.', 'danger', false);
+                return;
+            }
+
             showVerificationManualAlert(active ? 'Menyimpan...' : 'Menonaktifkan...', 'info', false);
+            if (saveManualVerificationConfigBtn) saveManualVerificationConfigBtn.disabled = true;
 
             fetch('{{ route('absensi.verification.manual.save') }}', {
                 method: 'POST',
@@ -1746,7 +1834,9 @@
                     kelas_id: kelasId,
                     tanggal: tanggalVal,
                     jam_belajar_id: jamId || null,
-                    verifikasi_manual_aktif: active ? 1 : 0
+                    verifikasi_manual_aktif: active ? 1 : 0,
+                    verifikasi_manual_valid_from: active ? (validFrom || null) : null,
+                    verifikasi_manual_valid_to: active ? (validTo || null) : null
                 })
             }).then(function(resp){
                 return resp.json().then(function(json) {
@@ -1755,6 +1845,7 @@
                     return { ok: resp.ok, status: resp.status, body: null };
                 });
             }).then(function(result){
+                if (saveManualVerificationConfigBtn) saveManualVerificationConfigBtn.disabled = false;
                 var json = result.body || {};
                 if (result.ok && json.success) {
                     showVerificationManualAlert('✓ Tersimpan', 'success', true);
@@ -1770,6 +1861,7 @@
                     showVerificationManualAlert('✕ ' + message, 'danger', false);
                 }
             }).catch(function(err){
+                if (saveManualVerificationConfigBtn) saveManualVerificationConfigBtn.disabled = false;
                 console.error(err);
                 showVerificationManualAlert('✕ Terjadi kesalahan', 'danger', false);
             });
@@ -1786,6 +1878,23 @@
                 updateVerificationMutualExclusivity();
                 saveManualVerificationConfig();
             });
+        }
+        if (saveManualVerificationConfigBtn) {
+            saveManualVerificationConfigBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                saveManualVerificationConfig();
+            });
+        }
+        var mFromInput = document.getElementById('verificationManualValidFrom');
+        var mToInput = document.getElementById('verificationManualValidTo');
+        if (mFromInput) {
+            mFromInput.addEventListener('input', updateVerificationManualTimeStatus);
+            mFromInput.addEventListener('change', updateVerificationManualTimeStatus);
+        }
+        if (mToInput) {
+            mToInput.addEventListener('input', updateVerificationManualTimeStatus);
+            mToInput.addEventListener('change', updateVerificationManualTimeStatus);
         }
         if (saveVerificationConfigBtn) {
             saveVerificationConfigBtn.addEventListener('click', function(event) {

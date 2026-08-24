@@ -1297,8 +1297,13 @@ class AbsensiController extends Controller
                 ->when($selectedJamBelajarId, fn($q) => $q->where('jam_belajar_id', $selectedJamBelajarId))
                 ->first();
 
+            $verificationManualValidFrom = null;
+            $verificationManualValidTo = null;
+
             if ($absensiKelas && $absensiKelas->verifikasi_manual_aktif) {
                 $verificationManualActive = true;
+                $verificationManualValidFrom = $absensiKelas->verifikasi_manual_valid_from ? Carbon::parse($absensiKelas->verifikasi_manual_valid_from)->format('H:i') : null;
+                $verificationManualValidTo = $absensiKelas->verifikasi_manual_valid_to ? Carbon::parse($absensiKelas->verifikasi_manual_valid_to)->format('H:i') : null;
             }
         }
 
@@ -1325,6 +1330,8 @@ class AbsensiController extends Controller
             'verificationValidFrom',
             'verificationValidTo',
             'verificationManualActive',
+            'verificationManualValidFrom',
+            'verificationManualValidTo',
             'isAdminOrKepala'
         ));
     }
@@ -1526,10 +1533,19 @@ class AbsensiController extends Controller
             'tanggal' => 'required|date',
             'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
             'verifikasi_manual_aktif' => 'nullable|boolean',
+            'verifikasi_manual_valid_from' => 'nullable|date_format:H:i',
+            'verifikasi_manual_valid_to' => 'nullable|date_format:H:i',
         ]);
+
+        if (! empty($validated['verifikasi_manual_valid_from']) && ! empty($validated['verifikasi_manual_valid_to']) && $validated['verifikasi_manual_valid_to'] < $validated['verifikasi_manual_valid_from']) {
+            return response()->json(['success' => false, 'message' => 'Waktu akhir harus sama atau setelah waktu mulai.'], 422);
+        }
 
         // Hapus verifikasi kode jika verifikasi manual diaktifkan
         $active = (bool) ($validated['verifikasi_manual_aktif'] ?? false);
+        $validFrom = $active ? ($validated['verifikasi_manual_valid_from'] ?? null) : null;
+        $validTo = $active ? ($validated['verifikasi_manual_valid_to'] ?? null) : null;
+        $jamId = $validated['jam_belajar_id'] ?? null;
 
         // Jika verifikasi manual diaktifkan, nonaktifkan verifikasi kode di AbsensiKelas yang sesuai
         try {
@@ -1538,7 +1554,7 @@ class AbsensiController extends Controller
 
             $absensiKelas = AbsensiKelas::where('kelas_id', $validated['kelas_id'])
                 ->whereDate('tanggal', $validated['tanggal'])
-                ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
                 ->first();
 
             if ($active) {
@@ -1551,6 +1567,8 @@ class AbsensiController extends Controller
                         'kode_verifikasi_expires_at' => null,
                         'verifikasi_manual_aktif' => true,
                         'verifikasi_manual_expires_at' => null,
+                        'verifikasi_manual_valid_from' => $validFrom,
+                        'verifikasi_manual_valid_to' => $validTo,
                     ]);
                 } else {
                     // Create new AbsensiKelas record jika belum ada
@@ -1558,7 +1576,7 @@ class AbsensiController extends Controller
                         AbsensiKelas::create([
                             'kelas_id' => $validated['kelas_id'],
                             'tanggal' => $validated['tanggal'],
-                            'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                            'jam_belajar_id' => $jamId,
                             'tahun_ajaran_id' => $tahunAjaran->id,
                             'semester_id' => $semester->id,
                             'guru_id' => auth()->user()->guru_id ?? null,
@@ -1567,6 +1585,8 @@ class AbsensiController extends Controller
                             'kode_verifikasi_expires_at' => null,
                             'verifikasi_manual_aktif' => true,
                             'verifikasi_manual_expires_at' => null,
+                            'verifikasi_manual_valid_from' => $validFrom,
+                            'verifikasi_manual_valid_to' => $validTo,
                         ]);
                     } else {
                         Log::warning('Gagal membuat AbsensiKelas: tahun_ajaran atau semester aktif tidak ditemukan', [
@@ -1581,7 +1601,7 @@ class AbsensiController extends Controller
                 // Juga hapus verifikasi codes dari AttendanceVerificationCode
                 AttendanceVerificationCode::where('kelas_id', $validated['kelas_id'])
                     ->where('tanggal', $validated['tanggal'])
-                    ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                    ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
                     ->delete();
             } else {
                 // Jika verifikasi manual DINONAKTIFKAN
@@ -1590,6 +1610,8 @@ class AbsensiController extends Controller
                     $absensiKelas->update([
                         'verifikasi_manual_aktif' => false,
                         'verifikasi_manual_expires_at' => null,
+                        'verifikasi_manual_valid_from' => null,
+                        'verifikasi_manual_valid_to' => null,
                     ]);
                 }
                 // Tidak perlu delete AttendanceVerificationCode jika turn off manual
@@ -1597,7 +1619,7 @@ class AbsensiController extends Controller
         } catch (\Throwable $e) {
             Log::error('absensi.verification.manual.save_failed', [
                 'kelas_id' => $validated['kelas_id'],
-                'jam_belajar_id' => $validated['jam_belajar_id'] ?? null,
+                'jam_belajar_id' => $jamId,
                 'tanggal' => $validated['tanggal'],
                 'error' => $e->getMessage(),
             ]);
@@ -1608,6 +1630,9 @@ class AbsensiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Konfigurasi verifikasi manual berhasil disimpan.',
+            'verificationManualActive' => $active,
+            'verificationManualValidFrom' => $validFrom,
+            'verificationManualValidTo' => $validTo,
         ]);
     }
 
@@ -1624,16 +1649,22 @@ class AbsensiController extends Controller
             'jam_belajar_id' => 'nullable|exists:jam_belajar,id',
         ]);
 
+        $jamId = $validated['jam_belajar_id'] ?? null;
+
         try {
             // Check for manual verification state
             $manualVerification = AbsensiKelas::where('kelas_id', $validated['kelas_id'])
                 ->whereDate('tanggal', $validated['tanggal'])
-                ->when($validated['jam_belajar_id'], fn($q) => $q->where('jam_belajar_id', $validated['jam_belajar_id']))
+                ->when($jamId, fn($q) => $q->where('jam_belajar_id', $jamId))
                 ->first();
 
             $verificationManualActive = false;
+            $verificationManualValidFrom = null;
+            $verificationManualValidTo = null;
             if ($manualVerification && $manualVerification->verifikasi_manual_aktif) {
                 $verificationManualActive = true;
+                $verificationManualValidFrom = $manualVerification->verifikasi_manual_valid_from ? Carbon::parse($manualVerification->verifikasi_manual_valid_from)->format('H:i') : null;
+                $verificationManualValidTo = $manualVerification->verifikasi_manual_valid_to ? Carbon::parse($manualVerification->verifikasi_manual_valid_to)->format('H:i') : null;
             }
 
             // Check for kode verifikasi state
@@ -1643,8 +1674,8 @@ class AbsensiController extends Controller
                     $q->whereNull('expires_at')->orWhere('expires_at', '>=', Carbon::now('UTC'));
                 });
 
-            if ($validated['jam_belajar_id']) {
-                $verificationCode->where('jam_belajar_id', $validated['jam_belajar_id']);
+            if ($jamId) {
+                $verificationCode->where('jam_belajar_id', $jamId);
             }
 
             $verificationRecord = $verificationCode->orderByDesc('id')->first();
@@ -1673,6 +1704,8 @@ class AbsensiController extends Controller
             return response()->json([
                 'success' => true,
                 'verificationManualActive' => $verificationManualActive,
+                'verificationManualValidFrom' => $verificationManualValidFrom,
+                'verificationManualValidTo' => $verificationManualValidTo,
                 'verificationActive' => $verificationActive,
                 'verificationCode' => $kode,
                 'verificationExpiresAt' => $expiresAt,
@@ -1736,8 +1769,21 @@ class AbsensiController extends Controller
         $verif = null;
         $absensi = null;
 
-        // If manual verification is active, allow verification without code
+        // If manual verification is active, allow verification without code (subject to valid time range)
         if ($absensiKelas && $absensiKelas->verifikasi_manual_aktif) {
+            $currentTime = Carbon::now('Asia/Jakarta')->format('H:i');
+            if (! empty($absensiKelas->verifikasi_manual_valid_from)) {
+                $from = Carbon::parse($absensiKelas->verifikasi_manual_valid_from)->format('H:i');
+                if ($currentTime < $from) {
+                    return response()->json(['success' => false, 'message' => "Verifikasi manual belum dibuka (aktif mulai jam {$from})."], 400);
+                }
+            }
+            if (! empty($absensiKelas->verifikasi_manual_valid_to)) {
+                $to = Carbon::parse($absensiKelas->verifikasi_manual_valid_to)->format('H:i');
+                if ($currentTime > $to) {
+                    return response()->json(['success' => false, 'message' => "Verifikasi manual sudah ditutup (berakhir jam {$to})."], 400);
+                }
+            }
             $absensi = $absensiKelas;
             // Proceed with manual verification
         } else if ($kode) {
@@ -1964,7 +2010,7 @@ class AbsensiController extends Controller
             'jumlah_sakit' => 'nullable|integer|min:0',
             'jumlah_izin' => 'nullable|integer|min:0',
             'jumlah_alpa' => 'nullable|integer|min:0',
-            'status_sisa' => 'nullable|in:hadir,terlambat,sakit,izin,alpa',
+            'status_sisa' => 'nullable|in:hadir,terlambat,sakit,izin,alpa,bolos',
             'overwrite_existing' => 'nullable|boolean',
         ]);
 
@@ -4092,6 +4138,7 @@ class AbsensiController extends Controller
             'sakit' => 'Sakit',
             'izin' => 'Izin',
             'alpa', 'alpha', 'absen' => 'Absen',
+            'bolos' => 'Bolos',
             default => null,
         };
     }
