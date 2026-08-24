@@ -66,7 +66,7 @@
                     
                     <ul class="nav nav-tabs mb-2" id="hariTab" role="tablist">
                         @php
-                            $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                            $hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
                         @endphp
                         @foreach($hariList as $index => $hari)
                         <li class="nav-item" role="presentation">
@@ -245,7 +245,7 @@ function clearJadwal(btn) {
 }
 
 function copyFromPrevious(currentHari) {
-    const hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+    const hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu', 'minggu'];
     const currentIndex = hariList.indexOf(currentHari);
     
     if (currentIndex === 0) {
