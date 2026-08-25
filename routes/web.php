@@ -158,6 +158,10 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/{ekskul}/siswa', [App\Http\Controllers\EkskulController::class, 'getSiswa'])->name('get-siswa');
         Route::post('/{ekskul}/anggota/status', [App\Http\Controllers\EkskulController::class, 'updateStatusAnggota'])->name('anggota.status');
         Route::post('/{ekskul}/anggota/bulk', [App\Http\Controllers\EkskulController::class, 'storeAnggotaBulk'])->name('anggota.bulk');
+        Route::get('/{ekskul}/anggota/{anggota}', [App\Http\Controllers\EkskulController::class, 'showAnggota'])->name('anggota.show');
+        Route::get('/{ekskul}/anggota/{anggota}/edit', [App\Http\Controllers\EkskulController::class, 'editAnggota'])->name('anggota.edit');
+        Route::put('/{ekskul}/anggota/{anggota}', [App\Http\Controllers\EkskulController::class, 'updateAnggota'])->name('anggota.update');
+        Route::delete('/{ekskul}/anggota/{anggota}', [App\Http\Controllers\EkskulController::class, 'destroyAnggota'])->name('anggota.destroy');
         Route::post('/{ekskul}/daftar', [App\Http\Controllers\EkskulController::class, 'daftar'])->name('daftar');
         Route::get('/{ekskul}/jadwal', [App\Http\Controllers\EkskulController::class, 'jadwal'])->name('jadwal');
         Route::post('/{ekskul}/jadwal', [App\Http\Controllers\EkskulController::class, 'storeJadwal'])->name('jadwal.store');

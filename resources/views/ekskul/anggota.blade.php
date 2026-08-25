@@ -36,7 +36,7 @@
                                 <th>Kelas</th>
                                 <th>Tgl Daftar</th>
                                 <th>Status</th>
-                                <th width="180">Aksi</th>
+                                <th width="220">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -57,6 +57,21 @@
                                     @endif
                                 </td>
                                 <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('ekskul.anggota.show', [$ekskul->id, $a->id]) }}" class="btn btn-outline-info" title="Lihat anggota">
+                                            <i class="ti ti-eye"></i>
+                                        </a>
+                                        <a href="{{ route('ekskul.anggota.edit', [$ekskul->id, $a->id]) }}" class="btn btn-outline-primary" title="Edit anggota">
+                                            <i class="ti ti-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{{ route('ekskul.anggota.destroy', [$ekskul->id, $a->id]) }}" class="d-inline" onsubmit="return confirm('Yakin hapus anggota ini dari ekstrakurikuler?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-outline-danger" title="Hapus anggota">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                     @if($a->status_pendaftaran === 'pending')
                                     <form method="POST" action="{{ route('ekskul.anggota.status', $ekskul->id) }}" class="d-inline">
                                         @csrf

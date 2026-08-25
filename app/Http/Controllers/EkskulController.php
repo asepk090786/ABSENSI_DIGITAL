@@ -224,6 +224,55 @@ class EkskulController extends Controller
         return redirect()->route('ekskul.anggota', $id)->with('success', 'Status anggota berhasil diperbarui.');
     }
 
+    public function showAnggota($ekskulId, $anggotaId)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($ekskulId);
+        $this->authorizePembinaOrAdmin($ekskul);
+        $anggota = EkskulAnggota::with('siswa.kelas')
+            ->where('ekstrakurikuler_id', $ekskul->id)
+            ->findOrFail($anggotaId);
+
+        return view('ekskul.anggota-show', compact('ekskul', 'anggota'));
+    }
+
+    public function editAnggota($ekskulId, $anggotaId)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($ekskulId);
+        $this->authorizePembinaOrAdmin($ekskul);
+        $anggota = EkskulAnggota::with('siswa.kelas')
+            ->where('ekstrakurikuler_id', $ekskul->id)
+            ->findOrFail($anggotaId);
+
+        return view('ekskul.anggota-edit', compact('ekskul', 'anggota'));
+    }
+
+    public function updateAnggota(Request $request, $ekskulId, $anggotaId)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($ekskulId);
+        $this->authorizePembinaOrAdmin($ekskul);
+        $anggota = EkskulAnggota::where('ekstrakurikuler_id', $ekskul->id)->findOrFail($anggotaId);
+        $validated = $request->validate([
+            'status_pendaftaran' => 'required|in:pending,diterima,ditolak',
+            'tanggal_daftar' => 'nullable|date',
+            'keterangan' => 'nullable|string|max:1000',
+        ]);
+        $anggota->update($validated);
+
+        return redirect()->route('ekskul.anggota', $ekskul->id)
+            ->with('success', 'Data anggota berhasil diperbarui.');
+    }
+
+    public function destroyAnggota($ekskulId, $anggotaId)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($ekskulId);
+        $this->authorizePembinaOrAdmin($ekskul);
+        $anggota = EkskulAnggota::where('ekstrakurikuler_id', $ekskul->id)->findOrFail($anggotaId);
+        $anggota->delete();
+
+        return redirect()->route('ekskul.anggota', $ekskul->id)
+            ->with('success', 'Anggota berhasil dihapus dari ekstrakurikuler.');
+    }
+
     public function daftar($id)
     {
         $user = auth()->user();
@@ -315,6 +364,7 @@ class EkskulController extends Controller
     public function absensi($id, $agendaId = null)
     {
         $ekskul = Ekstrakurikuler::findOrFail($id);
+        $agendaId = $agendaId ?: request('agenda');
         $siswa = EkskulAnggota::where('ekstrakurikuler_id', $id)
             ->where('status_pendaftaran', 'diterima')
             ->with(['siswa.kelas', 'siswa.user'])
@@ -351,7 +401,7 @@ class EkskulController extends Controller
             'ekskul_agenda_id'     => 'nullable|exists:ekskul_agenda,id',
             'absensi'              => 'required|array',
             'absensi.*.siswa_id'   => 'required|exists:siswa,id',
-            'absensi.*.status'     => 'required|in:hadir,izin,sakit,alpa,tanpa_keterangan',
+            'absensi.*.status'     => 'required|in:hadir,izin,sakit,alpha,tanpa_keterangan',
             'absensi.*.keterangan' => 'nullable|string',
         ]);
         $tanggal = \Carbon\Carbon::parse($validated['tanggal'])->toDateString();

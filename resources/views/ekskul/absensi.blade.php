@@ -125,7 +125,7 @@
                                         <img src="{{ $fotoUrl }}" alt="" class="rounded-circle" style="width:36px;height:36px;object-fit:cover;">
                                         @else
                                         <span class="avatar avatar-xs rounded-circle" style="width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;background:#e9ecef;font-weight:600;font-size:0.8rem;color:#6c757d;">
-                                            {{ substr($s->siswa->nama ?? '?', 0, 1) }
+                                                {{ substr($s->siswa->nama ?? '?', 0, 1) }}
                                         </span>
                                         @endif
                                     </td>
@@ -140,7 +140,7 @@
                                             <option value="hadir" {{ $existingStatus === 'hadir' ? 'selected' : '' }}>Hadir</option>
                                             <option value="izin" {{ $existingStatus === 'izin' ? 'selected' : '' }}>Izin</option>
                                             <option value="sakit" {{ $existingStatus === 'sakit' ? 'selected' : '' }}>Sakit</option>
-                                            <option value="alpa" {{ $existingStatus === 'alpa' ? 'selected' : '' }}>Alpa</option>
+                                            <option value="alpha" {{ $existingStatus === 'alpha' ? 'selected' : '' }}>Alpa</option>
                                             <option value="tanpa_keterangan" {{ $existingStatus === 'tanpa_keterangan' ? 'selected' : '' }}>Tanpa Keterangan</option>
                                         </select>
                                         @if($lockedByIzin)
@@ -171,13 +171,15 @@
                                 $lockedByIzin = (bool) $izinAktif;
                                 $existingStatus = $lockedByIzin ? 'hadir' : ($existingAbsensi->get($s->siswa_id)->status ?? 'hadir');
                                 $existingKeterangan = $existingAbsensi->get($s->siswa_id)->keterangan ?? '';
+                                $foto = $s->siswa->user->foto ?? null;
+                                $fotoUrl = $foto ? (str_contains($foto, '://') ? $foto : asset('storage/' . $foto)) : null;
                             @endphp
                             <div class="grid-card">
                                 @if($fotoUrl)
                                 <img src="{{ $fotoUrl }}" alt="" class="avatar">
                                 @else
                                 <span class="avatar" style="width:60px;height:60px;display:inline-flex;align-items:center;justify-content:center;background:#e9ecef;font-weight:700;font-size:1.3rem;color:#6c757d;border-radius:50%;margin:0 auto 0.5rem;">
-                                    {{ substr($s->siswa->nama ?? '?', 0, 1) }}
+                                        {{ substr($s->siswa->nama ?? '?', 0, 1) }}
                                 </span>
                                 @endif
                                 <div class="nama">{{ $s->siswa->nama ?? '-' }}</div>
@@ -190,7 +192,7 @@
                                     <option value="hadir" {{ $existingStatus === 'hadir' ? 'selected' : '' }}>Hadir</option>
                                     <option value="izin" {{ $existingStatus === 'izin' ? 'selected' : '' }}>Izin</option>
                                     <option value="sakit" {{ $existingStatus === 'sakit' ? 'selected' : '' }}>Sakit</option>
-                                    <option value="alpa" {{ $existingStatus === 'alpa' ? 'selected' : '' }}>Alpa</option>
+                                    <option value="alpha" {{ $existingStatus === 'alpha' ? 'selected' : '' }}>Alpa</option>
                                     <option value="tanpa_keterangan" {{ $existingStatus === 'tanpa_keterangan' ? 'selected' : '' }}>Tanpa Keterangan</option>
                                 </select>
                                 @if($lockedByIzin)
@@ -260,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnTidakHadirSemua) {
         btnTidakHadirSemua.addEventListener('click', function() {
             document.querySelectorAll('.status-select').forEach(function(sel) {
-                sel.value = 'alpa';
+                sel.value = 'alpha';
             });
         });
     }
