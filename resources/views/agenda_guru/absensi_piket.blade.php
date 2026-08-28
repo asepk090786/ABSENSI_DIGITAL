@@ -217,8 +217,9 @@
                                             <td>{{ $item->nip ?: '-' }}</td>
                                             <td>
                                                 <select class="form-select form-select-sm status-select" name="attendance[{{ $item->id }}][status]">
+                                                    <option value="" {{ !optional($existing)->status ? 'selected' : '' }}>Pilih status</option>
                                                     <option value="hadir" {{ optional($existing)->status === 'hadir' ? 'selected' : '' }}>Hadir</option>
-                                                    <option value="izin" {{ optional($existing)->status === 'izin' || !optional($existing)->status ? 'selected' : '' }}>Izin</option>
+                                                    <option value="izin" {{ optional($existing)->status === 'izin' ? 'selected' : '' }}>Izin</option>
                                                     <option value="sakit" {{ optional($existing)->status === 'sakit' ? 'selected' : '' }}>Sakit</option>
                                                     <option value="tidak_hadir" {{ optional($existing)->status === 'tidak_hadir' ? 'selected' : '' }}>Tidak Hadir</option>
                                                 </select>
@@ -267,11 +268,12 @@
                                                     </div>
                                                     <h6 class="fw-semibold mb-1">{{ $item->nama }}</h6>
                                                     <small class="text-muted d-block mb-2">{{ $item->nip ?: '-' }}</small>
-                                                    <span class="badge bg-{{ $statusColor }} text-white mb-2">{{ ucfirst(optional($existing)->status ?: 'izin') }}</span>
+                                                    <span class="badge status-badge bg-{{ $statusColor }} text-white mb-2">{{ $existing ? ucfirst(str_replace('_', ' ', $existing->status)) : 'Belum diisi' }}</span>
                                                     <div class="mt-2">
                                                         <select class="form-select form-select-sm status-select" name="attendance[{{ $item->id }}][status]">
+                                                            <option value="" {{ !optional($existing)->status ? 'selected' : '' }}>Pilih status</option>
                                                             <option value="hadir" {{ optional($existing)->status === 'hadir' ? 'selected' : '' }}>Hadir</option>
-                                                            <option value="izin" {{ optional($existing)->status === 'izin' || !optional($existing)->status ? 'selected' : '' }}>Izin</option>
+                                                            <option value="izin" {{ optional($existing)->status === 'izin' ? 'selected' : '' }}>Izin</option>
                                                             <option value="sakit" {{ optional($existing)->status === 'sakit' ? 'selected' : '' }}>Sakit</option>
                                                             <option value="tidak_hadir" {{ optional($existing)->status === 'tidak_hadir' ? 'selected' : '' }}>Tidak Hadir</option>
                                                         </select>
@@ -412,10 +414,38 @@
     document.addEventListener('DOMContentLoaded', function() {
         setView('list');
         document.querySelectorAll('.status-select').forEach(function(select) {
-            select.addEventListener('change', updateCheckAllHadirStatus);
+            select.addEventListener('change', function() {
+                updateStatusBadge(this);
+                updateCheckAllHadirStatus();
+            });
         });
         updateCheckAllHadirStatus();
     });
+
+    function updateStatusBadge(select) {
+        const card = select.closest('.card');
+        const badge = card ? card.querySelector('.status-badge') : null;
+        if (!badge) return;
+
+        const labels = {
+            hadir: 'Hadir',
+            izin: 'Izin',
+            sakit: 'Sakit',
+            tidak_hadir: 'Tidak hadir',
+            '': 'Belum diisi'
+        };
+        const colors = {
+            hadir: 'success',
+            izin: 'warning',
+            sakit: 'info',
+            tidak_hadir: 'danger',
+            '': 'secondary'
+        };
+
+        badge.textContent = labels[select.value] || 'Belum diisi';
+        badge.classList.remove('bg-success', 'bg-warning', 'bg-info', 'bg-danger', 'bg-secondary');
+        badge.classList.add('bg-' + (colors[select.value] || 'secondary'));
+    }
 
     function setView(mode) {
         const listContainer = document.getElementById('listViewContainer');

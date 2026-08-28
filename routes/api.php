@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\MobileApiController;
+use App\Http\Controllers\Api\MasterDataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,7 @@ Route::get('/classes', [MobileApiController::class, 'classes'])->middleware('aut
 Route::get('/students', [MobileApiController::class, 'students'])->middleware('auth:sanctum');
 Route::get('/teachers', [MobileApiController::class, 'teachers'])->middleware('auth:sanctum');
 Route::get('/schedule', [MobileApiController::class, 'schedule'])->middleware('auth:sanctum');
+Route::get('/master-data', [MasterDataController::class, 'index'])->middleware('api.key');
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
     Route::get('/dashboard', [MobileApiController::class, 'mobileDashboard']);

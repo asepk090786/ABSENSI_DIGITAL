@@ -36,4 +36,9 @@ class Kelas extends Model
     {
         return $this->hasMany(Siswa::class);
     }
+
+    public function tugasGuru()
+    {
+        return $this->hasMany(TugasGuru::class);
+    }
 }

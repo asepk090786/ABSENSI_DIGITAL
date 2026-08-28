@@ -41,6 +41,9 @@ Route::middleware('guest')->group(function () {
     Route::get('login',[AuthController::class,'showLogin'])->name('login');
     Route::post('login',[AuthController::class,'login'])->name('login.post');
 });
+Route::get('qr-login/{token}', [KartuLoginController::class, 'consume'])
+    ->middleware('throttle:10,1')
+    ->name('qr_login.consume');
 // Note: public Help page removed temporarily. Admin editor remains under /help/admin
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
@@ -376,7 +379,8 @@ Route::middleware(['auth'])->group(function(){
     // Fitur baru - Role & Permission
     Route::resource('role_permission', RolePermissionController::class);
 
-    // Kartu Login placeholder
+    Route::get('kartu-login/generate', [KartuLoginController::class, 'generatePage'])->name('kartu_login.generate');
+    Route::post('kartu-login/generate', [KartuLoginController::class, 'generate'])->name('kartu_login.generate.submit');
     Route::get('kartu-login', [KartuLoginController::class, 'index'])->name('kartu_login.index');
     
     // Fitur baru - Administrasi PTK
@@ -482,6 +486,15 @@ Route::middleware(['auth'])->group(function(){
     // Settings routes (tahun ajaran & semester) - Only Admin and Kepala Sekolah
     Route::middleware(['admin.or.kepala'])->group(function () {
         Route::get('/setting', [SettingController::class, 'index'])->name('tahun_ajaran.index');
+        Route::middleware('role:Admin')->group(function () {
+            Route::get('/setting/api', [SettingController::class, 'api'])->name('setting.api');
+            Route::post('/setting/api/keys', [SettingController::class, 'generateApiKey'])->name('setting.api.keys.generate');
+            Route::get('/setting/api/keys/{apiKey}', [SettingController::class, 'showApiKey'])->name('setting.api.keys.show');
+            Route::get('/setting/api/keys/{apiKey}/edit', [SettingController::class, 'editApiKey'])->name('setting.api.keys.edit');
+            Route::put('/setting/api/keys/{apiKey}', [SettingController::class, 'updateApiKey'])->name('setting.api.keys.update');
+            Route::post('/setting/api/keys/{apiKey}/revoke', [SettingController::class, 'revokeApiKey'])->name('setting.api.keys.revoke');
+            Route::delete('/setting/api/keys/{apiKey}', [SettingController::class, 'deleteApiKey'])->name('setting.api.keys.delete');
+        });
         Route::get('/setting/tahun-ajaran', [SettingController::class, 'tahunAjaran'])->name('setting.tahun_ajaran');
         Route::get('/setting/tahun-ajaran/create', [SettingController::class, 'createTahunAjaran'])->name('setting.tahun_ajaran.create');
         Route::post('/setting/tahun-ajaran', [SettingController::class, 'storeTahunAjaran'])->name('setting.tahun_ajaran.store');

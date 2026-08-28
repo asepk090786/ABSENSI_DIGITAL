@@ -131,8 +131,6 @@ class GuruController extends Controller
         // Logika update/insert user jika username/password diisi
         $username = $validated['username'] ?? null;
         $password = $validated['password'] ?? null;
-        // Status aktif: hanya jika username dan password diisi
-        $is_active = ($username && $password) ? 1 : 0;
         $email = $validated['email'] ?? null;
 
         if ($username && $password) {
@@ -145,7 +143,7 @@ class GuruController extends Controller
                 // Update user
                 $user->username = $username;
                 $user->password = bcrypt($password);
-                $user->is_active = 1;
+                $user->is_active = $validated['is_active'];
                 $user->name = $guru->nama;
                 $user->email = $email;
                 $user->jenis_kelamin = $guru->jenis_kelamin;
@@ -161,12 +159,11 @@ class GuruController extends Controller
                     'jenis_kelamin' => $guru->jenis_kelamin,
                     'role_id' => $roleGuru ? $roleGuru->id : null,
                     'guru_id' => $guru->id,
-                    'is_active' => 1,
+                    'is_active' => $validated['is_active'],
                 ]);
             }
         } else if ($guru->user) {
-            // Jika username atau password dikosongkan, set user nonaktif
-            $guru->user->is_active = 0;
+            $guru->user->is_active = $validated['is_active'];
             $guru->user->save();
         }
 

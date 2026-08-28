@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TahunAjaran;
 use App\Models\Semester;
 use App\Models\Sekolah;
+use App\Models\ApiKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\BackupService;
@@ -12,6 +13,7 @@ use App\Services\ProfilePhotoBackupService;
 use App\Services\SettingsManager;
 use App\Services\AppVersionService;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Process\Process;
@@ -26,6 +28,67 @@ class SettingController extends Controller
         $sekolah = Sekolah::first();
 
         return view('setting.index', compact('tahuns', 'active_tahun', 'active_semester', 'sekolah'));
+    }
+
+    public function api()
+    {
+        return view('setting.api', [
+            'masterDataEndpoint' => url('/api/master-data'),
+            'apiKeys' => ApiKey::query()->with('generatedBy:id,name')->latest()->get(),
+        ]);
+    }
+
+    public function generateApiKey(Request $request)
+    {
+        $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $plainKey = 'abs_' . Str::random(64);
+        ApiKey::create([
+            'name' => $request->input('name') ?: 'Master Data',
+            'key_prefix' => substr($plainKey, 0, 12),
+            'key_hash' => hash('sha256', $plainKey),
+            'encrypted_key' => Crypt::encryptString($plainKey),
+            'generated_by' => $request->user()->id,
+        ]);
+
+        return redirect()->route('setting.api')->with('generated_api_key', $plainKey);
+    }
+
+    public function revokeApiKey(ApiKey $apiKey)
+    {
+        $apiKey->update(['revoked_at' => now()]);
+
+        return redirect()->route('setting.api')->with('success', 'API key berhasil dicabut.');
+    }
+
+    public function showApiKey(ApiKey $apiKey)
+    {
+        return view('setting.api-show', compact('apiKey'));
+    }
+
+    public function editApiKey(ApiKey $apiKey)
+    {
+        return view('setting.api-edit', compact('apiKey'));
+    }
+
+    public function updateApiKey(Request $request, ApiKey $apiKey)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $apiKey->update($validated);
+
+        return redirect()->route('setting.api')->with('success', 'Nama API key berhasil diperbarui.');
+    }
+
+    public function deleteApiKey(ApiKey $apiKey)
+    {
+        $apiKey->delete();
+
+        return redirect()->route('setting.api')->with('success', 'API key berhasil dihapus.');
     }
 
     public function absensi()

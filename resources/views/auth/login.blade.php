@@ -192,6 +192,46 @@
             transform: translateY(0);
         }
 
+        .qr-login-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        .btn-qr-login {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 0.6rem;
+            border: 1.5px solid var(--primary);
+            background: #fff;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            font-family: var(--font);
+            cursor: pointer;
+        }
+        .btn-qr-login:hover {
+            background: var(--primary-light);
+        }
+        .qr-scanner-panel {
+            display: none;
+            margin-top: 1rem;
+        }
+        .qr-scanner-panel.is-visible {
+            display: block;
+        }
+        #qrReader {
+            overflow: hidden;
+            width: 100%;
+            border: 1px solid #dbe4f0;
+            border-radius: 0.6rem;
+        }
+        .qr-scanner-status {
+            margin: 0.6rem 0 0;
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
         .login-footer {
             text-align: center;
             margin-top: 1.5rem;
@@ -296,6 +336,17 @@
             </button>
         </form>
 
+        <div class="qr-login-section">
+            <button type="button" class="btn-qr-login" id="openQrLogin">
+                <i class="ti ti-qrcode me-2"></i>Login dengan QR Code
+            </button>
+            <div class="qr-scanner-panel" id="qrScannerPanel">
+                <div id="qrReader"></div>
+                <p class="qr-scanner-status" id="qrScannerStatus">Arahkan kamera ke QR code pada kartu login.</p>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="closeQrLogin">Tutup kamera</button>
+            </div>
+        </div>
+
         <div class="login-footer">
             &copy; {{ date('Y') }} SIMADIS — SMAN 1 Pontang
             <br>
@@ -305,5 +356,74 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const openButton = document.getElementById('openQrLogin');
+        const closeButton = document.getElementById('closeQrLogin');
+        const scannerPanel = document.getElementById('qrScannerPanel');
+        const scannerStatus = document.getElementById('qrScannerStatus');
+        let scanner = null;
+        let scanHandled = false;
+
+        function stopScanner() {
+            if (!scanner) return Promise.resolve();
+
+            return scanner.stop().catch(function () {}).then(function () {
+                scanner.clear();
+                scanner = null;
+            });
+        }
+
+        openButton.addEventListener('click', function () {
+            if (typeof Html5Qrcode === 'undefined') {
+                scannerStatus.textContent = 'Pemindai QR gagal dimuat. Periksa koneksi internet.';
+                scannerPanel.classList.add('is-visible');
+                return;
+            }
+
+            scanHandled = false;
+            scannerPanel.classList.add('is-visible');
+            scannerStatus.textContent = 'Meminta akses kamera...';
+            scanner = new Html5Qrcode('qrReader');
+            scanner.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: { width: 220, height: 220 } },
+                function (decodedText) {
+                    if (scanHandled) return;
+
+                    let targetUrl;
+                    try {
+                        targetUrl = new URL(decodedText, window.location.origin);
+                    } catch (error) {
+                        scannerStatus.textContent = 'QR code tidak valid.';
+                        return;
+                    }
+
+                    if (targetUrl.origin !== window.location.origin || !targetUrl.pathname.startsWith('/qr-login/')) {
+                        scannerStatus.textContent = 'Gunakan QR code dari kartu login SIMADIS.';
+                        return;
+                    }
+
+                    scanHandled = true;
+                    scannerStatus.textContent = 'QR valid. Mengarahkan ke login...';
+                    stopScanner().then(function () {
+                        window.location.href = targetUrl.href;
+                    });
+                },
+                function () {}
+            ).catch(function () {
+                scannerStatus.textContent = 'Kamera tidak dapat digunakan. Izinkan akses kamera lalu coba lagi.';
+            });
+        });
+
+        closeButton.addEventListener('click', function () {
+            stopScanner().then(function () {
+                scannerPanel.classList.remove('is-visible');
+                scannerStatus.textContent = 'Arahkan kamera ke QR code pada kartu login.';
+            });
+        });
+    });
+</script>
 </body>
 </html>

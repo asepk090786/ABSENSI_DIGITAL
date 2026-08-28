@@ -287,6 +287,14 @@
                 <span>Backup Database</span>
             </a>
         </li>
+        @if(auth()->user()->hasRole('Admin'))
+        <li>
+            <a href="{{ route('setting.api') }}" class="menu-item {{ request()->routeIs('setting.api') ? 'active' : '' }}">
+                <i class="material-icons">api</i>
+                <span>Endpoint API</span>
+            </a>
+        </li>
+        @endif
         <li>
             <a href="{{ route('setting.about') }}" class="menu-item {{ request()->routeIs('setting.about') ? 'active' : '' }}">
                 <i class="material-icons">info</i>

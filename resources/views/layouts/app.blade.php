@@ -1153,7 +1153,7 @@
                 $isAdminPtkActive = request()->routeIs(['administrasi_ptk.*','dokumen_kepegawaian.*','template_dokumen.*','pengembangan.*','pengajuan.*','verifikasi.*']);
                 
                 // PENGATURAN SISTEM active state
-                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*']);
+                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*','setting.agenda*','setting.menu*','setting.editor*','setting.api']);
                 
                 // BACKUP DATABASE active state
                 $isAdminBackupActive = request()->routeIs(['setting.backup']);
@@ -1260,7 +1260,8 @@
                                 <a href="{{ route('users.admin') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.admin') || (request()->routeIs('users.index') && request()->input('role') === 'Admin') ? 'is-active' : '' }}">Admin</a>
                                 <a href="{{ route('users.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('users.index') && !request()->has('role') ? 'is-active' : '' }}">Akun Pengguna</a>
                                 <a href="{{ route('role_permission.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('role_permission.*') ? 'is-active' : '' }}">Role &amp; Permission</a>
-                                <a href="{{ route('kartu_login.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kartu_login.*') ? 'is-active' : '' }}">Kartu Login</a>
+                                <a href="{{ route('kartu_login.generate') }}" class="sidebar-admin-sublink {{ request()->routeIs('kartu_login.generate') ? 'is-active' : '' }}">Generate Login QR</a>
+                                <a href="{{ route('kartu_login.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('kartu_login.index') ? 'is-active' : '' }}">Kartu Login</a>
                                 <a href="{{ route('asc_timetable.index') }}" class="sidebar-admin-sublink {{ request()->routeIs('asc_timetable.*') ? 'is-active' : '' }}">ASC Time Table</a>
                             </div>
                         </div>
@@ -1292,7 +1293,7 @@
                 <!-- PENGATURAN SISTEM Group -->
                 <li class="nav-item">
                     <div class="sidebar-admin-group">
-                        <div class="sidebar-admin-group-label">Pengaturan Sistem</div>
+                        <div class="sidebar-admin-group-label">Pengaturan</div>
                         <a href="{{ route('profile.edit') }}" class="sidebar-admin-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">
                             <i class="ti ti-user"></i> Profile
                         </a>
@@ -1317,6 +1318,11 @@
                         <a href="{{ route('setting.editor') }}" class="sidebar-admin-link {{ request()->routeIs('setting.editor*') ? 'is-active' : '' }}">
                             <i class="ti ti-file-code"></i> Editor Modul
                         </a>
+                        @if($user->hasRole('Admin'))
+                        <a href="{{ route('setting.api') }}" class="sidebar-admin-link {{ request()->routeIs('setting.api') ? 'is-active' : '' }}">
+                            <i class="ti ti-api"></i> Endpoint API
+                        </a>
+                        @endif
                     </div>
                 </li>
 
