@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use App\Models\TugasGuru;
+use App\Models\JadwalKbm;
 use App\Models\MataPelajaran;
 use App\Models\Kelas;
 use App\Models\CapaianPembelajaran;
@@ -343,9 +344,11 @@ class RencanaPembelajaranController extends Controller
         $kelasList = collect();
 
         if ($user && $user->guru_id) {
-            $tugas = TugasGuru::with(['mataPelajaran','kelas'])->where('guru_id', $user->guru_id)->get();
-            $mataPelajaranList = $tugas->pluck('mataPelajaran')->filter()->unique('id')->values();
-            $kelasList = $tugas->pluck('kelas')->filter()->unique('id')->values();
+            $jadwal = JadwalKbm::with(['mataPelajaran', 'kelas'])
+                ->where('guru_id', $user->guru_id)
+                ->get();
+            $mataPelajaranList = $jadwal->pluck('mataPelajaran')->filter()->unique('id')->values();
+            $kelasList = $jadwal->pluck('kelas')->filter()->unique('id')->values();
         } else {
             $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
             $kelasList = Kelas::orderBy('nama_kelas')->get();

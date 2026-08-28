@@ -7,7 +7,7 @@ use App\Models\CapaianPembelajaran;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
-use App\Models\TugasGuru;
+use App\Models\JadwalKbm;
 use App\Exports\KomponenNilaiExport;
 use App\Exports\KomponenNilaiTemplateExport;
 use App\Imports\KomponenNilaiImport;
@@ -55,9 +55,8 @@ class KomponenNilaiController extends Controller
         $user = auth()->user();
 
         if ($this->isTeacherUser()) {
-            return TugasGuru::with('kelas')
+            return JadwalKbm::with('kelas')
                 ->where('guru_id', $user->guru_id)
-                ->where('is_active', true)
                 ->get()
                 ->pluck('kelas')
                 ->filter()

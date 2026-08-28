@@ -60,7 +60,7 @@
                 $roleName = $user->role->role_name ?? '-';
                 $studentClass = $user->siswa->kelas ?? null;
                 $identityLabel = $user->siswa ? 'NISN' : 'NIP';
-                $identityNumber = $user->siswa?->nisn ?: ($user->nip ?: '-');
+                $identityNumber = $user->siswa?->nisn ?: ($user->guru?->nip ?: ($user->nip ?: '-'));
                 $fotoPath = $user->foto;
                 $schoolName = $sekolah->nama_sekolah ?? 'SMAN 1 Pontang';
                 $schoolLeftLogo = $sekolah->logo_header_kiri ?: null;
