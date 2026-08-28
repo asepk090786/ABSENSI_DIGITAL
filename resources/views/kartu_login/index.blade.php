@@ -145,7 +145,7 @@
     .login-card-id-icon { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; color: #10b981; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 9px; font-size: 1.15rem; }
     .login-card-profile { display: flex; flex-direction: column; align-items: center; gap: .5mm; min-width: 0; margin: 0 0 1mm; padding: 1mm; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 12px; text-align: center; }
     .login-card-avatar { flex: 0 0 30mm; width: 20mm; height: 30mm; padding: 2px; background: #dbeafe; border-radius: 6px; }
-    .login-card-profile img { display: block; width: 100%; height: 100%; object-fit: cover; border: 2px solid #fff; border-radius: 50%; }
+    .login-card-profile img { display: block; width: 100%; height: 100%; object-fit: cover; border: 2px solid #fff; border-radius: 4px; }
     .login-card-identity { min-width: 0; width: 100%; }
     .login-card h3 { margin: 0 0 .25rem; color: #0f172a; font-size: .95rem; line-height: 1.2; font-weight: 800; overflow-wrap: anywhere; }
     .login-card-identifier { margin-bottom: .45rem; color: #0f172a; font-size: .62rem; font-weight: 700; overflow-wrap: anywhere; }
