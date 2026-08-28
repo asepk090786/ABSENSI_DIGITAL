@@ -118,6 +118,7 @@ class SettingController extends Controller
                 'akademik_modul_ajar',
                 'akademik_editor_modul',
                 'akademik_tool',
+                'kartu_login',
                 'pembelajaran_absensi',
                 'pembelajaran_agenda_kelas',
                 'pembelajaran_agenda_guru',
@@ -138,6 +139,7 @@ class SettingController extends Controller
             ],
             'standardSiswaMenus' => [
                 'pembelajaran_materi',
+                'kartu_login',
             ],
         ]);
     }
@@ -185,6 +187,7 @@ class SettingController extends Controller
                 'akademik_modul_ajar',
                 'akademik_editor_modul',
                 'akademik_tool',
+                'kartu_login',
                 'pembelajaran_absensi',
                 'pembelajaran_agenda_kelas',
                 'pembelajaran_agenda_guru',
@@ -205,6 +208,7 @@ class SettingController extends Controller
             ],
             'standardSiswaMenus' => [
                 'pembelajaran_materi',
+                'kartu_login',
             ],
         ]);
     }
@@ -275,6 +279,7 @@ class SettingController extends Controller
             'akademik_modul_ajar',
             'akademik_editor_modul',
             'akademik_tool',
+            'kartu_login',
             'pembelajaran_absensi',
             'pembelajaran_agenda_kelas',
             'pembelajaran_agenda_guru',
@@ -289,6 +294,7 @@ class SettingController extends Controller
 
         $standardSiswaMenus = [
             'pembelajaran_materi',
+            'kartu_login',
         ];
 
         return view('setting.pengaturan', [

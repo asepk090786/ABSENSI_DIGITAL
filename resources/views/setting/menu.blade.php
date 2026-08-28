@@ -75,6 +75,12 @@
                                 <label class="form-check-label" for="menu_akademik_tool">Tool</label>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="guru_menus[]" value="kartu_login" id="menu_guru_kartu_login" {{ in_array('kartu_login', $menuVisibility['guru'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_guru_kartu_login">Kartu Login</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -222,6 +228,12 @@
                             <div class="form-check form-switch">
                                 <input type="checkbox" class="form-check-input" name="siswa_menus[]" value="pembelajaran_materi" id="menu_siswa_pembelajaran_materi" {{ in_array('pembelajaran_materi', $menuVisibility['siswa'] ?? []) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="menu_siswa_pembelajaran_materi">Materi</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="siswa_menus[]" value="kartu_login" id="menu_siswa_kartu_login" {{ in_array('kartu_login', $menuVisibility['siswa'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_siswa_kartu_login">Kartu Login</label>
                             </div>
                         </div>
                     </div>

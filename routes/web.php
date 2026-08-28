@@ -381,6 +381,7 @@ Route::middleware(['auth'])->group(function(){
 
     Route::get('kartu-login/generate', [KartuLoginController::class, 'generatePage'])->name('kartu_login.generate');
     Route::post('kartu-login/generate', [KartuLoginController::class, 'generate'])->name('kartu_login.generate.submit');
+    Route::get('kartu-login/saya', [KartuLoginController::class, 'personal'])->name('kartu_login.personal');
     Route::get('kartu-login', [KartuLoginController::class, 'index'])->name('kartu_login.index');
     
     // Fitur baru - Administrasi PTK

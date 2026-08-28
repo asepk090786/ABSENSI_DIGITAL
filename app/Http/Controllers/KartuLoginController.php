@@ -18,6 +18,7 @@ class KartuLoginController extends Controller
 {
     public function index()
     {
+        $personalOnly = false;
         $roles = Role::orderBy('role_name')->get();
         $kelas = Kelas::withCount('siswa')->orderBy('nama_kelas')->get();
         $sekolah = Sekolah::first();
@@ -45,7 +46,40 @@ class KartuLoginController extends Controller
             $user->setAttribute('login_qr', $qrWriter->write(QrCode::create($qrTarget)->setSize(180)->setMargin(8))->getDataUri());
         });
 
-        return view('kartu_login.index', compact('roles', 'kelas', 'users', 'sekolah'));
+        return view('kartu_login.index', compact('roles', 'kelas', 'users', 'sekolah', 'personalOnly'));
+    }
+
+    public function personal()
+    {
+        abort_unless(auth()->user()->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket', 'Siswa']), 403);
+
+        $user = auth()->user()->load(['role', 'siswa.kelas', 'guru']);
+        $sekolah = Sekolah::first();
+        $token = QrLoginToken::where('user_id', $user->id)
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (!$token || !filled($token->encrypted_token)) {
+            if ($token) {
+                $token->update(['used_at' => now()]);
+            }
+            $rawToken = $this->issueToken($user)[1];
+        } else {
+            $rawToken = Crypt::decryptString($token->encrypted_token);
+        }
+
+        $qrUrl = route('qr_login.consume', $rawToken);
+        $user->setAttribute('login_qr', (new PngWriter())
+            ->write(QrCode::create($qrUrl)->setSize(180)->setMargin(8))
+            ->getDataUri());
+        $users = collect([$user]);
+        $roles = collect();
+        $kelas = collect();
+        $personalOnly = true;
+
+        return view('kartu_login.index', compact('roles', 'kelas', 'users', 'sekolah', 'personalOnly'));
     }
 
     public function generatePage()

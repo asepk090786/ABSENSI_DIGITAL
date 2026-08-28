@@ -1363,7 +1363,7 @@
                 </li>
 
                 <!-- Akademik -->
-                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && (empty($guruEnabledMenus) || !empty(array_intersect(['akademik_jadwal_kbm','akademik_jadwal_piket','akademik_pengaturan_jam','akademik_pengembangan_diri','akademik_beban_kerja_guru','akademik_sk_tugas','akademik_komponen_penilaian','akademik_mata_pelajaran','akademik_modul_ajar','akademik_editor_modul'], $guruEnabledMenus))))
+                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && ((empty($guruEnabledMenus) || !empty(array_intersect(['akademik_jadwal_kbm','akademik_jadwal_piket','akademik_pengaturan_jam','akademik_pengembangan_diri','akademik_beban_kerja_guru','akademik_sk_tugas','akademik_komponen_penilaian','akademik_mata_pelajaran','akademik_modul_ajar','akademik_editor_modul','kartu_login'], $guruEnabledMenus))) || ($user->hasRole('Siswa') && (empty($siswaEnabledMenus) || in_array('kartu_login', $siswaEnabledMenus)))))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','editor_modul.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-school"></i> Akademik
@@ -1397,6 +1397,9 @@
                             @endif
                             @if($isGuru && (empty($guruEnabledMenus) || in_array('akademik_mata_pelajaran', $guruEnabledMenus)))
                                 <li class="nav-item"><a href="{{ route('mata_pelajaran.guru') }}" class="nav-link {{ request()->routeIs(['mata_pelajaran.guru','mata_pelajaran.*']) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Mata Pelajaran</a></li>
+                            @endif
+                            @if(($isGuru && (empty($guruEnabledMenus) || in_array('kartu_login', $guruEnabledMenus))) || ($user && $user->hasRole('Siswa') && (empty($siswaEnabledMenus) || in_array('kartu_login', $siswaEnabledMenus))))
+                                <li class="nav-item"><a href="{{ route('kartu_login.personal') }}" class="nav-link {{ request()->routeIs('kartu_login.personal') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Kartu Login</a></li>
                             @endif
                             @if(($isGuru && (empty($guruEnabledMenus) || in_array('akademik_modul_ajar', $guruEnabledMenus))) || request()->routeIs('rencana_pembelajaran.edit'))
                                 <li class="nav-item"><a href="{{ url('/modul-ajar') }}" class="nav-link {{ request()->is('modul-ajar*') && !request()->is('modul-ajar/editor*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Modul Ajar</a></li>
