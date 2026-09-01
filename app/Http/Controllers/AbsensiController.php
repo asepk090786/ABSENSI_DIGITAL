@@ -254,7 +254,13 @@ class AbsensiController extends Controller
             ->leftJoin('guru as g', 'g.id', '=', 'ak.guru_id')
             ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
             ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
-            ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('ak.guru_id', $user->guru_id))
+            ->when(! $isAdminOrKepala && $user->guru_id, function ($q) use ($user) {
+                $q->where(function ($subQ) use ($user) {
+                    $subQ->where('ak.guru_id', $user->guru_id)
+                        ->orWhere('k.wali_kelas_id', $user->guru_id)
+                        ->orWhere('k.guru_bk_id', $user->guru_id);
+                });
+            })
             ->when($kelasId, fn ($q) => $q->where('k.id', $kelasId))
             ->when($bulan, fn ($q) => $q->whereMonth('ak.tanggal', $bulan))
             ->when($tahunKalender, fn ($q) => $q->whereYear('ak.tanggal', $tahunKalender))
@@ -264,11 +270,11 @@ class AbsensiController extends Controller
                 DB::raw('YEAR(ak.tanggal) as tahun'),
                 DB::raw('MONTH(ak.tanggal) as bulan'),
                 DB::raw('COUNT(DISTINCT ak.id) as total_pertemuan'),
-                DB::raw('SUM(CASE WHEN LOWER(ass.status) = "hadir" THEN 1 ELSE 0 END) as hadir'),
-                DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("izin","ijin") THEN 1 ELSE 0 END) as izin'),
-                DB::raw('SUM(CASE WHEN LOWER(ass.status) = "sakit" THEN 1 ELSE 0 END) as sakit'),
-                DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("terlambat","telat") THEN 1 ELSE 0 END) as terlambat'),
-                DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("alpha","alpa","alfa","absen","tidak_hadir") THEN 1 ELSE 0 END) as alpha')
+                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) = 'hadir' THEN DATE(ak.tanggal) END) as hadir"),
+                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) IN ('izin','ijin') THEN DATE(ak.tanggal) END) as izin"),
+                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) = 'sakit' THEN DATE(ak.tanggal) END) as sakit"),
+                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) IN ('terlambat','telat') THEN DATE(ak.tanggal) END) as terlambat"),
+                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN DATE(ak.tanggal) END) as alpha")
             )
             ->groupBy('k.id', 'k.nama_kelas', DB::raw('YEAR(ak.tanggal)'), DB::raw('MONTH(ak.tanggal)'))
             ->orderBy(DB::raw('YEAR(ak.tanggal)'), 'desc')
@@ -281,7 +287,13 @@ class AbsensiController extends Controller
             ->join('absensi_kelas as ak', 'ak.kelas_id', '=', 'k.id')
             ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
             ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
-            ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('ak.guru_id', $user->guru_id))
+            ->when(! $isAdminOrKepala && $user->guru_id, function ($q) use ($user) {
+                $q->where(function ($subQ) use ($user) {
+                    $subQ->where('ak.guru_id', $user->guru_id)
+                        ->orWhere('k.wali_kelas_id', $user->guru_id)
+                        ->orWhere('k.guru_bk_id', $user->guru_id);
+                });
+            })
             ->select('k.id', 'k.nama_kelas')
             ->distinct()
             ->orderBy('k.nama_kelas')
@@ -367,12 +379,34 @@ class AbsensiController extends Controller
     private function ensureMonthlyReportAccess($user, $tahun, $semester, int $kelasId): void
     {
         $isAdminOrKepala = $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
-        $exists = DB::table('absensi_kelas')
-            ->where('kelas_id', $kelasId)
-            ->when($tahun, fn ($q) => $q->where('tahun_ajaran_id', $tahun->id))
-            ->when($semester, fn ($q) => $q->where('semester_id', $semester->id))
-            ->when(! $isAdminOrKepala && $user->guru_id, fn ($q) => $q->where('guru_id', $user->guru_id))
-            ->exists();
+        
+        // Admin/Kepala bisa akses semua kelas
+        if ($isAdminOrKepala) {
+            $exists = DB::table('absensi_kelas')
+                ->where('kelas_id', $kelasId)
+                ->when($tahun, fn ($q) => $q->where('tahun_ajaran_id', $tahun->id))
+                ->when($semester, fn ($q) => $q->where('semester_id', $semester->id))
+                ->exists();
+        } else if ($user->guru_id) {
+            // Guru bisa akses kelas yang:
+            // 1. Diajar langsung (ak.guru_id)
+            // 2. Dipimpin sebagai wali kelas (k.wali_kelas_id)
+            // 3. Dibina sebagai guru BK (k.guru_bk_id)
+            $exists = DB::table('absensi_kelas as ak')
+                ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
+                ->where('k.id', $kelasId)
+                ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
+                ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
+                ->where(function ($q) use ($user) {
+                    $q->where('ak.guru_id', $user->guru_id)
+                        ->orWhere('k.wali_kelas_id', $user->guru_id)
+                        ->orWhere('k.guru_bk_id', $user->guru_id);
+                })
+                ->exists();
+        } else {
+            $exists = false;
+        }
+        
         abort_unless($exists, 403, 'Akses rekap kelas ditolak.');
     }
 
@@ -3771,11 +3805,11 @@ class AbsensiController extends Controller
                 ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
                 ->select(
                     'abs_s.siswa_id',
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa_count")
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'hadir' THEN DATE(abs_k.tanggal) END) as hadir_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN DATE(abs_k.tanggal) END) as terlambat_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'sakit' THEN DATE(abs_k.tanggal) END) as sakit_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN DATE(abs_k.tanggal) END) as izin_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN DATE(abs_k.tanggal) END) as alpa_count")
                 )
                 ->groupBy('abs_s.siswa_id');
 
@@ -3833,11 +3867,11 @@ class AbsensiController extends Controller
                     's.nis',
                     's.nisn',
                     'k.nama_kelas',
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'hadir' THEN 1 ELSE 0 END) as hadir_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 1 ELSE 0 END) as terlambat_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) = 'sakit' THEN 1 ELSE 0 END) as sakit_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 1 ELSE 0 END) as izin_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1 ELSE 0 END) as alpa_count")
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'hadir' THEN DATE(abs_k.tanggal) END) as hadir_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN DATE(abs_k.tanggal) END) as terlambat_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'sakit' THEN DATE(abs_k.tanggal) END) as sakit_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN DATE(abs_k.tanggal) END) as izin_count"),
+                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN DATE(abs_k.tanggal) END) as alpa_count")
                 )
                 ->groupBy('s.id','s.nama','s.nis','s.nisn','k.nama_kelas')
                 ->orderBy('s.nama')
