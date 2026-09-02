@@ -56,12 +56,39 @@
 
     @isset($generatedUsers)
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="m-0">Hasil Generate <span class="badge bg-blue-lt">{{ $generatedUsers->count() }} akun</span></h3>
-            <button type="button" class="btn btn-outline-secondary d-print-none" onclick="window.print()"><i class="ti ti-printer me-1"></i>Cetak QR</button>
+            <div>
+                <h3 class="m-0">Hasil Generate <span class="badge bg-blue-lt">{{ $generatedUsers->count() }} akun</span></h3>
+                <small class="text-success"><i class="ti ti-check me-1"></i>Token QR tersimpan di database. Berlaku hingga {{ now()->addYear()->format('d M Y') }}</small>
+                @if(isset($newTokenCount) && isset($reusedTokenCount))
+                    @if($newTokenCount > 0 && $reusedTokenCount > 0)
+                        <div class="small text-muted mt-1">
+                            <i class="ti ti-info-circle"></i>
+                            {{ $newTokenCount }} akun baru dengan token baru · {{ $reusedTokenCount }} akun dengan token yang sudah ada
+                        </div>
+                    @elseif($reusedTokenCount > 0)
+                        <div class="small text-muted mt-1">
+                            <i class="ti ti-info-circle"></i>
+                            Semua akun menggunakan token yang sudah ada (tidak ada token baru dibuat)
+                        </div>
+                    @endif
+                @endif
+            </div>
+            <div class="btn-group d-print-none" role="group">
+                <a href="{{ route('kartu_login.index') }}?role={{ $validated['role'] ?? '' }}" class="btn btn-outline-info" title="Lihat di halaman Kartu Login">
+                    <i class="ti ti-eye me-1"></i>Lihat di Kartu Login
+                </a>
+                <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="ti ti-printer me-1"></i>Cetak QR
+                </button>
+            </div>
         </div>
         @if($generatedUsers->isEmpty())
             <div class="alert alert-warning">Tidak ada akun yang sesuai dengan pilihan.</div>
         @else
+            <div class="alert alert-info d-print-none">
+                <i class="ti ti-info-circle me-2"></i>
+                <strong>QR Token Reusable:</strong> QR Code dapat di-scan berkali-kali selama belum expired (1 tahun ajaran). Tidak perlu generate ulang untuk setiap penggunaan. Token baru hanya dibuat untuk akun yang belum memiliki token.
+            </div>
             <div class="qr-results-grid">
                 @foreach($generatedUsers as $user)
                     <article class="qr-result-card">
@@ -104,12 +131,33 @@ document.addEventListener('DOMContentLoaded', function () {
     const role = document.getElementById('role');
     const classField = document.getElementById('classField');
     const classSelect = document.getElementById('kelas_id');
+    const form = document.getElementById('generateQrForm');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Toggle kelas field visibility dan auto-submit saat role berubah
     role.addEventListener('change', function () {
         const isStudent = role.value === 'Siswa';
         classField.hidden = !isStudent;
         classSelect.required = isStudent;
         if (!isStudent) classSelect.value = '';
+        
+        // Auto-submit form setelah role berubah
+        if (role.value) {
+            setTimeout(() => {
+                submitBtn.click();
+            }, 300);
+        }
     });
+    
+    // Auto-submit saat kelas dipilih jika role adalah Siswa
+    classSelect.addEventListener('change', function () {
+        if (role.value === 'Siswa' && this.value) {
+            setTimeout(() => {
+                submitBtn.click();
+            }, 300);
+        }
+    });
+    
     document.querySelectorAll('.copy-qr-link').forEach(function (button) {
         button.addEventListener('click', function () {
             navigator.clipboard.writeText(button.dataset.link).then(function () {

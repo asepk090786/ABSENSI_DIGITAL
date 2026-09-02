@@ -27,19 +27,22 @@ class KartuLoginController extends Controller
             ->where('username', '!=', '')
             ->orderBy('name')
             ->get();
+        
+        // Filter berdasarkan role parameter dari URL (untuk redirect dari page generate)
+        $roleFilter = request('role');
+        if ($roleFilter) {
+            $users = $users->filter(fn ($user) => $user->role->role_name === $roleFilter)->values();
+        }
+        
         $qrWriter = new PngWriter();
         $users->each(function (User $user) use ($qrWriter) {
             $token = QrLoginToken::where('user_id', $user->id)
-                ->whereNull('used_at')
                 ->where('expires_at', '>', now())
                 ->latest()
                 ->first();
             if ($token && filled($token->encrypted_token)) {
                 $rawToken = Crypt::decryptString($token->encrypted_token);
             } else {
-                if ($token) {
-                    $token->update(['used_at' => now()]);
-                }
                 $rawToken = $this->issueToken($user)[1];
             }
             $qrTarget = route('qr_login.consume', $rawToken);
@@ -56,15 +59,11 @@ class KartuLoginController extends Controller
         $user = auth()->user()->load(['role', 'siswa.kelas', 'guru']);
         $sekolah = Sekolah::first();
         $token = QrLoginToken::where('user_id', $user->id)
-            ->whereNull('used_at')
             ->where('expires_at', '>', now())
             ->latest()
             ->first();
 
         if (!$token || !filled($token->encrypted_token)) {
-            if ($token) {
-                $token->update(['used_at' => now()]);
-            }
             $rawToken = $this->issueToken($user)[1];
         } else {
             $rawToken = Crypt::decryptString($token->encrypted_token);
@@ -116,14 +115,54 @@ class KartuLoginController extends Controller
             $query->whereHas('siswa', fn ($siswaQuery) => $siswaQuery->where('kelas_id', $validated['kelas_id']));
         }
 
+        $users = $query->get();
+        
+        // Hitung berapa banyak token baru vs yang di-reuse
+        $newTokenCount = 0;
+        $reusedTokenCount = 0;
+        foreach ($users as $user) {
+            $existingToken = QrLoginToken::where('user_id', $user->id)
+                ->where('expires_at', '>', now())
+                ->exists();
+            if ($existingToken) {
+                $reusedTokenCount++;
+            } else {
+                $newTokenCount++;
+            }
+        }
+        
         $generatedUsers = $this->loadUsersWithQr($validated, $query, true);
+        $generatedCount = $generatedUsers->count();
         session(['kartu_login_generate' => $validated]);
 
         $roles = Role::orderBy('role_name')->get();
         $kelas = Kelas::withCount('siswa')->orderBy('nama_kelas')->get();
 
+        // Buat pesan yang lebih informatif
+        if ($reusedTokenCount > 0 && $newTokenCount > 0) {
+            $successMessage = sprintf(
+                'QR login ditampilkan untuk %d akun (%d akun baru dengan token baru, %d akun dengan token yang sudah ada). Berlaku selama 1 tahun ajaran.',
+                $generatedCount,
+                $newTokenCount,
+                $reusedTokenCount
+            );
+        } elseif ($reusedTokenCount > 0) {
+            $successMessage = sprintf(
+                'QR login ditampilkan untuk %d akun. Semua menggunakan token yang sudah ada (belum expired). Berlaku selama 1 tahun ajaran.',
+                $generatedCount
+            );
+        } else {
+            $successMessage = sprintf(
+                'QR login berhasil dibuat untuk %d akun baru. Berlaku selama 1 tahun ajaran. Token tersimpan di database dan dapat dilihat di halaman Kartu Login.',
+                $generatedCount
+            );
+        }
+
         return view('kartu_login.generate', compact('roles', 'kelas', 'generatedUsers', 'validated'))
-            ->with('success', 'QR login berhasil dibuat. Berlaku selama 30 hari.');
+            ->with('success', $successMessage)
+            ->with('generatedCount', $generatedCount)
+            ->with('newTokenCount', $newTokenCount)
+            ->with('reusedTokenCount', $reusedTokenCount);
     }
 
     private function loadUsersWithQr(array $validated, $query = null, bool $replaceTokens = false)
@@ -139,21 +178,18 @@ class KartuLoginController extends Controller
         }
 
         $users = $query->get();
-        if ($replaceTokens && $users->isNotEmpty()) {
-            QrLoginToken::whereIn('user_id', $users->pluck('id'))
-                ->whereNull('used_at')
-                ->update(['used_at' => now()]);
-        }
-
+        
         $qrWriter = new PngWriter();
         $users->each(function (User $user) use ($qrWriter, $replaceTokens) {
-            $token = $replaceTokens
-                ? $this->issueToken($user)[0]
-                : QrLoginToken::where('user_id', $user->id)
-                    ->whereNull('used_at')
-                    ->where('expires_at', '>', now())
-                    ->latest()
-                    ->first();
+            // Cek token yang ada dan masih berlaku (tidak perlu check used_at)
+            $existingToken = QrLoginToken::where('user_id', $user->id)
+                ->where('expires_at', '>', now())
+                ->latest()
+                ->first();
+
+            // Jika ada token yang masih berlaku, gunakan yang ada
+            // Jika tidak ada, buat token baru
+            $token = $existingToken ?? ($replaceTokens ? $this->issueToken($user)[0] : null);
 
             if (!$token) {
                 return;
@@ -170,19 +206,32 @@ class KartuLoginController extends Controller
 
     public function consume(Request $request, string $token)
     {
-        $record = QrLoginToken::with('user')
-            ->where('token_hash', hash('sha256', $token))
-            ->whereNull('used_at')
-            ->where('expires_at', '>', now())
-            ->firstOrFail();
+        try {
+            $record = QrLoginToken::with('user')
+                ->where('token_hash', hash('sha256', $token))
+                ->where('expires_at', '>', now())
+                ->firstOrFail();
 
-        abort_unless($record->user->is_active, 403, 'Akun pengguna tidak aktif.');
+            abort_unless($record->user->is_active, 403, 'Akun pengguna tidak aktif.');
 
-        $record->update(['used_at' => now()]);
-        Auth::login($record->user);
-        $request->session()->regenerate();
+            // Track last scanned untuk audit trail (optional)
+            // $record->update(['last_scanned_at' => now()]);
+            
+            Auth::login($record->user);
+            $request->session()->regenerate();
 
-        return redirect()->intended(route('home'));
+            return redirect()->intended(route('home'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // Cek alasan token tidak ditemukan
+            $tokenHash = hash('sha256', $token);
+            $expiredToken = QrLoginToken::where('token_hash', $tokenHash)->first();
+            
+            if ($expiredToken) {
+                abort(410, 'QR Code sudah expired. Silahkan minta QR Code baru kepada admin.');
+            } else {
+                abort(404, 'QR Code tidak valid. Pastikan kode QR lengkap dan belum pernah dimodifikasi.');
+            }
+        }
     }
 
     private function issueToken(User $user): array
@@ -192,7 +241,7 @@ class KartuLoginController extends Controller
             'user_id' => $user->id,
             'token_hash' => hash('sha256', $rawToken),
             'encrypted_token' => Crypt::encryptString($rawToken),
-            'expires_at' => now()->addDays(30),
+            'expires_at' => now()->addYear(),
             'created_by' => auth()->id(),
         ]);
         $token->plain_token = $rawToken;

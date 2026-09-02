@@ -193,10 +193,34 @@
         }
 
         .qr-login-section {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e2e8f0;
+            margin: 0 0 1.5rem 0;
+            padding: 0;
+            border-top: none;
             text-align: center;
+        }
+        .qr-divider {
+            text-align: center;
+            margin: 1.2rem 0;
+            position: relative;
+        }
+        .qr-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e2e8f0;
+            z-index: 1;
+        }
+        .qr-divider span {
+            background: #fff;
+            padding: 0 0.75rem;
+            position: relative;
+            z-index: 2;
+            color: #cbd5e1;
+            font-size: 0.75rem;
+            font-weight: 500;
         }
         .btn-qr-login {
             width: 100%;
@@ -301,6 +325,23 @@
         </div>
         @endif
 
+        <!-- QR Login Section (Moved to Top) -->
+        <div class="qr-login-section">
+            <button type="button" class="btn-qr-login" id="openQrLogin" style="width: 100%;">
+                <i class="ti ti-qrcode me-2"></i>Login dengan QR Code
+            </button>
+            <div class="qr-scanner-panel" id="qrScannerPanel">
+                <div id="qrReader"></div>
+                <p class="qr-scanner-status" id="qrScannerStatus">Arahkan kamera ke QR code pada kartu login.</p>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="closeQrLogin">Tutup kamera</button>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="qr-divider">
+            <span>ATAU GUNAKAN AKUN</span>
+        </div>
+
         <form method="POST" action="{{ route('login.post') }}">
             @csrf
             <div class="form-group">
@@ -335,17 +376,6 @@
                 <i class="ti ti-login me-2"></i>Masuk
             </button>
         </form>
-
-        <div class="qr-login-section">
-            <button type="button" class="btn-qr-login" id="openQrLogin">
-                <i class="ti ti-qrcode me-2"></i>Login dengan QR Code
-            </button>
-            <div class="qr-scanner-panel" id="qrScannerPanel">
-                <div id="qrReader"></div>
-                <p class="qr-scanner-status" id="qrScannerStatus">Arahkan kamera ke QR code pada kartu login.</p>
-                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="closeQrLogin">Tutup kamera</button>
-            </div>
-        </div>
 
         <div class="login-footer">
             &copy; {{ date('Y') }} SIMADIS — SMAN 1 Pontang

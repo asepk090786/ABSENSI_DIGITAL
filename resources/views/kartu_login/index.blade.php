@@ -203,6 +203,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const cards = Array.from(document.querySelectorAll('.login-card'));
     const count = document.getElementById('cardCount');
     const emptyPreview = document.getElementById('emptyPreview');
+    
+    // Get role dari URL parameter jika ada
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleFromUrl = urlParams.get('role');
 
     function updatePreview() {
         if (personalOnly) {
@@ -239,6 +243,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         window.print();
     });
+    
+    // Auto-select role dari URL jika ada
+    if (roleFromUrl && roleSelect) {
+        roleSelect.value = roleFromUrl;
+        roleSelect.dispatchEvent(new Event('change'));
+    }
+    
     updatePreview();
 });
 </script>

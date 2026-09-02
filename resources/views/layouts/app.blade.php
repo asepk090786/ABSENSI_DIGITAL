@@ -1290,6 +1290,13 @@
                     </div>
                 </li>
 
+                <!-- ABSENSI GURU Link -->
+                <li class="nav-item">
+                    <a href="{{ route('admin.absensi_guru.index') }}" class="nav-link {{ request()->routeIs('admin.absensi_guru.*') ? 'active' : '' }}">
+                        <i class="ti ti-user-check"></i> Absensi Guru
+                    </a>
+                </li>
+
                 <!-- PENGATURAN SISTEM Group -->
                 <li class="nav-item">
                     <div class="sidebar-admin-group">

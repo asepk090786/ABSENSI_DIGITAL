@@ -551,6 +551,16 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/help/admin/{slug}/edit', [App\Http\Controllers\HelpController::class, 'edit'])->name('help.admin.edit');
         Route::put('/help/admin/{slug}', [App\Http\Controllers\HelpController::class, 'update'])->name('help.admin.update');
         Route::delete('/help/admin/{slug}', [App\Http\Controllers\HelpController::class, 'destroy'])->name('help.admin.destroy');
+        
+        // Admin Absensi Guru
+        Route::prefix('admin/absensi-guru')->name('admin.absensi_guru.')->group(function () {
+            Route::get('/', [App\Http\Controllers\AdminAbsensiGuruController::class, 'index'])->name('index');
+            Route::post('/store', [App\Http\Controllers\AdminAbsensiGuruController::class, 'store'])->name('store');
+            Route::post('/bulk-store', [App\Http\Controllers\AdminAbsensiGuruController::class, 'bulkStore'])->name('bulk_store');
+            Route::post('/hadir-semua', [App\Http\Controllers\AdminAbsensiGuruController::class, 'hadirSemua'])->name('hadir_semua');
+            Route::delete('/delete', [App\Http\Controllers\AdminAbsensiGuruController::class, 'delete'])->name('delete');
+            Route::get('/laporan', [App\Http\Controllers\AdminAbsensiGuruController::class, 'laporan'])->name('laporan');
+        });
     });
     
     // Profile routes

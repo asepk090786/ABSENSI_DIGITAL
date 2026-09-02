@@ -250,7 +250,7 @@
 <script>
     @php
         $initialDataPayload = $module ?? [
-            'title' => 'Modul Ajar Matematika - Konsep Eksponen',
+            'title' => '',
             'subject' => 'Matematika',
             'class' => 'X',
             'status' => 'draft',
