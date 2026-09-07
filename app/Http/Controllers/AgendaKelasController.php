@@ -429,9 +429,10 @@ class AgendaKelasController extends Controller
     {
         $user = auth()->user();
         $isSiswaOfficer = $user->hasRole('Siswa') && $user->hasClassPosition();
+        $isAdmin = $user->hasRole('Admin');
         $guru = $user->guru;
 
-        if (! $guru && ! $isSiswaOfficer) {
+        if (! $guru && ! $isSiswaOfficer && ! $isAdmin) {
             return back()->with('error', 'Anda tidak terdaftar sebagai guru.');
         }
 
@@ -450,6 +451,8 @@ class AgendaKelasController extends Controller
                 'jam_belajar_id' => 'nullable|integer',
                 'tanggal' => 'nullable|date',
                 'kegiatan' => 'nullable|string',
+                'platform_pembelajaran_daring' => 'nullable|in:Zoom,Google Meet,Lainnya',
+                'link_pembelajaran_daring' => 'nullable|url|max:2048',
                 'nama_kegiatan' => 'nullable|string|max:255',
                 'tujuan_pembelajaran' => 'nullable|string',
                 'strategi_pembelajaran' => 'nullable|string',
@@ -474,6 +477,8 @@ class AgendaKelasController extends Controller
                 'jam_belajar_id' => 'nullable|integer',
                 'tanggal' => 'required|date',
                 'kegiatan' => 'nullable|string',
+                'platform_pembelajaran_daring' => 'nullable|in:Zoom,Google Meet,Lainnya',
+                'link_pembelajaran_daring' => 'nullable|url|max:2048',
                 'nama_kegiatan' => 'nullable|string|max:255',
                 'tujuan_pembelajaran' => 'nullable|string',
                 'strategi_pembelajaran' => 'nullable|string',
@@ -556,7 +561,7 @@ class AgendaKelasController extends Controller
         $applyToAllJam = $data['apply_to_all_jam'] ?? false;
         unset($data['apply_to_all_jam']);
 
-        if ($data['jenis_kegiatan'] === 'kbm' && ! $isSiswaOfficer) {
+        if ($data['jenis_kegiatan'] === 'kbm' && ! $isSiswaOfficer && ! $isAdmin) {
             $hasSchedule = DB::table('jadwal_kbm')
                 ->where('guru_id', $guru->id)
                 ->where('kelas_id', $data['kelas_id'])
@@ -571,7 +576,7 @@ class AgendaKelasController extends Controller
             }
         }
 
-        if (! $isSiswaOfficer && $data['guru_id'] != $guru->id) {
+        if (! $isSiswaOfficer && ! $isAdmin && $data['guru_id'] != $guru->id) {
             return back()->withErrors('Guru yang dipilih tidak sesuai.');
         }
 
@@ -688,6 +693,28 @@ class AgendaKelasController extends Controller
         return view('agenda_kelas.show', compact('agenda', 'kelas', 'jamBelajar', 'guru'));
     }
 
+    public function updatePembelajaranDaring(Request $request, AgendaKelas $agenda)
+    {
+        $user = $request->user();
+        $isAdmin = $user->hasRole('Admin');
+        $isAgendaGuru = $user->guru && (int) $agenda->guru_id === (int) $user->guru->id;
+        $isSiswaKelas = $user->hasRole('Siswa')
+            && $user->siswa
+            && (int) $agenda->kelas_id === (int) $user->siswa->kelas_id;
+
+        abort_unless($isAdmin || $isAgendaGuru || $isSiswaKelas, 403);
+
+        $data = $request->validate([
+            'platform_pembelajaran_daring' => 'nullable|in:Zoom,Google Meet,Lainnya',
+            'link_pembelajaran_daring' => 'nullable|url|max:2048',
+        ]);
+
+        $agenda->update($data);
+
+        return redirect()->route('agenda_kelas.show', $agenda->id)
+            ->with('success', 'Link pembelajaran daring berhasil diperbarui.');
+    }
+
     public function edit($id)
     {
         $agenda = AgendaKelas::findOrFail($id);
@@ -701,6 +728,10 @@ class AgendaKelasController extends Controller
         if (! $this->canManageAgenda($agenda, $user)) {
             return redirect()->route('agenda_kelas.index')
                 ->with('error', 'Anda tidak memiliki akses untuk mengedit agenda ini.');
+        }
+
+        if ($user->hasRole('Admin')) {
+            return redirect()->route('agenda_kelas.show', $agenda->id);
         }
 
         if ($isSiswaOfficer) {
@@ -954,6 +985,8 @@ class AgendaKelasController extends Controller
             'jam_belajar_id' => 'required|integer',
             'tanggal' => 'required|date',
             'kegiatan' => 'nullable|string',
+            'platform_pembelajaran_daring' => 'nullable|in:Zoom,Google Meet,Lainnya',
+            'link_pembelajaran_daring' => 'nullable|url|max:2048',
             'tujuan_pembelajaran' => 'nullable|string',
             'strategi_pembelajaran' => 'nullable|string',
             'media_pembelajaran' => 'nullable|string',
@@ -970,7 +1003,7 @@ class AgendaKelasController extends Controller
         }
 
         $guru = $user->guru;
-        if (! $isSiswaOfficer) {
+        if (! $isSiswaOfficer && ! $user->hasRole('Admin')) {
             if (! $guru) {
                 return back()->with('error', 'Aksi ini hanya dapat dilakukan oleh akun guru.');
             }
@@ -1061,6 +1094,10 @@ class AgendaKelasController extends Controller
 
     private function canManageAgenda(AgendaKelas $agenda, $user): bool
     {
+        if ($user->hasRole('Admin')) {
+            return true;
+        }
+
         if ($user->hasRole('Siswa') && $user->hasClassPosition()) {
             $siswa = $user->siswa;
             return $siswa && ! empty($siswa->kelas_id) && (int) $agenda->kelas_id === (int) $siswa->kelas_id;

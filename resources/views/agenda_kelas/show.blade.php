@@ -92,6 +92,40 @@
                         </div>
                     </div>
 
+                    @if($agenda->link_pembelajaran_daring)
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Pembelajaran Daring</label>
+                            <div class="alert alert-info border d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <span><i class="ti ti-video me-1"></i>{{ $agenda->platform_pembelajaran_daring ?: 'Link Pembelajaran' }}</span>
+                                <a href="{{ $agenda->link_pembelajaran_daring }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">Buka Link</a>
+                            </div>
+                        </div>
+                    @endif
+
+                    @php
+                        $canUpdateOnlineLink = auth()->user()->hasRole('Admin')
+                            || (auth()->user()->guru && (int) $agenda->guru_id === (int) auth()->user()->guru->id)
+                            || (auth()->user()->hasRole('Siswa') && auth()->user()->siswa && (int) $agenda->kelas_id === (int) auth()->user()->siswa->kelas_id);
+                    @endphp
+                    @if($canUpdateOnlineLink)
+                        <form method="POST" action="{{ route('agenda_kelas.pembelajaran-daring.update', $agenda->id) }}" class="border rounded p-3 mb-4 bg-light">
+                            @csrf
+                            <label class="form-label fw-bold">Link Pembelajaran Daring</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <select name="platform_pembelajaran_daring" class="form-select">
+                                        <option value="">-- Tidak ada --</option>
+                                        @foreach(['Zoom', 'Google Meet', 'Lainnya'] as $platform)
+                                            <option value="{{ $platform }}" @selected($agenda->platform_pembelajaran_daring === $platform)>{{ $platform }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-8"><input type="url" name="link_pembelajaran_daring" class="form-control" placeholder="https://..." value="{{ $agenda->link_pembelajaran_daring }}"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm mt-2"><i class="ti ti-device-floppy me-1"></i>Simpan Link</button>
+                        </form>
+                    @endif
+
                     <hr>
 
                     <div class="mb-4">
@@ -131,6 +165,22 @@
                             <div class="mb-2">
                                 <label class="form-label fw-bold">F. Catatan Tambahan</label>
                                 <textarea class="form-control tiny-editor" name="catatan_tambahan">{{ old('catatan_tambahan', $agenda->catatan_tambahan ?? '') }}</textarea>
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold" for="platformPembelajaranDaring">Platform Pembelajaran Daring</label>
+                                    <select name="platform_pembelajaran_daring" id="platformPembelajaranDaring" class="form-select">
+                                        <option value="">-- Tidak ada --</option>
+                                        @foreach(['Zoom', 'Google Meet', 'Lainnya'] as $platform)
+                                            <option value="{{ $platform }}" @selected(old('platform_pembelajaran_daring', $agenda->platform_pembelajaran_daring ?? '') === $platform)>{{ $platform }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold" for="linkPembelajaranDaring">Link Pembelajaran Daring</label>
+                                    <input type="url" name="link_pembelajaran_daring" id="linkPembelajaranDaring" class="form-control" placeholder="https://..." value="{{ old('link_pembelajaran_daring', $agenda->link_pembelajaran_daring ?? '') }}">
+                                </div>
                             </div>
 
                             <div class="d-flex gap-2">

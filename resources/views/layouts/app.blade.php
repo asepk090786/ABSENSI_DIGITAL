@@ -1153,7 +1153,7 @@
                 $isAdminPtkActive = request()->routeIs(['administrasi_ptk.*','dokumen_kepegawaian.*','template_dokumen.*','pengembangan.*','pengajuan.*','verifikasi.*']);
                 
                 // PENGATURAN SISTEM active state
-                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*','setting.agenda*','setting.menu*','setting.editor*','setting.api']);
+                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*','setting.agenda*','setting.menu*','setting.editor*','setting.api','setting.public-links']);
                 
                 // BACKUP DATABASE active state
                 $isAdminBackupActive = request()->routeIs(['setting.backup']);
@@ -1325,6 +1325,11 @@
                         <a href="{{ route('setting.editor') }}" class="sidebar-admin-link {{ request()->routeIs('setting.editor*') ? 'is-active' : '' }}">
                             <i class="ti ti-file-code"></i> Editor Modul
                         </a>
+                        @if($user->hasRole('Admin'))
+                        <a href="{{ route('setting.public-links') }}" class="sidebar-admin-link {{ request()->routeIs('setting.public-links') ? 'is-active' : '' }}">
+                            <i class="ti ti-world-share"></i> Link Publik
+                        </a>
+                        @endif
                         @if($user->hasRole('Admin'))
                         <a href="{{ route('setting.api') }}" class="sidebar-admin-link {{ request()->routeIs('setting.api') ? 'is-active' : '' }}">
                             <i class="ti ti-api"></i> Endpoint API

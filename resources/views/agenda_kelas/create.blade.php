@@ -223,6 +223,23 @@
                             @error('kegiatan')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold" for="platformPembelajaranDaring">Platform Pembelajaran Daring</label>
+                            <select name="platform_pembelajaran_daring" id="platformPembelajaranDaring" class="form-select @error('platform_pembelajaran_daring') is-invalid @enderror">
+                                <option value="">-- Tidak ada --</option>
+                                @foreach(['Zoom', 'Google Meet', 'Lainnya'] as $platform)
+                                    <option value="{{ $platform }}" @selected(old('platform_pembelajaran_daring', $agenda->platform_pembelajaran_daring ?? '') === $platform)>{{ $platform }}</option>
+                                @endforeach
+                            </select>
+                            @error('platform_pembelajaran_daring')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold" for="linkPembelajaranDaring">Link Pembelajaran Daring</label>
+                            <input type="url" name="link_pembelajaran_daring" id="linkPembelajaranDaring" class="form-control @error('link_pembelajaran_daring') is-invalid @enderror" placeholder="https://..." value="{{ old('link_pembelajaran_daring', $agenda->link_pembelajaran_daring ?? '') }}">
+                            @error('link_pembelajaran_daring')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            <small class="text-muted">Masukkan link Zoom, Google Meet, atau pembelajaran daring lainnya.</small>
+                        </div>
+
                         <div class="col-12 d-flex justify-content-end gap-2">
                             <a href="{{ route('agenda_kelas.index') }}" class="btn btn-outline-secondary btn-modern">
                                 <i class="ti ti-arrow-left me-1"></i>Batal

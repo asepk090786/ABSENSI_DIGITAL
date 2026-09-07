@@ -17,6 +17,8 @@ class AgendaKelas extends Model
         'jam_belajar_id',
         'tanggal',
         'kegiatan',
+        'platform_pembelajaran_daring',
+        'link_pembelajaran_daring',
         'nama_kegiatan',
         'tujuan_pembelajaran',
         'strategi_pembelajaran',

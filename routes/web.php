@@ -37,6 +37,12 @@ Route::get('/', function(){
 // Public certificate verification (allow QR scans without login)
 Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
 
+// Public read-only information pages
+Route::get('public/rekap-absensi', [App\Http\Controllers\PublicInformationController::class, 'rekapAbsensi'])->name('public.rekap-absensi');
+Route::get('public/agenda-kelas', [App\Http\Controllers\PublicInformationController::class, 'agendaKelas'])->name('public.agenda-kelas');
+Route::get('public/rekap-absensi-guru', [App\Http\Controllers\PublicInformationController::class, 'rekapAbsensiGuru'])->name('public.rekap-absensi-guru');
+Route::get('public/jadwal-pembelajaran-daring', [App\Http\Controllers\PublicInformationController::class, 'jadwalPembelajaranDaring'])->name('public.jadwal-pembelajaran-daring');
+
 Route::middleware('guest')->group(function () {
     Route::get('login',[AuthController::class,'showLogin'])->name('login');
     Route::post('login',[AuthController::class,'login'])->name('login.post');
@@ -317,6 +323,7 @@ Route::middleware(['auth'])->group(function(){
     Route::delete('jam-belajar-destroy-all', [JamBelajarController::class, 'destroyAll'])->name('jam_belajar.destroy_all');
     
     Route::get('agenda_kelas/preview', [AgendaKelasController::class, 'preview'])->name('agenda_kelas.preview');
+    Route::post('agenda_kelas/{agenda}/pembelajaran-daring', [AgendaKelasController::class, 'updatePembelajaranDaring'])->name('agenda_kelas.pembelajaran-daring.update');
     Route::resource('agenda_kelas', AgendaKelasController::class)->only(['index','create','store','show','edit','update','destroy']);
     
     Route::get('agenda_guru/export', [AgendaGuruController::class, 'export'])->name('agenda_guru.export');
@@ -525,6 +532,9 @@ Route::middleware(['auth'])->group(function(){
         Route::get('/setting/menu', [SettingController::class, 'menu'])->name('setting.menu');
         Route::post('/setting/menu', [SettingController::class, 'updateMenu'])->name('setting.menu.update');
         Route::get('/setting/editor', [SettingController::class, 'editor'])->name('setting.editor');
+        Route::middleware('role:Admin')->group(function () {
+            Route::get('/setting/link-publik', fn () => view('setting.public_links'))->name('setting.public-links');
+        });
         Route::put('/setting/editor', [SettingController::class, 'updateEditor'])->name('setting.editor.update');
         Route::put('/setting/jadwal-visibility', [SettingController::class, 'updateJadwalVisibility'])->name('setting.jadwal_visibility.update');
         // Database backup settings and actions
