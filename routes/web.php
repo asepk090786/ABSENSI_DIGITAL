@@ -26,6 +26,7 @@ use App\Http\Controllers\DokumenKepegawaanController;
 use App\Http\Controllers\TemplateDokumenController;
 use App\Http\Controllers\PengajuanController;
 use App\Http\Controllers\VerifikasiController;
+use App\Http\Controllers\AbsensiQrController;
 
 Route::get('/', function(){
     return redirect()->route('home');
@@ -54,6 +55,11 @@ Route::get('qr-login/{token}', [KartuLoginController::class, 'consume'])
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/absensi/scan-qr', [AbsensiQrController::class, 'index'])->name('absensi.qr.index');
+    Route::post('/absensi/scan-qr', [AbsensiQrController::class, 'scan'])->name('absensi.qr.scan');
+});
 
 // Wali Kelas routes
 Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(function () {

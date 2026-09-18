@@ -92,6 +92,12 @@
                             <div class="qm-label">Daftar Nilai</div>
                         </a>
                     </div>
+                    <div class="col-6">
+                        <a href="{{ route('absensi.qr.index') }}" class="quick-menu-card">
+                            <div class="qm-icon" style="background:#7c3aed;"><i class="ti ti-qrcode"></i></div>
+                            <div class="qm-label">Scan QR Siswa</div>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
