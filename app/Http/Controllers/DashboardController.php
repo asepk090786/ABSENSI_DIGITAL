@@ -166,11 +166,11 @@ class DashboardController extends Controller
                         DB::raw('DATE(abs_k.tanggal) as tanggal'),
                         DB::raw("MAX(CASE
                             WHEN LOWER(abs_s.status) = 'bolos' THEN 6
-                            WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
-                            WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                            WHEN LOWER(abs_s.status) = 'hadir' THEN 5
+                            WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 4
                             WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
-                            WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
-                            WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                            WHEN LOWER(abs_s.status) = 'sakit' THEN 2
+                            WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1
                             ELSE 0
                         END) as status_rank")
                     )
@@ -193,11 +193,11 @@ class DashboardController extends Controller
                     })
                     ->select(
                         DB::raw('COUNT(*) as total_entri'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as alpa'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 6 THEN 1 ELSE 0 END) as bolos')
                     );
 
@@ -213,11 +213,11 @@ class DashboardController extends Controller
                         'k.id as kelas_id',
                         'k.nama_kelas',
                         DB::raw('COUNT(*) as total_entri'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as hadir'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as terlambat'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as hadir'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as terlambat'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as izin'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as alpa'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as sakit'),
+                        DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as alpa'),
                         DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 6 THEN 1 ELSE 0 END) as bolos'),
                         DB::raw('MAX(daily_siswa.tanggal) as tanggal_terakhir')
                     )

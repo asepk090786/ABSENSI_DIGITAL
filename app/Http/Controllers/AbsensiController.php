@@ -234,6 +234,242 @@ class AbsensiController extends Controller
         return view('absensi.index', compact('items', 'kelasQuickAccess', 'rekapPerKelas', 'selectedTanggal', 'isGuruPiket', 'isGuruBk', 'siswaPerluPerhatian', 'kelasList', 'guruList', 'filterKelasId', 'filterGuruId', 'filterQuery', 'isSiswaOfficer', 'canPrintExport', 'bkAttendanceStats'));
     }
 
+    public function rekapKelas(Request $request)
+    {
+        $user = auth()->user();
+        $isAdminOrKepala = $user && $user->hasAnyRole(['Admin', 'Kepala Sekolah']);
+
+        $validated = $request->validate([
+            'kelas_id' => ['required', 'integer', 'exists:kelas,id'],
+            'tanggal' => ['nullable', 'date'],
+        ]);
+
+        $tanggal = Carbon::parse($validated['tanggal'] ?? Carbon::today()->format('Y-m-d'));
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        $kelas = DB::table('kelas')->where('id', $validated['kelas_id'])->first();
+        abort_unless($kelas, 404);
+
+        $isWaliKelas = $user && (
+            $user->hasRole('Wali Kelas')
+            || (int) $kelas->wali_kelas_id === (int) $user->guru_id
+        );
+        abort_unless($isAdminOrKepala || $isWaliKelas, 403);
+
+        if ($isWaliKelas) {
+            abort_unless((int) $kelas->wali_kelas_id === (int) $user->guru_id, 403);
+        }
+        $hariMap = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu',
+        ];
+        $hari = $hariMap[$tanggal->format('l')];
+
+        $jamBelajar = collect();
+        if ($tahun && $semester) {
+            $jamBelajar = DB::table('jadwal_kbm as jk')
+                ->join('jam_belajar as jb', 'jb.id', '=', 'jk.jam_belajar_id')
+                ->where('jk.kelas_id', $kelas->id)
+                ->where('jk.hari', $hari)
+                ->where('jk.tahun_ajaran_id', $tahun->id)
+                ->where('jk.semester_id', $semester->id)
+                ->select('jb.id', 'jb.urutan', 'jb.jam_mulai', 'jb.jam_selesai')
+                ->distinct()
+                ->orderBy('jb.urutan')
+                ->get();
+        }
+
+        $siswa = DB::table('siswa as s')
+            ->leftJoin('users as u', 'u.siswa_id', '=', 's.id')
+            ->where('s.kelas_id', $kelas->id)
+            ->where('s.status_aktif', 1)
+            ->select('s.id', DB::raw("COALESCE(NULLIF(s.nama, ''), u.name, s.nama) as nama"), 's.nis')
+            ->orderBy('nama')
+            ->get();
+        $countsBySiswa = [];
+        foreach ($siswa as $student) {
+            $countsBySiswa[$student->id] = [];
+            foreach ($jamBelajar as $jam) {
+                $countsBySiswa[$student->id][$jam->id] = ['H' => 0, 'A' => 0, 'I' => 0, 'S' => 0];
+            }
+        }
+
+        if ($tahun && $semester && $jamBelajar->isNotEmpty()) {
+            $attendanceRows = DB::table('absensi_kelas as ak')
+                ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
+                ->where('ak.kelas_id', $kelas->id)
+                ->whereDate('ak.tanggal', $tanggal->toDateString())
+                ->where('ak.tahun_ajaran_id', $tahun->id)
+                ->where('ak.semester_id', $semester->id)
+                ->select('ass.siswa_id', 'ak.jam_belajar_id', 'ass.status', DB::raw('COUNT(*) as total'))
+                ->groupBy('ass.siswa_id', 'ak.jam_belajar_id', 'ass.status')
+                ->get();
+
+            foreach ($attendanceRows as $row) {
+                if (! isset($countsBySiswa[$row->siswa_id][$row->jam_belajar_id])) {
+                    continue;
+                }
+
+                $status = strtolower(trim((string) $row->status));
+                $statusKey = match (true) {
+                    in_array($status, ['hadir', 'terlambat', 'telat'], true) => 'H',
+                    in_array($status, ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true) => 'A',
+                    in_array($status, ['izin', 'ijin'], true) => 'I',
+                    $status === 'sakit' => 'S',
+                    default => null,
+                };
+
+                if ($statusKey) {
+                    $countsBySiswa[$row->siswa_id][$row->jam_belajar_id][$statusKey] += (int) $row->total;
+                }
+            }
+        }
+
+        $rows = $siswa->map(function ($student) use ($countsBySiswa) {
+            $counts = $countsBySiswa[$student->id] ?? [];
+            $jumlah = ['H' => 0, 'A' => 0, 'I' => 0, 'S' => 0];
+            foreach ($counts as $jamCounts) {
+                foreach ($jumlah as $status => $value) {
+                    $jumlah[$status] += $jamCounts[$status];
+                }
+            }
+            $totalStatus = array_sum($jumlah);
+            return (object) [
+                'id' => $student->id,
+                'nama' => $student->nama,
+                'nis' => $student->nis,
+                'counts' => $counts,
+                'jumlah' => $jumlah,
+                'persentase' => $totalStatus > 0 ? round(($jumlah['H'] / $totalStatus) * 100) : 0,
+            ];
+        });
+        $totalSiswaAktif = $rows->count();
+        $persentase = $totalSiswaAktif > 0 ? round($rows->avg('persentase')) : 0;
+        $jumlah = ['H' => 0, 'A' => 0, 'I' => 0, 'S' => 0];
+        foreach ($rows as $row) {
+            foreach ($jumlah as $status => $value) {
+                $jumlah[$status] += $row->jumlah[$status];
+            }
+        }
+
+        return view('absensi.rekap_kelas', compact(
+            'kelas', 'tanggal', 'hari', 'jamBelajar', 'rows', 'jumlah',
+            'persentase', 'totalSiswaAktif'
+        ));
+    }
+
+    public function rekapKelasKeseluruhan(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->hasAnyRole(['Admin', 'Kepala Sekolah']), 403);
+
+        $validated = $request->validate(['tanggal' => ['nullable', 'date']]);
+        $tanggal = Carbon::parse($validated['tanggal'] ?? Carbon::today()->format('Y-m-d'));
+        $tahun = DB::table('tahun_ajaran')->where('is_active', 1)->first();
+        $semester = DB::table('semester')->where('is_active', 1)->first();
+        $hariMap = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu',
+            'Sunday' => 'Minggu',
+        ];
+        $hari = $hariMap[$tanggal->format('l')];
+        $jadwal = collect();
+
+        if ($tahun && $semester) {
+            $jadwal = DB::table('jadwal_kbm as jk')
+                ->join('kelas as k', 'k.id', '=', 'jk.kelas_id')
+                ->join('jam_belajar as jb', 'jb.id', '=', 'jk.jam_belajar_id')
+                ->where('jk.hari', $hari)
+                ->where('jk.tahun_ajaran_id', $tahun->id)
+                ->where('jk.semester_id', $semester->id)
+                ->select('k.id as kelas_id', 'k.nama_kelas', 'jb.id', 'jb.id as jam_belajar_id', 'jb.urutan', 'jb.jam_mulai', 'jb.jam_selesai')
+                ->orderBy('k.nama_kelas')
+                ->orderBy('jb.urutan')
+                ->get();
+        }
+
+        $jamBelajar = $jadwal->unique('jam_belajar_id')->sortBy('urutan')->values();
+        $kelasRows = $jadwal->unique('kelas_id')->values();
+        $jamByClass = $jadwal->groupBy('kelas_id')->map(fn ($items) => $items->pluck('jam_belajar_id')->unique()->values());
+        $countsByClass = [];
+
+        foreach ($kelasRows as $kelasRow) {
+            $countsByClass[$kelasRow->kelas_id] = [];
+            foreach ($jamByClass->get($kelasRow->kelas_id, collect()) as $jamId) {
+                $countsByClass[$kelasRow->kelas_id][$jamId] = ['H' => 0, 'A' => 0, 'I' => 0, 'S' => 0];
+            }
+        }
+
+        if ($tahun && $semester && $kelasRows->isNotEmpty()) {
+            $attendanceRows = DB::table('absensi_kelas as ak')
+                ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
+                ->whereIn('ak.kelas_id', $kelasRows->pluck('kelas_id'))
+                ->whereDate('ak.tanggal', $tanggal->toDateString())
+                ->where('ak.tahun_ajaran_id', $tahun->id)
+                ->where('ak.semester_id', $semester->id)
+                ->select('ak.kelas_id', 'ak.jam_belajar_id', 'ass.status', DB::raw('COUNT(*) as total'))
+                ->groupBy('ak.kelas_id', 'ak.jam_belajar_id', 'ass.status')
+                ->get();
+
+            foreach ($attendanceRows as $row) {
+                if (! isset($countsByClass[$row->kelas_id][$row->jam_belajar_id])) {
+                    continue;
+                }
+
+                $status = strtolower(trim((string) $row->status));
+                $statusKey = match (true) {
+                    in_array($status, ['hadir', 'terlambat', 'telat'], true) => 'H',
+                    in_array($status, ['alpha', 'alpa', 'alfa', 'absen', 'tidak_hadir'], true) => 'A',
+                    in_array($status, ['izin', 'ijin'], true) => 'I',
+                    $status === 'sakit' => 'S',
+                    default => null,
+                };
+
+                if ($statusKey) {
+                    $countsByClass[$row->kelas_id][$row->jam_belajar_id][$statusKey] += (int) $row->total;
+                }
+            }
+        }
+
+        $totalSiswaByClass = DB::table('siswa')
+            ->whereIn('kelas_id', $kelasRows->pluck('kelas_id'))
+            ->where('status_aktif', 1)
+            ->select('kelas_id', DB::raw('COUNT(*) as total'))
+            ->groupBy('kelas_id')
+            ->pluck('total', 'kelas_id');
+
+        $rows = $kelasRows->map(function ($kelasRow) use ($countsByClass, $jamByClass, $totalSiswaByClass) {
+            $classCounts = $countsByClass[$kelasRow->kelas_id] ?? [];
+            $jumlah = ['H' => 0, 'A' => 0, 'I' => 0, 'S' => 0];
+            foreach ($classCounts as $counts) {
+                foreach ($jumlah as $status => $value) {
+                    $jumlah[$status] += $counts[$status];
+                }
+            }
+
+            $totalJam = count($classCounts);
+            if ($totalJam > 0) {
+                foreach ($jumlah as $status => $value) {
+                    $jumlah[$status] = round($value / $totalJam, 2);
+                }
+            }
+
+            $totalSiswa = (int) ($totalSiswaByClass[$kelasRow->kelas_id] ?? 0);
+            return (object) [
+                'kelas_id' => $kelasRow->kelas_id,
+                'nama_kelas' => $kelasRow->nama_kelas,
+                'jam_ids' => $jamByClass->get($kelasRow->kelas_id, collect())->all(),
+                'counts' => $classCounts,
+                'jumlah' => $jumlah,
+                'persentase' => $totalSiswa > 0 ? round(($jumlah['H'] / $totalSiswa) * 100, 2) : 0,
+                'total_siswa' => $totalSiswa,
+            ];
+        });
+
+        return view('absensi.rekap_kelas_keseluruhan', compact('tanggal', 'hari', 'jamBelajar', 'rows'));
+    }
+
     public function rekapBulanan(Request $request)
     {
         $user = auth()->user();
@@ -3589,11 +3825,11 @@ class AbsensiController extends Controller
                     DB::raw("GROUP_CONCAT(DISTINCT COALESCE(g.nama, '-') ORDER BY g.nama SEPARATOR ', ') as nama_guru"),
                     DB::raw("MAX(NULLIF(abs_s.keterangan, '')) as keterangan"),
                     DB::raw("MAX(CASE
-                        WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
-                        WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                        WHEN LOWER(abs_s.status) = 'hadir' THEN 5
+                        WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 4
                         WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
-                        WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
-                        WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                        WHEN LOWER(abs_s.status) = 'sakit' THEN 2
+                        WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1
                         ELSE 0
                     END) as status_rank")
                 )
@@ -3619,11 +3855,11 @@ class AbsensiController extends Controller
                     'daily_siswa.nisn',
                     DB::raw("COALESCE(daily_siswa.nama_guru, '-') as nama_guru"),
                     DB::raw("CASE
-                        WHEN daily_siswa.status_rank = 5 THEN 'Absen'
-                        WHEN daily_siswa.status_rank = 4 THEN 'Sakit'
+                        WHEN daily_siswa.status_rank = 5 THEN 'Hadir'
+                        WHEN daily_siswa.status_rank = 4 THEN 'Terlambat'
                         WHEN daily_siswa.status_rank = 3 THEN 'Izin'
-                        WHEN daily_siswa.status_rank = 2 THEN 'Terlambat'
-                        WHEN daily_siswa.status_rank = 1 THEN 'Hadir'
+                        WHEN daily_siswa.status_rank = 2 THEN 'Sakit'
+                        WHEN daily_siswa.status_rank = 1 THEN 'Absen'
                         ELSE '-'
                     END as status"),
                     DB::raw("COALESCE(daily_siswa.keterangan, '-') as keterangan")
@@ -3746,12 +3982,12 @@ class AbsensiController extends Controller
                 'abs_k.kelas_id',
                 'abs_s.siswa_id',
                 DB::raw('DATE(abs_k.tanggal) as tanggal'),
-                DB::raw("MAX(CASE
-                    WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 5
-                    WHEN LOWER(abs_s.status) = 'sakit' THEN 4
+                    DB::raw("MAX(CASE
+                    WHEN LOWER(abs_s.status) = 'hadir' THEN 5
+                    WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 4
                     WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
-                    WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 2
-                    WHEN LOWER(abs_s.status) = 'hadir' THEN 1
+                    WHEN LOWER(abs_s.status) = 'sakit' THEN 2
+                    WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1
                     ELSE 0
                 END) as status_rank")
             )
@@ -3762,11 +3998,11 @@ class AbsensiController extends Controller
             ->select(
                 'daily_siswa.kelas_id',
                 DB::raw('COUNT(*) as total_siswa_harian'),
-                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as total_hadir'),
-                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as total_terlambat'),
+                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as total_hadir'),
+                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as total_terlambat'),
                 DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 3 THEN 1 ELSE 0 END) as total_izin'),
-                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 4 THEN 1 ELSE 0 END) as total_sakit'),
-                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 5 THEN 1 ELSE 0 END) as total_alpa')
+                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 2 THEN 1 ELSE 0 END) as total_sakit'),
+                DB::raw('SUM(CASE WHEN daily_siswa.status_rank = 1 THEN 1 ELSE 0 END) as total_alpa')
             )
             ->groupBy('daily_siswa.kelas_id')
             ->get();
@@ -3796,7 +4032,7 @@ class AbsensiController extends Controller
         ]);
 
         return $this->rememberStudentReportCache($cacheKey, 900, function () use ($startDate, $endDate, $kelasId, $tahunCond, $semesterCond, $guruId, $distinctDates) {
-            $attendanceQuery = DB::table('absensi_siswa as abs_s')
+            $dailyAttendanceQuery = DB::table('absensi_siswa as abs_s')
                 ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
                 ->whereBetween('abs_k.tanggal', [$startDate, $endDate])
                 ->when($kelasId, fn($q) => $q->where('abs_k.kelas_id', $kelasId))
@@ -3805,13 +4041,29 @@ class AbsensiController extends Controller
                 ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
                 ->select(
                     'abs_s.siswa_id',
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'hadir' THEN DATE(abs_k.tanggal) END) as hadir_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN DATE(abs_k.tanggal) END) as terlambat_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'sakit' THEN DATE(abs_k.tanggal) END) as sakit_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN DATE(abs_k.tanggal) END) as izin_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN DATE(abs_k.tanggal) END) as alpa_count")
+                    DB::raw('DATE(abs_k.tanggal) as tanggal'),
+                    DB::raw("MAX(CASE
+                        WHEN LOWER(abs_s.status) = 'hadir' THEN 5
+                        WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN 4
+                        WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN 3
+                        WHEN LOWER(abs_s.status) = 'sakit' THEN 2
+                        WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1
+                        ELSE 0
+                    END) as status_rank")
                 )
-                ->groupBy('abs_s.siswa_id');
+                ->groupBy('abs_s.siswa_id', DB::raw('DATE(abs_k.tanggal)'));
+
+            $attendanceQuery = DB::query()
+                ->fromSub($dailyAttendanceQuery, 'daily_attendance')
+                ->select(
+                    'daily_attendance.siswa_id',
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 5 THEN 1 ELSE 0 END) as hadir_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 4 THEN 1 ELSE 0 END) as terlambat_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 3 THEN 1 ELSE 0 END) as izin_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 2 THEN 1 ELSE 0 END) as sakit_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 1 THEN 1 ELSE 0 END) as alpa_count")
+                )
+                ->groupBy('daily_attendance.siswa_id');
 
             $attendance = $attendanceQuery->get()->keyBy('siswa_id');
 
@@ -3852,14 +4104,10 @@ class AbsensiController extends Controller
                 return $rows;
             }
 
-            $attendanceAll = DB::table('absensi_siswa as abs_s')
-                ->join('absensi_kelas as abs_k', 'abs_s.absensi_kelas_id', '=', 'abs_k.id')
-                ->join('siswa as s', 's.id', '=', 'abs_s.siswa_id')
+            $attendanceAll = DB::query()
+                ->fromSub($dailyAttendanceQuery, 'daily_attendance')
+                ->join('siswa as s', 's.id', '=', 'daily_attendance.siswa_id')
                 ->join('kelas as k', 'k.id', '=', 's.kelas_id')
-                ->whereBetween('abs_k.tanggal', [$startDate, $endDate])
-                ->when($tahunCond, fn($q) => $q->where('abs_k.tahun_ajaran_id', $tahunCond))
-                ->when($semesterCond, fn($q) => $q->where('abs_k.semester_id', $semesterCond))
-                ->when($guruId, fn($q) => $q->where('abs_k.guru_id', $guruId))
                 ->where('s.status_aktif', 1)
                 ->select(
                     's.id as siswa_id',
@@ -3867,11 +4115,11 @@ class AbsensiController extends Controller
                     's.nis',
                     's.nisn',
                     'k.nama_kelas',
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'hadir' THEN DATE(abs_k.tanggal) END) as hadir_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('terlambat','telat') THEN DATE(abs_k.tanggal) END) as terlambat_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) = 'sakit' THEN DATE(abs_k.tanggal) END) as sakit_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('izin','ijin') THEN DATE(abs_k.tanggal) END) as izin_count"),
-                    DB::raw("COUNT(DISTINCT CASE WHEN LOWER(abs_s.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN DATE(abs_k.tanggal) END) as alpa_count")
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 5 THEN 1 ELSE 0 END) as hadir_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 4 THEN 1 ELSE 0 END) as terlambat_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 2 THEN 1 ELSE 0 END) as sakit_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 3 THEN 1 ELSE 0 END) as izin_count"),
+                    DB::raw("SUM(CASE WHEN daily_attendance.status_rank = 1 THEN 1 ELSE 0 END) as alpa_count")
                 )
                 ->groupBy('s.id','s.nama','s.nis','s.nisn','k.nama_kelas')
                 ->orderBy('s.nama')
