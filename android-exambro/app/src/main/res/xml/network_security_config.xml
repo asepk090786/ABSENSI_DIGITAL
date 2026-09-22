@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allow cleartext (HTTP) traffic so that the app can connect to an
+  on-premise Absensi Digital server that may not have HTTPS configured.
+  Administrators should use HTTPS in production.
+-->
+<network-security-config>
+    <!--
+      Permit HTTP for all hosts.  In production, restrict this to
+      your server's domain and set cleartextTrafficPermitted="false"
+      for the base config.
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

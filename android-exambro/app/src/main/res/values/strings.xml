@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App identity -->
+    <string name="app_name">ExamBro Client</string>
+    <string name="splash_tagline">Browser Ujian Aman untuk Sekolah</string>
+
+    <!-- Config screen -->
+    <string name="config_title">Konfigurasi Admin</string>
+    <string name="config_section_server">URL Server Absensi Digital</string>
+    <string name="config_section_pin">PIN Keluar Kiosk</string>
+    <string name="hint_server_url">URL Server</string>
+    <string name="hint_server_url_example">Contoh: https://sekolah.sch.id</string>
+    <string name="hint_admin_pin">PIN Admin (4–6 digit)</string>
+    <string name="hint_admin_pin_confirm">Konfirmasi PIN Admin</string>
+    <string name="btn_save_config">Simpan Konfigurasi</string>
+    <string name="config_saved">Konfigurasi berhasil disimpan</string>
+
+    <!-- Login screen -->
+    <string name="login_title">ExamBro Client</string>
+    <string name="login_subtitle">Browser Ujian Terkunci</string>
+    <string name="login_instruction">Tekan tombol di bawah untuk membuka browser ujian dalam mode kiosk.\nLogin menggunakan akun siswa pada halaman yang muncul.</string>
+    <string name="btn_start_exam">Mulai Ujian</string>
+    <string name="label_server">Server: %1$s</string>
+    <string name="login_footer">© Sistem Absensi Digital Sekolah</string>
+
+    <!-- Exam screen -->
+    <string name="btn_refresh">Muat Ulang</string>
+    <string name="btn_exit_exam">Keluar</string>
+    <string name="btn_retry">Coba Lagi</string>
+
+    <!-- Exit PIN screen -->
+    <string name="exit_pin_title">Masukkan PIN Admin</string>
+    <string name="exit_pin_description">Masukkan PIN admin untuk keluar dari mode kiosk dan mengakhiri sesi ujian.</string>
+    <string name="hint_enter_pin">PIN Admin</string>
+    <string name="btn_confirm_pin">Konfirmasi</string>
+    <string name="btn_cancel">Batal</string>
+
+    <!-- Errors -->
+    <string name="error_server_url_empty">URL server tidak boleh kosong</string>
+    <string name="error_server_url_format">URL harus dimulai dengan http:// atau https://</string>
+    <string name="error_pin_length">PIN minimal 4 digit</string>
+    <string name="error_pin_mismatch">Konfirmasi PIN tidak cocok</string>
+    <string name="error_pin_wrong">PIN salah. Sisa percobaan: %1$d</string>
+    <string name="error_pin_locked">Terlalu banyak percobaan. Coba lagi dalam %1$d detik.</string>
+    <string name="error_pin_too_many">Terlalu banyak percobaan gagal. Tunggu %1$d detik.</string>
+    <string name="error_network">Tidak dapat memuat halaman. Periksa koneksi jaringan.</string>
+    <string name="error_no_internet">Tidak ada koneksi internet. Hubungkan perangkat ke jaringan sekolah.</string>
+    <string name="error_server_not_configured">Server belum dikonfigurasi. Silakan hubungi admin.</string>
+
+    <!-- Menu -->
+    <string name="menu_settings">Pengaturan</string>
+</resources>
