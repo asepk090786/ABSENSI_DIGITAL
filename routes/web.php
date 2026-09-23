@@ -59,6 +59,7 @@ Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->
 Route::middleware(['auth'])->group(function () {
     Route::get('/absensi/scan-qr', [AbsensiQrController::class, 'index'])->name('absensi.qr.index');
     Route::post('/absensi/scan-qr', [AbsensiQrController::class, 'scan'])->name('absensi.qr.scan');
+    Route::post('/absensi/scan-qr/save', [AbsensiQrController::class, 'save'])->name('absensi.qr.save');
 });
 
 // Wali Kelas routes
@@ -67,6 +68,7 @@ Route::middleware(['auth'])->prefix('wali-kelas')->name('wali_kelas.')->group(fu
     Route::get('/siswa', [App\Http\Controllers\WaliKelasController::class, 'siswa'])->name('siswa');
     Route::post('/siswa/{siswa}/jabatan', [App\Http\Controllers\WaliKelasController::class, 'updateJabatan'])->name('siswa.jabatan.update');
     Route::get('/absensi', [App\Http\Controllers\WaliKelasController::class, 'absensi'])->name('absensi');
+    Route::get('/absensi/rekap', [App\Http\Controllers\WaliKelasController::class, 'rekapAbsensi'])->name('rekap_absensi');
     Route::get('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'laporanGuru'])->name('laporan_guru');
     Route::post('/laporan-guru', [App\Http\Controllers\WaliKelasController::class, 'storeLaporanGuru'])->name('laporan_guru.store');
     Route::get('/nilai', [App\Http\Controllers\WaliKelasController::class, 'nilai'])->name('nilai');
@@ -240,6 +242,8 @@ Route::middleware(['auth'])->group(function(){
     // Pikret: allow update status for a student in an absensi record
     Route::post('absensi/{absensi}/siswa/{siswa}/status', ['App\Http\Controllers\AbsensiController', 'updateSiswaStatus'])->name('absensi.siswa.update_status');
     Route::post('absensi/verify-student', ['App\Http\Controllers\AbsensiController', 'verifyStudent'])->name('absensi.verify.student');
+    Route::get('absensi/rekap-kelas', ['App\Http\Controllers\AbsensiController', 'rekapKelas'])->name('absensi.rekap-kelas');
+    Route::get('absensi/rekap-kelas-keseluruhan', ['App\Http\Controllers\AbsensiController', 'rekapKelasKeseluruhan'])->name('absensi.rekap-kelas-keseluruhan');
     Route::get('absensi/rekap-bulanan', ['App\Http\Controllers\AbsensiController', 'rekapBulanan'])->name('absensi.rekap-bulanan');
     Route::get('absensi/rekap-bulanan/detail', ['App\Http\Controllers\AbsensiController', 'rekapBulananDetail'])->name('absensi.rekap-bulanan.detail');
     Route::get('absensi/rekap-bulanan/export', ['App\Http\Controllers\AbsensiController', 'exportRekapBulanan'])->name('absensi.rekap-bulanan.export');
@@ -430,11 +434,14 @@ Route::middleware(['auth'])->group(function(){
 
     Route::get('modul-ajar', [RencanaPembelajaranController::class, 'index'])->name('rencana_pembelajaran.index');
     Route::get('modul-ajar/create', [RencanaPembelajaranController::class, 'create'])->name('rencana_pembelajaran.create');
+    Route::get('modul-ajar/import-pdf', [RencanaPembelajaranController::class, 'importPdf'])->name('rencana_pembelajaran.import_pdf');
     Route::post('modul-ajar', [RencanaPembelajaranController::class, 'store'])->name('rencana_pembelajaran.store');
     Route::get('modul-ajar/{id}/edit', [RencanaPembelajaranController::class, 'edit'])->name('rencana_pembelajaran.edit');
     Route::put('modul-ajar/{id}', [RencanaPembelajaranController::class, 'update'])->name('rencana_pembelajaran.update');
     Route::post('modul-ajar/{id}/upload', [RencanaPembelajaranController::class, 'uploadDocument'])->name('rencana_pembelajaran.upload');
     Route::get('modul-ajar/{id}/preview', [RencanaPembelajaranController::class, 'preview'])->name('rencana_pembelajaran.preview');
+    Route::get('modul-ajar/{id}/download', [RencanaPembelajaranController::class, 'downloadSavedDocument'])->name('rencana_pembelajaran.download');
+    Route::post('modul-ajar/{id}/comment', [RencanaPembelajaranController::class, 'storeComment'])->name('rencana_pembelajaran.comment.store');
     Route::get('modul-ajar/{id}/versions', [RencanaPembelajaranController::class, 'versions'])->name('rencana_pembelajaran.versions');
     Route::post('modul-ajar/{id}/versions/{version}/restore', [RencanaPembelajaranController::class, 'restoreVersion'])->name('rencana_pembelajaran.versions.restore');
     Route::get('modul-ajar/template', [RencanaPembelajaranController::class, 'downloadTemplate'])->name('rencana_pembelajaran.template');

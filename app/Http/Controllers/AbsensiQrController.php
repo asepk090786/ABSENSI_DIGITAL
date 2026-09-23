@@ -36,6 +36,7 @@ class AbsensiQrController extends Controller
 
         $validated = $request->validate([
             'qr_text' => ['required', 'string', 'max:2000'],
+            'status_kelas' => ['required', 'string', 'in:Sangat Kondusif,Kondusif,Normal,Kurang Kondusif,Tidak Kondusif'],
         ]);
 
         $token = $this->extractLoginToken($validated['qr_text']);
@@ -53,6 +54,94 @@ class AbsensiQrController extends Controller
             return response()->json(['success' => false, 'message' => 'QR code siswa tidak valid atau sudah tidak aktif.'], 422);
         }
 
+        $tahun = TahunAjaran::where('is_active', 1)->first();
+        $semester = Semester::where('is_active', 1)->first();
+        if (! $tahun || ! $semester) {
+            return response()->json(['success' => false, 'message' => 'Tahun ajaran atau semester aktif belum diset.'], 422);
+        }
+
+        $tanggal = Carbon::today()->toDateString();
+        $dayMap = [
+            'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu',
+        ];
+        $today = Carbon::now('Asia/Jakarta');
+        $schedules = JadwalKbm::with(['kelas', 'jamBelajar', 'mataPelajaran'])
+            ->where('guru_id', $user->guru_id)
+            ->where('kelas_id', $studentUser->siswa->kelas_id)
+            ->where('hari', $dayMap[$today->format('l')] ?? $today->format('l'))
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('semester_id', $semester->id)
+            ->orderBy('jam_ke')
+            ->get()
+            ->unique('id')
+            ->values();
+
+        if ($schedules->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => sprintf('Tidak ada jadwal Anda hari ini untuk kelas %s.', $studentUser->siswa->nama_kelas ?? 'siswa tersebut'),
+            ], 422);
+        }
+
+        $attendanceItems = DB::transaction(function () use ($schedules, $tahun, $semester, $tanggal, $studentUser, $validated) {
+            $items = [];
+
+            foreach ($schedules as $schedule) {
+                $absensi = AbsensiKelas::firstOrCreate(
+                    [
+                        'kelas_id' => $schedule->kelas_id,
+                        'guru_id' => $schedule->guru_id,
+                        'jam_belajar_id' => $schedule->jam_belajar_id,
+                        'tanggal' => $tanggal,
+                        'tahun_ajaran_id' => $tahun->id,
+                        'semester_id' => $semester->id,
+                    ],
+                    ['status_kelas' => $validated['status_kelas']]
+                );
+
+                if ($absensi->status_kelas !== $validated['status_kelas']) {
+                    $absensi->update(['status_kelas' => $validated['status_kelas']]);
+                }
+
+                AbsensiSiswa::updateOrCreate(
+                    ['absensi_kelas_id' => $absensi->id, 'siswa_id' => $studentUser->siswa_id],
+                    ['status' => 'hadir', 'keterangan' => null]
+                );
+
+                $items[] = [
+                    'mapel' => $schedule->mataPelajaran->nama_mapel ?? 'Mata Pelajaran',
+                    'jam' => $schedule->jamBelajar->urutan ?? $schedule->jam_ke,
+                    'absensi_kelas_id' => $absensi->id,
+                ];
+            }
+
+            return $items;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => sprintf('%s tercatat hadir pada %d jadwal mapel hari ini untuk kelas %s.', $studentUser->siswa->nama, count($attendanceItems), $studentUser->siswa->kelas->nama_kelas ?? 'siswa tersebut'),
+            'student' => $studentUser->siswa->nama,
+            'class' => $studentUser->siswa->kelas->nama_kelas ?? null,
+            'lesson' => $attendanceItems[0]['jam'] ?? null,
+            'absensi_kelas_id' => $attendanceItems[0]['absensi_kelas_id'] ?? null,
+            'lessons' => $attendanceItems,
+            'status_kelas' => $validated['status_kelas'],
+        ]);
+    }
+
+    public function save(Request $request)
+    {
+        $user = $request->user();
+        if (! $this->isTeacher($user)) {
+            return response()->json(['success' => false, 'message' => 'Fitur ini hanya dapat digunakan oleh guru.'], 403);
+        }
+
+        $validated = $request->validate([
+            'status_kelas' => ['required', 'string', 'in:Sangat Kondusif,Kondusif,Normal,Kurang Kondusif,Tidak Kondusif'],
+        ]);
+
         $scheduleContext = $this->todayScheduleContext($user);
         $schedule = $scheduleContext['current'];
         if (! $schedule) {
@@ -66,7 +155,7 @@ class AbsensiQrController extends Controller
         }
 
         $tanggal = Carbon::today()->toDateString();
-        $absensi = DB::transaction(function () use ($schedule, $tahun, $semester, $tanggal, $studentUser) {
+        $result = DB::transaction(function () use ($schedule, $tahun, $semester, $tanggal, $validated) {
             $absensi = AbsensiKelas::firstOrCreate(
                 [
                     'kelas_id' => $schedule->kelas_id,
@@ -76,24 +165,41 @@ class AbsensiQrController extends Controller
                     'tahun_ajaran_id' => $tahun->id,
                     'semester_id' => $semester->id,
                 ],
-                ['status_kelas' => null]
+                ['status_kelas' => $validated['status_kelas']]
             );
 
-            AbsensiSiswa::updateOrCreate(
-                ['absensi_kelas_id' => $absensi->id, 'siswa_id' => $studentUser->siswa_id],
-                ['status' => 'hadir', 'keterangan' => null]
-            );
+            $absensi->update(['status_kelas' => $validated['status_kelas']]);
 
-            return $absensi;
+            $studentIds = DB::table('siswa')
+                ->where('kelas_id', $schedule->kelas_id)
+                ->where('status_aktif', 1)
+                ->pluck('id');
+
+            $recordedStudentIds = AbsensiSiswa::where('absensi_kelas_id', $absensi->id)
+                ->whereIn('siswa_id', $studentIds)
+                ->whereNotIn('status', ['alpa', 'alpha', 'alfa', 'absen', 'tidak_hadir'])
+                ->pluck('siswa_id');
+
+            $alpaCount = 0;
+            foreach ($studentIds->diff($recordedStudentIds) as $studentId) {
+                AbsensiSiswa::create([
+                    'absensi_kelas_id' => $absensi->id,
+                    'siswa_id' => $studentId,
+                    'status' => 'alpa',
+                    'keterangan' => 'Tidak melakukan scan QR.',
+                ]);
+                $alpaCount++;
+            }
+
+            return [$absensi, $recordedStudentIds->count(), $alpaCount];
         });
 
         return response()->json([
             'success' => true,
-            'message' => sprintf('%s tercatat hadir pada %s, jam ke-%s.', $studentUser->siswa->nama, $schedule->kelas->nama_kelas, $schedule->jamBelajar->urutan),
-            'student' => $studentUser->siswa->nama,
-            'class' => $schedule->kelas->nama_kelas,
-            'lesson' => $schedule->jamBelajar->urutan,
-            'absensi_kelas_id' => $absensi->id,
+            'message' => sprintf('Absensi berhasil disimpan. %d siswa tercatat hadir dan %d siswa tercatat alpa.', $result[1], $result[2]),
+            'hadir_count' => $result[1],
+            'alpa_count' => $result[2],
+            'absensi_kelas_id' => $result[0]->id,
         ]);
     }
 

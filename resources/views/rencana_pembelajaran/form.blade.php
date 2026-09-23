@@ -1,14 +1,14 @@
 @extends('layouts.app', ['pageSlug' => 'modul_ajar'])
 
-@section('title', $mode === 'edit' ? 'Edit Modul Ajar' : 'Tambah Modul Ajar')
+@section('title', $mode === 'edit' ? 'Edit Modul Ajar' : (($pdfImportMode ?? false) ? 'Import PDF Modul Ajar' : 'Tambah Modul Ajar'))
 
 @section('content')
 <div class="app-shell" style="min-height: calc(100vh - 140px); background: #dfe7f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,.08);">
     <header class="app-header" style="padding: 14px 20px; display:flex; align-items:center; gap:14px; background: linear-gradient(115deg, #174780, #2d6ab6); color:#fff;">
         <div style="width: 42px; height: 42px; display:grid; place-items:center; border-radius: 10px; background:#fff; color:#235c9f; font-weight:700; font-size: 20px;">M</div>
         <div>
-            <div style="font-weight:700; font-size:15px;">{{ $mode === 'edit' ? 'Edit Modul Ajar' : 'Tambah Modul Ajar' }}</div>
-            <div style="font-size:12px; opacity:.9;">{{ $mode === 'edit' ? 'Kelola informasi, upload, preview dan edit dokumen modul ajar' : 'Form isi dan pratinjau modul ajar' }}</div>
+            <div style="font-weight:700; font-size:15px;">{{ $mode === 'edit' ? 'Edit Modul Ajar' : (($pdfImportMode ?? false) ? 'Import PDF Modul Ajar' : 'Tambah Modul Ajar') }}</div>
+            <div style="font-size:12px; opacity:.9;">{{ $mode === 'edit' ? 'Kelola informasi, upload, preview dan edit dokumen modul ajar' : (($pdfImportMode ?? false) ? 'Isi metadata, upload PDF, dan simpan modul ajar' : 'Form isi dan pratinjau modul ajar') }}</div>
         </div>
         <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-sm btn-light text-primary" style="margin-left:auto;">Kembali ke Daftar</a>
     </header>
@@ -40,7 +40,7 @@
                     </div>
                 </div>
 
-                <form id="rpp-form" action="{{ $mode === 'edit' ? route('rencana_pembelajaran.update', $moduleId) : route('rencana_pembelajaran.store') }}" method="POST">
+                <form id="rpp-form" action="{{ $mode === 'edit' ? route('rencana_pembelajaran.update', $moduleId) : route('rencana_pembelajaran.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @if($mode === 'edit')
                         @method('PUT')
@@ -49,27 +49,27 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
                         <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-outline-secondary btn-sm">Batal</a>
                         <div style="display:flex; gap:8px;">
-                            @if($mode === 'create')
-                            <button type="button" id="btn-import-word" style="display:none;" class="btn btn-outline-success btn-sm">
-                                <i class="ti ti-file-type-docx"></i> Import dari Word
-                            </button>
+                            @if($mode === 'create' && ($pdfImportMode ?? false))
+                            <label for="pdf-document-input" class="btn btn-outline-danger btn-sm mb-0">
+                                <i class="ti ti-file-type-pdf"></i> Import PDF
+                            </label>
                             @endif
                             <button type="submit" id="save-module-btn" class="btn btn-primary btn-sm">Simpan</button>
                         </div>
                     </div>
 
-                    @if($mode === 'create')
-                    <div id="import-section" style="display:none; margin-bottom:14px; padding:14px; border:1px dashed #c9d7e7; border-radius:11px; background:#fff;">
+                    @if($mode === 'create' && ($pdfImportMode ?? false))
+                    <div id="import-section" style="margin-bottom:14px; padding:14px; border:1px dashed #c9d7e7; border-radius:11px; background:#fff;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <span style="font-size:12px; font-weight:600; color:#24496f;">Import dari file Word (.docx)</span>
-                            <button type="button" id="btn-close-import" class="btn btn-sm btn-light">Tutup</button>
+                            <span style="font-size:12px; font-weight:600; color:#24496f;">Import Modul Ajar dari PDF</span>
                         </div>
                         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                            <input type="file" id="import-file" accept=".docx" style="font-size:12px;" />
-                            <button type="button" id="btn-process-import" class="btn btn-success btn-sm">Proses Import</button>
-                            <a href="{{ route('rencana_pembelajaran.template') }}" class="btn btn-outline-secondary btn-sm">Download Template</a>
+                            <input type="file" name="pdf_document" id="pdf-document-input" accept="application/pdf,.pdf" style="font-size:12px;" />
+                            <span style="font-size:11px; color:#68717d;">PDF maksimal 20 MB. Lengkapi metadata di form, lalu klik Simpan.</span>
                         </div>
-                        <div id="import-status" style="margin-top:8px; font-size:11px;"></div>
+                        @error('pdf_document')
+                            <div style="color:#dc2626;font-size:11px;margin-top:6px;">{{ $message }}</div>
+                        @enderror
                     </div>
                     @endif
 
@@ -80,7 +80,7 @@
                             <i class="ti ti-chevron-down"></i>
                         </button>
                         <div class="section-content" style="padding:0 14px 15px;">
-                            <div class="field" style="margin-top:13px;"><label for="input-title" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Judul Modul Ajar</label><input type="text" id="input-title" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" name="title" id="field-title" value=""></div>
+                            <div class="field" style="margin-top:13px;"><label for="input-title" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Judul Modul Ajar</label><input type="text" name="title" id="input-title" class="form-control" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px;" /><input type="hidden" id="field-title" value=""></div>
                             <div class="field" style="margin-top:13px;"><label for="input-subject" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Mata Pelajaran</label>
                                 @if(!empty($mataPelajaranList) && $mataPelajaranList->isNotEmpty())
                                     <select id="input-subject" class="form-select" style="width:100%; min-height:44px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; font-size:12px;" aria-label="Mata Pelajaran">
@@ -153,6 +153,7 @@
                         </div>
                     </section>
 
+                    @unless($mode === 'create' && ($pdfImportMode ?? false))
                     <section class="form-section" style="margin-bottom:10px; overflow:hidden; border:1px solid #d8e2ee; border-radius:11px; background:#fff;">
                         <button class="section-toggle" type="button" aria-expanded="true" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px; border:0; background:#fff; color:#24496f; text-align:left;">
                             <span style="display:flex; align-items:center; gap:10px;"><span style="width:29px; height:29px; display:grid; place-items:center; border-radius:8px; background:#eaf3ff; color:#2865aa;"><i class="ti ti-target"></i></span><span style="font-size:13px; font-weight:600;">Modul Ajar Inti</span></span>
@@ -170,6 +171,7 @@
                             <div class="field" style="margin-top:13px;"><label for="input-assessment" style="display:block; margin-bottom:6px; font-size:12px; font-weight:600;">Asesmen</label><div id="input-assessment" contenteditable="true" data-editor-type="block" style="width:100%; min-height:110px; border:1px solid #c9d7e7; border-radius:8px; background:#fff; padding:9px 10px; color:#1c2c3d; font-size:12px; line-height:1.5; resize:vertical;"></div><input type="hidden" name="assessment" id="field-assessment" value=""></div>
                         </div>
                     </section>
+                    @endunless
                 </form>
             </div>
         </aside>
@@ -197,6 +199,15 @@
             </div>
             @endif
 
+            @if($mode === 'create' && ($pdfImportMode ?? false))
+            <div id="pdf-preview-wrap" style="display:none; flex:1; min-height:0; background:#dfe7f0; padding:16px;">
+                <div style="height:100%; min-height:620px; background:#fff; border:1px solid #cad7e6; border-radius:8px; overflow:hidden;">
+                    <div style="padding:10px 14px; border-bottom:1px solid #cad7e6; font-size:12px; font-weight:600; color:#24496f;">Pratinjau PDF Modul Ajar</div>
+                    <iframe id="pdf-preview-frame" title="Pratinjau PDF Modul Ajar" style="width:100%; height:calc(100% - 42px); border:0;"></iframe>
+                </div>
+            </div>
+            @endif
+
             <div id="doc-viewer-wrap" style="display:none; flex:1; min-height:0; background:#dfe7f0;">
                 <div id="doc-loading" style="padding:20px; text-align:center; font-size:13px; color:#2c5074;">Memuat dokumen...</div>
                 <iframe id="collabora-frame" style="display:none; width:100%; height:calc(100vh - 170px); border:0;"></iframe>
@@ -208,7 +219,7 @@
                 </div>
             </div>
 
-            <div id="html-preview-wrap" style="flex:1; overflow:auto; padding:28px 28px 52px; background-color:#dfe7f0; background-image:radial-gradient(#becbd9 .7px,transparent .7px); background-size:15px 15px;">
+            <div id="html-preview-wrap" style="{{ $mode === 'create' && ($pdfImportMode ?? false) ? 'display:none;' : 'display:block;' }} flex:1; overflow:auto; padding:28px 28px 52px; background-color:#dfe7f0; background-image:radial-gradient(#becbd9 .7px,transparent .7px); background-size:15px 15px;">
                 <article id="document-page" style="width:min(100%,820px); min-height:1100px; margin:0 auto; padding:58px 65px 80px; background:#fff; box-shadow:0 4px 12px rgba(26,55,89,.18),0 24px 44px rgba(26,55,89,.13);">
                     <p class="text-muted text-center mb-2" style="font-size:10px; letter-spacing:1px; text-transform:uppercase;">MODUL AJAR</p>
                     <h1 style="margin:0 0 30px; color:#16283c; font-size:26px; font-weight:700; line-height:1.28; text-align:center;">MODUL AJAR</h1>
@@ -270,6 +281,7 @@
     const initialData = {!! json_encode($initialDataPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
     const mode = @json($mode);
     const moduleId = @json($moduleId);
+    const pdfImportMode = @json($pdfImportMode ?? false);
     const docInfo = @json($docInfo ?? null);
 
     const textFields = ['title','subject','class','status','duration','dimensi_lulusan','achievement','objectives','methods','practice','environment','digital','experience','reflection','assessment'];
@@ -885,6 +897,36 @@
         // initialize text input syncs
         initInputSync();
 
+        const pdfInput = document.getElementById('pdf-document-input');
+        const pdfPreviewWrap = document.getElementById('pdf-preview-wrap');
+        const pdfPreviewFrame = document.getElementById('pdf-preview-frame');
+        const htmlPreviewWrap = document.getElementById('html-preview-wrap');
+        let pdfPreviewUrl = null;
+
+        if (pdfInput && pdfPreviewWrap && pdfPreviewFrame && htmlPreviewWrap) {
+            pdfInput.addEventListener('change', () => {
+                const file = pdfInput.files && pdfInput.files[0];
+                if (!file) {
+                    pdfPreviewWrap.style.display = 'none';
+                    htmlPreviewWrap.style.display = pdfImportMode ? 'none' : 'block';
+                    pdfPreviewFrame.removeAttribute('src');
+                    return;
+                }
+
+                if (file.type !== 'application/pdf') {
+                    pdfInput.value = '';
+                    window.alert('File import harus berformat PDF.');
+                    return;
+                }
+
+                if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+                pdfPreviewUrl = URL.createObjectURL(file);
+                pdfPreviewFrame.src = pdfPreviewUrl;
+                pdfPreviewWrap.style.display = 'block';
+                htmlPreviewWrap.style.display = 'none';
+            });
+        }
+
         // section toggle (collapse/expand) behavior
         document.querySelectorAll('.section-toggle').forEach(button => {
             button.addEventListener('click', () => {
@@ -913,6 +955,10 @@
         const form = document.getElementById('rpp-form');
         if (form) {
             form.addEventListener('submit', () => {
+                const titleInput = document.getElementById('input-title');
+                const titleHidden = document.getElementById('field-title');
+                if (titleInput && titleHidden) titleHidden.value = titleInput.value || '';
+
                 textFields.forEach(field => {
                     const hidden = document.getElementById('field-' + field);
                     if (!hidden) return;

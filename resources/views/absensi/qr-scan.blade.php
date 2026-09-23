@@ -10,7 +10,7 @@
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
     <div>
         <h2 class="mb-1"><i class="ti ti-qrcode me-2 text-primary"></i>Scan QR Siswa</h2>
-        <p class="text-muted mb-0">Scan QR pada kartu login siswa untuk mencatat kehadiran pada jadwal Anda.</p>
+        <p class="text-muted mb-0">Scan QR pada kartu login siswa untuk mencatat kehadiran pada seluruh jadwal mapel Anda di kelas siswa hari ini.</p>
     </div>
     <a href="{{ route('home') }}" class="btn btn-outline-secondary"><i class="ti ti-arrow-left me-1"></i>Kembali</a>
 </div>
@@ -23,8 +23,19 @@
                 <span class="badge bg-blue-lt" id="scannerState">Siap</span>
             </div>
             <div class="card-body">
+                <label for="statusKelas" class="form-label">Status Kelas</label>
+                <select id="statusKelas" class="form-select mb-3">
+                    <option value="Sangat Kondusif">Sangat Kondusif</option>
+                    <option value="Kondusif">Kondusif</option>
+                    <option value="Normal" selected>Normal</option>
+                    <option value="Kurang Kondusif">Kurang Kondusif</option>
+                    <option value="Tidak Kondusif">Tidak Kondusif</option>
+                </select>
                 <div id="qrReader" class="rounded border bg-light"></div>
                 <div id="scanMessage" class="alert alert-secondary mt-3 mb-0" role="status">Arahkan kamera ke QR code kartu login siswa.</div>
+                <button type="button" class="btn btn-primary w-100 mt-3" id="saveAttendance">
+                    <i class="ti ti-device-floppy me-1"></i>Simpan Absensi
+                </button>
             </div>
         </div>
     </div>
@@ -46,7 +57,7 @@
             </div>
         </div>
         <div class="alert alert-info mb-0">
-            <i class="ti ti-info-circle me-2"></i>Absensi hanya dibuat untuk jadwal yang sedang berlangsung. QR kartu login siswa tetap menggunakan token yang sama.
+            <i class="ti ti-info-circle me-2"></i>Satu scan mencatat kehadiran siswa pada seluruh jadwal mapel Anda di kelas siswa hari ini, termasuk beberapa JP. QR kartu login siswa tetap menggunakan token yang sama.
         </div>
     </div>
 </div>
@@ -58,7 +69,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         const state = document.getElementById('scannerState');
         const message = document.getElementById('scanMessage');
+        const statusKelas = document.getElementById('statusKelas');
+        const saveAttendance = document.getElementById('saveAttendance');
         let handled = false;
+        let saved = false;
         const scanner = new Html5Qrcode('qrReader');
 
         function setMessage(text, type) {
@@ -71,7 +85,7 @@
         }
 
         function scanSuccess(decodedText) {
-            if (handled) return;
+            if (handled || saved) return;
             handled = true;
             state.textContent = 'Memproses';
             setMessage('QR terbaca. Menyimpan absensi...', 'warning');
@@ -83,7 +97,7 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    body: JSON.stringify({ qr_text: decodedText })
+                    body: JSON.stringify({ qr_text: decodedText, status_kelas: statusKelas.value })
                 })
                 .then(function (response) { return response.json().then(function (data) { return { response: response, data: data }; }); })
                 .then(function (result) {
@@ -99,6 +113,37 @@
                 });
             });
         }
+
+        saveAttendance.addEventListener('click', function () {
+            if (saved) return;
+            saved = true;
+            saveAttendance.disabled = true;
+            state.textContent = 'Menyimpan';
+            setMessage('Menyimpan absensi dan menandai siswa yang belum scan sebagai alpa...', 'warning');
+            stopScanner().then(function () {
+                fetch('{{ route('absensi.qr.save') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ status_kelas: statusKelas.value })
+                })
+                .then(function (response) { return response.json().then(function (data) { return { response: response, data: data }; }); })
+                .then(function (result) {
+                    if (!result.response.ok || !result.data.success) throw new Error(result.data.message || 'Absensi gagal disimpan.');
+                    state.textContent = 'Tersimpan';
+                    setMessage(result.data.message, 'success');
+                })
+                .catch(function (error) {
+                    saved = false;
+                    saveAttendance.disabled = false;
+                    state.textContent = 'Coba lagi';
+                    setMessage(error.message, 'danger');
+                });
+            });
+        });
 
         state.textContent = 'Meminta kamera';
         scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, scanSuccess, function () {})

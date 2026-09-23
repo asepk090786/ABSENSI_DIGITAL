@@ -22,6 +22,8 @@ use App\Models\KepalaSekolah;
 use App\Models\RencanaPembelajaran;
 use App\Models\ModulAjarDocument;
 use App\Models\ModulAjarDocumentVersion;
+use App\Models\ModulAjarComment;
+use App\Notifications\ModulAjarCommentNotification;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Style\Font;
@@ -93,11 +95,14 @@ class RencanaPembelajaranController extends Controller
             'id' => $model->id,
             'title' => $title,
             'subject' => $subject,
+            'guru_name' => optional($model->guru)->nama,
+            'guru_nip' => optional($model->guru)->nip,
             'mata_pelajaran_id' => $model->mata_pelajaran_id,
             'class' => $class,
             'kelas_id' => $model->kelas_id,
             'duration' => $duration,
             'status' => $status,
+            'keterangan' => $meta['keterangan'] ?? null,
             'dimensi_lulusan' => $model->dimensi_lulusan ?? $meta['dimensi_lulusan'] ?? null,
             'achievement' => $model->capaian_pembelajaran ?? $meta['achievement'] ?? null,
             'objectives' => $model->tujuan ?? $meta['objectives'] ?? null,
@@ -111,6 +116,8 @@ class RencanaPembelajaranController extends Controller
             'experience' => $model->pengalaman_pembelajaran ?? $meta['experience'] ?? null,
             'reflection' => $model->refleksi_pembelajaran ?? $meta['reflection'] ?? null,
             'docx_path' => $model->original_docx_path ?: null,
+            'doc_url' => $model->original_docx_path ? asset($model->original_docx_path) : null,
+            'is_pdf' => $model->original_docx_path && strtolower(pathinfo($model->original_docx_path, PATHINFO_EXTENSION)) === 'pdf',
             'created_at' => $model->created_at?->toDateTimeString(),
             'source' => 'database',
             'guru_id' => $model->guru_id,
@@ -120,19 +127,28 @@ class RencanaPembelajaranController extends Controller
     private function loadModulesForCurrentUser(array $sessionModules = []): array
     {
         $modules = [];
+        $user = Auth::user();
         $guruId = $this->resolveCurrentGuruId();
+        $isPengawas = $user && collect($user->roleNames())
+            ->map(fn ($name) => mb_strtolower(trim($name)))
+            ->contains('pengawas pembina');
 
-        if ($guruId) {
+        if ($isPengawas) {
+            $records = RencanaPembelajaran::orderByDesc('created_at')->get();
+        } elseif ($guruId) {
             $records = RencanaPembelajaran::where('guru_id', $guruId)
                 ->orderByDesc('created_at')
                 ->get();
+        } else {
+            $records = collect();
+        }
 
-            foreach ($records as $record) {
-                $modules[$record->id] = $this->buildModulePayloadFromModel($record);
-            }
+        foreach ($records as $record) {
+            $modules[$record->id] = $this->buildModulePayloadFromModel($record);
         }
 
         foreach ($sessionModules as $key => $module) {
+            // Database metadata and document path are authoritative over stale session data.
             $modules[$key] = array_merge($module, $modules[$key] ?? []);
         }
 
@@ -257,6 +273,10 @@ class RencanaPembelajaranController extends Controller
             return;
         }
 
+        if (strtolower(pathinfo($module->original_docx_path, PATHINFO_EXTENSION)) === 'pdf') {
+            return;
+        }
+
         $legacyPath = public_path($module->original_docx_path);
         if (!file_exists($legacyPath) || !is_readable($legacyPath)) {
             return;
@@ -306,6 +326,9 @@ class RencanaPembelajaranController extends Controller
 
         $sekolah = Sekolah::first();
         $user = Auth::user();
+        $isPengawasPembina = $user && collect($user->roleNames())
+            ->map(fn ($name) => mb_strtolower(trim($name)))
+            ->contains('pengawas pembina');
         $guruName = null;
         $guruNip = null;
         if ($user && $user->guru) {
@@ -321,11 +344,22 @@ class RencanaPembelajaranController extends Controller
         $kepalaName = $kepala->nama ?? $sekolah->nama_kepala_sekolah ?? null;
         $kepalaNip = $kepala->nip ?? null;
 
+        $teacherComments = collect();
+        $currentGuruId = $this->resolveCurrentGuruId();
+        if (!$isPengawasPembina && $currentGuruId) {
+            $teacherComments = ModulAjarComment::with(['modulAjar', 'pengawas'])
+            ->whereHas('modulAjar', fn ($query) => $query->where('guru_id', $currentGuruId))
+                ->latest()
+                ->get();
+        }
+
         [$editorMataPelajaranList, $editorKelasList] = $this->loadMataPelajaranAndKelas();
         $editorFaseOptions = $this->buildFaseOptions();
 
         return view('rencana_pembelajaran.index', [
             'modules' => $modules,
+            'isPengawasPembina' => $isPengawasPembina,
+            'teacherComments' => $teacherComments,
             'sekolah' => $sekolah,
             'guruName' => $guruName,
             'guruNip' => $guruNip,
@@ -337,7 +371,37 @@ class RencanaPembelajaranController extends Controller
         ]);
     }
 
-    public function create()
+    public function storeComment(Request $request, int $id)
+    {
+        $user = Auth::user();
+        $isPengawasPembina = $user && collect($user->roleNames())
+            ->map(fn ($name) => mb_strtolower(trim($name)))
+            ->contains('pengawas pembina');
+
+        abort_unless($isPengawasPembina, 403, 'Hanya Pengawas Pembina yang dapat memberikan komentar.');
+
+        $validated = $request->validate([
+            'komentar' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $module = RencanaPembelajaran::with('guru')->findOrFail($id);
+        $comment = ModulAjarComment::create([
+            'modul_ajar_id' => $module->id,
+            'pengawas_user_id' => $user->id,
+            'komentar' => $validated['komentar'],
+        ]);
+
+        $teacherUser = $module->guru?->user;
+        if ($teacherUser && (int) $teacherUser->id !== (int) $user->id) {
+            $teacherUser->notify(new ModulAjarCommentNotification($comment));
+        }
+
+        return redirect()
+            ->route('rencana_pembelajaran.index')
+            ->with('success', 'Komentar berhasil dikirim kepada guru pembuat modul.');
+    }
+
+    public function create(Request $request)
     {
         $user = Auth::user();
         $mataPelajaranList = collect();
@@ -349,6 +413,13 @@ class RencanaPembelajaranController extends Controller
                 ->get();
             $mataPelajaranList = $jadwal->pluck('mataPelajaran')->filter()->unique('id')->values();
             $kelasList = $jadwal->pluck('kelas')->filter()->unique('id')->values();
+
+            if ($user->hasRole('Guru BK')) {
+                $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
+                $kelasList = Kelas::where('guru_bk_id', $user->guru_id)
+                    ->orderBy('nama_kelas')
+                    ->get();
+            }
         } else {
             $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
             $kelasList = Kelas::orderBy('nama_kelas')->get();
@@ -373,6 +444,7 @@ class RencanaPembelajaranController extends Controller
 
         return view('rencana_pembelajaran.form', [
             'mode' => 'create',
+            'pdfImportMode' => $request->boolean('pdf_import'),
             'moduleId' => null,
             'mataPelajaranList' => $mataPelajaranList,
             'kelasList' => $kelasList,
@@ -382,6 +454,13 @@ class RencanaPembelajaranController extends Controller
             'docInfo' => null,
             'docVersions' => collect(),
         ]);
+    }
+
+    public function importPdf(Request $request)
+    {
+        $request->merge(['pdf_import' => true]);
+
+        return $this->create($request);
     }
 
     public function edit($id)
@@ -398,6 +477,13 @@ class RencanaPembelajaranController extends Controller
             $tugas = TugasGuru::with(['mataPelajaran','kelas'])->where('guru_id', $user->guru_id)->get();
             $mataPelajaranList = $tugas->pluck('mataPelajaran')->filter()->unique('id')->values();
             $kelasList = $tugas->pluck('kelas')->filter()->unique('id')->values();
+
+            if ($user->hasRole('Guru BK')) {
+                $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
+                $kelasList = Kelas::where('guru_bk_id', $user->guru_id)
+                    ->orderBy('nama_kelas')
+                    ->get();
+            }
         } else {
             $mataPelajaranList = MataPelajaran::orderBy('nama_mapel')->get();
             $kelasList = Kelas::orderBy('nama_kelas')->get();
@@ -476,6 +562,18 @@ class RencanaPembelajaranController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->hasFile('pdf_document')) {
+            $request->validate([
+                'title' => ['required', 'string', 'max:255'],
+                'class' => ['required', 'string', 'max:255'],
+                'fase' => ['required', 'string', 'max:20'],
+                'status' => ['required', 'in:draft,published'],
+                'duration' => ['required', 'string', 'max:255'],
+                'dimensi_lulusan' => ['required', 'string', 'max:2000'],
+                'pdf_document' => ['file', 'mimes:pdf', 'max:20480'],
+            ]);
+        }
+
         $allFields = [
             'title',
             'subject',
@@ -639,6 +737,18 @@ class RencanaPembelajaranController extends Controller
             $moduleId = $record->id;
         }
 
+        if ($request->hasFile('pdf_document')) {
+            $pdf = $request->file('pdf_document');
+            $safeName = Str::slug(pathinfo($pdf->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'modul-ajar';
+            $relativePath = 'storage/modul-ajar/' . $moduleId . '/' . $safeName . '-' . now()->format('YmdHis') . '.pdf';
+            $publicPath = public_path($relativePath);
+            if (!is_dir(dirname($publicPath))) {
+                mkdir(dirname($publicPath), 0755, true);
+            }
+            $pdf->move(dirname($publicPath), basename($publicPath));
+            $record->update(['original_docx_path' => $relativePath]);
+        }
+
         $modules[$moduleId] = array_merge($modules[$moduleId] ?? [], [
             'id' => $moduleId,
             'title' => $payload['title'] ?? 'Modul Ajar',
@@ -654,13 +764,15 @@ class RencanaPembelajaranController extends Controller
 
         Session::put('modul_ajar_items', $modules);
 
-        try {
-            $this->generateAndSaveDocxFromHtmlContent($record, $payload);
-        } catch (\Throwable $e) {
-            Log::warning('Gagal generate DOCX setelah store modul ajar', [
-                'module_id' => $record->id,
-                'error' => $e->getMessage(),
-            ]);
+        if (!$request->hasFile('pdf_document')) {
+            try {
+                $this->generateAndSaveDocxFromHtmlContent($record, $payload);
+            } catch (\Throwable $e) {
+                Log::warning('Gagal generate DOCX setelah store modul ajar', [
+                    'module_id' => $record->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return redirect()->route('rencana_pembelajaran.index')->with('success', 'Modul ajar berhasil disimpan ke akun guru dan database.');
@@ -720,6 +832,12 @@ class RencanaPembelajaranController extends Controller
     public function update(Request $request, int $id)
     {
         $record = $this->findOwnedModuleOrFail($id);
+
+        // Keep the existing relations when editing fields such as the title only.
+        $request->merge([
+            'mata_pelajaran_id' => $request->input('mata_pelajaran_id') ?: $record->mata_pelajaran_id,
+            'kelas_id' => $request->input('kelas_id') ?: $record->kelas_id,
+        ]);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -1689,11 +1807,23 @@ class RencanaPembelajaranController extends Controller
 
     public function downloadSavedDocument(string $id)
     {
+        $record = RencanaPembelajaran::find($id);
+        $user = Auth::user();
+        $isPengawasPembina = $user && collect($user->roleNames())
+            ->map(fn ($name) => mb_strtolower(trim($name)))
+            ->contains('pengawas pembina');
+
+        if ($record && $user && !$isPengawasPembina && !$user->hasAnyRole(['Admin', 'Kepala Sekolah'])) {
+            $guruId = $this->resolveCurrentGuruId();
+            if (!$guruId || (int) $record->guru_id !== (int) $guruId) {
+                abort(403, 'Anda tidak memiliki akses ke dokumen modul ajar ini.');
+            }
+        }
+
         $modules = Session::get('modul_ajar_items', []);
         $module = $modules[$id] ?? null;
 
         if (! $module) {
-            $record = RencanaPembelajaran::find($id);
             if ($record) {
                 $module = $this->buildModulePayloadFromModel($record);
             }

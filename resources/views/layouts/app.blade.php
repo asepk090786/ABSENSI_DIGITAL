@@ -1132,7 +1132,9 @@
             @endphp
 
             @php
-                $isAdminSidebar = $user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina']);
+                $sidebarRoleNames = $user ? collect($user->roleNames())->map(fn ($name) => mb_strtolower(trim($name))) : collect();
+                $isPengawasSidebar = $sidebarRoleNames->contains('pengawas pembina');
+                $isAdminSidebar = $sidebarRoleNames->intersect(['admin', 'kepala sekolah'])->isNotEmpty() && ! $isPengawasSidebar;
                 
                 // AKADEMIK Group - Jadwal & Akademik submenu
                 $isAdminJadwalAkademikActive = request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','guru_piket.*','rencana_pembelajaran.*','editor_modul.*']);
@@ -1162,7 +1164,46 @@
                 $isAdminInfoActive = request()->routeIs(['profile.panduan','setting.about','help.admin.*']);
             @endphp
 
-            @if($isAdminSidebar)
+            @if($isPengawasSidebar)
+            <ul class="sidebar-nav sidebar-admin-nav">
+                <li class="nav-item">
+                    <a href="{{ route('home') }}" class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
+                        <i class="ti ti-layout-dashboard"></i> Dashboard Pengawas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Monitoring Sekolah</div>
+                        <a href="{{ route('siswa.index') }}" class="sidebar-admin-link {{ request()->routeIs('siswa.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-users"></i> Data Siswa
+                        </a>
+                        <a href="{{ route('guru.index') }}" class="sidebar-admin-link {{ request()->routeIs('guru.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-users-group"></i> Data Guru
+                        </a>
+                        <a href="{{ route('jadwal-kbm.index') }}" class="sidebar-admin-link {{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*']) ? 'is-active' : '' }}">
+                            <i class="ti ti-calendar"></i> Jadwal KBM
+                        </a>
+                        <a href="{{ route('absensi.index') }}" class="sidebar-admin-link {{ request()->routeIs('absensi.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-user-check"></i> Absensi Siswa
+                        </a>
+                        <a href="{{ route('admin.absensi_guru.index') }}" class="sidebar-admin-link {{ request()->routeIs('admin.absensi_guru.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-calendar-user"></i> Absensi Guru
+                        </a>
+                        <a href="{{ route('rencana_pembelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs('rencana_pembelajaran.*') ? 'is-active' : '' }}">
+                            <i class="ti ti-book-2"></i> Modul Ajar Guru
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <div class="sidebar-admin-group">
+                        <div class="sidebar-admin-group-label">Akun</div>
+                        <a href="{{ route('profile.edit') }}" class="sidebar-admin-link {{ request()->routeIs('profile.edit') ? 'is-active' : '' }}">
+                            <i class="ti ti-user"></i> Profile
+                        </a>
+                    </div>
+                </li>
+            </ul>
+            @elseif($isAdminSidebar)
             <ul class="sidebar-nav sidebar-admin-nav">
                 <!-- Dashboard -->
                 <li class="nav-item">
