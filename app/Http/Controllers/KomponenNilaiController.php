@@ -77,8 +77,24 @@ class KomponenNilaiController extends Controller
         $guruList = Guru::orderBy('nama')->get(['id', 'nama', 'nip']);
         $isTeacherUser = $this->isTeacherUser();
 
+        $activeGuruId = $guruId ?: ($user && $this->isTeacherUser() ? $user->guru_id : null);
+
         $query = $this->scopedKomponenQuery()
-            ->with(['guru', 'mataPelajaran', 'kelas', 'kelasMany', 'capaianPembelajaran', 'rencanaPembelajaran.guru', 'rencanaPembelajaran.mataPelajaran', 'rencanaPembelajaran.kelas']);
+            ->with([
+                'guru',
+                'mataPelajaran',
+                'kelas',
+                'kelasMany',
+                'capaianPembelajaran',
+                'rencanaPembelajaran' => function ($q) use ($activeGuruId) {
+                    if ($activeGuruId) {
+                        $q->where('guru_id', $activeGuruId);
+                    }
+                },
+                'rencanaPembelajaran.guru',
+                'rencanaPembelajaran.mataPelajaran',
+                'rencanaPembelajaran.kelas',
+            ]);
 
         if ($hasGuruFilter && ! $guruId) {
             $query->whereNull('id');
@@ -86,15 +102,7 @@ class KomponenNilaiController extends Controller
             if ($isTeacherUser && (string) $guruId !== (string) ($user->guru_id ?? '')) {
                 $query->whereNull('id');
             } else {
-                $query->where('guru_id', $guruId)
-                    ->with([
-                        'rencanaPembelajaran' => function ($q) use ($guruId) {
-                            $q->where('guru_id', $guruId);
-                        },
-                        'rencanaPembelajaran.guru',
-                        'rencanaPembelajaran.mataPelajaran',
-                        'rencanaPembelajaran.kelas',
-                    ]);
+                $query->where('guru_id', $guruId);
             }
         }
 
@@ -117,14 +125,14 @@ class KomponenNilaiController extends Controller
 
             $byGuruCpHtml = [];
             foreach ($rencanas as $rencana) {
-                $guru = $rencana->guru;
+                $ownerGuru = $item->guru ?? $rencana->guru;
                 $cp = $item->capaianPembelajaran;
-                $key = ($guru ? $guru->id : 'null') . '|' . ($cp ? $cp->id : 'null');
+                $key = ($ownerGuru ? $ownerGuru->id : 'null') . '|' . ($cp ? $cp->id : 'null');
 
                 if (! isset($byGuruCpHtml[$key])) {
                     $byGuruCpHtml[$key] = [
                         'komponen' => $item,
-                        'guru' => $guru,
+                        'guru' => $ownerGuru,
                         'cp' => $cp,
                         'mapel' => [],
                         'kelas' => [],

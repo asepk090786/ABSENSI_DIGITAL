@@ -32,4 +32,18 @@ class SupervisiModularMenuTest extends TestCase
             ->get(route('supervisi.indikator.index'))
             ->assertOk();
     }
+
+    public function test_erapor_menu_toggle_is_available_in_admin_settings(): void
+    {
+        $role = Role::create(['role_name' => 'Admin']);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $this->actingAs($user)
+            ->get(route('setting.menu'))
+            ->assertOk()
+            ->assertSee('name="guru_menus[]"', false)
+            ->assertSee('value="integrations_erapor_sso"', false)
+            ->assertSee('name="siswa_menus[]"', false)
+            ->assertSee('value="integrations_erapor_sso"', false);
+    }
 }

@@ -99,7 +99,11 @@ class GuruController extends Controller
 
     public function edit(Guru $guru)
     {
-        return view('guru.edit', compact('guru'));
+        $roles = Role::whereIn('role_name', ['Guru', 'Guru Mapel', 'Guru Kelas', 'Pengawas Pembina'])
+            ->orderBy('role_name')
+            ->get();
+
+        return view('guru.edit', compact('guru', 'roles'));
     }
 
     public function update(Request $request, Guru $guru)
@@ -116,6 +120,7 @@ class GuruController extends Controller
             'tanggal_lahir' => 'nullable|date',
             'jenis_kelamin' => 'nullable|in:L,P',
             'email' => 'required|email|max:150|unique:guru,email,' . $guru->id,
+            'role_id' => 'nullable|exists:roles,id',
         ]);
 
         // Status aktif/nonaktif akun
@@ -147,6 +152,9 @@ class GuruController extends Controller
                 $user->name = $guru->nama;
                 $user->email = $email;
                 $user->jenis_kelamin = $guru->jenis_kelamin;
+                if (! empty($validated['role_id'])) {
+                    $user->role_id = $validated['role_id'];
+                }
                 $user->save();
             } else {
                 // Buat user baru
@@ -157,13 +165,16 @@ class GuruController extends Controller
                     'password' => bcrypt($password),
                     'email' => $email,
                     'jenis_kelamin' => $guru->jenis_kelamin,
-                    'role_id' => $roleGuru ? $roleGuru->id : null,
+                    'role_id' => $validated['role_id'] ?? ($roleGuru ? $roleGuru->id : null),
                     'guru_id' => $guru->id,
                     'is_active' => $validated['is_active'],
                 ]);
             }
         } else if ($guru->user) {
             $guru->user->is_active = $validated['is_active'];
+            if (! empty($validated['role_id'])) {
+                $guru->user->role_id = $validated['role_id'];
+            }
             $guru->user->save();
         }
 

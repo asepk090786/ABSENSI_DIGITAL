@@ -129,6 +129,18 @@
                         </div>
 
                         <div class="col-md-6 col-lg-3">
+                            <a href="{{ route('absensi.rekap-kelas', ['kelas_id' => $kelasBinaan->id, 'tanggal' => now()->format('Y-m-d')]) }}" class="text-decoration-none">
+                                <div class="card border-info h-100 hover-card">
+                                    <div class="card-body text-center">
+                                        <i class="ti ti-table" style="font-size: 48px; color: #0891b2;"></i>
+                                        <h6 class="mt-2 mb-0">Rekap Per Jam</h6>
+                                        <small class="text-muted">Rekap kehadiran kelas binaan</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-md-6 col-lg-3">
                             <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id]) }}" class="text-decoration-none">
                                 <div class="card border-primary h-100 hover-card">
                                     <div class="card-body text-center">

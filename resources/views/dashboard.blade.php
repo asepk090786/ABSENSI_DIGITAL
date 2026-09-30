@@ -109,6 +109,27 @@
         </div>
     </div>
     @endif
+    @if(auth()->user()->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']))
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header border-0 pt-3 pb-2">
+                    <h5 class="card-title fw-semibold mb-1">Akses Cepat</h5>
+                    <p class="card-category">Aplikasi pembelajaran</p>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a class="btn btn-outline-primary w-100" href="{{ route('integrations.erapor.sso') }}">
+                                <i class="ti ti-report-analytics me-2"></i>Menu Cepat SSO e-Rapor
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
     <div class="row">
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card card-chart">

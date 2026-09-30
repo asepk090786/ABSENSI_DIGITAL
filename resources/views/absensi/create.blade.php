@@ -2375,6 +2375,12 @@
     }
 
     function applyExistingAttendanceStatuses(existingData) {
+        var loadAttendanceToggle = document.getElementById('loadClassAttendanceToggle');
+        if (!loadAttendanceToggle || !loadAttendanceToggle.checked) {
+            window._attendanceStatuses = {};
+            return;
+        }
+
         var statuses = getPreferredExistingStatuses(existingData || window._existingAbsensiCache || {});
         var appliedAny = false;
 
@@ -2541,7 +2547,10 @@
 
     function renderSiswaItems() {
         var data = window._siswaCache || [];
-        var existing = window._existingAbsensiCache || {};
+        var loadAttendanceToggle = document.getElementById('loadClassAttendanceToggle');
+        var existing = loadAttendanceToggle && loadAttendanceToggle.checked
+            ? (window._existingAbsensiCache || {})
+            : {};
         var existingStatuses = getPreferredExistingStatuses(existing);
         var isGridMode = currentView === 'grid';
         var isTableMode = !isGridMode;

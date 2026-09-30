@@ -1414,6 +1414,20 @@
                         <i class="ti ti-layout-dashboard"></i> Dashboard
                     </a>
                 </li>
+                @if($isGuru && (empty($guruEnabledMenus) || in_array('integrations_erapor_sso', $guruEnabledMenus)))
+                <li class="nav-item">
+                    <a href="{{ route('integrations.erapor.sso') }}" class="nav-link {{ request()->routeIs('integrations.erapor.sso') ? 'active' : '' }}">
+                        <i class="ti ti-report-analytics"></i> e-Rapor
+                    </a>
+                </li>
+                @endif
+                @if($user && $user->hasRole('Siswa') && (empty($siswaEnabledMenus) || in_array('integrations_erapor_sso', $siswaEnabledMenus)))
+                <li class="nav-item">
+                    <a href="{{ route('integrations.erapor.sso') }}" class="nav-link {{ request()->routeIs('integrations.erapor.sso') ? 'active' : '' }}">
+                        <i class="ti ti-report-analytics"></i> e-Rapor
+                    </a>
+                </li>
+                @endif
 
                 <!-- Akademik -->
                 @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && ((empty($guruEnabledMenus) || !empty(array_intersect(['akademik_jadwal_kbm','akademik_jadwal_piket','akademik_pengaturan_jam','akademik_pengembangan_diri','akademik_beban_kerja_guru','akademik_sk_tugas','akademik_komponen_penilaian','akademik_mata_pelajaran','akademik_modul_ajar','akademik_editor_modul','kartu_login'], $guruEnabledMenus))) || ($user->hasRole('Siswa') && (empty($siswaEnabledMenus) || in_array('kartu_login', $siswaEnabledMenus)))))
@@ -1853,7 +1867,12 @@
             @endif
             @if(isset($errors) && $errors->any())
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="ti ti-alert-triangle me-2"></i> Terdapat kesalahan pada formulir.
+                <div class="fw-semibold mb-1"><i class="ti ti-alert-triangle me-2"></i>Terdapat kesalahan pada formulir:</div>
+                <ul class="mb-0">
+                    @foreach($errors->all() as $message)
+                        <li>{{ $message }}</li>
+                    @endforeach
+                </ul>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             @endif

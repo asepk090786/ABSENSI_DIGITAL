@@ -258,10 +258,13 @@
 <div class="row mt-4">
     <div class="col-lg-7">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
                 <h5 class="card-title">Rekap Kehadiran Siswa per Kelas</h5>
-                <div class="text-muted small">Berdasarkan data absensi siswa di periode aktif.</div>
+                <a href="{{ route('absensi.rekap-kelas-keseluruhan', ['tanggal' => $statistikKehadiranSiswaHarian->tanggal]) }}" class="btn btn-outline-primary btn-sm text-nowrap">
+                    <i class="ti ti-table me-1"></i>Rekap Keseluruhan
+                </a>
             </div>
+            <div class="px-3 pt-2 text-muted small">Berdasarkan data absensi siswa di periode aktif.</div>
             <div class="card-body">
                 @if(($rekapKehadiranSiswaPerKelas ?? collect())->isEmpty())
                     <div class="alert alert-warning mb-0">Belum ada data kehadiran siswa per kelas.</div>
@@ -293,6 +296,9 @@
                                     <td class="text-center">{{ $item->bolos }}</td>
                                     <td class="text-center fw-bold">{{ $item->total_entri }}</td>
                                     <td class="text-end">
+                                        <a href="{{ route('absensi.rekap-kelas', ['kelas_id' => $item->kelas_id, 'tanggal' => $statistikKehadiranSiswaHarian->tanggal]) }}" class="btn btn-outline-secondary btn-sm">
+                                            View
+                                        </a>
                                         <a href="{{ route('absensi.create', ['kelas_id' => $item->kelas_id, 'tanggal' => $statistikKehadiranSiswaHarian->tanggal]) }}" class="btn btn-outline-primary btn-sm">
                                             Input/Detail
                                         </a>

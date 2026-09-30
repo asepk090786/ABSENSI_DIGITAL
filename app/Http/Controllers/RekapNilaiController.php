@@ -12,6 +12,38 @@ use Illuminate\Support\Facades\DB;
 
 class RekapNilaiController extends Controller
 {
+    private function assessmentGroupKey(object $record): string
+    {
+        if ($record->assessment_uuid) {
+            return $record->assessment_uuid;
+        }
+
+        return 'legacy:' . sha1(implode('|', [
+            $record->tanggal,
+            $record->komponen_id,
+            $record->rencana_pembelajaran_id,
+            $record->materi_pelajaran,
+            $record->jenis_penilaian,
+        ]));
+    }
+
+    private function assessmentCountsByComponent($query): array
+    {
+        return (clone $query)
+            ->select(
+                'nilai_harian.assessment_uuid',
+                'nilai_harian.tanggal',
+                'nilai_harian.komponen_id',
+                'nilai_harian.rencana_pembelajaran_id',
+                'nilai_harian.materi_pelajaran',
+                'nilai_harian.jenis_penilaian'
+            )
+            ->get()
+            ->groupBy(fn ($record) => (int) ($record->komponen_id ?? 0))
+            ->map(fn ($records) => $records->map(fn ($record) => $this->assessmentGroupKey($record))->unique()->count())
+            ->all();
+    }
+
     private function scopedKomponenQuery()
     {
         $query = KomponenNilai::query();
@@ -253,10 +285,12 @@ class RekapNilaiController extends Controller
                 ->orderBy('nama')
                 ->get();
 
-            $nilaiPerKomponen = DB::table('nilai_harian')
-                ->leftJoin('komponen_nilai', 'nilai_harian.komponen_id', '=', 'komponen_nilai.id')
+            $nilaiQuery = DB::table('nilai_harian')
                 ->where('nilai_harian.kelas_id', $kelasId)
                 ->where('nilai_harian.mapel_id', $mapelId)
+                ->when($user && $user->guru_id && ! $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Pengawas Pembina', 'Wakil Kepala Sekolah']), function ($q) use ($user) {
+                    $q->where('nilai_harian.guru_id', $user->guru_id);
+                })
                 ->when($tahunAjaranActive, function ($q) use ($tahunAjaranActive) {
                     $q->where(function ($w) use ($tahunAjaranActive) {
                         $w->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
@@ -271,12 +305,17 @@ class RekapNilaiController extends Controller
                 })
                 ->when($komponenId, function ($q) use ($komponenId) {
                     $q->where('nilai_harian.komponen_id', $komponenId);
-                })
+                });
+
+            $assessmentCountsByComponent = $this->assessmentCountsByComponent($nilaiQuery);
+
+            $nilaiPerKomponen = (clone $nilaiQuery)
+                ->leftJoin('komponen_nilai', 'nilai_harian.komponen_id', '=', 'komponen_nilai.id')
                 ->select(
                     'nilai_harian.siswa_id',
                     DB::raw('COALESCE(nilai_harian.komponen_id, 0) as komponen_id'),
                     DB::raw("COALESCE(komponen_nilai.nama_komponen, 'Harian') as nama_komponen"),
-                    DB::raw('AVG(nilai_harian.nilai) as nilai_komponen')
+                    DB::raw('SUM(nilai_harian.nilai) as total_nilai_komponen')
                 )
                 ->groupBy('nilai_harian.siswa_id', DB::raw('COALESCE(nilai_harian.komponen_id, 0)'), DB::raw("COALESCE(komponen_nilai.nama_komponen, 'Harian')"))
                 ->get();
@@ -323,7 +362,10 @@ class RekapNilaiController extends Controller
                 if (!isset($nilaiIndex[$studentId])) {
                     $nilaiIndex[$studentId] = [];
                 }
-                $nilaiIndex[$studentId][$komponenKey] = $item->nilai_komponen !== null ? (float) $item->nilai_komponen : null;
+                $assessmentCount = $assessmentCountsByComponent[$komponenKey] ?? 0;
+                $nilaiIndex[$studentId][$komponenKey] = $item->total_nilai_komponen !== null && $assessmentCount > 0
+                    ? (float) $item->total_nilai_komponen / $assessmentCount
+                    : null;
             }
 
             $rekapData = $students->map(function ($student) use ($rekapKomponenColumns, $nilaiIndex) {
@@ -341,7 +383,10 @@ class RekapNilaiController extends Controller
                 }
 
                 $jumlah = count($validValues) ? array_sum($validValues) : null;
-                $rataRata = count($validValues) ? ($jumlah / count($validValues)) : null;
+                $columnCount = $rekapKomponenColumns->count();
+                $rataRata = count($validValues) && $columnCount > 0
+                    ? ($jumlah / $columnCount)
+                    : null;
 
                 return (object) [
                     'id' => $student->id,
@@ -381,52 +426,86 @@ class RekapNilaiController extends Controller
         $mapelId = $request->get('mapel_id');
         $komponenId = $request->get('komponen_id');
         
-        $guru = auth()->user()->guru;
+        $user = auth()->user();
+        $guru = $user ? $user->guru : null;
         $tahunAjaranActive = TahunAjaran::where('is_active', true)->first();
         $semesterActive = Semester::where('is_active', true)->first();
-        
+        $canSeeAll = $user && $user->hasAnyRole(['Admin', 'Kepala Sekolah', 'Wakil Kepala Sekolah', 'Pengawas Pembina']);
+
         $selectedKelas = Kelas::find($kelasId);
         $selectedMapel = MataPelajaran::find($mapelId);
-        $selectedKomponen = $komponenId ? KomponenNilai::find($komponenId) : null;
-        
-        // Query to get students with their grades
-        $query = DB::table('siswa')
-            ->leftJoin('nilai_harian', function($join) use ($mapelId, $komponenId, $tahunAjaranActive, $semesterActive) {
-                $join->on('siswa.id', '=', 'nilai_harian.siswa_id')
-                    ->where('nilai_harian.mapel_id', $mapelId);
+        $selectedKomponen = $komponenId ? $this->scopedKomponenQuery()->find($komponenId) : null;
 
-                if ($tahunAjaranActive) {
-                    $join->where(function ($q) use ($tahunAjaranActive) {
-                        $q->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
-                            ->orWhereNull('nilai_harian.tahun_ajaran_id');
-                    });
-                }
-
-                if ($semesterActive) {
-                    $join->where(function ($q) use ($semesterActive) {
-                        $q->where('nilai_harian.semester_id', $semesterActive->id)
-                            ->orWhereNull('nilai_harian.semester_id');
-                    });
-                }
-                
-                if ($komponenId) {
-                    $join->where('nilai_harian.komponen_id', $komponenId);
-                }
+        $nilaiQuery = DB::table('nilai_harian')
+            ->where('nilai_harian.kelas_id', $kelasId)
+            ->where('nilai_harian.mapel_id', $mapelId)
+            ->when($user && $user->guru_id && ! $canSeeAll, function ($q) use ($user) {
+                $q->where('nilai_harian.guru_id', $user->guru_id);
             })
-            ->where('siswa.kelas_id', $kelasId)
+            ->when($tahunAjaranActive, function ($q) use ($tahunAjaranActive) {
+                $q->where(function ($w) use ($tahunAjaranActive) {
+                    $w->where('nilai_harian.tahun_ajaran_id', $tahunAjaranActive->id)
+                        ->orWhereNull('nilai_harian.tahun_ajaran_id');
+                });
+            })
+            ->when($semesterActive, function ($q) use ($semesterActive) {
+                $q->where(function ($w) use ($semesterActive) {
+                    $w->where('nilai_harian.semester_id', $semesterActive->id)
+                        ->orWhereNull('nilai_harian.semester_id');
+                });
+            })
+            ->when($komponenId, function ($q) use ($komponenId) {
+                $q->where('nilai_harian.komponen_id', $komponenId);
+            });
+        $assessmentCountsByComponent = $this->assessmentCountsByComponent($nilaiQuery);
+        $displayedComponentIds = $komponenId
+            ? collect(array_keys($assessmentCountsByComponent))
+            : $this->scopedKomponenQuery()
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->merge(array_keys($assessmentCountsByComponent));
+        $displayedComponentCount = $displayedComponentIds->unique()->count();
+        $scoreRowsByStudent = (clone $nilaiQuery)
             ->select(
-                'siswa.id',
-                'siswa.nis',
-                'siswa.nisn',
-                'siswa.nama',
-                DB::raw('AVG(nilai_harian.nilai) as rata_rata'),
+                'nilai_harian.siswa_id',
+                DB::raw('COALESCE(nilai_harian.komponen_id, 0) as komponen_id'),
                 DB::raw('COUNT(nilai_harian.id) as jumlah_nilai'),
+                DB::raw('SUM(nilai_harian.nilai) as total_nilai'),
                 DB::raw('MAX(nilai_harian.nilai) as nilai_tertinggi'),
                 DB::raw('MIN(nilai_harian.nilai) as nilai_terendah')
             )
-            ->groupBy('siswa.id', 'siswa.nis', 'siswa.nisn', 'siswa.nama')
+            ->groupBy('nilai_harian.siswa_id', DB::raw('COALESCE(nilai_harian.komponen_id, 0)'))
+            ->get()
+            ->groupBy('siswa_id');
+
+        $query = DB::table('siswa')
+            ->where('siswa.kelas_id', $kelasId)
+            ->select('siswa.id', 'siswa.nis', 'siswa.nisn', 'siswa.nama')
             ->orderBy('siswa.nama')
-            ->get();
+            ->get()
+            ->map(function ($student) use ($scoreRowsByStudent, $assessmentCountsByComponent, $displayedComponentCount) {
+                $scoreRows = $scoreRowsByStudent->get($student->id, collect());
+                $componentAverages = $scoreRows->map(function ($row) use ($assessmentCountsByComponent) {
+                    $assessmentCount = $assessmentCountsByComponent[(int) $row->komponen_id] ?? 0;
+
+                    return $row->total_nilai !== null && $assessmentCount > 0
+                        ? (float) $row->total_nilai / $assessmentCount
+                        : null;
+                })->filter(fn ($value) => $value !== null);
+
+                return (object) [
+                    'id' => $student->id,
+                    'nis' => $student->nis,
+                    'nisn' => $student->nisn,
+                    'nama' => $student->nama,
+                    'jumlah_nilai' => $scoreRows->sum('jumlah_nilai'),
+                    'rata_rata' => $componentAverages->isNotEmpty() && $displayedComponentCount > 0
+                        ? $componentAverages->sum() / $displayedComponentCount
+                        : null,
+                    'nilai_tertinggi' => $scoreRows->max('nilai_tertinggi'),
+                    'nilai_terendah' => $scoreRows->min('nilai_terendah'),
+                ];
+            });
         
         return \Excel::download(
             new \App\Exports\RekapNilaiExport($query, $selectedKelas, $selectedMapel, $selectedKomponen, $tahunAjaranActive, $semesterActive),

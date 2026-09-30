@@ -18,6 +18,7 @@ use App\Http\Controllers\KegiatanController;
 use App\Http\Controllers\JenisKegiatanController;
 use App\Http\Controllers\EkstrakurikulerController;
 use App\Http\Controllers\TenagaPendidikanController;
+use App\Http\Controllers\EraporSsoController;
 use App\Http\Controllers\TugasTambahanController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\KartuLoginController;
@@ -251,8 +252,21 @@ Route::middleware(['auth'])->group(function(){
     Route::resource('absensi','App\Http\Controllers\AbsensiController');
     Route::resource('nilai','App\Http\Controllers\NilaiController')->only(['index', 'store']);
     Route::post('nilai/update-batch', ['App\Http\Controllers\NilaiController', 'updateBatch'])->name('nilai.update-batch');
+    Route::post('nilai/preview-input', ['App\Http\Controllers\NilaiController', 'previewInput'])->name('nilai.preview-input');
+    Route::post('nilai/import-input', ['App\Http\Controllers\NilaiController', 'importInput'])->name('nilai.import-input');
+    Route::get('nilai/template-input', ['App\Http\Controllers\NilaiController', 'inputTemplate'])->name('nilai.template-input');
     Route::post('nilai/import', ['App\Http\Controllers\NilaiController', 'import'])->name('nilai.import');
     Route::get('nilai/template', ['App\Http\Controllers\NilaiController', 'template'])->name('nilai.template');
+    Route::get('nilai/asesmen-formatif', ['App\Http\Controllers\NilaiController', 'asesmenFormatif'])->name('nilai.asesmen.formatif');
+        Route::get('nilai/asesmen-sumatif', ['App\Http\Controllers\NilaiController', 'asesmenSumatif'])->name('nilai.asesmen.sumatif');
+    Route::get('nilai/rekap/formatif', ['App\Http\Controllers\NilaiController', 'rekapAsesmenFormatif'])->name('nilai.rekap.formatif');
+    Route::get('nilai/rekap/sumatif', ['App\Http\Controllers\NilaiController', 'rekapAsesmenSumatif'])->name('nilai.rekap.sumatif');
+        Route::post('nilai/bobot-akhir-asesmen', ['App\Http\Controllers\NilaiController', 'simpanBobotNilaiAkhirAsesmen'])->name('nilai.bobot-akhir-asesmen.update');
+        Route::get('nilai/rekap/akhir-asesmen', ['App\Http\Controllers\NilaiController', 'rekapNilaiAkhirAsesmen'])->name('nilai.rekap.akhir-asesmen');
+        Route::get('nilai/rekap/akhir-asesmen/preview', ['App\Http\Controllers\NilaiController', 'previewNilaiAkhirAsesmenExport'])->name('nilai.rekap.akhir-asesmen.preview');
+        Route::get('nilai/rekap/akhir-asesmen/export', ['App\Http\Controllers\NilaiController', 'exportNilaiAkhirAsesmen'])->name('nilai.rekap.akhir-asesmen.export');
+    Route::get('nilai/kategorisasi', ['App\Http\Controllers\NilaiController', 'kategorisasiAsesmen'])->name('nilai.kategorisasi');
+    Route::post('nilai/kategorisasi', ['App\Http\Controllers\NilaiController', 'updateKategoriAsesmen'])->name('nilai.kategorisasi.update');
     Route::delete('nilai/penilaian', ['App\Http\Controllers\NilaiController', 'destroyPenilaian'])->name('nilai.penilaian.destroy');
     
     // Capaian Pembelajaran Export/Import Routes
@@ -588,6 +602,7 @@ Route::middleware(['auth'])->group(function(){
     
     // Profile routes
     Route::middleware('auth')->group(function () {
+        Route::get('integrations/erapor/sso', [EraporSsoController::class, 'redirect'])->name('integrations.erapor.sso');
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::get('/panduan', [ProfileController::class, 'panduan'])->name('profile.panduan');
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

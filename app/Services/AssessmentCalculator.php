@@ -43,7 +43,7 @@ class AssessmentCalculator
         return config('assessment.predicates', self::PREDICATES);
     }
 
-    public function calculateDomainAverage(int $siswaId, int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId, string $domain): ?float
+    public function calculateDomainAverage(int $siswaId, int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId, string $domain, ?int $guruId = null): ?float
     {
         $query = DB::table('nilai_harian')
             ->join('komponen_nilai', 'nilai_harian.komponen_id', '=', 'komponen_nilai.id')
@@ -56,6 +56,10 @@ class AssessmentCalculator
                 DB::raw('SUM(nilai_harian.nilai * komponen_nilai.bobot) as weighted_sum'),
                 DB::raw('SUM(komponen_nilai.bobot) as total_bobot')
             );
+
+        if ($guruId) {
+            $query->where('nilai_harian.guru_id', $guruId);
+        }
 
         if ($tahunAjaranId) {
             $query->where('nilai_harian.tahun_ajaran_id', $tahunAjaranId);
@@ -104,11 +108,11 @@ class AssessmentCalculator
         return $finalScore >= $this->getKKM() ? 'TUNTAS' : 'BELUM TUNTAS';
     }
 
-    public function getStudentAssessment(int $siswaId, int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId): array
+    public function getStudentAssessment(int $siswaId, int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId, ?int $guruId = null): array
     {
-        $kognitif = $this->calculateDomainAverage($siswaId, $kelasId, $mapelId, $tahunAjaranId, $semesterId, 'kognitif');
-        $afektif = $this->calculateDomainAverage($siswaId, $kelasId, $mapelId, $tahunAjaranId, $semesterId, 'afektif');
-        $psikomotorik = $this->calculateDomainAverage($siswaId, $kelasId, $mapelId, $tahunAjaranId, $semesterId, 'psikomotorik');
+        $kognitif = $this->calculateDomainAverage($siswaId, $kelasId, $mapelId, $tahunAjaranId, $semesterId, 'kognitif', $guruId);
+        $afektif = $this->calculateDomainAverage($siswaId, $kelasId, $mapelId, $tahunAjaranId, $semesterId, 'afektif', $guruId);
+        $psikomotorik = $this->calculateDomainAverage($siswaId, $kelasId, $mapelId, $tahunAjaranId, $semesterId, 'psikomotorik', $guruId);
 
         $finalScore = null;
         $predicate = null;
@@ -133,7 +137,7 @@ class AssessmentCalculator
         ];
     }
 
-    public function getClassStatistics(int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId): array
+    public function getClassStatistics(int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId, ?int $guruId = null): array
     {
         $students = Siswa::where('kelas_id', $kelasId)
             ->select('id', 'nis', 'nisn', 'nama')
@@ -144,7 +148,7 @@ class AssessmentCalculator
         $validFinalScores = [];
 
         foreach ($students as $student) {
-            $assessment = $this->getStudentAssessment($student->id, $kelasId, $mapelId, $tahunAjaranId, $semesterId);
+            $assessment = $this->getStudentAssessment($student->id, $kelasId, $mapelId, $tahunAjaranId, $semesterId, $guruId);
             $assessment['student'] = $student;
             $assessments[] = $assessment;
 
@@ -182,7 +186,7 @@ class AssessmentCalculator
         ];
     }
 
-    public function getDomainDetails(int $siswaId, int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId, string $domain): array
+    public function getDomainDetails(int $siswaId, int $kelasId, int $mapelId, ?int $tahunAjaranId, ?int $semesterId, string $domain, ?int $guruId = null): array
     {
         $components = DB::table('nilai_harian')
             ->join('komponen_nilai', 'nilai_harian.komponen_id', '=', 'komponen_nilai.id')
@@ -198,6 +202,10 @@ class AssessmentCalculator
                 'nilai_harian.nilai',
                 'nilai_harian.tanggal'
             );
+
+        if ($guruId) {
+            $components->where('nilai_harian.guru_id', $guruId);
+        }
 
         if ($tahunAjaranId) {
             $components->where('nilai_harian.tahun_ajaran_id', $tahunAjaranId);

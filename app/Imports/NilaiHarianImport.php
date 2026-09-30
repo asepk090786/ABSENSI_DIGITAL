@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Models\Siswa;
+use App\Support\NilaiInputNormalizer;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -14,8 +15,10 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
     protected array $errors = [];
     protected int $kelasId;
     protected int $mapelId;
-    protected int $rencanaId;
+    protected ?int $rencanaId;
     protected ?int $komponenId;
+    protected ?string $assessmentUuid;
+    protected ?string $kategoriAsesmen;
     protected string $tanggal;
     protected int $guruId;
     protected int $tahunAjaranId;
@@ -24,17 +27,21 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
     public function __construct(
         int $kelasId,
         int $mapelId,
-        int $rencanaId,
+        ?int $rencanaId,
         string $tanggal,
         int $guruId,
         int $tahunAjaranId,
         int $semesterId,
-        ?int $komponenId = null
+        ?int $komponenId = null,
+        ?string $assessmentUuid = null,
+        ?string $kategoriAsesmen = null
     ) {
         $this->kelasId = $kelasId;
         $this->mapelId = $mapelId;
         $this->rencanaId = $rencanaId;
         $this->komponenId = $komponenId;
+        $this->assessmentUuid = $assessmentUuid;
+        $this->kategoriAsesmen = $kategoriAsesmen;
         $this->tanggal = $tanggal;
         $this->guruId = $guruId;
         $this->tahunAjaranId = $tahunAjaranId;
@@ -83,11 +90,14 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
             $normalizedNisn = $this->normalizeIdentity((string) ($row['nisn'] ?? ''));
             $normalizedName = $this->normalizeName((string) ($row['nama'] ?? ''));
 
+            $rawNilai = $row['nilai'] ?? null;
+            $normalizedNilai = NilaiInputNormalizer::normalize($rawNilai);
+
             $payload = [
                 'nis' => $normalizedNis,
                 'nisn' => $normalizedNisn,
                 'nama' => $normalizedName,
-                'nilai' => $row['nilai'] ?? null,
+                'nilai' => $normalizedNilai,
             ];
 
             $validator = Validator::make($payload, [
@@ -126,20 +136,29 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
             }
 
             $now = now();
-            $existing = DB::table('nilai_harian')
+            $existingQuery = DB::table('nilai_harian')
                 ->where('siswa_id', $siswa->id)
                 ->where('kelas_id', $this->kelasId)
                 ->where('mapel_id', $this->mapelId)
-                ->where('rencana_pembelajaran_id', $this->rencanaId)
                 ->whereDate('tanggal', $this->tanggal)
                 ->where('tahun_ajaran_id', $this->tahunAjaranId)
                 ->where('semester_id', $this->semesterId)
+                ->when($this->rencanaId !== null, function ($query) {
+                    $query->where('rencana_pembelajaran_id', $this->rencanaId);
+                }, function ($query) {
+                    $query->whereNull('rencana_pembelajaran_id');
+                })
                 ->when($this->komponenId !== null, function ($query) {
                     $query->where('komponen_id', $this->komponenId);
                 }, function ($query) {
                     $query->whereNull('komponen_id');
-                })
-                ->first();
+                });
+
+            if ($this->assessmentUuid !== null) {
+                $existingQuery->where('assessment_uuid', $this->assessmentUuid);
+            }
+
+            $existing = $existingQuery->first();
 
             if ($existing) {
                 DB::table('nilai_harian')
@@ -153,6 +172,8 @@ class NilaiHarianImport implements ToCollection, WithHeadingRow
                     ]);
             } else {
                 DB::table('nilai_harian')->insert([
+                    'assessment_uuid' => $this->assessmentUuid,
+                                        'kategori_asesmen' => $this->kategoriAsesmen,
                     'siswa_id' => $siswa->id,
                     'guru_id' => $this->guruId,
                     'kelas_id' => $this->kelasId,

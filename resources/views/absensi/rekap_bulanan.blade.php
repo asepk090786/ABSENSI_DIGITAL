@@ -67,7 +67,7 @@
                             <tr>
                                 <th>Kelas</th>
                                 <th>Bulan</th>
-                                <th class="text-center">Pertemuan</th>
+                                <th class="text-center">Hari Kehadiran</th>
                                 <th class="text-center">Hadir</th>
                                 <th class="text-center">Terlambat</th>
                                 <th class="text-center">Izin</th>

@@ -15,8 +15,9 @@ class DashboardController extends Controller
         $isAdmin = $user->hasRole('Admin');
         $isGuruPanel = $user->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']);
         $isSiswa = $user->hasRole('Siswa');
-        $isKepalaSekolah = $user->hasRole('Kepala Sekolah');
-        $isPengawas = $user->hasRole('Pengawas Pembina');
+        $roleNames = collect($user->roleNames())->map(fn ($name) => mb_strtolower(trim($name)));
+        $isKepalaSekolah = $roleNames->contains('kepala sekolah');
+        $isPengawas = $roleNames->contains('pengawas pembina');
 
         // Data umum untuk dashboard
         $guru = \Illuminate\Support\Facades\Schema::hasTable('guru') ? DB::table('guru')->count() : 0;
@@ -437,24 +438,43 @@ class DashboardController extends Controller
                 \Illuminate\Support\Facades\Schema::hasTable('absensi_siswa') &&
                 \Illuminate\Support\Facades\Schema::hasTable('kelas')
             ) {
-                $rekapAbsensiBulanan = DB::table('absensi_kelas as ak')
+                $dailyRekap = DB::table('absensi_kelas as ak')
                     ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
-                    ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
+                    ->join('siswa as s', 's.id', '=', 'ass.siswa_id')
                     ->where('ak.guru_id', $guruData->id)
+                    ->where('s.status_aktif', 1)
+                    ->select(
+                        'ak.kelas_id',
+                        'ass.siswa_id',
+                        DB::raw('DATE(ak.tanggal) as tanggal'),
+                        DB::raw("MAX(CASE
+                            WHEN LOWER(ass.status) = 'hadir' THEN 5
+                            WHEN LOWER(ass.status) IN ('terlambat','telat') THEN 4
+                            WHEN LOWER(ass.status) IN ('izin','ijin') THEN 3
+                            WHEN LOWER(ass.status) = 'sakit' THEN 2
+                            WHEN LOWER(ass.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1
+                            ELSE 0
+                        END) as status_rank")
+                    )
+                    ->groupBy('ak.kelas_id', 'ass.siswa_id', DB::raw('DATE(ak.tanggal)'));
+
+                $rekapAbsensiBulanan = DB::query()
+                    ->fromSub($dailyRekap, 'daily_rekap')
+                    ->join('kelas as k', 'k.id', '=', 'daily_rekap.kelas_id')
                     ->select(
                         'k.id as kelas_id',
                         'k.nama_kelas',
-                        DB::raw('YEAR(ak.tanggal) as tahun'),
-                        DB::raw('MONTH(ak.tanggal) as bulan'),
-                        DB::raw('COUNT(DISTINCT ak.id) as total_pertemuan'),
-                        DB::raw('SUM(CASE WHEN LOWER(ass.status) = "hadir" THEN 1 ELSE 0 END) as hadir'),
-                        DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("izin","ijin") THEN 1 ELSE 0 END) as izin'),
-                        DB::raw('SUM(CASE WHEN LOWER(ass.status) = "sakit" THEN 1 ELSE 0 END) as sakit'),
-                        DB::raw('SUM(CASE WHEN LOWER(ass.status) IN ("alpha","alpa","alfa","absen","tidak_hadir") THEN 1 ELSE 0 END) as alpha')
+                        DB::raw('YEAR(daily_rekap.tanggal) as tahun'),
+                        DB::raw('MONTH(daily_rekap.tanggal) as bulan'),
+                        DB::raw('COUNT(DISTINCT daily_rekap.tanggal) as total_pertemuan'),
+                        DB::raw('COUNT(DISTINCT CASE WHEN daily_rekap.status_rank = 5 THEN daily_rekap.tanggal END) as hadir'),
+                        DB::raw('COUNT(DISTINCT CASE WHEN daily_rekap.status_rank = 3 THEN daily_rekap.tanggal END) as izin'),
+                        DB::raw('COUNT(DISTINCT CASE WHEN daily_rekap.status_rank = 2 THEN daily_rekap.tanggal END) as sakit'),
+                        DB::raw('COUNT(DISTINCT CASE WHEN daily_rekap.status_rank = 1 THEN daily_rekap.tanggal END) as alpha')
                     )
-                    ->groupBy('k.id', 'k.nama_kelas', DB::raw('YEAR(ak.tanggal)'), DB::raw('MONTH(ak.tanggal)'))
-                    ->orderBy(DB::raw('YEAR(ak.tanggal)'), 'desc')
-                    ->orderBy(DB::raw('MONTH(ak.tanggal)'), 'desc')
+                    ->groupBy('k.id', 'k.nama_kelas', DB::raw('YEAR(daily_rekap.tanggal)'), DB::raw('MONTH(daily_rekap.tanggal)'))
+                    ->orderBy(DB::raw('YEAR(daily_rekap.tanggal)'), 'desc')
+                    ->orderBy(DB::raw('MONTH(daily_rekap.tanggal)'), 'desc')
                     ->orderBy('k.nama_kelas', 'asc')
                     ->get();
             }
@@ -668,6 +688,8 @@ class DashboardController extends Controller
             }
 
             $totalRencanaPembelajaran = Schema::hasTable('rencana_pembelajarans') ? DB::table('rencana_pembelajarans')->count() : 0;
+            $totalJadwalKbm = Schema::hasTable('jadwal_kbm') ? DB::table('jadwal_kbm')->count() : 0;
+            $totalAbsensiGuru = Schema::hasTable('absensi_guru') ? DB::table('absensi_guru')->count() : 0;
             $totalNilaiHarian = Schema::hasTable('nilai_harian') ? DB::table('nilai_harian')->whereNotNull('nilai')->count() : 0;
             $totalKomponenPenilaian = Schema::hasTable('komponen_nilai') ? DB::table('komponen_nilai')->count() : 0;
             $totalCapaianPembelajaran = Schema::hasTable('capaian_pembelajarans') ? DB::table('capaian_pembelajarans')->count() : 0;
@@ -791,11 +813,15 @@ class DashboardController extends Controller
                 }
             }
 
-            return view('dashboard.kepala', compact(
+            $dashboardView = $isPengawas ? 'dashboard.pengawas' : 'dashboard.kepala';
+
+            return view($dashboardView, compact(
                 'guru',
                 'siswa',
                 'kelas',
                 'absensi',
+                'totalJadwalKbm',
+                'totalAbsensiGuru',
                 'tahunAjaran',
                 'semestrName',
                 'kelasLaporanOptions',

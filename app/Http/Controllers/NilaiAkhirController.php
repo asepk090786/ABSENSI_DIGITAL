@@ -118,7 +118,8 @@ class NilaiAkhirController extends Controller
                 $kelasId,
                 $mapelId,
                 $tahunAjaranActive?->id,
-                $semesterActive?->id
+                $semesterActive?->id,
+                $guru && !$isAdminOrKepala ? $guru->id : null
             );
 
             $rekapData = $result['assessments'];
@@ -156,17 +157,20 @@ class NilaiAkhirController extends Controller
             abort(403);
         }
 
+        $teacherScopeId = $guru && !$isAdminOrKepala ? $guru->id : null;
+
         $assessment = $this->calculator->getStudentAssessment(
             $siswaId,
             $kelasId,
             $mapelId,
             $tahunAjaranActive?->id,
-            $semesterActive?->id
+            $semesterActive?->id,
+            $teacherScopeId
         );
 
-        $kognitifDetail = $this->calculator->getDomainDetails($siswaId, $kelasId, $mapelId, $tahunAjaranActive?->id, $semesterActive?->id, 'kognitif');
-        $afektifDetail = $this->calculator->getDomainDetails($siswaId, $kelasId, $mapelId, $tahunAjaranActive?->id, $semesterActive?->id, 'afektif');
-        $psikomotorikDetail = $this->calculator->getDomainDetails($siswaId, $kelasId, $mapelId, $tahunAjaranActive?->id, $semesterActive?->id, 'psikomotorik');
+        $kognitifDetail = $this->calculator->getDomainDetails($siswaId, $kelasId, $mapelId, $tahunAjaranActive?->id, $semesterActive?->id, 'kognitif', $teacherScopeId);
+        $afektifDetail = $this->calculator->getDomainDetails($siswaId, $kelasId, $mapelId, $tahunAjaranActive?->id, $semesterActive?->id, 'afektif', $teacherScopeId);
+        $psikomotorikDetail = $this->calculator->getDomainDetails($siswaId, $kelasId, $mapelId, $tahunAjaranActive?->id, $semesterActive?->id, 'psikomotorik', $teacherScopeId);
 
         return view('nilai_akhir.detail', compact(
             'siswa',
@@ -241,7 +245,8 @@ class NilaiAkhirController extends Controller
                     $kelasId,
                     $mapelId,
                     $tahunAjaranActive?->id,
-                    $semesterActive?->id
+                    $semesterActive?->id,
+                    $guru && !$isAdminOrKepala ? $guru->id : null
                 );
                 $rekapData = $result['assessments'];
             }

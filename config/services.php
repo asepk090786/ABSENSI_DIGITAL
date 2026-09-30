@@ -36,4 +36,9 @@ return [
         'wopi_host' => env('COLLABORA_WOPI_HOST', env('APP_URL')),
     ],
 
+    'erapor' => [
+        'sso_url' => env('ERAPOR_SSO_URL'),
+        'sso_secret' => env('SIMADIS_SSO_SECRET'),
+    ],
+
 ];

@@ -280,6 +280,7 @@ class SettingController extends Controller
             'akademik_editor_modul',
             'akademik_tool',
             'kartu_login',
+            'integrations_erapor_sso',
             'pembelajaran_absensi',
             'pembelajaran_agenda_kelas',
             'pembelajaran_agenda_guru',
@@ -295,6 +296,7 @@ class SettingController extends Controller
         $standardSiswaMenus = [
             'pembelajaran_materi',
             'kartu_login',
+            'integrations_erapor_sso',
         ];
 
         return view('setting.pengaturan', [

@@ -104,6 +104,14 @@
                             <div class="qm-label">Absensi</div>
                         </a>
                     </div>
+                    @if(auth()->user()->guru_id && auth()->user()->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket']))
+                    <div class="col-6">
+                        <a href="{{ route('absensi.qr.index') }}" class="quick-menu-card">
+                            <div class="qm-icon" style="background:#7c3aed;"><i class="ti ti-qrcode"></i></div>
+                            <div class="qm-label">Scan QR Siswa</div>
+                        </a>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

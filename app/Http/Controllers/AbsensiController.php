@@ -484,37 +484,78 @@ class AbsensiController extends Controller
         $kelasId = $request->integer('kelas_id') ?: null;
         $bulan = $request->integer('bulan') ?: null;
         $tahunKalender = $request->integer('tahun') ?: null;
-        $query = DB::table('absensi_kelas as ak')
-            ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
-            ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
-            ->leftJoin('guru as g', 'g.id', '=', 'ak.guru_id')
-            ->when($tahun, fn ($q) => $q->where('ak.tahun_ajaran_id', $tahun->id))
-            ->when($semester, fn ($q) => $q->where('ak.semester_id', $semester->id))
-            ->when(! $isAdminOrKepala && $user->guru_id, function ($q) use ($user) {
-                $q->where(function ($subQ) use ($user) {
-                    $subQ->where('ak.guru_id', $user->guru_id)
-                        ->orWhere('k.wali_kelas_id', $user->guru_id)
-                        ->orWhere('k.guru_bk_id', $user->guru_id);
-                });
+        $applyMonthlyScope = function ($query, string $kelasAlias = 'ak', string $classAlias = 'k') use ($tahun, $semester, $isAdminOrKepala, $user, $kelasId, $bulan, $tahunKalender) {
+            return $query
+                ->when($tahun, fn ($q) => $q->where($kelasAlias . '.tahun_ajaran_id', $tahun->id))
+                ->when($semester, fn ($q) => $q->where($kelasAlias . '.semester_id', $semester->id))
+                ->when(! $isAdminOrKepala && $user->guru_id, function ($q) use ($user, $kelasAlias, $classAlias) {
+                    $q->where(function ($subQ) use ($user, $kelasAlias, $classAlias) {
+                        $subQ->where($kelasAlias . '.guru_id', $user->guru_id)
+                            ->orWhere($classAlias . '.wali_kelas_id', $user->guru_id)
+                            ->orWhere($classAlias . '.guru_bk_id', $user->guru_id);
+                    });
+                })
+                ->when($kelasId, fn ($q) => $q->where($classAlias . '.id', $kelasId))
+                    ->when($bulan, fn ($q) => $q->whereMonth($kelasAlias . '.tanggal', $bulan))
+                    ->when($tahunKalender, fn ($q) => $q->whereYear($kelasAlias . '.tanggal', $tahunKalender));
+        };
+
+        $meetingCountsQuery = $applyMonthlyScope(
+            DB::table('absensi_kelas as ak')->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
+        )
+            ->select(
+                'k.id as kelas_id',
+                DB::raw('YEAR(ak.tanggal) as tahun'),
+                DB::raw('MONTH(ak.tanggal) as bulan'),
+                DB::raw('COUNT(DISTINCT DATE(ak.tanggal)) as total_pertemuan')
+            )
+            ->groupBy('k.id', DB::raw('YEAR(ak.tanggal)'), DB::raw('MONTH(ak.tanggal)'));
+
+        $dailyStatusQuery = $applyMonthlyScope(
+            DB::table('absensi_kelas as ak')
+                ->join('absensi_siswa as ass', 'ass.absensi_kelas_id', '=', 'ak.id')
+                ->join('kelas as k', 'k.id', '=', 'ak.kelas_id')
+                ->join('siswa as s', 's.id', '=', 'ass.siswa_id')
+                ->where('s.status_aktif', 1)
+        )
+            ->select(
+                'ak.kelas_id',
+                'ass.siswa_id',
+                DB::raw('DATE(ak.tanggal) as tanggal'),
+                DB::raw("MAX(CASE
+                    WHEN LOWER(ass.status) = 'hadir' THEN 5
+                    WHEN LOWER(ass.status) IN ('terlambat','telat') THEN 4
+                    WHEN LOWER(ass.status) IN ('izin','ijin') THEN 3
+                    WHEN LOWER(ass.status) = 'sakit' THEN 2
+                    WHEN LOWER(ass.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN 1
+                    ELSE 0
+                END) as status_rank")
+            )
+            ->groupBy('ak.kelas_id', 'ass.siswa_id', DB::raw('DATE(ak.tanggal)'));
+
+        $query = DB::query()
+            ->fromSub($dailyStatusQuery, 'daily_status')
+            ->join('kelas as k', 'k.id', '=', 'daily_status.kelas_id')
+            ->joinSub($meetingCountsQuery, 'meeting_counts', function ($join) {
+                $join->on('meeting_counts.kelas_id', '=', 'daily_status.kelas_id')
+                    ->on('meeting_counts.tahun', '=', DB::raw('YEAR(daily_status.tanggal)'))
+                    ->on('meeting_counts.bulan', '=', DB::raw('MONTH(daily_status.tanggal)'));
             })
-            ->when($kelasId, fn ($q) => $q->where('k.id', $kelasId))
-            ->when($bulan, fn ($q) => $q->whereMonth('ak.tanggal', $bulan))
-            ->when($tahunKalender, fn ($q) => $q->whereYear('ak.tanggal', $tahunKalender))
             ->select(
                 'k.id as kelas_id',
                 'k.nama_kelas',
-                DB::raw('YEAR(ak.tanggal) as tahun'),
-                DB::raw('MONTH(ak.tanggal) as bulan'),
-                DB::raw('COUNT(DISTINCT ak.id) as total_pertemuan'),
-                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) = 'hadir' THEN DATE(ak.tanggal) END) as hadir"),
-                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) IN ('izin','ijin') THEN DATE(ak.tanggal) END) as izin"),
-                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) = 'sakit' THEN DATE(ak.tanggal) END) as sakit"),
-                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) IN ('terlambat','telat') THEN DATE(ak.tanggal) END) as terlambat"),
-                DB::raw("COUNT(DISTINCT CASE WHEN LOWER(ass.status) IN ('alpha','alpa','alfa','absen','tidak_hadir') THEN DATE(ak.tanggal) END) as alpha")
+                DB::raw('YEAR(daily_status.tanggal) as tahun'),
+                DB::raw('MONTH(daily_status.tanggal) as bulan'),
+                'meeting_counts.total_pertemuan',
+                DB::raw('COUNT(DISTINCT CASE WHEN daily_status.status_rank = 5 THEN daily_status.tanggal END) as hadir'),
+                DB::raw('COUNT(DISTINCT CASE WHEN daily_status.status_rank = 4 THEN daily_status.tanggal END) as terlambat'),
+                DB::raw('COUNT(DISTINCT CASE WHEN daily_status.status_rank = 3 THEN daily_status.tanggal END) as izin'),
+                DB::raw('COUNT(DISTINCT CASE WHEN daily_status.status_rank = 2 THEN daily_status.tanggal END) as sakit'),
+                DB::raw('COUNT(DISTINCT CASE WHEN daily_status.status_rank = 1 THEN daily_status.tanggal END) as alpha')
             )
-            ->groupBy('k.id', 'k.nama_kelas', DB::raw('YEAR(ak.tanggal)'), DB::raw('MONTH(ak.tanggal)'))
-            ->orderBy(DB::raw('YEAR(ak.tanggal)'), 'desc')
-            ->orderBy(DB::raw('MONTH(ak.tanggal)'), 'desc')
+            ->groupBy('k.id', 'k.nama_kelas', 'meeting_counts.total_pertemuan', DB::raw('YEAR(daily_status.tanggal)'), DB::raw('MONTH(daily_status.tanggal)'))
+            ->orderBy(DB::raw('YEAR(daily_status.tanggal)'), 'desc')
+            ->orderBy(DB::raw('MONTH(daily_status.tanggal)'), 'desc')
             ->orderBy('k.nama_kelas', 'asc');
 
         $rekapBulanan = $query->get();
@@ -1813,8 +1854,12 @@ class AbsensiController extends Controller
 
         // Hapus verifikasi kode jika verifikasi manual diaktifkan
         $active = (bool) ($validated['verifikasi_manual_aktif'] ?? false);
-        $validFrom = $active ? ($validated['verifikasi_manual_valid_from'] ?? null) : null;
-        $validTo = $active ? ($validated['verifikasi_manual_valid_to'] ?? null) : null;
+        $validFrom = $active && ! empty($validated['verifikasi_manual_valid_from'])
+            ? Carbon::createFromFormat('H:i', $validated['verifikasi_manual_valid_from'])->format('H:i:s')
+            : null;
+        $validTo = $active && ! empty($validated['verifikasi_manual_valid_to'])
+            ? Carbon::createFromFormat('H:i', $validated['verifikasi_manual_valid_to'])->format('H:i:s')
+            : null;
         $jamId = $validated['jam_belajar_id'] ?? null;
 
         // Jika verifikasi manual diaktifkan, nonaktifkan verifikasi kode di AbsensiKelas yang sesuai
@@ -1901,8 +1946,8 @@ class AbsensiController extends Controller
             'success' => true,
             'message' => 'Konfigurasi verifikasi manual berhasil disimpan.',
             'verificationManualActive' => $active,
-            'verificationManualValidFrom' => $validFrom,
-            'verificationManualValidTo' => $validTo,
+            'verificationManualValidFrom' => $validFrom ? Carbon::parse($validFrom)->format('H:i') : null,
+            'verificationManualValidTo' => $validTo ? Carbon::parse($validTo)->format('H:i') : null,
         ]);
     }
 

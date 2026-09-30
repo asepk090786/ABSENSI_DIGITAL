@@ -25,6 +25,22 @@
                 <span>Dashboard</span>
             </a>
         </li>
+        @if($isGuru && (empty($menuVisibility['guru'] ?? []) || in_array('integrations_erapor_sso', $menuVisibility['guru'], true)))
+        <li>
+            <a href="{{ route('integrations.erapor.sso') }}" class="menu-item {{ request()->routeIs('integrations.erapor.sso') ? 'active' : '' }}">
+                <i class="material-icons">assessment</i>
+                <span>e-Rapor</span>
+            </a>
+        </li>
+        @endif
+        @if($user && $user->hasRole('Siswa') && (empty($menuVisibility['siswa'] ?? []) || in_array('integrations_erapor_sso', $menuVisibility['siswa'], true)))
+        <li>
+            <a href="{{ route('integrations.erapor.sso') }}" class="menu-item {{ request()->routeIs('integrations.erapor.sso') ? 'active' : '' }}">
+                <i class="material-icons">assessment</i>
+                <span>e-Rapor</span>
+            </a>
+        </li>
+        @endif
     </ul>
 
     @if($isGuru)

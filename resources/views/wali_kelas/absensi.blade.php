@@ -18,6 +18,9 @@
                         <a href="{{ route('absensi.create', ['kelas_id' => $kelasBinaan->id, 'tanggal' => $selectedTanggal ?? now()->format('Y-m-d'), 'back' => route('wali_kelas.absensi')]) }}" class="btn btn-primary">
                             <i class="ti ti-pencil me-1"></i>Input Absensi
                         </a>
+                        <a href="{{ route('absensi.rekap-kelas', ['kelas_id' => $kelasBinaan->id, 'tanggal' => $selectedTanggal ?? now()->format('Y-m-d')]) }}" class="btn btn-outline-info">
+                            <i class="ti ti-table me-1"></i>Rekap Per Jam
+                        </a>
                         <a href="{{ route('wali_kelas.index') }}" class="btn btn-secondary">
                             <i class="ti ti-arrow-left me-1"></i>Kembali
                         </a>
@@ -42,6 +45,75 @@
                                 )
                             }}</div>
                         </div>
+                    </div>
+
+                    <div class="mb-4">
+                        @php
+                            $bulanLabels = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+                            $rekapParams = ['kelas_id' => $kelasBinaan->id, 'bulan' => $selectedBulan, 'tahun' => $selectedTahun];
+                        @endphp
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <h5 class="mb-0">Rekap Kehadiran Siswa</h5>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-sm btn-outline-success" href="{{ route('absensi.rekap-bulanan.export', $rekapParams) }}">
+                                    <i class="ti ti-file-spreadsheet me-1"></i>Download Excel
+                                </a>
+                                <a class="btn btn-sm btn-outline-danger" href="{{ route('absensi.rekap-bulanan.print', $rekapParams) }}" target="_blank" rel="noopener">
+                                    <i class="ti ti-file-type-pdf me-1"></i>Download PDF
+                                </a>
+                            </div>
+                        </div>
+                        <form method="GET" action="{{ route('wali_kelas.rekap_absensi') }}" class="row g-2 align-items-end mb-3">
+                            <div class="col-sm-4 col-md-3">
+                                <label for="rekap-bulan" class="form-label">Bulan rekap</label>
+                                <select id="rekap-bulan" name="bulan" class="form-select">
+                                    @foreach($bulanLabels as $nomor => $label)
+                                        <option value="{{ $nomor }}" {{ (int) $selectedBulan === $nomor ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-sm-4 col-md-3">
+                                <label for="rekap-tahun" class="form-label">Tahun</label>
+                                <input id="rekap-tahun" type="number" name="tahun" class="form-control" min="2000" max="2100" value="{{ $selectedTahun }}">
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-primary"><i class="ti ti-eye me-1"></i>Tampilkan Rekap</button>
+                            </div>
+                        </form>
+                        @if($rekapBulanan->isEmpty())
+                            <div class="alert alert-light border mb-0">Belum ada data kehadiran untuk {{ $bulanLabels[$selectedBulan] }} {{ $selectedTahun }}.</div>
+                        @else
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Siswa</th>
+                                            <th class="text-center">Hari</th>
+                                            <th class="text-center">Hadir</th>
+                                            <th class="text-center">Terlambat</th>
+                                            <th class="text-center">Izin</th>
+                                            <th class="text-center">Sakit</th>
+                                            <th class="text-center">Alpa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($rekapBulanan as $index => $row)
+                                            <tr>
+                                                <td>{{ $index + 1 }}</td>
+                                                <td>{{ $row->nama_siswa ?: '-' }} <small class="text-muted d-block">NIS: {{ $row->nis ?: '-' }}</small></td>
+                                                <td class="text-center">{{ (int) $row->total_hari }}</td>
+                                                <td class="text-center text-success">{{ (int) $row->hadir }}</td>
+                                                <td class="text-center text-warning">{{ (int) $row->terlambat }}</td>
+                                                <td class="text-center text-info">{{ (int) $row->izin }}</td>
+                                                <td class="text-center text-primary">{{ (int) $row->sakit }}</td>
+                                                <td class="text-center text-danger">{{ (int) $row->alpa }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="mb-4">

@@ -81,6 +81,12 @@
                                 <label class="form-check-label" for="menu_guru_kartu_login">Kartu Login</label>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="guru_menus[]" value="integrations_erapor_sso" id="menu_guru_erapor" {{ in_array('integrations_erapor_sso', $menuVisibility['guru'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_guru_erapor">e-Rapor</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,6 +240,12 @@
                             <div class="form-check form-switch">
                                 <input type="checkbox" class="form-check-input" name="siswa_menus[]" value="kartu_login" id="menu_siswa_kartu_login" {{ in_array('kartu_login', $menuVisibility['siswa'] ?? []) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="menu_siswa_kartu_login">Kartu Login</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="siswa_menus[]" value="integrations_erapor_sso" id="menu_siswa_erapor" {{ in_array('integrations_erapor_sso', $menuVisibility['siswa'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_siswa_erapor">e-Rapor</label>
                             </div>
                         </div>
                     </div>

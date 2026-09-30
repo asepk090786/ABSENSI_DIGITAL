@@ -76,6 +76,19 @@
                         </div>
                     </div>
                     <div class="mb-2">
+                        <label class="form-label">Peran Akun</label>
+                        <select name="role_id" class="form-select @error('role_id') is-invalid @enderror">
+                            <option value="">Gunakan peran guru biasa</option>
+                            @foreach($roles as $role)
+                                <option value="{{ $role->id }}" {{ (string) old('role_id', optional($guru->user)->role_id) === (string) $role->id ? 'selected' : '' }}>
+                                    {{ $role->role_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('role_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="form-text text-muted">Pilih Pengawas Pembina untuk memberikan akses pengawas pada akun ini.</small>
+                    </div>
+                    <div class="mb-2">
                         <label class="form-label">Jenis Kelamin</label>
                         <select name="jenis_kelamin" class="form-select @error('jenis_kelamin') is-invalid @enderror">
                             <option value="">Pilih</option>
