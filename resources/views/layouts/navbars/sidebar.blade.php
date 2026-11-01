@@ -33,6 +33,30 @@
             </a>
         </li>
         @endif
+        @if($isGuru && ($cbtSsoEnabled ?? false) && (empty($menuVisibility['guru'] ?? []) || in_array('integrations_cbt_sso', $menuVisibility['guru'], true)))
+        <li>
+            <a href="{{ route('sso.cbt.login') }}" class="menu-item {{ request()->routeIs('sso.cbt.login') ? 'active' : '' }}">
+                <i class="material-icons">computer</i>
+                <span>Login CBT</span>
+            </a>
+        </li>
+        @endif
+        @if($user && $user->hasRole('Admin') && ($cbtSsoEnabled ?? false))
+        <li>
+            <a href="{{ route('sso.cbt.login') }}" class="menu-item {{ request()->routeIs('sso.cbt.login') ? 'active' : '' }}">
+                <i class="material-icons">computer</i>
+                <span>Login CBT</span>
+            </a>
+        </li>
+        @endif
+        @if($user && $user->hasRole('Siswa') && ($cbtSsoEnabled ?? false) && (empty($menuVisibility['siswa'] ?? []) || in_array('integrations_cbt_sso', $menuVisibility['siswa'], true)))
+        <li>
+            <a href="{{ route('sso.cbt.login') }}" class="menu-item {{ request()->routeIs('sso.cbt.login') ? 'active' : '' }}">
+                <i class="material-icons">computer</i>
+                <span>Login CBT</span>
+            </a>
+        </li>
+        @endif
         @if($user && $user->hasRole('Siswa') && (empty($menuVisibility['siswa'] ?? []) || in_array('integrations_erapor_sso', $menuVisibility['siswa'], true)))
         <li>
             <a href="{{ route('integrations.erapor.sso') }}" class="menu-item {{ request()->routeIs('integrations.erapor.sso') ? 'active' : '' }}">

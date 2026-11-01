@@ -41,4 +41,9 @@ return [
         'sso_secret' => env('SIMADIS_SSO_SECRET'),
     ],
 
+    'cbt_sso' => [
+        'start_url' => env('CBT_SSO_START_URL'),
+        'callback_url' => env('CBT_SSO_CALLBACK_URL'),
+    ],
+
 ];

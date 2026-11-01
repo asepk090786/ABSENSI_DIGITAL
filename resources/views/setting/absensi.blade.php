@@ -1,3 +1,28 @@
+@php
+    $guruPiketTabActive = auth()->user()->hasRole('Admin') && request()->query('tab') === 'guru-piket';
+@endphp
+
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {{ $guruPiketTabActive ? '' : 'active' }}"
+            href="{{ route('setting.absensi') }}" role="tab" aria-selected="{{ $guruPiketTabActive ? 'false' : 'true' }}">
+            Pengaturan Absensi
+        </a>
+    </li>
+    @if(auth()->user()->hasRole('Admin'))
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {{ $guruPiketTabActive ? 'active' : '' }}"
+            href="{{ route('setting.absensi', ['tab' => 'guru-piket']) }}"
+            role="tab" aria-selected="{{ $guruPiketTabActive ? 'true' : 'false' }}">
+            Pengaturan Absensi Guru Piket
+        </a>
+    </li>
+    @endif
+</ul>
+
+@if($guruPiketTabActive)
+    @include('setting.absensi_guru_piket', ['settings' => $settings])
+@else
 <form action="{{ route('setting.absensi.update') }}" method="POST">
     @csrf
     @method('PUT')
@@ -63,3 +88,4 @@
     <a href="{{ route('tahun_ajaran.index') }}" class="btn btn-outline-secondary ms-2">Kembali</a>
 </div>
 </form>
+@endif

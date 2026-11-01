@@ -38,11 +38,15 @@ Route::get('/', function(){
 
 // Public certificate verification (allow QR scans without login)
 Route::get('pengembangan/verify/{code}', [App\Http\Controllers\PengembanganController::class, 'verify'])->name('pengembangan.verify');
+Route::get('ekskul/sertifikat/verify/{code}', [App\Http\Controllers\EkskulController::class, 'verifyEkskulCertificate'])->name('ekskul.certificates.verify');
 
 // Public read-only information pages
 Route::get('public/rekap-absensi', [App\Http\Controllers\PublicInformationController::class, 'rekapAbsensi'])->name('public.rekap-absensi');
 Route::get('public/agenda-kelas', [App\Http\Controllers\PublicInformationController::class, 'agendaKelas'])->name('public.agenda-kelas');
 Route::get('public/rekap-absensi-guru', [App\Http\Controllers\PublicInformationController::class, 'rekapAbsensiGuru'])->name('public.rekap-absensi-guru');
+Route::get('public/absensi-guru/bukti/{token}', [App\Http\Controllers\PublicAbsensiGuruEvidenceController::class, 'show'])
+    ->whereUuid('token')
+    ->name('public.absensi-guru.evidence');
 Route::get('public/jadwal-pembelajaran-daring', [App\Http\Controllers\PublicInformationController::class, 'jadwalPembelajaranDaring'])->name('public.jadwal-pembelajaran-daring');
 
 Route::middleware('guest')->group(function () {
@@ -54,6 +58,12 @@ Route::get('qr-login/{token}', [KartuLoginController::class, 'consume'])
     ->name('qr_login.consume');
 // Note: public Help page removed temporarily. Admin editor remains under /help/admin
 Route::post('logout',[AuthController::class,'logout'])->name('logout');
+Route::get('/sso/cbt/login', [App\Http\Controllers\CbtSsoController::class, 'login'])
+    ->middleware('auth')
+    ->name('sso.cbt.login');
+Route::get('/sso/cbt/launch', [App\Http\Controllers\CbtSsoController::class, 'launch'])
+    ->middleware('auth')
+    ->name('sso.cbt.launch');
 
 Route::get('/home', [DashboardController::class, 'index'])->middleware('auth')->name('home');
 
@@ -173,6 +183,8 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'update'])->name('update');
         Route::delete('/{ekskul}', [App\Http\Controllers\EkskulController::class, 'destroy'])->name('destroy');
         Route::get('/{ekskul}/anggota', [App\Http\Controllers\EkskulController::class, 'manageAnggota'])->name('anggota');
+        Route::post('/{ekskul}/generate-certificates', [App\Http\Controllers\EkskulController::class, 'generateCertificates'])->name('certificates.generate');
+        Route::get('/{ekskul}/sertifikat/{certificate}/download', [App\Http\Controllers\EkskulController::class, 'downloadEkskulCertificate'])->name('certificates.download');
         Route::get('/{ekskul}/siswa', [App\Http\Controllers\EkskulController::class, 'getSiswa'])->name('get-siswa');
         Route::post('/{ekskul}/anggota/status', [App\Http\Controllers\EkskulController::class, 'updateStatusAnggota'])->name('anggota.status');
         Route::post('/{ekskul}/anggota/bulk', [App\Http\Controllers\EkskulController::class, 'storeAnggotaBulk'])->name('anggota.bulk');
@@ -459,6 +471,7 @@ Route::middleware(['auth'])->group(function(){
     Route::get('modul-ajar/{id}/versions', [RencanaPembelajaranController::class, 'versions'])->name('rencana_pembelajaran.versions');
     Route::post('modul-ajar/{id}/versions/{version}/restore', [RencanaPembelajaranController::class, 'restoreVersion'])->name('rencana_pembelajaran.versions.restore');
     Route::get('modul-ajar/template', [RencanaPembelajaranController::class, 'downloadTemplate'])->name('rencana_pembelajaran.template');
+    Route::get('modul-ajar/template-preview', [RencanaPembelajaranController::class, 'downloadPreviewTemplate'])->name('rencana_pembelajaran.template_preview');
     Route::post('modul-ajar/import', [RencanaPembelajaranController::class, 'import'])->name('rencana_pembelajaran.import');
     Route::delete('modul-ajar/{id}', [RencanaPembelajaranController::class, 'destroy'])->name('rencana_pembelajaran.destroy');
     Route::get('modul-ajar/preview-docx', [RencanaPembelajaranController::class, 'previewDocx'])->name('rencana_pembelajaran.preview_docx');
@@ -529,6 +542,7 @@ Route::middleware(['auth'])->group(function(){
             Route::put('/setting/api/keys/{apiKey}', [SettingController::class, 'updateApiKey'])->name('setting.api.keys.update');
             Route::post('/setting/api/keys/{apiKey}/revoke', [SettingController::class, 'revokeApiKey'])->name('setting.api.keys.revoke');
             Route::delete('/setting/api/keys/{apiKey}', [SettingController::class, 'deleteApiKey'])->name('setting.api.keys.delete');
+            Route::post('/setting/cbt-sso', [SettingController::class, 'updateCbtSso'])->name('setting.cbt-sso.update');
         });
         Route::get('/setting/tahun-ajaran', [SettingController::class, 'tahunAjaran'])->name('setting.tahun_ajaran');
         Route::get('/setting/tahun-ajaran/create', [SettingController::class, 'createTahunAjaran'])->name('setting.tahun_ajaran.create');
@@ -554,8 +568,13 @@ Route::middleware(['auth'])->group(function(){
         Route::put('/setting/header', [SettingController::class, 'updateHeader'])->name('setting.header.update');
         Route::get('/setting/absensi', [SettingController::class, 'absensi'])->name('setting.absensi');
         Route::put('/setting/absensi', [SettingController::class, 'updateAbsensi'])->name('setting.absensi.update');
+        Route::middleware('role:Admin')->put('/setting/absensi/guru-piket', [SettingController::class, 'updateGuruPiketAttendance'])->name('setting.absensi.guru_piket.update');
         Route::get('/setting/agenda', [SettingController::class, 'agenda'])->name('setting.agenda');
         Route::put('/setting/agenda', [SettingController::class, 'updateAgenda'])->name('setting.agenda.update');
+        Route::middleware('role:Admin')->group(function () {
+            Route::get('/setting/guru-piket-popup', [SettingController::class, 'guruPiketPopup'])->name('setting.guru_piket_popup');
+            Route::put('/setting/guru-piket-popup', [SettingController::class, 'updateGuruPiketPopup'])->name('setting.guru_piket_popup.update');
+        });
         Route::get('/setting/menu', [SettingController::class, 'menu'])->name('setting.menu');
         Route::post('/setting/menu', [SettingController::class, 'updateMenu'])->name('setting.menu.update');
         Route::get('/setting/editor', [SettingController::class, 'editor'])->name('setting.editor');
@@ -596,9 +615,24 @@ Route::middleware(['auth'])->group(function(){
             Route::post('/bulk-store', [App\Http\Controllers\AdminAbsensiGuruController::class, 'bulkStore'])->name('bulk_store');
             Route::post('/hadir-semua', [App\Http\Controllers\AdminAbsensiGuruController::class, 'hadirSemua'])->name('hadir_semua');
             Route::delete('/delete', [App\Http\Controllers\AdminAbsensiGuruController::class, 'delete'])->name('delete');
+            Route::post('/lock', [App\Http\Controllers\AdminAbsensiGuruController::class, 'toggleLock'])->name('lock');
+            Route::post('/lock-all', [App\Http\Controllers\AdminAbsensiGuruController::class, 'toggleAllLocks'])->name('lock_all');
             Route::get('/laporan', [App\Http\Controllers\AdminAbsensiGuruController::class, 'laporan'])->name('laporan');
         });
     });
+
+    Route::prefix('piket/absensi-guru')->name('piket.absensi_guru.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminAbsensiGuruController::class, 'index'])->name('index');
+        Route::post('/store', [App\Http\Controllers\AdminAbsensiGuruController::class, 'store'])->name('store');
+        Route::post('/bulk-store', [App\Http\Controllers\AdminAbsensiGuruController::class, 'bulkStore'])->name('bulk_store');
+        Route::post('/hadir-semua', [App\Http\Controllers\AdminAbsensiGuruController::class, 'hadirSemua'])->name('hadir_semua');
+        Route::delete('/delete', [App\Http\Controllers\AdminAbsensiGuruController::class, 'delete'])->name('delete');
+        Route::get('/laporan', [App\Http\Controllers\AdminAbsensiGuruController::class, 'laporan'])->name('laporan');
+    });
+
+    Route::get('guru/absensi/laporan', [App\Http\Controllers\AdminAbsensiGuruController::class, 'laporan'])
+        ->middleware(['auth', 'role:Guru|Guru Mapel|Guru Kelas|Wali Kelas|Guru BK|Guru Piket|Pembina'])
+        ->name('guru.absensi_guru.laporan');
     
     // Profile routes
     Route::middleware('auth')->group(function () {

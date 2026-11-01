@@ -37,6 +37,14 @@ class Kernel extends ConsoleKernel
         } catch (\Throwable $e) {
             // ignore scheduling errors
         }
+
+        $schedule->command('sso:prune-expired-tickets')
+            ->dailyAt('03:20')
+            ->withoutOverlapping();
+
+        $schedule->command('sso:integration-status')
+            ->dailyAt('03:30')
+            ->withoutOverlapping();
     }
 
     /**

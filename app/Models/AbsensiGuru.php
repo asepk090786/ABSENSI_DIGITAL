@@ -17,6 +17,8 @@ class AbsensiGuru extends Model
         'tanggal',
         'status',
         'keterangan',
+        'bukti_path',
+        'bukti_token',
         'tahun_ajaran_id',
         'semester_id',
     ];
@@ -33,5 +35,10 @@ class AbsensiGuru extends Model
     public function pencatat()
     {
         return $this->belongsTo(Guru::class, 'pencatat_guru_id');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(AbsensiGuruLog::class, 'absensi_guru_id')->orderBy('created_at');
     }
 }

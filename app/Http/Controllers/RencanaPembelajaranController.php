@@ -453,7 +453,29 @@ class RencanaPembelajaranController extends Controller
             'tempKey' => null,
             'docInfo' => null,
             'docVersions' => collect(),
+            'templateData' => $this->defaultPreviewTemplateData(),
         ]);
+    }
+
+    private function defaultPreviewTemplateData(): array
+    {
+        return [
+            'title' => '',
+            'subject' => 'Matematika',
+            'class' => 'X',
+            'status' => 'draft',
+            'duration' => '2 JP (2 x 45 menit)',
+            'achievement' => 'Tuliskan Capaian pembelajaran untuk masing-masing mapel berdasarkan Kep BSKAP 046/2025 (bagi mapel umum) dan Kep BPKM 020/2026 (bagi mapel PA dan Budi Pekerti)',
+            'objectives' => 'Sebutkan Tujuan pembelajaran yang mengacu pada capaian pembelajaran',
+            'methods' => 'Jelaskan metode dan Model pembelajaran yang akan digunakan.',
+            'practice' => 'Jelaskan praktik pedagogis yang akan digunakan.',
+            'environment' => 'Keterangan: Ruang fisik, Ruang Virtual, Budaya Belajar',
+            'digital' => 'Keterangan: Tuliskan Sumber Belajar baik berupa buku sumber maupun elektronik',
+            'experience' => 'Pendahuluan, Kegiatan Inti dan Kegiatan Penutup',
+            'reflection' => 'Refleksi guru dan peserta didik.',
+            'assessment' => 'Asesmen diagnostik, formatif, dan sumatif.',
+            'dimensi_lulusan' => 'Belum dipilih',
+        ];
     }
 
     public function importPdf(Request $request)
@@ -555,6 +577,7 @@ class RencanaPembelajaranController extends Controller
             'selectedFase' => $module['fase'] ?? null,
             'docInfo' => $docInfo,
             'docVersions' => $docVersions,
+            'templateData' => $this->defaultPreviewTemplateData(),
         ]);
     }
 
@@ -1226,6 +1249,48 @@ class RencanaPembelajaranController extends Controller
         }
 
         return response()->download($path, 'template_modul_ajar.docx');
+    }
+
+    public function downloadPreviewTemplate()
+    {
+        $path = tempnam(sys_get_temp_dir(), 'modul-ajar-template-');
+        if ($path === false) {
+            throw new \RuntimeException('Tidak dapat menyiapkan file template Word.');
+        }
+
+        try {
+            $phpWord = new PhpWord();
+            $phpWord->setDefaultFontName('Arial');
+            $phpWord->setDefaultFontSize(10);
+            $section = $phpWord->addSection([
+                'marginTop' => 850,
+                'marginBottom' => 850,
+                'marginLeft' => 900,
+                'marginRight' => 900,
+            ]);
+            \PhpOffice\PhpWord\Shared\Html::addHtml(
+                $section,
+                view('rencana_pembelajaran.word_template', [
+                    'data' => $this->defaultPreviewTemplateData(),
+                ])->render(),
+                false,
+                false
+            );
+
+            $writer = IOFactory::createWriter($phpWord, 'Word2007');
+            $writer->save($path);
+        } catch (\Exception $exception) {
+            if (is_file($path)) {
+                unlink($path);
+            }
+            Log::error('Gagal membuat template Word modul ajar', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            abort(500, 'Gagal membuat template Word modul ajar.');
+        }
+
+        return response()->download($path, 'template_modul_ajar.docx')->deleteFileAfterSend(true);
     }
 
     public function previewDocx(Request $request)

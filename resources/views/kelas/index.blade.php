@@ -69,6 +69,7 @@
                                 <th>No</th>
                                 <th>ID</th>
                                 <th>Nama Kelas</th>
+                                <th>Kode Kelas</th>
                                 <th>Wali Kelas</th>
                                 <th>Jumlah Siswa</th>
                                 <th>Aksi</th>
@@ -80,6 +81,7 @@
                                 <td>{{ $index + 1 }}</td>
                                 <td><code>{{ $it->id }}</code></td>
                                 <td>{{ $it->nama_kelas }}</td>
+                                <td>{{ $it->kode_kelas ?: '-' }}</td>
                                 <td>{{ $it->waliKelas->user->name ?? $it->waliKelas->nama ?? '-' }}</td>
                                 <td><span class="badge bg-primary">{{ $it->siswa_count }}</span></td>
                                 <td>
@@ -97,7 +99,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted">
+                                <td colspan="7" class="text-center text-muted">
                                     <i class="ti ti-info-circle me-2"></i>Belum ada data kelas.
                                 </td>
                             </tr>

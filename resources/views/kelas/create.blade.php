@@ -26,6 +26,13 @@
                     </div>
 
                     <div class="mb-2">
+                        <label class="form-label">Kode Kelas</label>
+                        <input type="text" name="kode_kelas" class="form-control @error('kode_kelas') is-invalid @enderror" value="{{ old('kode_kelas') }}" maxlength="255">
+                        <small class="form-hint">Opsional, tetapi harus unik jika diisi.</small>
+                        @error('kode_kelas')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="mb-2">
                         <label class="form-label">Tingkatan Kelas <span class="text-danger">*</span></label>
                         <select name="tingkat_kelas" class="form-select @error('tingkat_kelas') is-invalid @enderror" required>
                             <option value="">-- Pilih Tingkatan --</option>

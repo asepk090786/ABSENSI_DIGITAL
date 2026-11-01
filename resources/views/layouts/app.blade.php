@@ -1120,7 +1120,7 @@
                         'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'
                     ];
                     $todayIndo = $map[$todayEng] ?? null;
-                    $isGuruPiket = in_array($todayIndo, (array) $hrPkt, true) || ($user && $user->hasAnyRole(['Admin','Kepala Sekolah']));
+                    $isGuruPiket = in_array($todayIndo, (array) $hrPkt, true) || $user->hasAnyRole(['Guru Piket', 'Admin', 'Kepala Sekolah']);
                 }
                 $isModeAcademic = request()->query('mode') === 'academic';
                 $isModePiket = ! $isModeAcademic;
@@ -1155,7 +1155,7 @@
                 $isAdminPtkActive = request()->routeIs(['administrasi_ptk.*','dokumen_kepegawaian.*','template_dokumen.*','pengembangan.*','pengajuan.*','verifikasi.*']);
                 
                 // PENGATURAN SISTEM active state
-                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*','setting.agenda*','setting.menu*','setting.editor*','setting.api','setting.public-links']);
+                $isAdminSettingActive = request()->routeIs(['tahun_ajaran.index','setting.semester*','setting.header*','setting.absensi*','setting.agenda*','setting.guru_piket_popup*','setting.menu*','setting.editor*','setting.api','setting.public-links']);
                 
                 // BACKUP DATABASE active state
                 $isAdminBackupActive = request()->routeIs(['setting.backup']);
@@ -1271,6 +1271,11 @@
                         <a href="{{ route('mata_pelajaran.index') }}" class="sidebar-admin-link {{ request()->routeIs('mata_pelajaran.*') && !request()->routeIs('tugas_guru.*') ? 'is-active' : '' }}">
                             <i class="ti ti-book"></i> Mata Pelajaran
                         </a>
+                        @if($user->hasRole('Admin') && ($cbtSsoEnabled ?? false))
+                        <a href="{{ route('sso.cbt.login') }}" class="sidebar-admin-link {{ request()->routeIs('sso.cbt.login') ? 'is-active' : '' }}">
+                            <i class="ti ti-device-desktop-check"></i> Login CBT
+                        </a>
+                        @endif
                     </div>
                 </li>
 
@@ -1360,6 +1365,11 @@
                         <a href="{{ route('setting.agenda') }}" class="sidebar-admin-link {{ request()->routeIs('setting.agenda*') ? 'is-active' : '' }}">
                             <i class="ti ti-calendar-event"></i> Pengaturan Agenda
                         </a>
+                        @if($user->hasRole('Admin'))
+                        <a href="{{ route('setting.guru_piket_popup') }}" class="sidebar-admin-link {{ request()->routeIs('setting.guru_piket_popup*') ? 'is-active' : '' }}">
+                            <i class="ti ti-bell-ringing"></i> Popup Guru Piket
+                        </a>
+                        @endif
                         <a href="{{ route('setting.menu') }}" class="sidebar-admin-link {{ request()->routeIs('setting.menu*') ? 'is-active' : '' }}">
                             <i class="ti ti-menu-2"></i> Pengaturan Menu
                         </a>
@@ -1430,7 +1440,7 @@
                 @endif
 
                 <!-- Akademik -->
-                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && ((empty($guruEnabledMenus) || !empty(array_intersect(['akademik_jadwal_kbm','akademik_jadwal_piket','akademik_pengaturan_jam','akademik_pengembangan_diri','akademik_beban_kerja_guru','akademik_sk_tugas','akademik_komponen_penilaian','akademik_mata_pelajaran','akademik_modul_ajar','akademik_editor_modul','kartu_login'], $guruEnabledMenus))) || ($user->hasRole('Siswa') && (empty($siswaEnabledMenus) || in_array('kartu_login', $siswaEnabledMenus)))))
+                @if($user && $user->hasAnyRole(['Admin','Kepala Sekolah','Pengawas Pembina','Guru','Guru Mapel','Guru Kelas','Guru BK','Guru Piket','Wali Kelas','Siswa']) && ((empty($guruEnabledMenus) || !empty(array_intersect(['akademik_jadwal_kbm','akademik_jadwal_piket','akademik_pengaturan_jam','akademik_pengembangan_diri','akademik_beban_kerja_guru','akademik_sk_tugas','akademik_komponen_penilaian','akademik_mata_pelajaran','akademik_modul_ajar','akademik_editor_modul','kartu_login','integrations_cbt_sso'], $guruEnabledMenus))) || ($user->hasRole('Siswa') && (empty($siswaEnabledMenus) || !empty(array_intersect(['kartu_login','integrations_cbt_sso'], $siswaEnabledMenus))))))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subAkademik" aria-expanded="{{ request()->routeIs(['jadwal-kbm.*','jadwal_kbm.*','tugas_guru.*','komponen_nilai.*','mata_pelajaran.*','rencana_pembelajaran.*','editor_modul.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-school"></i> Akademik
@@ -1468,6 +1478,9 @@
                             @if(($isGuru && (empty($guruEnabledMenus) || in_array('kartu_login', $guruEnabledMenus))) || ($user && $user->hasRole('Siswa') && (empty($siswaEnabledMenus) || in_array('kartu_login', $siswaEnabledMenus))))
                                 <li class="nav-item"><a href="{{ route('kartu_login.personal') }}" class="nav-link {{ request()->routeIs('kartu_login.personal') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Kartu Login</a></li>
                             @endif
+                            @if(($isGuru && ($cbtSsoEnabled ?? false) && (empty($guruEnabledMenus) || in_array('integrations_cbt_sso', $guruEnabledMenus, true))) || ($user && $user->hasRole('Siswa') && ($cbtSsoEnabled ?? false) && (empty($siswaEnabledMenus) || in_array('integrations_cbt_sso', $siswaEnabledMenus, true))))
+                                <li class="nav-item"><a href="{{ route('sso.cbt.login') }}" class="nav-link {{ request()->routeIs('sso.cbt.login') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Login CBT</a></li>
+                            @endif
                             @if(($isGuru && (empty($guruEnabledMenus) || in_array('akademik_modul_ajar', $guruEnabledMenus))) || request()->routeIs('rencana_pembelajaran.edit'))
                                 <li class="nav-item"><a href="{{ url('/modul-ajar') }}" class="nav-link {{ request()->is('modul-ajar*') && !request()->is('modul-ajar/editor*') ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Modul Ajar</a></li>
                             @endif
@@ -1486,6 +1499,13 @@
                 @endif
 
                 <!-- Pembelajaran (Guru) -->
+                @if($isGuru && $user->guru_id)
+                <li class="nav-item">
+                    <a href="{{ route('guru.absensi_guru.laporan') }}" class="nav-link {{ request()->routeIs('guru.absensi_guru.laporan') ? 'active' : '' }}">
+                        <i class="ti ti-report"></i> Rekap Absensi Saya
+                    </a>
+                </li>
+                @endif
                 @if($isGuru && (empty($guruEnabledMenus) || !empty(array_intersect(['pembelajaran_absensi','pembelajaran_agenda_kelas','pembelajaran_agenda_guru','pembelajaran_nilai','pembelajaran_rekap_nilai','pembelajaran_nilai_akhir','pembelajaran_materi','pembelajaran_pembina_ekskul'], $guruEnabledMenus))))
                 <li class="nav-item">
                     <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPembelajaran" aria-expanded="{{ request()->routeIs(['agenda_kelas.*','agenda_guru.*','absensi.*','nilai.*','rekap_nilai.*','nilai_akhir.*','materi_pembelajaran.*','ekskul.*']) ? 'true' : 'false' }}">
@@ -1543,14 +1563,14 @@
                 <!-- Piket KBM -->
                 @if($isGuruPiket && (empty($guruEnabledMenus) || !empty(array_intersect(['piket_kbm_absensi_guru','piket_kbm_absensi_siswa','piket_kbm_pelanggaran'], $guruEnabledMenus))))
                 <li class="nav-item">
-                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPiket" aria-expanded="{{ request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'true' : 'false' }}">
+                    <a href="#" class="nav-link" data-bs-toggle="collapse" data-bs-target="#subPiket" aria-expanded="{{ request()->routeIs(['piket.absensi_guru.*','admin.absensi_guru.*','agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'true' : 'false' }}">
                         <i class="ti ti-shield-checkered"></i> Piket KBM
                         <i class="ti ti-chevron-right nav-arrow"></i>
                     </a>
-                    <div class="collapse {{ request()->routeIs(['agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'show' : '' }}" id="subPiket">
+                    <div class="collapse {{ request()->routeIs(['piket.absensi_guru.*','admin.absensi_guru.*','agenda_guru.*','absensi.*','piket.pelanggaran.*']) ? 'show' : '' }}" id="subPiket">
                         <ul class="sidebar-subnav">
                             @if(empty($guruEnabledMenus) || in_array('piket_kbm_absensi_guru', $guruEnabledMenus))
-                            <li class="nav-item"><a href="{{ route('agenda_guru.index') }}" class="nav-link {{ request()->routeIs('agenda_guru.*') && $isModePiket ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Guru</a></li>
+                            <li class="nav-item"><a href="{{ route('piket.absensi_guru.index') }}" class="nav-link {{ request()->routeIs('piket.absensi_guru.*') || (request()->routeIs('agenda_guru.*') && $isModePiket) ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Guru</a></li>
                             @endif
                             @if(empty($guruEnabledMenus) || in_array('piket_kbm_absensi_siswa', $guruEnabledMenus))
                             <li class="nav-item"><a href="{{ route('absensi.index') }}" class="nav-link {{ request()->routeIs('absensi.*') && $isModePiket ? 'active' : '' }}"><i class="ti ti-circle-filled"></i> Absensi Siswa</a></li>
@@ -1770,6 +1790,13 @@
                                     <i class="ti ti-circle-filled"></i> Pengaturan
                                 </a>
                             </li>
+                            @if($user->hasRole('Admin'))
+                            <li class="nav-item">
+                                <a href="{{ route('setting.guru_piket_popup') }}" class="nav-link {{ request()->routeIs('setting.guru_piket_popup*') ? 'active' : '' }}">
+                                    <i class="ti ti-circle-filled"></i> Popup Guru Piket
+                                </a>
+                            </li>
+                            @endif
                             <li class="nav-item">
                                 <a href="{{ route('setting.backup') }}" class="nav-link {{ request()->routeIs('setting.backup') ? 'active' : '' }}">
                                     <i class="ti ti-circle-filled"></i> Backup Database
@@ -1887,6 +1914,45 @@
 </div>
 
 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+
+@php($guruPiketLoginPopup = session()->pull('guru_piket_login_popup'))
+@if(is_array($guruPiketLoginPopup))
+<div class="modal fade" id="guruPiketLoginPopup" tabindex="-1" aria-labelledby="guruPiketLoginPopupTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="guruPiketLoginPopupTitle">{{ $guruPiketLoginPopup['title'] ?? 'Informasi Tugas Piket' }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body guru-piket-popup-content">{!! $guruPiketLoginPopup['content'] ?? '' !!}</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Mengerti</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .guru-piket-popup-content {
+        overflow-wrap: anywhere;
+    }
+    .guru-piket-popup-content table {
+        max-width: 100%;
+        border-collapse: collapse;
+    }
+    .guru-piket-popup-content img {
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const popup = document.getElementById('guruPiketLoginPopup');
+        if (popup && window.bootstrap && window.bootstrap.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(popup).show();
+        }
+    });
+</script>
+@endif
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

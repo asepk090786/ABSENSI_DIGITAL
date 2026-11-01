@@ -40,6 +40,11 @@ class Ekstrakurikuler extends Model
         return $this->hasMany(EkskulAnggota::class);
     }
 
+    public function sertifikats()
+    {
+        return $this->hasMany(EkskulSertifikat::class);
+    }
+
     public function jadwal()
     {
         return $this->hasMany(EkskulJadwal::class);

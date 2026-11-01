@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('guru_id')->constrained('guru')->cascadeOnDelete();
             $table->foreignId('pencatat_guru_id')->nullable()->constrained('guru')->nullOnDelete();
             $table->date('tanggal');
-            $table->enum('status', ['hadir', 'tidak_hadir', 'izin', 'sakit']);
+            $table->enum('status', ['hadir', 'tidak_hadir', 'izin', 'sakit', 'dinas_luar']);
             $table->string('keterangan')->nullable();
             $table->foreignId('tahun_ajaran_id')->nullable()->constrained('tahun_ajaran')->nullOnDelete();
             $table->foreignId('semester_id')->nullable()->constrained('semester')->nullOnDelete();

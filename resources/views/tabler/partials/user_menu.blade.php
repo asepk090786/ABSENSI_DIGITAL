@@ -14,6 +14,13 @@
         </div>
     </li>
     <li><hr class="dropdown-divider m-0"></li>
+    @if(config('services.cbt_sso.start_url'))
+        <li>
+            <a class="dropdown-item" href="{{ config('services.cbt_sso.start_url') }}" target="_blank" rel="noopener">
+                <i class="ti ti-school me-2 text-primary"></i>Masuk Garuda CBT
+            </a>
+        </li>
+    @endif
     <li>
         <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault();document.getElementById('logout-desktop').submit();">
             <i class="ti ti-logout me-2 text-danger"></i>Keluar

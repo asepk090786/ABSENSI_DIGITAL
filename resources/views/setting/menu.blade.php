@@ -1,3 +1,31 @@
+@if($canManageCbtSso ?? false)
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Integrasi Garuda CBT</div>
+    <div class="card-body">
+        <form action="{{ route('setting.cbt-sso.update') }}" method="POST">
+            @csrf
+            <input type="hidden" name="cbt_sso_enabled" value="0">
+            <div class="form-check form-switch mb-3">
+                <input
+                    type="checkbox"
+                    class="form-check-input"
+                    name="cbt_sso_enabled"
+                    value="1"
+                    id="cbt_sso_enabled"
+                    {{ ($cbtSsoEnabled ?? false) ? 'checked' : '' }}
+                >
+                <label class="form-check-label" for="cbt_sso_enabled">Aktifkan login Garuda CBT untuk Admin, guru, dan siswa</label>
+            </div>
+            @error('cbt_sso_enabled')
+                <div class="text-danger mb-3">{{ $message }}</div>
+            @enderror
+            <p class="text-muted">Jika dinonaktifkan, menu Login CBT disembunyikan dan endpoint SSO ditolak. Akses guru dan siswa juga dapat diatur pada bagian Akademik di bawah, sedangkan akses Admin mengikuti sakelar global.</p>
+            <button type="submit" class="btn btn-primary">Simpan Pengaturan CBT</button>
+        </form>
+    </div>
+</div>
+@endif
+
 <div class="row">
     <div class="col-md-12">
         <h5 class="mb-3">Menu Guru</h5>
@@ -85,6 +113,12 @@
                             <div class="form-check form-switch">
                                 <input type="checkbox" class="form-check-input" name="guru_menus[]" value="integrations_erapor_sso" id="menu_guru_erapor" {{ in_array('integrations_erapor_sso', $menuVisibility['guru'] ?? []) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="menu_guru_erapor">e-Rapor</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="guru_menus[]" value="integrations_cbt_sso" id="menu_guru_cbt" {{ in_array('integrations_cbt_sso', $menuVisibility['guru'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_guru_cbt">Login CBT</label>
                             </div>
                         </div>
                     </div>
@@ -227,7 +261,7 @@
 
             <h5 class="mb-3">Menu Siswa</h5>
             <div class="card mb-3">
-                <div class="card-header fw-semibold">Pembelajaran</div>
+                <div class="card-header fw-semibold">Akademik dan Pembelajaran</div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -246,6 +280,12 @@
                             <div class="form-check form-switch">
                                 <input type="checkbox" class="form-check-input" name="siswa_menus[]" value="integrations_erapor_sso" id="menu_siswa_erapor" {{ in_array('integrations_erapor_sso', $menuVisibility['siswa'] ?? []) ? 'checked' : '' }}>
                                 <label class="form-check-label" for="menu_siswa_erapor">e-Rapor</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" name="siswa_menus[]" value="integrations_cbt_sso" id="menu_siswa_cbt" {{ in_array('integrations_cbt_sso', $menuVisibility['siswa'] ?? []) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="menu_siswa_cbt">Login CBT</label>
                             </div>
                         </div>
                     </div>

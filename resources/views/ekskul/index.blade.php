@@ -64,6 +64,25 @@
                                             <i class="ti ti-edit"></i>
                                         </a>
                                         @endif
+                                        @if(auth()->user()->hasRole('Siswa') && auth()->user()->siswa)
+                                            @php($studentCertificates = $item->sertifikats->where('siswa_id', auth()->user()->siswa->id)->where('is_visible', true))
+                                            @if($studentCertificates->isNotEmpty())
+                                                <div class="dropdown">
+                                                    <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="ti ti-certificate me-1"></i>Sertifikat
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        @foreach($studentCertificates as $certificate)
+                                                            <li>
+                                                                <a class="dropdown-item" href="{{ route('ekskul.certificates.download', [$item->id, $certificate->id]) }}">
+                                                                    <i class="ti ti-download me-1"></i>{{ $certificate->ekskulAgenda?->judul ?? 'Sertifikat lama' }}
+                                                                </a>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
+                                            @endif
+                                        @endif
                                         <a href="{{ route('ekskul.anggota', $item->id) }}" class="btn btn-outline-info" title="Kelola Anggota">
                                             <i class="ti ti-users"></i>
                                         </a>

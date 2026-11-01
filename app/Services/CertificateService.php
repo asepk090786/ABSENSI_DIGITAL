@@ -28,7 +28,7 @@ class CertificateService
         return ['width' => 1200, 'height' => 848];
     }
 
-    public function generate($template, Pengembangan $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null): string
+    public function generate($template, object $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null, string $verificationRoute = 'pengembangan.verify'): string
     {
         $bgPath = $template->background_image ?? null;
         if (!$bgPath || !Storage::disk('public')->exists($bgPath)) {
@@ -78,7 +78,7 @@ class CertificateService
 
         $placeholders = [
             'name' => $name,
-            'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? '',
+            'kegiatan->nama_kegiatan' => $item->nama_kegiatan ?? $item->nama ?? '',
             'kegiatan->tema_kegiatan' => $item->tema_kegiatan ?? '',
             'sebagai' => $sebagai ?? '',
             'verification_text' => $barcode,
@@ -109,7 +109,7 @@ class CertificateService
             if ($key === 'verification_qr') {
                 $qrSize = isset($pos['qr_size']) ? (int) $pos['qr_size'] : max(80, min(300, (int) ($fontSize * 4)));
                 try {
-                    $verifyUrl = route('pengembangan.verify', ['code' => $text]);
+                    $verifyUrl = route($verificationRoute, ['code' => $text]);
                     $qr = Builder::create()
                         ->writer(new PngWriter())
                         ->data($verifyUrl)
@@ -147,23 +147,31 @@ class CertificateService
         return $outputPath;
     }
 
-    public function generatePdf($template, Pengembangan $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null): string
+    public function generatePdf($template, object $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null, string $verificationRoute = 'pengembangan.verify'): string
     {
-        $imagePath = $this->generate($template, $item, $name, $barcode, $nomorSurat, $sebagai);
+        if (!$template || empty($template->background_image) || !Storage::disk('public')->exists($template->background_image)) {
+            return $this->generateFallbackPdf($item, $name, $barcode, $nomorSurat, $sebagai);
+        }
+
+        $imagePath = $this->generate($template, $item, $name, $barcode, $nomorSurat, $sebagai, $verificationRoute);
 
         $pageSize = strtolower($template->page_size ?? 'a4');
         $orientation = ($template->page_orientation ?? 'landscape') === 'portrait' ? 'portrait' : 'landscape';
 
-        if (str_starts_with($imagePath, 'certificates/')) {
-            $fullImgPath = Storage::disk('public')->path($imagePath);
-            if (file_exists($fullImgPath)) {
-                $imgData = base64_encode(file_get_contents($fullImgPath));
-                $src = 'data:image/jpeg;base64,' . $imgData;
-                $html = '<!DOCTYPE html><html style="margin:0;padding:0;width:100%;height:100%;"><body style="margin:0;padding:0;width:100%;height:100%;"><img src="' . $src . '" style="width:100%;height:100%;"/></body></html>';
-                $pdf = Pdf::loadHTML($html)->setPaper($pageSize, $orientation);
-                $pdfPath = 'certificates/pdf_' . uniqid() . '.pdf';
-                Storage::disk('public')->put($pdfPath, $pdf->output());
-                return $pdfPath;
+        if (str_starts_with($imagePath, 'certificates/') && str_ends_with(strtolower($imagePath), '.jpg')) {
+            try {
+                $fullImgPath = Storage::disk('public')->path($imagePath);
+                if (file_exists($fullImgPath)) {
+                    $imgData = base64_encode(file_get_contents($fullImgPath));
+                    $src = 'data:image/jpeg;base64,' . $imgData;
+                    $html = '<!DOCTYPE html><html style="margin:0;padding:0;width:100%;height:100%;"><body style="margin:0;padding:0;width:100%;height:100%;"><img src="' . $src . '" style="width:100%;height:100%;"/></body></html>';
+                    $pdf = Pdf::loadHTML($html)->setPaper($pageSize, $orientation);
+                    $pdfPath = 'certificates/pdf_' . uniqid() . '.pdf';
+                    Storage::disk('public')->put($pdfPath, $pdf->output());
+                    return $pdfPath;
+                }
+            } finally {
+                Storage::disk('public')->delete($imagePath);
             }
         }
 
@@ -172,6 +180,7 @@ class CertificateService
             'name' => $name,
             'kegiatan' => $item,
             'barcode' => $barcode,
+            'nomor_surat' => $nomorSurat,
             'sebagai' => $sebagai,
         ])->render();
         $pdf = Pdf::loadHTML($htmlView)->setPaper('a4', 'landscape');
@@ -188,7 +197,7 @@ class CertificateService
         return 'data:image/jpeg;base64,' . $imgData;
     }
 
-    protected function generateFallbackPdf(Pengembangan $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null): string
+    protected function generateFallbackPdf(object $item, string $name, string $barcode, ?string $nomorSurat = null, ?string $sebagai = null): string
     {
         $htmlView = view('pengembangan.certificate_template', [
             'name' => $name,

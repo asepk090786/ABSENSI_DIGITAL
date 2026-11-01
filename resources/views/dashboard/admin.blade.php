@@ -338,14 +338,15 @@
                             <tbody>
                                 @foreach($rekapKehadiranGuruHarian as $item)
                                 <tr>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}</td>
+                                    @php $tanggalRekapGuru = \Carbon\Carbon::parse($item->tanggal)->toDateString(); @endphp
+                                    <td>{{ \Carbon\Carbon::parse($tanggalRekapGuru)->format('d M Y') }}</td>
                                     <td class="text-center">{{ $item->hadir }}</td>
                                     <td class="text-center">{{ $item->izin }}</td>
                                     <td class="text-center">{{ $item->sakit }}</td>
                                     <td class="text-center">{{ $item->tidak_hadir }}</td>
                                     <td class="text-center fw-bold">{{ $item->total_entri }}</td>
                                     <td class="text-end">
-                                        <a href="{{ route('absensi.index', ['tanggal' => $item->tanggal]) }}" class="btn btn-outline-secondary btn-sm">Lihat</a>
+                                        <a href="{{ route('admin.absensi_guru.index', ['tanggal' => $tanggalRekapGuru]) }}" class="btn btn-outline-secondary btn-sm">Lihat</a>
                                     </td>
                                 </tr>
                                 @endforeach

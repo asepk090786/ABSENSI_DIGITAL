@@ -11,6 +11,7 @@ use App\Models\EkskulAgenda;
 use App\Models\EkskulAbsensi;
 use App\Models\EkskulAbsensiPembina;
 use App\Models\EkskulBuktiKegiatan;
+use App\Models\EkskulSertifikat;
 use App\Models\Guru;
 use App\Models\Siswa;
 use App\Models\Kelas;
@@ -20,12 +21,14 @@ use App\Models\IzinKegiatan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use App\Services\CertificateService;
 
 class EkskulController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth')->except(['verifyEkskulCertificate']);
     }
 
     public function index()
@@ -44,7 +47,7 @@ class EkskulController extends Controller
             $ekskulIds = EkskulAnggota::where('siswa_id', $user->siswa->id)
                 ->where('status_pendaftaran', 'diterima')
                 ->pluck('ekstrakurikuler_id');
-            $items = Ekstrakurikuler::with(['guru', 'pembina.guru', 'anggota.siswa'])
+            $items = Ekstrakurikuler::with(['guru', 'pembina.guru', 'anggota.siswa', 'sertifikats.ekskulAgenda'])
                 ->whereIn('id', $ekskulIds)
                 ->withCount(['anggota as anggota_diterima_count' => function ($q) {
                     $q->where('status_pendaftaran', 'diterima');
@@ -143,7 +146,152 @@ class EkskulController extends Controller
         $anggota = $ekskul->anggota()->with(['siswa.kelas'])->orderBy('tanggal_daftar', 'desc')->get();
         $kelasList = Kelas::orderBy('nama_kelas')->get();
         $existingSiswaIds = $ekskul->anggota()->pluck('siswa_id')->toArray();
-        return view('ekskul.anggota', compact('ekskul', 'anggota', 'kelasList', 'existingSiswaIds'));
+        $acceptedSiswaIds = EkskulAnggota::where('ekstrakurikuler_id', $ekskul->id)
+            ->where('status_pendaftaran', 'diterima')
+            ->pluck('siswa_id');
+        $templates = DB::table('pengembangan_sertifikat_templates')->orderBy('nama')->get();
+        $agendas = $ekskul->agenda()
+            ->where('status', '!=', 'dibatalkan')
+            ->whereHas('absensi', function ($query) use ($ekskul, $acceptedSiswaIds) {
+                $query->where('ekstrakurikuler_id', $ekskul->id)
+                    ->where('status', 'hadir')
+                    ->whereIn('siswa_id', $acceptedSiswaIds);
+            })
+            ->withCount(['absensi as peserta_hadir_count' => function ($query) use ($ekskul, $acceptedSiswaIds) {
+                $query->where('ekstrakurikuler_id', $ekskul->id)
+                    ->where('status', 'hadir')
+                    ->whereIn('siswa_id', $acceptedSiswaIds);
+            }])
+            ->orderByDesc('tanggal')
+            ->get();
+        $certificates = EkskulSertifikat::where('ekstrakurikuler_id', $ekskul->id)
+            ->with(['siswa', 'ekskulAgenda'])
+            ->orderByDesc('created_at')
+            ->get();
+        $canGenerateCertificates = $this->isAssignedPembina($ekskul);
+        return view('ekskul.anggota', compact('ekskul', 'anggota', 'kelasList', 'existingSiswaIds', 'templates', 'agendas', 'certificates', 'canGenerateCertificates'));
+    }
+
+    public function generateCertificates(Request $request, $id, CertificateService $certService)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($id);
+        $this->authorizeCertificatePembina($ekskul);
+
+        $validated = $request->validate([
+            'agenda_id' => 'required|integer|exists:ekskul_agenda,id',
+            'template_id' => 'nullable|integer|exists:pengembangan_sertifikat_templates,id',
+            'nomor_sertifikat' => 'nullable|string|max:255',
+        ]);
+
+        $agenda = EkskulAgenda::where('ekstrakurikuler_id', $ekskul->id)
+            ->where('status', '!=', 'dibatalkan')
+            ->findOrFail($validated['agenda_id']);
+        $acceptedSiswaIds = EkskulAnggota::where('ekstrakurikuler_id', $ekskul->id)
+            ->where('status_pendaftaran', 'diterima')
+            ->pluck('siswa_id');
+        $attendees = EkskulAbsensi::with('siswa')
+            ->where('ekstrakurikuler_id', $ekskul->id)
+            ->where('ekskul_agenda_id', $agenda->id)
+            ->where('status', 'hadir')
+            ->whereIn('siswa_id', $acceptedSiswaIds)
+            ->get()
+            ->filter(fn ($attendance) => $attendance->siswa !== null)
+            ->unique('siswa_id')
+            ->values();
+
+        if ($attendees->isEmpty()) {
+            return redirect()->route('ekskul.anggota', $ekskul->id)
+                ->with('error', 'Belum ada anggota yang tercatat hadir pada agenda ini.');
+        }
+
+        $template = !empty($validated['template_id'])
+            ? DB::table('pengembangan_sertifikat_templates')->where('id', $validated['template_id'])->first()
+            : null;
+        if (!$template || !$template->background_image) {
+            $template = DB::table('pengembangan_sertifikat_templates')
+                ->whereNotNull('background_image')
+                ->orderByDesc('id')
+                ->first() ?? $template;
+        }
+        $templateId = $template->id ?? null;
+        $activity = (object) [
+            'nama_kegiatan' => $agenda->judul,
+            'tema_kegiatan' => $agenda->deskripsi ?: $agenda->materi,
+            'tanggal_mulai' => $agenda->tanggal,
+            'pemateri' => [],
+        ];
+
+        foreach ($attendees as $attendance) {
+            $barcode = (string) Str::uuid();
+            $filePath = $certService->generatePdf(
+                $template,
+                $activity,
+                $attendance->siswa->nama,
+                $barcode,
+                $validated['nomor_sertifikat'] ?? null,
+                'Peserta ' . $ekskul->nama,
+                'ekskul.certificates.verify'
+            );
+
+            $certificate = EkskulSertifikat::firstOrNew([
+                'ekstrakurikuler_id' => $ekskul->id,
+                'ekskul_agenda_id' => $agenda->id,
+                'siswa_id' => $attendance->siswa_id,
+            ]);
+            $oldFilePath = $certificate->file_path;
+            $certificate->fill([
+                'ekskul_agenda_id' => $agenda->id,
+                'file_path' => $filePath,
+                'barcode' => $barcode,
+                'nomor_sertifikat' => $validated['nomor_sertifikat'] ?? null,
+                'template_id' => $templateId,
+                'is_visible' => true,
+            ]);
+            $certificate->save();
+
+            if ($oldFilePath && $oldFilePath !== $filePath) {
+                Storage::disk('public')->delete($oldFilePath);
+            }
+        }
+
+        return redirect()->route('ekskul.anggota', $ekskul->id)
+            ->with('success', 'Sertifikat kegiatan "' . $agenda->judul . '" berhasil dibuat untuk ' . $attendees->count() . ' anggota hadir.');
+    }
+
+    public function downloadEkskulCertificate($ekskulId, $certificateId)
+    {
+        $ekskul = Ekstrakurikuler::findOrFail($ekskulId);
+        $certificate = EkskulSertifikat::where('ekstrakurikuler_id', $ekskul->id)->findOrFail($certificateId);
+        $user = auth()->user();
+        if ($user->hasRole('Siswa')) {
+            if (!$user->siswa || (int) $certificate->siswa_id !== (int) $user->siswa->id || !$certificate->is_visible) {
+                abort(403);
+            }
+        } else {
+            $this->authorizePembinaOrAdmin($ekskul);
+        }
+
+        $path = $certificate->file_path;
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->download($path);
+    }
+
+    public function verifyEkskulCertificate($code)
+    {
+        $certificate = EkskulSertifikat::with(['ekstrakurikuler', 'siswa'])->where('barcode', $code)->first();
+        if (!$certificate) {
+            return view('ekskul.verify-certificate', ['certificate' => null]);
+        }
+
+        if (!$certificate->verified_at) {
+            $certificate->verified_at = now();
+            $certificate->save();
+        }
+
+        return view('ekskul.verify-certificate', compact('certificate'));
     }
 
     public function getSiswa($ekskul, Request $request)
@@ -404,6 +552,10 @@ class EkskulController extends Controller
             'absensi.*.status'     => 'required|in:hadir,izin,sakit,alpha,tanpa_keterangan',
             'absensi.*.keterangan' => 'nullable|string',
         ]);
+        $agendaId = $validated['ekskul_agenda_id'] ?? null;
+        if ($agendaId && !EkskulAgenda::where('ekstrakurikuler_id', $id)->whereKey($agendaId)->exists()) {
+            abort(404);
+        }
         $tanggal = \Carbon\Carbon::parse($validated['tanggal'])->toDateString();
         $guruId = auth()->user()->guru?->id;
 
@@ -421,12 +573,21 @@ class EkskulController extends Controller
                 $item['keterangan'] = $izin->keterangan_kegiatan;
             }
 
+            $attendanceIdentity = [
+                'ekstrakurikuler_id' => $id,
+                'siswa_id' => $item['siswa_id'],
+                'tanggal' => $tanggal,
+            ];
+            if ($agendaId) {
+                $attendanceIdentity['ekskul_agenda_id'] = $agendaId;
+            }
+
             EkskulAbsensi::updateOrCreate(
-                ['ekstrakurikuler_id' => $id, 'siswa_id' => $item['siswa_id'], 'tanggal' => $tanggal],
-                ['ekskul_agenda_id' => $validated['ekskul_agenda_id'] ?? null, 'status' => $item['status'], 'keterangan' => $item['keterangan'] ?? null, 'dibukukan_oleh' => $guruId]
+                $attendanceIdentity,
+                ['status' => $item['status'], 'keterangan' => $item['keterangan'] ?? null, 'dibukukan_oleh' => $guruId]
             );
         }
-        return redirect()->route('ekskul.absensi', [$id, 'agenda' => $validated['ekskul_agenda_id'] ?? ''])
+        return redirect()->route('ekskul.absensi', [$id, 'agenda' => $agendaId ?? ''])
             ->with('success', 'Absensi berhasil disimpan.');
     }
 
@@ -637,6 +798,31 @@ class EkskulController extends Controller
     {
         if (!auth()->user()->hasRole('Admin')) {
             abort(403, 'Hanya Admin yang dapat melakukan aksi ini.');
+        }
+    }
+
+    private function isAssignedPembina(Ekstrakurikuler $ekskul): bool
+    {
+        $user = auth()->user();
+        if (!$user || $user->hasRole('Admin')) {
+            return false;
+        }
+
+        $guruId = $user->guru?->id;
+        if (!$guruId) {
+            return false;
+        }
+
+        return (int) $ekskul->guru_id === (int) $guruId
+            || EkskulPembina::where('ekstrakurikuler_id', $ekskul->id)
+                ->where('guru_id', $guruId)
+                ->exists();
+    }
+
+    private function authorizeCertificatePembina(Ekstrakurikuler $ekskul): void
+    {
+        if (!$this->isAssignedPembina($ekskul)) {
+            abort(403, 'Hanya pembina ekstrakurikuler terkait yang dapat membuat sertifikat kegiatan.');
         }
     }
 

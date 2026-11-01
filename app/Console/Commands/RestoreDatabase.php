@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\CbtSsoTicket;
 use App\Services\BackupService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 class RestoreDatabase extends Command
 {
@@ -11,10 +13,8 @@ class RestoreDatabase extends Command
 
     protected $description = 'Restore database from an existing backup file or latest backup directory';
 
-    public function handle(): int
+    public function handle(BackupService $svc): int
     {
-        $svc = new BackupService();
-
         $file = $this->option('file');
         if ($this->option('latest')) {
             $backups = $svc->listBackups();
@@ -46,6 +46,10 @@ class RestoreDatabase extends Command
         $ok = $svc->import($file);
 
         if ($ok) {
+            if (Schema::hasTable('cbt_sso_tickets')) {
+                CbtSsoTicket::query()->delete();
+            }
+
             $this->info('Restore database selesai.');
 
             return 0;

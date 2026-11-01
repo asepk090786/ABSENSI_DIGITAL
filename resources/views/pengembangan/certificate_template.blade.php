@@ -17,13 +17,18 @@
         @endif
         <p>Atas partisipasinya pada kegiatan:</p>
         <h3>{{ $kegiatan->nama_kegiatan }}</h3>
-        <p><strong>Pemateri:</strong>
-            @if(is_array($kegiatan->pemateri))
-                {{ implode(', ', $kegiatan->pemateri) }}
-            @else
-                {{ $kegiatan->pemateri }}
-            @endif
-        </p>
+        @if(!empty($kegiatan->pemateri))
+            <p><strong>Pemateri:</strong>
+                @if(is_array($kegiatan->pemateri))
+                    {{ implode(', ', $kegiatan->pemateri) }}
+                @else
+                    {{ $kegiatan->pemateri }}
+                @endif
+            </p>
+        @endif
+        @if(!empty($kegiatan->tanggal_mulai))
+            <p><strong>Tanggal:</strong> {{ optional($kegiatan->tanggal_mulai)->format('d-m-Y') }}</p>
+        @endif
         @if(!empty($nomor_surat))
             <p><strong>No. Sertifikat:</strong> {{ $nomor_surat }}</p>
         @endif

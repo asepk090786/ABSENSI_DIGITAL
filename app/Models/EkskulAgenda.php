@@ -42,4 +42,9 @@ class EkskulAgenda extends Model
     {
         return $this->belongsTo(Guru::class, 'dibuat_oleh');
     }
+
+    public function absensi()
+    {
+        return $this->hasMany(EkskulAbsensi::class, 'ekskul_agenda_id');
+    }
 }

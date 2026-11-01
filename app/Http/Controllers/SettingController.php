@@ -91,16 +91,15 @@ class SettingController extends Controller
         return redirect()->route('setting.api')->with('success', 'API key berhasil dihapus.');
     }
 
-    public function absensi()
+    public function absensi(SettingsManager $settings)
     {
-        $settings = new SettingsManager();
-
         return view('setting.pengaturan', [
             'absensiSettings' => [
                 'allow_edit_past_for_guru' => (bool) $settings->get('attendance.allow_edit_past_for_guru', false),
                 'allow_edit_past_for_siswa_officer' => (bool) $settings->get('attendance.allow_edit_past_for_siswa_officer', false),
                 'verification_enabled' => (bool) $settings->get('attendance.verification_enabled', true),
                 'verification_timeout_seconds' => (int) $settings->get('attendance.verification_timeout_seconds', 300),
+                'block_past_dates_for_guru_piket' => (bool) $settings->get('attendance.block_past_dates_for_guru_piket', false),
             ],
             'menuVisibility' => $settings->get('menu_visibility', [
                 'guru' => [],
@@ -160,6 +159,24 @@ class SettingController extends Controller
         $settings->set('attendance.verification_timeout_seconds', (int) ($validated['verification_timeout_seconds'] ?? 300));
 
         return redirect()->route('setting.absensi')->with('success', 'Pengaturan absensi disimpan.');
+    }
+
+    public function updateGuruPiketAttendance(Request $request, SettingsManager $settings)
+    {
+        abort_unless($request->user()->hasRole('Admin'), 403);
+
+        $validated = $request->validate([
+            'block_past_dates_for_guru_piket' => 'nullable|boolean',
+        ]);
+
+        $settings->set(
+            'attendance.block_past_dates_for_guru_piket',
+            (bool) ($validated['block_past_dates_for_guru_piket'] ?? false)
+        );
+
+        return redirect()
+            ->route('setting.absensi', ['tab' => 'guru-piket'])
+            ->with('success', 'Pengaturan absensi Guru Piket disimpan.');
     }
 
     public function agenda()
@@ -227,6 +244,39 @@ class SettingController extends Controller
         return redirect()->route('setting.agenda')->with('success', 'Pengaturan agenda disimpan.');
     }
 
+    public function guruPiketPopup(SettingsManager $settings)
+    {
+        return view('setting.pengaturan', [
+            'guruPiketPopupSettings' => [
+                'title' => $settings->get('guru_piket_popup.title', 'Tugas Piket Hari Ini'),
+                'content' => $settings->get(
+                    'guru_piket_popup.content',
+                    'Anda mendapatkan tugas piket hari ini. Silakan melaksanakan tugas sesuai jadwal dan ketentuan sekolah.'
+                ),
+            ],
+        ]);
+    }
+
+    public function updateGuruPiketPopup(
+        Request $request,
+        SettingsManager $settings,
+        \App\Services\GuruPiketPopupService $guruPiketPopupService
+    )
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:120'],
+            'content' => ['required', 'string', 'max:30000'],
+        ]);
+
+        $settings->set('guru_piket_popup.title', trim($validated['title']));
+        $settings->set(
+            'guru_piket_popup.content',
+            $guruPiketPopupService->sanitizeContent($validated['content'])
+        );
+
+        return redirect()->route('setting.guru_piket_popup')->with('success', 'Konten popup Guru Piket disimpan.');
+    }
+
     public function editor()
     {
         $settings = new SettingsManager();
@@ -259,9 +309,8 @@ class SettingController extends Controller
         return redirect()->route('setting.editor')->with('success', 'Pengaturan editor modul disimpan.');
     }
 
-    public function menu()
+    public function menu(SettingsManager $settings)
     {
-        $settings = new SettingsManager();
         $menuVisibility = $settings->get('menu_visibility', [
             'guru' => [],
             'siswa' => [],
@@ -281,6 +330,7 @@ class SettingController extends Controller
             'akademik_tool',
             'kartu_login',
             'integrations_erapor_sso',
+            'integrations_cbt_sso',
             'pembelajaran_absensi',
             'pembelajaran_agenda_kelas',
             'pembelajaran_agenda_guru',
@@ -297,6 +347,7 @@ class SettingController extends Controller
             'pembelajaran_materi',
             'kartu_login',
             'integrations_erapor_sso',
+            'integrations_cbt_sso',
         ];
 
         return view('setting.pengaturan', [
@@ -308,6 +359,8 @@ class SettingController extends Controller
             'menuVisibility' => $menuVisibility,
             'standardGuruMenus' => $standardGuruMenus,
             'standardSiswaMenus' => $standardSiswaMenus,
+            'cbtSsoEnabled' => (bool) $settings->get('integrations.cbt_sso.enabled', false),
+            'canManageCbtSso' => auth()->user()?->hasRole('Admin') ?? false,
         ]);
     }
 
@@ -320,11 +373,38 @@ class SettingController extends Controller
             'siswa_menus.*' => 'string',
         ]);
 
-        $settings = new SettingsManager();
+        $settings = app(SettingsManager::class);
         $settings->set('menu_visibility.guru', $validated['guru_menus'] ?? []);
         $settings->set('menu_visibility.siswa', $validated['siswa_menus'] ?? []);
 
         return redirect()->route('setting.menu')->with('success', 'Pengaturan menu disimpan.');
+    }
+
+    public function updateCbtSso(Request $request, SettingsManager $settings)
+    {
+        $validated = $request->validate([
+            'cbt_sso_enabled' => ['required', 'boolean'],
+        ]);
+
+        if ((bool) $validated['cbt_sso_enabled']) {
+            $startUrl = (string) config('services.cbt_sso.start_url');
+            $start = parse_url($startUrl);
+            if (
+                ! $start
+                || ($start['scheme'] ?? '') !== 'https'
+                || empty($start['host'])
+                || ! empty($start['query'])
+                || ! empty($start['fragment'])
+            ) {
+                return back()
+                    ->withErrors(['cbt_sso_enabled' => 'Konfigurasikan URL HTTPS Garuda CBT terlebih dahulu.'])
+                    ->withInput();
+            }
+        }
+
+        $settings->set('integrations.cbt_sso.enabled', (bool) $validated['cbt_sso_enabled']);
+
+        return redirect()->route('setting.menu')->with('success', 'Pengaturan login CBT disimpan.');
     }
 
     public function tahunAjaran()

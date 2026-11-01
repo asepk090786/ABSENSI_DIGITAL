@@ -145,7 +145,7 @@ class AgendaGuruController extends Controller
         $validated = $request->validate([
             'tanggal' => 'required|date',
             'attendance' => 'required|array|min:1',
-            'attendance.*.status' => 'nullable|in:hadir,tidak_hadir,izin,sakit',
+            'attendance.*.status' => 'nullable|in:hadir,tidak_hadir,izin,sakit,dinas_luar',
             'attendance.*.keterangan' => 'nullable|string|max:255',
         ]);
 

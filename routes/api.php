@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\MobileApiController;
+use App\Http\Controllers\Api\CbtMasterDataController;
 use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\CbtSsoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +18,13 @@ Route::get('/students', [MobileApiController::class, 'students'])->middleware('a
 Route::get('/teachers', [MobileApiController::class, 'teachers'])->middleware('auth:sanctum');
 Route::get('/schedule', [MobileApiController::class, 'schedule'])->middleware('auth:sanctum');
 Route::get('/master-data', [MasterDataController::class, 'index'])->middleware('api.key');
+Route::get('/cbt/master-data', [CbtMasterDataController::class, 'index'])->middleware('api.key');
+Route::get('/cbt/students/{student}/photo', [CbtMasterDataController::class, 'studentPhoto'])
+    ->whereNumber('student')
+    ->middleware('api.key');
+Route::get('/cbt/academic-data', [CbtMasterDataController::class, 'academic'])->middleware('api.key');
+Route::get('/cbt/teaching-data', [CbtMasterDataController::class, 'teaching'])->middleware('api.key');
+Route::post('/sso/cbt/exchange', [CbtSsoController::class, 'exchange'])->middleware('api.key');
 
 Route::middleware('auth:sanctum')->prefix('mobile')->group(function () {
     Route::get('/dashboard', [MobileApiController::class, 'mobileDashboard']);

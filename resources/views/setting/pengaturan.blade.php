@@ -16,6 +16,11 @@
                 <li class="nav-item" role="presentation">
                     <a href="{{ route('setting.agenda') }}" class="nav-link {{ request()->routeIs('setting.agenda*') ? 'active' : '' }}" id="agenda-tab">Pengaturan Agenda</a>
                 </li>
+                @if(auth()->user()->hasRole('Admin'))
+                <li class="nav-item" role="presentation">
+                    <a href="{{ route('setting.guru_piket_popup') }}" class="nav-link {{ request()->routeIs('setting.guru_piket_popup*') ? 'active' : '' }}" id="guru-piket-popup-tab">Popup Guru Piket</a>
+                </li>
+                @endif
                 <li class="nav-item" role="presentation">
                     <a href="{{ route('setting.menu') }}" class="nav-link {{ request()->routeIs('setting.menu*') ? 'active' : '' }}" id="menu-tab">Pengaturan Menu</a>
                 </li>
@@ -31,6 +36,11 @@
                 <div class="tab-pane fade {{ request()->routeIs('setting.agenda*') ? 'show active' : '' }}" id="agenda" role="tabpanel">
                     @include('setting.agenda', ['settings' => $agendaSettings ?? []])
                 </div>
+                @if(auth()->user()->hasRole('Admin'))
+                <div class="tab-pane fade {{ request()->routeIs('setting.guru_piket_popup*') ? 'show active' : '' }}" id="guru-piket-popup" role="tabpanel">
+                    @include('setting.guru_piket_popup', ['settings' => $guruPiketPopupSettings ?? []])
+                </div>
+                @endif
                 <div class="tab-pane fade {{ request()->routeIs('setting.menu*') ? 'show active' : '' }}" id="menu" role="tabpanel">
                     @include('setting.menu', ['menuVisibility' => $menuVisibility ?? [], 'standardGuruMenus' => $standardGuruMenus ?? [], 'standardSiswaMenus' => $standardSiswaMenus ?? []])
                 </div>

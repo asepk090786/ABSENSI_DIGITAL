@@ -10,7 +10,14 @@
             <div style="font-weight:700; font-size:15px;">{{ $mode === 'edit' ? 'Edit Modul Ajar' : (($pdfImportMode ?? false) ? 'Import PDF Modul Ajar' : 'Tambah Modul Ajar') }}</div>
             <div style="font-size:12px; opacity:.9;">{{ $mode === 'edit' ? 'Kelola informasi, upload, preview dan edit dokumen modul ajar' : (($pdfImportMode ?? false) ? 'Isi metadata, upload PDF, dan simpan modul ajar' : 'Form isi dan pratinjau modul ajar') }}</div>
         </div>
-        <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-sm btn-light text-primary" style="margin-left:auto;">Kembali ke Daftar</a>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+            @if($mode === 'create' && !($pdfImportMode ?? false))
+                <a href="{{ route('rencana_pembelajaran.template_preview') }}" class="btn btn-sm btn-light text-primary">
+                    <i class="ti ti-download"></i> Download Template Word
+                </a>
+            @endif
+            <a href="{{ route('rencana_pembelajaran.index') }}" class="btn btn-sm btn-light text-primary">Kembali ke Daftar</a>
+        </div>
     </header>
 
     <link href="{{ asset('vendor/summernote/summernote-lite.min.css') }}" rel="stylesheet">
@@ -259,25 +266,7 @@
 </div>
 
 <script>
-    @php
-        $initialDataPayload = $module ?? [
-            'title' => '',
-            'subject' => 'Matematika',
-            'class' => 'X',
-            'status' => 'draft',
-            'duration' => '2 JP (2 x 45 menit)',
-            'achievement' => 'Tuliskan Capaian pembelajaran untuk masing-masing mapel berdasarkan Kep BSKAP 046/2025 (bagi mapel umum) dan Kep BPKM 020/2026 (bagi mapel PA dan Budi Pekerti)',
-            'objectives' => 'Sebutkan Tujuan pembelajaran yang mengacu pada capaian pembelajaran',
-            'methods' => 'Jelaskan metode dan Model pembelajaran yang akan digunakan.',
-            'practice' => 'Jelaskan praktik pedagogis yang akan digunakan.',
-            'environment' => 'Keterangan: Ruang fisik, Ruang Virtual, Budaya Belajar',
-            'digital' => 'Keterangan: Tuliskan Sumber Belajar baik berupa buku sumber maupun elektronik',
-            'experience' => 'Pendahuluan, Kegiatan Inti dan Kegiatan Penutup',
-            'reflection' => 'Refleksi guru dan peserta didik.',
-            'assessment' => 'Asesmen diagnostik, formatif, dan sumatif.',
-            'dimensi_lulusan' => 'Belum dipilih',
-        ];
-    @endphp
+    @php($initialDataPayload = $module ?? $templateData)
     const initialData = {!! json_encode($initialDataPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
     const mode = @json($mode);
     const moduleId = @json($moduleId);

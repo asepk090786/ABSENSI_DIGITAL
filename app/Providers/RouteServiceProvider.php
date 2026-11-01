@@ -7,6 +7,7 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use App\Models\ApiKey;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -42,6 +43,24 @@ class RouteServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('api', function (Request $request) {
+            if ($request->is('api/cbt/students/*/photo')) {
+                $apiKey = $request->header('X-API-Key');
+                if (! $apiKey && preg_match('/^Bearer\s+(.+)$/i', (string) $request->header('Authorization'), $matches)) {
+                    $apiKey = $matches[1];
+                }
+
+                if (is_string($apiKey) && trim($apiKey) !== '') {
+                    $apiKeyId = ApiKey::query()
+                        ->where('key_hash', hash('sha256', trim($apiKey)))
+                        ->whereNull('revoked_at')
+                        ->value('id');
+
+                    if ($apiKeyId !== null) {
+                        return Limit::perMinute(2000)->by('cbt-photo-api-key:' . $apiKeyId);
+                    }
+                }
+            }
+
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
     }

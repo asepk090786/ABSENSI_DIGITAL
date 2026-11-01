@@ -26,6 +26,82 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
+                @if($errors->any())
+                    <div class="alert alert-danger">
+                        @foreach($errors->all() as $error)
+                            <div>{{ $error }}</div>
+                        @endforeach
+                    </div>
+                @endif
+                @if($canGenerateCertificates)
+                    <h5 class="fw-semibold mt-3">Sertifikat Kegiatan</h5>
+                    @if($agendas->isEmpty())
+                        <div class="alert alert-info">Belum ada agenda dengan peserta yang tercatat hadir.</div>
+                    @else
+                        <form method="POST" action="{{ route('ekskul.certificates.generate', $ekskul->id) }}" class="row g-3 mb-4">
+                            @csrf
+                            <div class="col-lg-5">
+                                <label class="form-label" for="certificateAgenda">Agenda Kegiatan</label>
+                                <select id="certificateAgenda" name="agenda_id" class="form-select" required>
+                                    <option value="">-- Pilih agenda --</option>
+                                    @foreach($agendas as $agenda)
+                                        <option value="{{ $agenda->id }}" @selected((string) old('agenda_id') === (string) $agenda->id)>
+                                            {{ $agenda->tanggal?->format('d/m/Y') }} - {{ $agenda->judul }} ({{ $agenda->peserta_hadir_count }} hadir)
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="form-text">Sertifikat dibuat untuk semua anggota yang hadir pada agenda terpilih.</small>
+                            </div>
+                            <div class="col-lg-3">
+                                <label class="form-label" for="certificateTemplate">Template</label>
+                                <select id="certificateTemplate" name="template_id" class="form-select">
+                                    <option value="">Template default</option>
+                                    @foreach($templates as $template)
+                                        <option value="{{ $template->id }}" @selected((string) old('template_id') === (string) $template->id)>
+                                            {{ $template->nama }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-lg-2">
+                                <label class="form-label" for="certificateNumber">Nomor Sertifikat</label>
+                                <input id="certificateNumber" name="nomor_sertifikat" type="text" class="form-control" maxlength="255" value="{{ old('nomor_sertifikat') }}">
+                            </div>
+                            <div class="col-lg-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="ti ti-file-certificate me-1"></i>Buat Sertifikat
+                                </button>
+                            </div>
+                        </form>
+                    @endif
+                @endif
+
+                <h5 class="fw-semibold mt-4">Sertifikat Terbit</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-vcenter table-hover">
+                        <thead>
+                            <tr><th>Kegiatan</th><th>Tanggal</th><th>Nama Siswa</th><th>Nomor Sertifikat</th><th>Dibuat</th><th>Aksi</th></tr>
+                        </thead>
+                        <tbody>
+                            @forelse($certificates as $certificate)
+                                <tr>
+                                    <td>{{ $certificate->ekskulAgenda->judul ?? 'Sertifikat lama (keanggotaan)' }}</td>
+                                    <td>{{ $certificate->ekskulAgenda?->tanggal?->format('d/m/Y') ?? '-' }}</td>
+                                    <td>{{ $certificate->siswa->nama ?? '-' }}</td>
+                                    <td>{{ $certificate->nomor_sertifikat ?? '-' }}</td>
+                                    <td>{{ $certificate->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                    <td>
+                                        <a href="{{ route('ekskul.certificates.download', [$ekskul->id, $certificate->id]) }}" class="btn btn-outline-success btn-sm" title="Unduh sertifikat" aria-label="Unduh sertifikat">
+                                            <i class="ti ti-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6" class="text-center text-muted">Belum ada sertifikat.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-vcenter table-hover">
                         <thead>

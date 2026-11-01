@@ -222,6 +222,7 @@
                                                     <option value="izin" {{ optional($existing)->status === 'izin' ? 'selected' : '' }}>Izin</option>
                                                     <option value="sakit" {{ optional($existing)->status === 'sakit' ? 'selected' : '' }}>Sakit</option>
                                                     <option value="tidak_hadir" {{ optional($existing)->status === 'tidak_hadir' ? 'selected' : '' }}>Tidak Hadir</option>
+                                                    <option value="dinas_luar" {{ optional($existing)->status === 'dinas_luar' ? 'selected' : '' }}>Dinas Luar</option>
                                                 </select>
                                             </td>
                                             <td>
@@ -253,8 +254,16 @@
                                                 'izin' => 'warning',
                                                 'sakit' => 'info',
                                                 'tidak_hadir' => 'danger',
+                                                'dinas_luar' => 'danger',
                                             ];
                                             $statusColor = $statusColors[optional($existing)->status] ?? 'secondary';
+                                            $statusLabels = [
+                                                'hadir' => 'Hadir',
+                                                'izin' => 'Izin',
+                                                'sakit' => 'Sakit',
+                                                'tidak_hadir' => 'Tidak Hadir',
+                                                'dinas_luar' => 'Dinas Luar',
+                                            ];
                                         @endphp
                                         <div class="col-6 col-md-4 col-lg-3">
                                             <div class="card h-100">
@@ -268,7 +277,7 @@
                                                     </div>
                                                     <h6 class="fw-semibold mb-1">{{ $item->nama }}</h6>
                                                     <small class="text-muted d-block mb-2">{{ $item->nip ?: '-' }}</small>
-                                                    <span class="badge status-badge bg-{{ $statusColor }} text-white mb-2">{{ $existing ? ucfirst(str_replace('_', ' ', $existing->status)) : 'Belum diisi' }}</span>
+                                                    <span class="badge status-badge bg-{{ $statusColor }} text-white mb-2">{{ $existing ? ($statusLabels[$existing->status] ?? ucfirst(str_replace('_', ' ', $existing->status))) : 'Belum diisi' }}</span>
                                                     <div class="mt-2">
                                                         <select class="form-select form-select-sm status-select" name="attendance[{{ $item->id }}][status]">
                                                             <option value="" {{ !optional($existing)->status ? 'selected' : '' }}>Pilih status</option>
@@ -276,6 +285,7 @@
                                                             <option value="izin" {{ optional($existing)->status === 'izin' ? 'selected' : '' }}>Izin</option>
                                                             <option value="sakit" {{ optional($existing)->status === 'sakit' ? 'selected' : '' }}>Sakit</option>
                                                             <option value="tidak_hadir" {{ optional($existing)->status === 'tidak_hadir' ? 'selected' : '' }}>Tidak Hadir</option>
+                                                            <option value="dinas_luar" {{ optional($existing)->status === 'dinas_luar' ? 'selected' : '' }}>Dinas Luar</option>
                                                         </select>
                                                     </div>
                                                     <input

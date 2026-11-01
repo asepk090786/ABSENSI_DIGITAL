@@ -381,6 +381,27 @@ class NilaiController extends Controller
             $itemsQuery->where('nilai_harian.guru_id', $guru->id);
         }
         $items = $itemsQuery->orderBy('nilai_harian.created_at','desc')->get();
+        $scoreMenus = $items
+            ->filter(function ($item) {
+                return $item->kelas_id && $item->mapel_id;
+            })
+            ->unique(function ($item) {
+                return $item->kelas_id . '-' . $item->mapel_id;
+            })
+            ->map(function ($item) {
+                return (object) [
+                    'kelas_id' => $item->kelas_id,
+                    'mata_pelajaran_id' => $item->mapel_id,
+                    'kelas' => (object) ['nama_kelas' => $item->nama_kelas],
+                    'mataPelajaran' => (object) ['nama_mapel' => $item->nama_mapel],
+                ];
+            });
+        $quickMenus = $quickMenus
+            ->concat($scoreMenus)
+            ->unique(function ($item) {
+                return $item->kelas_id . '-' . ($item->mata_pelajaran_id ?? $item->mapel_id);
+            })
+            ->values();
         $assessmentPairs = $quickMenus->map(function ($item) {
             return [
                 'kelas_id' => $item->kelas_id ?? null,

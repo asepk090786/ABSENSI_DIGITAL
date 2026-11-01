@@ -224,22 +224,36 @@ class BackupService
             throw new \RuntimeException('Tidak dapat membuat folder backup database.');
         }
 
-        $filename = "backup_{$timestamp}.sql";
-        $fullPath = $baseDir . '/' . $filename;
-
         $dbConfig = config("database.connections.{$connection}");
 
-        if ($connection === 'sqlite') {
-            $dbPath = database_path('database.sqlite');
-            if (file_exists($dbPath)) {
-                copy($dbPath, $fullPath);
-            } else {
-                $src = $dbConfig['database'] ?? database_path('database.sqlite');
-                if (file_exists($src)) {
-                    copy($src, $fullPath);
-                }
+        if (($dbConfig['driver'] ?? null) === 'sqlite') {
+            $sqliteFile = 'SIMADIS_DATABASE.sqlite';
+            $sqlitePath = $backupDir . '/' . $sqliteFile;
+            $sourcePath = $this->resolveSqlitePath($dbConfig['database'] ?? '');
+
+            if (! $this->createSqliteBackup($sourcePath, $sqlitePath)) {
+                $this->deleteDirectory($backupDir);
+                throw new \RuntimeException('Tidak dapat membuat backup database SQLite yang valid.');
             }
+
+            $manifest = [
+                'backup_id' => basename($backupDir),
+                'application' => 'SIMADIS',
+                'created_at' => gmdate('c'),
+                'backup_type' => 'database',
+                'database_driver' => 'sqlite',
+                'sqlite_file' => $sqliteFile,
+                'sqlite_checksum' => $this->sha256File($sqlitePath),
+                'parts' => [[
+                    'name' => $sqliteFile,
+                    'size' => filesize($sqlitePath),
+                    'checksum' => $this->sha256File($sqlitePath),
+                ]],
+            ];
+            file_put_contents($backupDir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         } else {
+            $filename = "backup_{$timestamp}.sql";
+            $fullPath = $baseDir . '/' . $filename;
             $dumpCommand = null;
             if (in_array($dbConfig['driver'] ?? '', ['mysql', 'mysqli'])) {
                 $user = escapeshellarg($dbConfig['username'] ?? 'root');
@@ -269,36 +283,36 @@ class BackupService
             } else {
                 file_put_contents($fullPath, "-- unsupported driver for automated dump\n");
             }
-        }
 
-        $sqlContents = is_file($fullPath) ? file_get_contents($fullPath) : '';
-        @unlink($fullPath);
+            $sqlContents = is_file($fullPath) ? file_get_contents($fullPath) : '';
+            @unlink($fullPath);
 
-        $partFiles = [];
-        if ($sqlContents === '') {
-            $partFiles[] = $this->writePartSql($backupDir, 1, "-- empty backup\n");
-        } else {
-            $splitSize = strlen($sqlContents);
-            $parts = [];
-            $offset = 0;
-            $partNumber = 1;
+            $partFiles = [];
+            if ($sqlContents === '') {
+                $partFiles[] = $this->writePartSql($backupDir, 1, "-- empty backup\n");
+            } else {
+                $splitSize = strlen($sqlContents);
+                $parts = [];
+                $offset = 0;
+                $partNumber = 1;
 
-            while ($offset < $splitSize) {
-                $current = substr($sqlContents, $offset, self::SAFE_PART_SIZE);
-                if ($current === false || $current === '') {
-                    break;
+                while ($offset < $splitSize) {
+                    $current = substr($sqlContents, $offset, self::SAFE_PART_SIZE);
+                    if ($current === false || $current === '') {
+                        break;
+                    }
+
+                    $parts[] = $this->writePartSql($backupDir, $partNumber, $current);
+                    $partNumber++;
+                    $offset += self::SAFE_PART_SIZE;
                 }
 
-                $parts[] = $this->writePartSql($backupDir, $partNumber, $current);
-                $partNumber++;
-                $offset += self::SAFE_PART_SIZE;
+                $partFiles = $parts;
             }
 
-            $partFiles = $parts;
+            $manifest = $this->buildManifestForSql($backupDir, $partFiles);
+            file_put_contents($backupDir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         }
-
-        $manifest = $this->buildManifestForSql($backupDir, $partFiles);
-        file_put_contents($backupDir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         if ($format === 'zip') {
             $zipName = $baseDir . '/' . $backupId . '.zip';
@@ -424,6 +438,9 @@ class BackupService
             $dir = dirname($filePath);
             return $this->restoreBackupDirectory($dir);
         }
+        if (in_array($extension, ['sqlite', 'db'], true) || $this->hasSqliteHeader($filePath)) {
+            return $this->importSqliteFile($filePath);
+        }
 
         if ($extension === 'zip') {
             $extractDir = sys_get_temp_dir() . '/backup_import_' . uniqid();
@@ -449,7 +466,20 @@ class BackupService
             $sqlFiles = glob($extractDir . '/*.sql');
             if (! empty($sqlFiles)) {
                 usort($sqlFiles, fn ($a, $b) => filemtime($b) <=> filemtime($a));
-                $result = $this->importSqlFile($sqlFiles[0]);
+                $result = $this->hasSqliteHeader($sqlFiles[0])
+                    ? $this->importSqliteFile($sqlFiles[0])
+                    : $this->importSqlFile($sqlFiles[0]);
+                $this->deleteDirectory($extractDir);
+                return $result;
+            }
+
+            $sqliteFiles = array_merge(
+                glob($extractDir . '/*.sqlite') ?: [],
+                glob($extractDir . '/*.db') ?: []
+            );
+            if (! empty($sqliteFiles)) {
+                usort($sqliteFiles, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+                $result = $this->importSqliteFile($sqliteFiles[0]);
                 $this->deleteDirectory($extractDir);
                 return $result;
             }
@@ -475,6 +505,21 @@ class BackupService
         }
 
         $manifest = json_decode(file_get_contents($manifestPath), true);
+        if (is_array($manifest) && ($manifest['database_driver'] ?? null) === 'sqlite') {
+            $sqliteFile = $manifest['sqlite_file'] ?? null;
+            if (! is_string($sqliteFile) || basename($sqliteFile) !== $sqliteFile) {
+                return false;
+            }
+
+            $sqlitePath = $backupDir . '/' . $sqliteFile;
+            $checksum = $manifest['sqlite_checksum'] ?? null;
+            if (! is_file($sqlitePath) || ! is_string($checksum) || $this->sha256File($sqlitePath) !== $checksum) {
+                return false;
+            }
+
+            return $this->importSqliteFile($sqlitePath);
+        }
+
         if (! is_array($manifest) || empty($manifest['parts'] ?? [])) {
             return false;
         }
@@ -500,10 +545,119 @@ class BackupService
         $tempSql = sys_get_temp_dir() . '/simadis_backup_restore_' . uniqid('', true) . '.sql';
         file_put_contents($tempSql, $mergedSql);
 
-        $result = $this->importSqlFile($tempSql);
+        $result = $this->hasSqliteHeader($tempSql)
+            ? $this->importSqliteFile($tempSql)
+            : $this->importSqlFile($tempSql);
         @unlink($tempSql);
 
         return $result;
+    }
+
+    protected function resolveSqlitePath(string $path): string
+    {
+        if ($path === '' || $path === ':memory:' || str_starts_with($path, 'file:')) {
+            return '';
+        }
+
+        if (str_starts_with($path, DIRECTORY_SEPARATOR) || preg_match('/^[A-Za-z]:[\\\\\/]/', $path)) {
+            return $path;
+        }
+
+        return database_path($path);
+    }
+
+    protected function createSqliteBackup(string $sourcePath, string $destinationPath): bool
+    {
+        if (! class_exists(\SQLite3::class) || $sourcePath === '' || ! is_file($sourcePath)) {
+            return false;
+        }
+
+        $source = new \SQLite3($sourcePath, SQLITE3_OPEN_READONLY);
+        $destination = new \SQLite3($destinationPath);
+
+        try {
+            return $source->backup($destination) && $this->isValidSqliteDatabase($destination);
+        } finally {
+            $source->close();
+            $destination->close();
+        }
+    }
+
+    protected function importSqliteFile(string $sourcePath): bool
+    {
+        $connection = config('database.default');
+        $dbConfig = config("database.connections.{$connection}");
+        if (($dbConfig['driver'] ?? null) !== 'sqlite' || ! class_exists(\SQLite3::class)) {
+            return false;
+        }
+
+        $databasePath = $dbConfig['database'] ?? '';
+        if ($databasePath === '' || $databasePath === ':memory:' || str_starts_with($databasePath, 'file:')) {
+            return false;
+        }
+
+        if (! $this->isValidSqliteFile($sourcePath)) {
+            return false;
+        }
+
+        $targetPath = $this->resolveSqlitePath($databasePath);
+        $targetDirectory = dirname($targetPath);
+        if (! is_dir($targetDirectory) || ! is_writable($targetDirectory) || is_link($targetPath)) {
+            return false;
+        }
+
+        $stagingPath = $targetPath . '.restore-' . uniqid('', true);
+        if (! copy($sourcePath, $stagingPath) || ! $this->isValidSqliteFile($stagingPath)) {
+            @unlink($stagingPath);
+            return false;
+        }
+
+        DB::purge($connection);
+        @unlink($targetPath . '-wal');
+        @unlink($targetPath . '-shm');
+
+        if (! rename($stagingPath, $targetPath)) {
+            @unlink($stagingPath);
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function isValidSqliteFile(string $path): bool
+    {
+        if (! $this->hasSqliteHeader($path) || ! class_exists(\SQLite3::class)) {
+            return false;
+        }
+
+        $database = new \SQLite3($path, SQLITE3_OPEN_READONLY);
+        try {
+            return $this->isValidSqliteDatabase($database);
+        } finally {
+            $database->close();
+        }
+    }
+
+    protected function isValidSqliteDatabase(\SQLite3 $database): bool
+    {
+        return $database->querySingle('PRAGMA integrity_check') === 'ok';
+    }
+
+    protected function hasSqliteHeader(string $path): bool
+    {
+        if (! is_file($path)) {
+            return false;
+        }
+
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return false;
+        }
+
+        $header = fread($handle, 16);
+        fclose($handle);
+
+        return $header === "SQLite format 3\0";
     }
 
     protected function importSqlFile(string $sqlPath): bool
@@ -514,31 +668,74 @@ class BackupService
 
         $connection = config('database.default');
         $dbConfig = config("database.connections.{$connection}");
-        $host = escapeshellarg($dbConfig['host'] ?? '127.0.0.1');
-        $port = isset($dbConfig['port']) ? ' -P' . escapeshellarg((string) $dbConfig['port']) : '';
-        $user = escapeshellarg($dbConfig['username'] ?? 'root');
-        $pass = isset($dbConfig['password']) ? '-p' . escapeshellarg($dbConfig['password']) : '';
-        $db = escapeshellarg($dbConfig['database'] ?? '');
         $mysql = $this->resolveMysqlClientPath();
 
         if (! $mysql) {
             return false;
         }
 
-        $command = sprintf(
-            '%s -h %s%s -u %s %s %s < %s',
-            escapeshellcmd($mysql),
-            trim($host, "'"),
-            $port,
-            trim($user, "'"),
-            $pass ? ' -p' . trim($pass, "'") : '',
-            trim($db, "'"),
-            escapeshellarg($sqlPath)
-        );
+        $defaultsFile = $this->createMysqlDefaultsFile($dbConfig);
+        if (! $defaultsFile) {
+            return false;
+        }
 
-        exec($command . ' 2>&1', $output, $returnVar);
+        try {
+            $command = $this->buildMysqlImportCommand($mysql, $dbConfig, $sqlPath, $defaultsFile);
 
-        return $returnVar === 0;
+            exec($command . ' 2>&1', $output, $returnVar);
+
+            return $returnVar === 0;
+        } finally {
+            @unlink($defaultsFile);
+        }
+    }
+
+    protected function createMysqlDefaultsFile(array $dbConfig): ?string
+    {
+        $defaultsFile = tempnam(sys_get_temp_dir(), 'simadis_mysql_');
+        if ($defaultsFile === false) {
+            return null;
+        }
+
+        $options = [
+            'host' => $dbConfig['host'] ?? '127.0.0.1',
+            'user' => $dbConfig['username'] ?? 'root',
+        ];
+        if (isset($dbConfig['port'])) {
+            $options['port'] = (string) $dbConfig['port'];
+        }
+        if (isset($dbConfig['password']) && $dbConfig['password'] !== '') {
+            $options['password'] = $dbConfig['password'];
+        }
+
+        $contents = "[client]\n";
+        foreach ($options as $name => $value) {
+            $escapedValue = str_replace(
+                ["\\", '"', "\n", "\r"],
+                ["\\\\", '\\"', '\\n', '\\r'],
+                (string) $value
+            );
+            $contents .= $name . '="' . $escapedValue . '"' . "\n";
+        }
+
+        if (file_put_contents($defaultsFile, $contents) !== strlen($contents) || ! chmod($defaultsFile, 0600)) {
+            @unlink($defaultsFile);
+
+            return null;
+        }
+
+        return $defaultsFile;
+    }
+
+    protected function buildMysqlImportCommand(string $mysql, array $dbConfig, string $sqlPath, string $defaultsFile): string
+    {
+        return implode(' ', [
+            escapeshellarg($mysql),
+            escapeshellarg('--defaults-extra-file=' . $defaultsFile),
+            escapeshellarg($dbConfig['database'] ?? ''),
+            '<',
+            escapeshellarg($sqlPath),
+        ]);
     }
 
     protected function resolveMysqlClientPath(): ?string

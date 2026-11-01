@@ -34,11 +34,13 @@ class AppServiceProvider extends ServiceProvider
                 'guru' => [],
                 'siswa' => [],
             ];
+            $cbtSsoEnabled = false;
 
             try {
                 $sekolah = Schema::hasTable('sekolah') ? Sekolah::first() : null;
-                $settings = new SettingsManager();
+                $settings = app(SettingsManager::class);
                 $menuVisibility = $settings->get('menu_visibility', $menuVisibility);
+                $cbtSsoEnabled = (bool) $settings->get('integrations.cbt_sso.enabled', false);
 
                 if (Auth::check() && Auth::user()->hasRole('Guru BK')) {
                     $guru = Auth::user()->guru;
@@ -65,7 +67,8 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('kelasBinaanBk', $kelasBinaanBk)
                  ->with('sekolah', $sekolah)
-                 ->with('menuVisibility', $menuVisibility);
+                 ->with('menuVisibility', $menuVisibility)
+                 ->with('cbtSsoEnabled', $cbtSsoEnabled);
         });
     }
 }

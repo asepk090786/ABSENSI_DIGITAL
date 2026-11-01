@@ -24,6 +24,21 @@
             <i class="ti ti-calendar me-2"></i> Jadwal KBM
         </a>
     </div>
+    @php
+        $cbtUser = auth()->user();
+        $cbtIsAdmin = $cbtUser->hasRole('Admin');
+        $cbtMenuGroup = $cbtUser->hasRole('Siswa') ? 'siswa' : 'guru';
+        $cbtMenus = $menuVisibility[$cbtMenuGroup] ?? [];
+        $canSeeCbtLogin = (bool) ($cbtSsoEnabled ?? false)
+            && ($cbtIsAdmin || empty($cbtMenus) || in_array('integrations_cbt_sso', $cbtMenus, true));
+    @endphp
+    @if($canSeeCbtLogin && ($cbtIsAdmin || $cbtUser->hasAnyRole(['Guru', 'Guru Mapel', 'Guru Kelas', 'Wali Kelas', 'Guru BK', 'Guru Piket', 'Pembina', 'Siswa'])))
+    <div class="nav-item">
+        <a href="{{ route('sso.cbt.login') }}" class="nav-link {{ request()->routeIs('sso.cbt.login') ? 'active' : '' }}">
+            <i class="ti ti-device-desktop-check me-2"></i> Login CBT
+        </a>
+    </div>
+    @endif
     @if(auth()->user()->hasAnyRole(['Admin','Kepala Sekolah']))
     <div class="nav-item">
         <a href="{{ route('pengembangan.index') }}" class="nav-link {{ request()->routeIs('pengembangan.*') ? 'active' : '' }}">

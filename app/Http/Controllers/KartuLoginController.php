@@ -7,6 +7,7 @@ use App\Models\QrLoginToken;
 use App\Models\Role;
 use App\Models\Sekolah;
 use App\Models\User;
+use App\Services\GuruPiketPopupService;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Http\Request;
@@ -219,6 +220,12 @@ class KartuLoginController extends Controller
             
             Auth::login($record->user);
             $request->session()->regenerate();
+
+            $request->session()->forget('guru_piket_login_popup');
+            $popup = app(GuruPiketPopupService::class)->forLogin($record->user);
+            if ($popup !== null) {
+                $request->session()->put('guru_piket_login_popup', $popup);
+            }
 
             return redirect()->intended(route('home'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
